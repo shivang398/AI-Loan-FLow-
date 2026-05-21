@@ -24,79 +24,34 @@ http {
     types_hash_max_size 2048;
     client_max_body_size 50M;
 
-    # Backend service upstreams (use env vars, fallback to Railway internal hostnames)
-    upstream auth_backend {
-        server ${AUTH_SERVICE_URL};
-    }
-    upstream connector_backend {
-        server ${CONNECTOR_SERVICE_URL};
-    }
-    upstream customer_backend {
-        server ${CUSTOMER_SERVICE_URL};
-    }
-    upstream loan_backend {
-        server ${LOAN_SERVICE_URL};
-    }
-    upstream eligibility_backend {
-        server ${ELIGIBILITY_SERVICE_URL};
-    }
-    upstream policy_backend {
-        server ${POLICY_SERVICE_URL};
-    }
-    upstream commission_backend {
-        server ${COMMISSION_SERVICE_URL};
-    }
-    upstream messaging_backend {
-        server ${MESSAGING_SERVICE_URL};
-    }
-    upstream rm_backend {
-        server ${RM_SERVICE_URL};
-    }
-    upstream queries_backend {
-        server ${QUERY_SERVICE_URL};
-    }
-    upstream documents_backend {
-        server ${DOCUMENT_SERVICE_URL};
-    }
-    upstream reports_backend {
-        server ${REPORTING_SERVICE_URL};
-    }
-    upstream analytics_backend {
-        server ${ANALYTICS_SERVICE_URL};
-    }
-    upstream routing_backend {
-        server ${ROUTING_SERVICE_URL};
-    }
+    # Docker/Railway internal DNS — resolves hostnames at request time, not startup
+    resolver 127.0.0.11 valid=30s ipv6=off;
 
-    # Main server block
     server {
         listen ${PORT};
         server_name _;
         root /usr/share/nginx/html;
         index index.html;
 
-        # Gzip compression
         gzip on;
         gzip_vary on;
         gzip_min_length 1000;
         gzip_proxied any;
         gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
 
-        # API proxy routes (matching vite.config.ts dev server routes)
         location /api/auth/ {
-            proxy_pass http://auth_backend/auth/;
+            set $backend "${AUTH_SERVICE_URL}";
+            proxy_pass http://$backend/auth/;
             proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_cache_bypass $http_upgrade;
         }
 
         location /api/connectors/ {
-            proxy_pass http://connector_backend/connectors/;
+            set $backend "${CONNECTOR_SERVICE_URL}";
+            proxy_pass http://$backend/connectors/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -105,7 +60,8 @@ http {
         }
 
         location /api/foir/ {
-            proxy_pass http://connector_backend/foir/;
+            set $backend "${CONNECTOR_SERVICE_URL}";
+            proxy_pass http://$backend/foir/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -114,7 +70,8 @@ http {
         }
 
         location /api/loans/ {
-            proxy_pass http://loan_backend/loans/;
+            set $backend "${LOAN_SERVICE_URL}";
+            proxy_pass http://$backend/loans/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -123,7 +80,8 @@ http {
         }
 
         location /api/customers/ {
-            proxy_pass http://customer_backend/customers/;
+            set $backend "${CUSTOMER_SERVICE_URL}";
+            proxy_pass http://$backend/customers/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -132,7 +90,8 @@ http {
         }
 
         location /api/eligibility/ {
-            proxy_pass http://eligibility_backend/eligibility/;
+            set $backend "${ELIGIBILITY_SERVICE_URL}";
+            proxy_pass http://$backend/eligibility/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -141,7 +100,8 @@ http {
         }
 
         location /api/analyse {
-            proxy_pass http://eligibility_backend/api/analyse;
+            set $backend "${ELIGIBILITY_SERVICE_URL}";
+            proxy_pass http://$backend/api/analyse;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -150,7 +110,8 @@ http {
         }
 
         location /api/commissions/ {
-            proxy_pass http://commission_backend/;
+            set $backend "${COMMISSION_SERVICE_URL}";
+            proxy_pass http://$backend/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -159,7 +120,8 @@ http {
         }
 
         location /api/messaging/ {
-            proxy_pass http://messaging_backend/messaging/;
+            set $backend "${MESSAGING_SERVICE_URL}";
+            proxy_pass http://$backend/messaging/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -168,7 +130,8 @@ http {
         }
 
         location /api/policies/ {
-            proxy_pass http://policy_backend/policies/;
+            set $backend "${POLICY_SERVICE_URL}";
+            proxy_pass http://$backend/policies/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -177,7 +140,8 @@ http {
         }
 
         location /api/rm/ {
-            proxy_pass http://rm_backend/rm/;
+            set $backend "${RM_SERVICE_URL}";
+            proxy_pass http://$backend/rm/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -186,7 +150,8 @@ http {
         }
 
         location /api/queries/ {
-            proxy_pass http://queries_backend/queries/;
+            set $backend "${QUERY_SERVICE_URL}";
+            proxy_pass http://$backend/queries/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -195,7 +160,8 @@ http {
         }
 
         location /api/documents/ {
-            proxy_pass http://documents_backend/documents/;
+            set $backend "${DOCUMENT_SERVICE_URL}";
+            proxy_pass http://$backend/documents/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -204,7 +170,8 @@ http {
         }
 
         location /api/reports/ {
-            proxy_pass http://reports_backend/reports/;
+            set $backend "${REPORTING_SERVICE_URL}";
+            proxy_pass http://$backend/reports/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -213,7 +180,8 @@ http {
         }
 
         location /api/analytics/ {
-            proxy_pass http://analytics_backend/analytics/;
+            set $backend "${ANALYTICS_SERVICE_URL}";
+            proxy_pass http://$backend/analytics/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -222,7 +190,8 @@ http {
         }
 
         location /api/routing/ {
-            proxy_pass http://routing_backend/routing/;
+            set $backend "${ROUTING_SERVICE_URL}";
+            proxy_pass http://$backend/routing/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -230,9 +199,9 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # WebSocket proxy for messaging
         location /ws-messaging {
-            proxy_pass http://messaging_backend;
+            set $backend "${MESSAGING_SERVICE_URL}";
+            proxy_pass http://$backend;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
@@ -242,9 +211,9 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Catch-all for unmapped /api routes (default to auth service)
         location /api/ {
-            proxy_pass http://auth_backend/;
+            set $backend "${AUTH_SERVICE_URL}";
+            proxy_pass http://$backend/;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -252,12 +221,10 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # SPA fallback: return index.html for all non-file routes
         location / {
             try_files $uri $uri/ /index.html;
         }
 
-        # Static assets caching
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
