@@ -9,8 +9,11 @@ FROM eclipse-temurin:26-jdk-noble AS builder
 ARG SERVICE_NAME
 WORKDIR /workspace
 
-RUN apt-get update && apt-get install -y --no-install-recommends maven && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz \
+        | tar -xz -C /opt && \
+    ln -s /opt/apache-maven-3.9.9/bin/mvn /usr/local/bin/mvn
 
 # Copy parent POM and ALL module POMs so Maven can resolve the full reactor.
 # Maven validates every <module> listed in the parent pom.xml exists on disk;
