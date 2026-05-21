@@ -32,8 +32,9 @@ echo "  CONNECTOR_SERVICE_URL: $CONNECTOR_SERVICE_URL"
 echo "  CUSTOMER_SERVICE_URL: $CUSTOMER_SERVICE_URL"
 echo "  LOAN_SERVICE_URL: $LOAN_SERVICE_URL"
 
-# Substitute environment variables in nginx config template
-envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+# Substitute only our variables — not nginx's own $var syntax
+envsubst '${PORT} ${AUTH_SERVICE_URL} ${CONNECTOR_SERVICE_URL} ${CUSTOMER_SERVICE_URL} ${LOAN_SERVICE_URL} ${ELIGIBILITY_SERVICE_URL} ${POLICY_SERVICE_URL} ${COMMISSION_SERVICE_URL} ${MESSAGING_SERVICE_URL} ${RM_SERVICE_URL} ${QUERY_SERVICE_URL} ${DOCUMENT_SERVICE_URL} ${REPORTING_SERVICE_URL} ${ANALYTICS_SERVICE_URL} ${ROUTING_SERVICE_URL}' \
+  < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 # Verify the config
 nginx -t
