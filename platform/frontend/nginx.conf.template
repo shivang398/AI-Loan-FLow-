@@ -26,51 +26,51 @@ http {
 
     # Backend service upstreams (use env vars, fallback to Railway internal hostnames)
     upstream auth_backend {
-        server ${AUTH_SERVICE_URL:-auth-service.railway.internal:8080};
+        server ${AUTH_SERVICE_URL};
     }
     upstream connector_backend {
-        server ${CONNECTOR_SERVICE_URL:-connector-service.railway.internal:8080};
+        server ${CONNECTOR_SERVICE_URL};
     }
     upstream customer_backend {
-        server ${CUSTOMER_SERVICE_URL:-customer-service.railway.internal:8080};
+        server ${CUSTOMER_SERVICE_URL};
     }
     upstream loan_backend {
-        server ${LOAN_SERVICE_URL:-loan-service.railway.internal:8080};
+        server ${LOAN_SERVICE_URL};
     }
     upstream eligibility_backend {
-        server ${ELIGIBILITY_SERVICE_URL:-eligibility-service.railway.internal:8080};
+        server ${ELIGIBILITY_SERVICE_URL};
     }
     upstream policy_backend {
-        server ${POLICY_SERVICE_URL:-policy-service.railway.internal:8080};
+        server ${POLICY_SERVICE_URL};
     }
     upstream commission_backend {
-        server ${COMMISSION_SERVICE_URL:-commission-service.railway.internal:8080};
+        server ${COMMISSION_SERVICE_URL};
     }
     upstream messaging_backend {
-        server ${MESSAGING_SERVICE_URL:-messaging-service.railway.internal:8080};
+        server ${MESSAGING_SERVICE_URL};
     }
     upstream rm_backend {
-        server ${RM_SERVICE_URL:-rm-tracking-service.railway.internal:8080};
+        server ${RM_SERVICE_URL};
     }
     upstream queries_backend {
-        server ${QUERY_SERVICE_URL:-query-service.railway.internal:8080};
+        server ${QUERY_SERVICE_URL};
     }
     upstream documents_backend {
-        server ${DOCUMENT_SERVICE_URL:-document-service.railway.internal:8080};
+        server ${DOCUMENT_SERVICE_URL};
     }
     upstream reports_backend {
-        server ${REPORTING_SERVICE_URL:-reporting-service.railway.internal:8080};
+        server ${REPORTING_SERVICE_URL};
     }
     upstream analytics_backend {
-        server ${ANALYTICS_SERVICE_URL:-analytics-service.railway.internal:8080};
+        server ${ANALYTICS_SERVICE_URL};
     }
     upstream routing_backend {
-        server ${ROUTING_SERVICE_URL:-sm-routing-service.railway.internal:8080};
+        server ${ROUTING_SERVICE_URL};
     }
 
     # Main server block
     server {
-        listen ${PORT:-8080};
+        listen ${PORT};
         server_name _;
         root /usr/share/nginx/html;
         index index.html;
