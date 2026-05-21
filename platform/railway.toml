@@ -11,6 +11,7 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
+buildArgs = { SERVICE_NAME = "${{SERVICE_NAME}}" }
 
 [deploy]
 startCommand = "java -jar app.jar"
