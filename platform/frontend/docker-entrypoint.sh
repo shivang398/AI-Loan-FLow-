@@ -25,8 +25,13 @@ export REPORTING_SERVICE_URL="${REPORTING_SERVICE_URL:-reporting-service.railway
 export ANALYTICS_SERVICE_URL="${ANALYTICS_SERVICE_URL:-analytics-service.railway.internal:8080}"
 export ROUTING_SERVICE_URL="${ROUTING_SERVICE_URL:-sm-routing-service.railway.internal:8080}"
 
-# Read the actual DNS resolver from the container's resolv.conf
-NAMESERVER=$(grep "nameserver" /etc/resolv.conf | awk '{print $2}' | head -1)
+# Read DNS resolver from resolv.conf; wrap IPv6 addresses in brackets for nginx
+NAMESERVER_RAW=$(grep "nameserver" /etc/resolv.conf | awk '{print $2}' | head -1)
+if echo "$NAMESERVER_RAW" | grep -q ":"; then
+    NAMESERVER="[$NAMESERVER_RAW]"
+else
+    NAMESERVER="$NAMESERVER_RAW"
+fi
 export NAMESERVER
 
 echo "[Frontend] PORT: $PORT"
