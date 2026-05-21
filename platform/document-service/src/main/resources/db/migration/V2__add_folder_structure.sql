@@ -1,0 +1,3 @@
+ALTER TABLE documents ALTER COLUMN loan_id DROP NOT NULL;
+ALTER TABLE documents ADD COLUMN owner_id UUID;
+ALTER TABLE documents ADD COLUMN folder_path VARCHAR(255) DEFAULT '/';

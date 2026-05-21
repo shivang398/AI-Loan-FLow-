@@ -1,0 +1,441 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import { Button, Input, Space, Tag, Avatar, Badge, Tooltip, Modal, Form, Select, DatePicker, Row, Col, Card, Statistic, Divider, message, Spin } from 'antd';
+import {
+  Search, Download, Shield, Edit2,
+  UserPlus, Briefcase, Calendar, Building2, UserCog,
+  LayoutGrid, List as ListIcon
+} from 'lucide-react';
+import apiClient from '../../../shared/services/apiClient';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+const { Option } = Select;
+
+const ROLE_COLORS: Record<string, string> = {
+  ADMIN: '#3b82f6',
+  RM: '#10b981',
+  OPERATIONS: '#f59e0b',
+  TEAM_LEADER: '#ec4899',
+};
+
+const DEPT_MAP: Record<string, string> = {
+  ADMIN: 'Executive',
+  RM: 'Sales & Growth',
+  OPERATIONS: 'Credit Ops',
+  TEAM_LEADER: 'Sales & Growth',
+};
+
+const STAFF_ROLES = ['ADMIN', 'RM', 'OPERATIONS', 'TEAM_LEADER'];
+
+function connectorToRow(c: any) {
+  const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
+  const role = c.role || 'UNKNOWN';
+  const emailPrefix = c.firstName ? `${c.firstName.toLowerCase()}.${(c.lastName || '').toLowerCase()}`.replace(/\s+/g, '') : 'employee';
+  return {
+    id: c.id,
+    userId: c.userId,
+    empId: `EMP-${c.id?.substring(0, 6).toUpperCase() || '???'}`,
+    name: fullName,
+    email: c.email || `${emailPrefix}@platform.com`,
+    role,
+    department: DEPT_MAP[role] || role,
+    status: c.status || 'ACTIVE',
+    joinDate: c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : '—',
+    initials: fullName.split(' ').filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().substring(0, 2),
+    color: ROLE_COLORS[role] || '#6366f1',
+  };
+}
+
+const UserManagement: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [form] = Form.useForm();
+  const [staffData, setStaffData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+
+  const fetchStaff = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get('/connectors', { params: { roles: STAFF_ROLES.join(',') } });
+      const list = res.data?.data || [];
+      setStaffData(list.map(connectorToRow));
+    } catch (err) {
+      console.error('Failed to fetch staff', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStaff();
+  }, [fetchStaff]);
+
+  const columnDefs: any[] = [
+    {
+      field: 'name',
+      headerName: 'Employee Profile',
+      flex: 2.5,
+      cellRenderer: (params: any) => (
+        <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 12 }}>
+          <Avatar
+            style={{
+              backgroundColor: params.data.color + '20',
+              color: params.data.color,
+              fontWeight: 700,
+              fontSize: 13,
+              border: `1px solid ${params.data.color}40`
+            }}
+          >
+            {params.data.initials}
+          </Avatar>
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{params.value}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{params.data.email} · {params.data.empId}</span>
+          </div>
+        </div>
+      )
+    },
+    {
+      field: 'department',
+      headerName: 'Department',
+      flex: 1.5,
+      cellRenderer: (params: any) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: '100%' }}>
+          <Building2 size={14} style={{ color: 'var(--text-muted)' }} />
+          <span style={{ fontSize: 13, fontWeight: 500 }}>{params.value}</span>
+        </div>
+      )
+    },
+    {
+      field: 'role',
+      headerName: 'Role & Access',
+      flex: 1.5,
+      cellRenderer: (params: any) => {
+        const roleStyles: Record<string, any> = {
+          'ADMIN': { bg: '#eff6ff', text: '#2563eb' },
+          'RM': { bg: '#f0fdf4', text: '#16a34a' },
+          'OPERATIONS': { bg: '#fefce8', text: '#a16207' },
+          'TEAM_LEADER': { bg: '#fff1f2', text: '#e11d48' },
+        };
+        const style = roleStyles[params.value] || { bg: '#f1f5f9', text: '#475569' };
+        return (
+          <Tag style={{
+            backgroundColor: style.bg, color: style.text, border: 'none',
+            borderRadius: 100, padding: '2px 10px', fontWeight: 700, fontSize: 10
+          }}>
+            {params.value}
+          </Tag>
+        );
+      }
+    },
+    {
+      field: 'status',
+      headerName: 'Employment Status',
+      flex: 1.2,
+      cellRenderer: (params: any) => (
+        <Badge
+          status={params.value === 'ACTIVE' ? 'success' : 'default'}
+          text={<span style={{ fontSize: 12, fontWeight: 600 }}>{params.value}</span>}
+        />
+      )
+    },
+    {
+      field: 'joinDate',
+      headerName: 'Joining Date',
+      flex: 1.2,
+      cellRenderer: (params: any) => (
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{params.value}</span>
+      )
+    },
+    {
+      headerName: 'Actions',
+      width: 180,
+      pinned: 'right',
+      cellRenderer: (params: any) => {
+        const handleStatusChange = async (newStatus: string) => {
+          try {
+            await apiClient.put(`/connectors/${params.data.id}/status`, { status: newStatus });
+            if (params.data.userId) {
+              await apiClient.put(`/auth/users/${params.data.userId}/status`, { status: newStatus });
+            }
+            message.success(`Employee status updated to ${newStatus}`);
+            fetchStaff();
+          } catch (err: any) {
+            message.error(err.response?.data?.message || err.message || 'Failed to update status');
+          }
+        };
+
+        const handleEdit = () => {
+          setEditingStaff(params.data);
+          form.setFieldsValue({
+            name: params.data.name,
+            email: params.data.email || 'employee@platform.com',
+            role: params.data.role,
+            department: params.data.department,
+          });
+          setIsModalOpen(true);
+        };
+
+        return (
+          <Space size={8}>
+            <Tooltip title="Edit Profile">
+              <Button type="text" size="small" icon={<Edit2 size={14} />} onClick={handleEdit} style={{ color: 'var(--brand-500)' }} />
+            </Tooltip>
+            {params.data.status === 'ACTIVE' ? (
+              <Button
+                danger
+                size="small"
+                onClick={() => handleStatusChange('INACTIVE')}
+                style={{ borderRadius: 6, fontSize: 11, fontWeight: 700 }}
+              >
+                Offboard
+              </Button>
+            ) : (
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleStatusChange('ACTIVE')}
+                style={{ background: '#10b981', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700 }}
+              >
+                Rehire
+              </Button>
+            )}
+          </Space>
+        );
+      }
+    }
+  ];
+
+  const handleSaveStaff = async (values: any) => {
+    try {
+      if (editingStaff) {
+        const nameParts = values.name.trim().split(' ');
+        const firstName = nameParts[0] || values.name;
+        const lastName = nameParts.slice(1).join(' ') || '';
+        await apiClient.put(`/connectors/${editingStaff.id}`, {
+          userId: editingStaff.userId,
+          firstName,
+          lastName,
+          phone: editingStaff.phone || '9999999999',
+          region: editingStaff.region || 'NATIONAL',
+          role: values.role
+        });
+        message.success(`Employee ${values.name} updated successfully`);
+      } else {
+        // Step 1: Register user in auth-service
+        const authRes = await apiClient.post('/auth/register', {
+          email: values.email,
+          password: values.tempPassword,
+          role: values.role
+        });
+        const userId = authRes.data?.data?.userId;
+        if (!userId) throw new Error('Registration did not return a userId');
+
+        // Step 2: Create profile in connector-service
+        const nameParts = values.name.trim().split(' ');
+        const firstName = nameParts[0] || values.name;
+        const lastName = nameParts.slice(1).join(' ') || '';
+        await apiClient.post('/connectors', {
+          userId,
+          firstName,
+          lastName,
+          phone: '99' + Math.floor(10000000 + Math.random() * 90000000), // Random phone to satisfy unique constraint
+          region: 'NATIONAL',
+          role: values.role
+        });
+
+        message.success(`Employee ${values.name} onboarded with role ${values.role}`);
+      }
+      setIsModalOpen(false);
+      setEditingStaff(null);
+      form.resetFields();
+      fetchStaff();
+    } catch (err: any) {
+      message.error(err.response?.data?.message || err.message || 'Failed to save employee');
+    }
+  };
+
+  const rmCount = staffData.filter(s => s.role === 'RM').length;
+  const opsCount = staffData.filter(s => s.role === 'OPERATIONS').length;
+
+  return (
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 className="page-header-title">HR & Internal User Management</h1>
+          <span className="page-header-subtitle">Manage internal employees, departments, and platform access roles</span>
+        </div>
+        <Space size={12}>
+          <Button icon={<Download size={16} />}>Export HR Report</Button>
+          <Button
+            type="primary"
+            icon={<UserPlus size={16} />}
+            onClick={() => setIsModalOpen(true)}
+            style={{ height: 40, borderRadius: 12, fontWeight: 700 }}
+          >
+            Add New Employee
+          </Button>
+        </Space>
+      </div>
+
+      <Row gutter={16}>
+        <Col span={6}>
+          <Card variant="borderless" className="pro-card">
+            <Statistic title="Total Employees" value={staffData.length} prefix={<Briefcase size={18} />} valueStyle={{ fontWeight: 800 }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card bordered={false} className="pro-card">
+            <Statistic title="Operations Team" value={opsCount} prefix={<Building2 size={18} />} valueStyle={{ color: '#f59e0b', fontWeight: 800 }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card bordered={false} className="pro-card">
+            <Statistic title="Field RMs" value={rmCount} prefix={<UserCog size={18} />} valueStyle={{ color: '#10b981', fontWeight: 800 }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card bordered={false} className="pro-card">
+            <Statistic title="Registered Since Launch" value={staffData.length} prefix={<Calendar size={18} />} valueStyle={{ color: '#3b82f6', fontWeight: 800 }} />
+          </Card>
+        </Col>
+      </Row>
+
+      <div className="pro-card" style={{ padding: 0 }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Input
+            placeholder="Search by name, employee ID or department..."
+            prefix={<Search size={18} style={{ color: 'var(--text-muted)' }} />}
+            style={{ maxWidth: 400, borderRadius: 10, height: 40 }}
+          />
+          <Space>
+            <Select defaultValue="all" style={{ width: 160 }}>
+              <Option value="all">All Departments</Option>
+              <Option value="credit">Credit Ops</Option>
+              <Option value="sales">Sales & Growth</Option>
+              <Option value="executive">Executive</Option>
+            </Select>
+            <Divider type="vertical" />
+            <Space.Compact>
+              <Button
+                icon={<LayoutGrid size={16} />}
+                type={viewMode === 'grid' ? 'primary' : 'default'}
+                onClick={() => setViewMode('grid')}
+              />
+              <Button
+                icon={<ListIcon size={16} />}
+                type={viewMode === 'table' ? 'primary' : 'default'}
+                onClick={() => setViewMode('table')}
+              />
+            </Space.Compact>
+          </Space>
+        </div>
+
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+            <Spin size="large" />
+          </div>
+        ) : (
+          <div className="ag-theme-alpine h-[500px] w-full">
+            <AgGridReact
+              rowData={staffData}
+              columnDefs={columnDefs}
+              rowHeight={64}
+              headerHeight={48}
+              pagination={true}
+              overlayNoRowsTemplate="<span style='color:#94a3b8;font-size:14px'>No employees found. Add your first employee using the button above.</span>"
+            />
+          </div>
+        )}
+      </div>
+
+      <Modal
+        title={<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><UserPlus size={20} /> {editingStaff ? 'Edit Employee Profile' : 'Add Internal Employee'}</div>}
+        open={isModalOpen}
+        onCancel={() => { setIsModalOpen(false); setEditingStaff(null); form.resetFields(); }}
+        footer={null}
+        width={650}
+        centered
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" onFinish={handleSaveStaff} style={{ marginTop: 20 }}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="name" label="Full Name" rules={[{ required: true, message: 'Full name is required' }]}>
+                <Input placeholder="Enter employee full name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="email" label="Official Email" rules={[{ required: !editingStaff, type: 'email', message: 'Valid email is required' }]}>
+                <Input placeholder="name@platform.com" disabled={!!editingStaff} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="department" label="Department" rules={[{ required: true }]}>
+                <Select placeholder="Select Department">
+                  <Option value="Executive">Executive / Admin</Option>
+                  <Option value="Sales & Growth">Sales & Growth</Option>
+                  <Option value="Credit Ops">Credit Operations</Option>
+                  <Option value="Technology">Technology</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="role" label="Access Role" rules={[{ required: true }]}>
+                <Select placeholder="Select Role">
+                  <Option value="ADMIN">System Admin</Option>
+                  <Option value="RM">Relationship Manager</Option>
+                  <Option value="OPERATIONS">Operations User</Option>
+                  <Option value="TEAM_LEADER">Team Leader</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="joinDate" label="Joining Date">
+                <DatePicker style={{ width: '100%' }} disabled={!!editingStaff} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              {!editingStaff && (
+                <Form.Item name="tempPassword" label="Temporary Password" rules={[{ required: true, min: 8, message: 'At least 8 characters required' }]}>
+                  <Input.Password placeholder="Set initial password (min 8 chars)" />
+                </Form.Item>
+              )}
+            </Col>
+          </Row>
+
+          <div style={{
+            background: '#fff7ed', border: '1px solid #ffedd5',
+            borderRadius: 12, padding: '12px 16px', marginBottom: 24,
+            display: 'flex', gap: 12, alignItems: 'flex-start'
+          }}>
+            <Shield size={20} style={{ color: '#f59e0b', flexShrink: 0 }} />
+            <div style={{ fontSize: 12, color: '#9a3412', lineHeight: 1.5 }}>
+              {editingStaff ? 'Updating this profile will modify their permissions and details immediately in the system.' : 'This will create a login account and an internal employee profile. The employee will be able to log in immediately with their role-based access.'}
+            </div>
+          </div>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => { setIsModalOpen(false); setEditingStaff(null); form.resetFields(); }}>Discard</Button>
+              <Button type="primary" htmlType="submit" size="large" style={{ borderRadius: 8, padding: '0 32px' }}>
+                {editingStaff ? 'Save Changes' : 'Create Employee Record'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default UserManagement;

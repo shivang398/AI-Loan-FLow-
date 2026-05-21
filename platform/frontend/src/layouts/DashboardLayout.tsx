@@ -1,0 +1,257 @@
+import React, { useState } from 'react';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography } from 'antd';
+import {
+  LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
+  LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
+  Wallet, Plus, Files, FileText, ChevronDown, Search, UsersRound
+} from 'lucide-react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../store/slices/authSlice';
+import { RootState } from '../store';
+
+const { Header, Sider, Content } = Layout;
+const { Text, Title } = Typography;
+
+const DashboardLayout: React.FC = () => {
+  const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const adminItems = [
+    { key: '/dashboard',          icon: <LayoutDashboard size={18} />, label: 'Overview' },
+    { key: '/admin/users',        icon: <Users size={18} />,           label: 'User Management' },
+    { key: '/admin/connectors',   icon: <Plus size={18} />,            label: 'Connector Hub' },
+    { key: '/admin/payouts',      icon: <Wallet size={18} />,          label: 'Payout Tracker' },
+    { key: '/admin/reports',      icon: <FileText size={18} />,        label: 'MIS Reports' },
+    { key: '/admin/documents',    icon: <Files size={18} />,           label: 'Document Library' },
+    { key: '/admin/analytics',    icon: <BarChart3 size={18} />,       label: 'Admin Analytics' },
+    { key: '/admin/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+  ];
+
+  const rmItems = [
+    { key: '/rm/dashboard',     icon: <LayoutDashboard size={18} />, label: 'Regional Hub' },
+    { key: '/rm/connectors',    icon: <Users size={18} />,           label: 'Connector Tracker' },
+    { key: '/rm/workflow',      icon: <ClipboardList size={18} />,   label: 'Workflow Monitor' },
+    { key: '/rm/team-meeting',  icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+  ];
+
+  const opsItems = [
+    { key: '/ops/dashboard',     icon: <ClipboardList size={18} />, label: 'Ops Queue' },
+    { key: '/ops/team-meeting',  icon: <UsersRound size={18} />,    label: 'Team Meeting' },
+  ];
+
+  const connectorItems = [
+    { key: '/connector/dashboard',    icon: <LayoutDashboard size={18} />, label: 'Overview' },
+    { key: '/connector/onboard',      icon: <Plus size={18} />,            label: 'Add New Lead' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={18} />,     label: 'CIBIL Check' },
+    { key: '/connector/bsa',          icon: <Files size={18} />,           label: 'Statement Analyzer' },
+    { key: '/connector/foir',         icon: <BarChart3 size={18} />,       label: 'FOIR Calculator' },
+    { key: '/connector/earnings',     icon: <Wallet size={18} />,          label: 'My Earnings' },
+    { key: '/connector/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+  ];
+
+  const tlItems = [
+    { key: '/tl/dashboard',    icon: <LayoutDashboard size={18} />, label: 'Team Leader Hub' },
+    { key: '/tl/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+  ];
+
+  const menuItems = [
+    ...(user?.role === 'ADMIN' ? adminItems : []),
+    ...(user?.role === 'RM' ? rmItems : []),
+    ...(user?.role === 'TEAM_LEADER' ? tlItems : []),
+    ...(user?.role === 'OPERATIONS' ? opsItems : []),
+    ...(user?.role === 'CONNECTOR' ? connectorItems : []),
+  ];
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
+
+  const userMenuItems = {
+    items: [
+      { key: 'profile', label: 'My Profile', icon: <Users size={14} /> },
+      { key: 'settings', label: 'Preferences', icon: <Settings size={14} /> },
+      { type: 'divider' as const },
+      { key: 'logout', label: 'Sign Out', icon: <LogOut size={14} />, danger: true, onClick: handleLogout },
+    ],
+  };
+
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'AD';
+  const displayRole = user?.role || 'ADMIN';
+
+  return (
+    <Layout style={{ minHeight: '100vh', background: 'var(--surface-1)' }}>
+      {/* ── Sidebar ── */}
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        className="pro-sider"
+        width={280}
+        style={{ position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}
+      >
+        {/* Logo Container */}
+        <div style={{
+          height: 80,
+          display: 'flex',
+          alignItems: 'center',
+          padding: collapsed ? '0 22px' : '0 28px',
+          gap: 14,
+        }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 12,
+            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, boxShadow: '0 8px 16px rgba(79,70,229,0.3)',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <ShieldCheck size={22} color="white" strokeWidth={2.5} />
+          </div>
+          {!collapsed && (
+            <div className="animate-fade-in">
+              <div style={{ color: 'white', fontWeight: 900, fontSize: 18, letterSpacing: '-0.04em', lineHeight: 1.1 }}>
+                Auditor <span style={{ color: '#818cf8' }}>AI</span>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>
+                Financial Core
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ height: 20 }} />
+
+        {/* Menu Label */}
+        {!collapsed && (
+          <div style={{ padding: '0 28px 12px', color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Main Navigation
+          </div>
+        )}
+
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+          onClick={({ key }) => navigate(key)}
+          className="pro-sider-menu"
+          style={{ background: 'transparent', border: 'none', padding: '0 14px' }}
+        />
+
+        {/* Sidebar Footer */}
+        {!collapsed && (
+          <div style={{ 
+            position: 'absolute', bottom: 20, left: 28, right: 28,
+            padding: '16px', borderRadius: 20, background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.05)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600 }}>System Secure</Text>
+            </div>
+          </div>
+        )}
+
+      </Sider>
+
+      {/* ── Main Area ── */}
+      <Layout style={{ marginLeft: collapsed ? 80 : 280, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+        {/* Header */}
+        <Header
+          className="pro-header glass"
+          style={{
+            padding: '0 40px', height: 72, display: 'flex',
+            alignItems: 'center', justifyContent: 'space-between',
+            position: 'sticky', top: 0, zIndex: 50,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Button
+              type="text"
+              icon={collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+              onClick={() => setCollapsed(!collapsed)}
+              className="hover-scale"
+              style={{ color: 'var(--text-secondary)', width: 40, height: 40, borderRadius: 12 }}
+            />
+            {!collapsed && (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <Text style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Platform
+                </Text>
+                <Title level={5} style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  Control Center
+                </Title>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Search Trigger */}
+            <Button 
+              type="text" 
+              icon={<Search size={19} />} 
+              style={{ color: 'var(--text-muted)', width: 40, height: 40, borderRadius: 12 }}
+            />
+
+            <Tooltip title="Notifications">
+              <Badge count={5} size="small" offset={[-6, 6]} color="#4f46e5">
+                <Button
+                  type="text"
+                  icon={<Bell size={19} />}
+                  style={{ color: 'var(--text-muted)', width: 40, height: 40, borderRadius: 12 }}
+                />
+              </Badge>
+            </Tooltip>
+
+            <div style={{ width: 1, height: 28, background: 'var(--surface-3)', margin: '0 8px' }} />
+
+            <Dropdown menu={userMenuItems} placement="bottomRight" arrow={{ pointAtCenter: true }}>
+              <button style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                background: 'var(--surface-2)', border: '1px solid var(--surface-3)', 
+                cursor: 'pointer', padding: '6px 14px 6px 8px', borderRadius: 16,
+                transition: 'all 0.2s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--brand-400)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--surface-3)')}
+              >
+                <Avatar
+                  size={36}
+                  style={{ 
+                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)', 
+                    fontWeight: 800, fontSize: 12,
+                    boxShadow: '0 4px 10px rgba(79,70,229,0.2)'
+                  }}
+                >
+                  {initials}
+                </Avatar>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                    {user?.email?.split('@')[0] || 'Admin'}
+                  </div>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {displayRole}
+                  </div>
+                </div>
+                <ChevronDown size={14} color="var(--text-muted)" />
+              </button>
+            </Dropdown>
+          </div>
+        </Header>
+
+        {/* Content Wrapper */}
+        <Content style={{ padding: '40px', minHeight: 'calc(100vh - 72px)' }}>
+          <div className="animate-fade-in-up">
+            <Outlet />
+          </div>
+        </Content>
+      </Layout>
+    </Layout>
+  );
+};
+
+export default DashboardLayout;

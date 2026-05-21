@@ -1,0 +1,266 @@
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 50M;
+
+    # Backend service upstreams (use env vars, fallback to Railway internal hostnames)
+    upstream auth_backend {
+        server ${AUTH_SERVICE_URL:-auth-service.railway.internal:8080};
+    }
+    upstream connector_backend {
+        server ${CONNECTOR_SERVICE_URL:-connector-service.railway.internal:8080};
+    }
+    upstream customer_backend {
+        server ${CUSTOMER_SERVICE_URL:-customer-service.railway.internal:8080};
+    }
+    upstream loan_backend {
+        server ${LOAN_SERVICE_URL:-loan-service.railway.internal:8080};
+    }
+    upstream eligibility_backend {
+        server ${ELIGIBILITY_SERVICE_URL:-eligibility-service.railway.internal:8080};
+    }
+    upstream policy_backend {
+        server ${POLICY_SERVICE_URL:-policy-service.railway.internal:8080};
+    }
+    upstream commission_backend {
+        server ${COMMISSION_SERVICE_URL:-commission-service.railway.internal:8080};
+    }
+    upstream messaging_backend {
+        server ${MESSAGING_SERVICE_URL:-messaging-service.railway.internal:8080};
+    }
+    upstream rm_backend {
+        server ${RM_SERVICE_URL:-rm-tracking-service.railway.internal:8080};
+    }
+    upstream queries_backend {
+        server ${QUERY_SERVICE_URL:-query-service.railway.internal:8080};
+    }
+    upstream documents_backend {
+        server ${DOCUMENT_SERVICE_URL:-document-service.railway.internal:8080};
+    }
+    upstream reports_backend {
+        server ${REPORTING_SERVICE_URL:-reporting-service.railway.internal:8080};
+    }
+    upstream analytics_backend {
+        server ${ANALYTICS_SERVICE_URL:-analytics-service.railway.internal:8080};
+    }
+    upstream routing_backend {
+        server ${ROUTING_SERVICE_URL:-sm-routing-service.railway.internal:8080};
+    }
+
+    # Main server block
+    server {
+        listen ${PORT:-8080};
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Gzip compression
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1000;
+        gzip_proxied any;
+        gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+
+        # API proxy routes (matching vite.config.ts dev server routes)
+        location /api/auth/ {
+            proxy_pass http://auth_backend/auth/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+        }
+
+        location /api/connectors/ {
+            proxy_pass http://connector_backend/connectors/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/foir/ {
+            proxy_pass http://connector_backend/foir/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/loans/ {
+            proxy_pass http://loan_backend/loans/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/customers/ {
+            proxy_pass http://customer_backend/customers/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/eligibility/ {
+            proxy_pass http://eligibility_backend/eligibility/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/analyse {
+            proxy_pass http://eligibility_backend/api/analyse;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/commissions/ {
+            proxy_pass http://commission_backend/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/messaging/ {
+            proxy_pass http://messaging_backend/messaging/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/policies/ {
+            proxy_pass http://policy_backend/policies/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/rm/ {
+            proxy_pass http://rm_backend/rm/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/queries/ {
+            proxy_pass http://queries_backend/queries/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/documents/ {
+            proxy_pass http://documents_backend/documents/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/reports/ {
+            proxy_pass http://reports_backend/reports/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/analytics/ {
+            proxy_pass http://analytics_backend/analytics/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/routing/ {
+            proxy_pass http://routing_backend/routing/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # WebSocket proxy for messaging
+        location /ws-messaging {
+            proxy_pass http://messaging_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Catch-all for unmapped /api routes (default to auth service)
+        location /api/ {
+            proxy_pass http://auth_backend/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # SPA fallback: return index.html for all non-file routes
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Static assets caching
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+}

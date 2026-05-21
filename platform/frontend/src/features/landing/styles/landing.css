@@ -1,0 +1,141 @@
+/* ─── Infinite carousel scroll ─── */
+@keyframes scrollLeft {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes scrollRight {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+.lender-row-left  { animation: scrollLeft  32s linear infinite; display: flex; width: max-content; }
+.lender-row-right { animation: scrollRight 28s linear infinite; display: flex; width: max-content; }
+.lender-row-left:hover,
+.lender-row-right:hover { animation-play-state: paused; }
+
+/* ─── WhatsApp pulse ring ─── */
+@keyframes waRing {
+  0%   { box-shadow: 0 0 0 0 rgba(37,211,102,.7); }
+  70%  { box-shadow: 0 0 0 16px rgba(37,211,102,0); }
+  100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
+}
+.whatsapp-pulse { animation: waRing 2s ease-in-out infinite; }
+
+/* ─── Typography ─── */
+html { scroll-behavior: smooth; }
+.font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+/* ─── Hero grid ─── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+@media (max-width: 1023px) {
+  .hero-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Product / Why / How grids ─── */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+@media (max-width: 1023px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 639px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+@media (max-width: 1023px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 639px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 1023px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ─── Stat grid ─── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.5rem;
+}
+@media (max-width: 1023px) {
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 639px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── Footer grid ─── */
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.5rem;
+}
+@media (max-width: 1023px) {
+  .footer-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 639px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Mobile sticky bar ─── */
+.mobile-sticky { display: none; }
+@media (max-width: 767px) {
+  .mobile-sticky { display: flex; }
+}
+
+/* ─── Navbar responsive ─── */
+.nav-desktop { display: flex; align-items: center; gap: 2rem; }
+.nav-mobile-btn { display: none; }
+@media (max-width: 767px) {
+  .nav-desktop { display: none; }
+  .nav-mobile-btn { display: flex; }
+}
+
+/* ─── Testimonial desktop grid ─── */
+.testi-desktop { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; }
+.testi-mobile  { display: none; }
+@media (max-width: 767px) {
+  .testi-desktop { display: none; }
+  .testi-mobile  { display: block; }
+}
+
+/* ─── How-it-works step grid ─── */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 1023px) {
+  .steps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 639px) {
+  .steps-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Lender carousel mask ─── */
+.lender-track {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+          mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  padding: 8px 0;
+}

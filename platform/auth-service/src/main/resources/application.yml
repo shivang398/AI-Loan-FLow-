@@ -1,0 +1,40 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/platform_auth
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  jwtExpirationInMs: ${JWT_EXPIRY_MS:900000}
+  rabbitmq:
+    exchange: platform.exchange
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

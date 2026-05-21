@@ -1,0 +1,28 @@
+# Skip build artifacts (re-built inside Docker)
+**/target/
+**/.m2-local/
+
+# Skip logs
+*.log
+**/logs/
+
+# Skip local dev scripts/state
+.service-pids
+stop-all.sh
+start-all.sh
+tests.sh
+
+# Skip node/frontend (built by its own Dockerfile)
+frontend/node_modules/
+frontend/dist/
+
+# Skip IDE and OS files
+**/.idea/
+**/*.iml
+**/.DS_Store
+**/Thumbs.db
+
+# Skip test/playwright artifacts
+**/playwright-report/
+**/test-results/
+**/coverage/
