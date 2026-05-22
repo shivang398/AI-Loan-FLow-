@@ -12,14 +12,13 @@ interface User {
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
-  refreshToken: string | null;
+  token: string | null;   // access token — kept in memory only, never persisted
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
 }
 
-const storedToken = localStorage.getItem('token');
+// Restore only non-sensitive user profile from localStorage (no tokens)
 const storedUser = (() => {
   try {
     const raw = localStorage.getItem('user');
@@ -29,17 +28,14 @@ const storedUser = (() => {
   }
 })();
 
-// Clear stale auth state if token exists but user is missing (corrupted state from old sessions)
-if (storedToken && !storedUser) {
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-}
+// Remove any legacy tokens left in localStorage from previous sessions
+localStorage.removeItem('token');
+localStorage.removeItem('refreshToken');
 
 const initialState: AuthState = {
   user: storedUser,
-  token: storedUser ? storedToken : null,
-  refreshToken: storedUser ? localStorage.getItem('refreshToken') : null,
-  isAuthenticated: !!storedToken && !!storedUser,
+  token: null,         // always starts null; obtained via /auth/refresh on page load
+  isAuthenticated: false,
   loading: false,
   error: null,
 };
@@ -50,24 +46,23 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ user: User; token: string; refreshToken: string }>
+      action: PayloadAction<{ user: User; token: string }>
     ) => {
-      const { user, token, refreshToken } = action.payload;
+      const { user, token } = action.payload;
       state.user = user;
-      state.token = token;
-      state.refreshToken = refreshToken;
+      state.token = token;           // memory only
       state.isAuthenticated = true;
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Persist only the non-sensitive user profile
       localStorage.setItem('user', JSON.stringify(user));
+    },
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      state.isAuthenticated = true;
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -79,5 +74,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, logout, setLoading, setError } = authSlice.actions;
+export const { setCredentials, setToken, logout, setLoading, setError } = authSlice.actions;
 export default authSlice.reducer;

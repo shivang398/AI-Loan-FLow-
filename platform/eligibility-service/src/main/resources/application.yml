@@ -10,7 +10,7 @@ spring:
     password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
   flyway:
     enabled: true
@@ -35,7 +35,11 @@ management:
 
 tenacio:
   api:
-    url: https://api.tenacio.io/api/v1/services/cibil-soft-pull
-    client-id: realf_96900
-    key: tnc_prod_3b9b4ff8ed9
-    workflow-id: 5d2e9c46-68e4-4d6e-a52e-b1287a63e80b
+    url: ${TENACIO_API_URL:https://api.tenacio.io/api/v1/services/cibil-soft-pull}
+    client-id: ${TENACIO_CLIENT_ID:}
+    key: ${TENACIO_API_KEY:}
+    workflow-id: ${TENACIO_WORKFLOW_ID:}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}

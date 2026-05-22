@@ -2,8 +2,10 @@ package com.financial.commission.controller;
 
 import com.financial.commission.entity.PayoutSlab;
 import com.financial.commission.service.PayoutSlabService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,7 +29,8 @@ public class PayoutSlabController {
     }
 
     @PostMapping
-    public ResponseEntity<PayoutSlab> createOrUpdateSlab(@RequestBody PayoutSlab slab) {
+    @PreAuthorize("hasAnyAuthority('ADMIN','FINANCE')")
+    public ResponseEntity<PayoutSlab> createOrUpdateSlab(@Valid @RequestBody PayoutSlab slab) {
         if (slab.getStatus() == null) {
             slab.setStatus("ACTIVE");
         }

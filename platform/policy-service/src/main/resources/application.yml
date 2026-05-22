@@ -10,7 +10,7 @@ spring:
     password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
   flyway:
     enabled: true
@@ -26,3 +26,7 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}

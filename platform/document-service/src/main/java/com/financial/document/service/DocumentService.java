@@ -4,6 +4,7 @@ import com.financial.document.entity.Document;
 import com.financial.document.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +31,13 @@ public class DocumentService {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
 
+    // Magic bytes for each allowed type
+    private static final byte[] PDF_MAGIC   = new byte[]{0x25, 0x50, 0x44, 0x46};       // %PDF
+    private static final byte[] JPEG_MAGIC  = new byte[]{(byte)0xFF, (byte)0xD8, (byte)0xFF};
+    private static final byte[] PNG_MAGIC   = new byte[]{(byte)0x89, 0x50, 0x4E, 0x47};  // .PNG
+    private static final byte[] DOC_MAGIC   = new byte[]{(byte)0xD0, (byte)0xCF, 0x11, (byte)0xE0}; // OLE2
+    private static final byte[] DOCX_MAGIC  = new byte[]{0x50, 0x4B, 0x03, 0x04};        // ZIP/PK (docx)
+
     private final DocumentRepository documentRepository;
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -38,13 +46,22 @@ public class DocumentService {
     private String bucket;
 
     @Transactional
-    public Document uploadDocument(UUID loanId, String documentType, String folderPath, MultipartFile file) throws IOException {
+    public Document uploadDocument(UUID loanId, String documentType, String folderPath,
+                                   MultipartFile file, UUID uploadedBy) throws IOException {
         String mimeType = file.getContentType();
         if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
-            throw new RuntimeException("Invalid MIME type: " + mimeType);
+            throw new RuntimeException("Invalid file type");
         }
 
-        String s3Key = "documents/" + loanId + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+        byte[] header = file.getBytes();
+        if (!hasValidMagicBytes(header, mimeType)) {
+            throw new RuntimeException("File content does not match declared type");
+        }
+
+        // Sanitize folder path to prevent path traversal
+        String sanitizedPath = sanitizeFolderPath(folderPath);
+
+        String s3Key = "documents/" + loanId + "/" + UUID.randomUUID();
 
         s3Client.putObject(
                 PutObjectRequest.builder()
@@ -52,16 +69,16 @@ public class DocumentService {
                         .key(s3Key)
                         .contentType(mimeType)
                         .build(),
-                RequestBody.fromBytes(file.getBytes())
+                RequestBody.fromBytes(header)
         );
 
         Document document = Document.builder()
                 .loanId(loanId)
-                .uploadedBy(UUID.randomUUID()) // from JWT in production
+                .uploadedBy(uploadedBy)
                 .documentType(documentType)
                 .s3Key(s3Key)
-                .fileName(file.getOriginalFilename())
-                .folderPath(folderPath != null ? folderPath : "/")
+                .fileName(sanitizeFileName(file.getOriginalFilename()))
+                .folderPath(sanitizedPath)
                 .mimeType(mimeType)
                 .fileSizeBytes(file.getSize())
                 .status("UPLOADED")
@@ -70,13 +87,20 @@ public class DocumentService {
         return documentRepository.save(document);
     }
 
-    public List<Document> getDocumentsByFolderPath(String folderPath) {
-        return documentRepository.findByFolderPath(folderPath);
+    @Transactional(readOnly = true)
+    public List<Document> getDocumentsByFolderPath(String folderPath, UUID requesterId) {
+        String sanitized = sanitizeFolderPath(folderPath);
+        return documentRepository.findByFolderPathAndUploadedBy(sanitized, requesterId);
     }
 
-    public String generatePresignedUrl(UUID documentId) {
+    @Transactional(readOnly = true)
+    public String generatePresignedUrl(UUID documentId, UUID requesterId) {
         Document doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
+
+        if (!doc.getUploadedBy().equals(requesterId)) {
+            throw new AccessDeniedException("Access denied to document");
+        }
 
         PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(
                 GetObjectPresignRequest.builder()
@@ -89,5 +113,38 @@ public class DocumentService {
         );
 
         return presignedRequest.url().toString();
+    }
+
+    private boolean hasValidMagicBytes(byte[] data, String mimeType) {
+        return switch (mimeType) {
+            case "application/pdf"  -> startsWith(data, PDF_MAGIC);
+            case "image/jpeg"       -> startsWith(data, JPEG_MAGIC);
+            case "image/png"        -> startsWith(data, PNG_MAGIC);
+            case "application/msword" -> startsWith(data, DOC_MAGIC);
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    -> startsWith(data, DOCX_MAGIC);
+            default                 -> false;
+        };
+    }
+
+    private boolean startsWith(byte[] data, byte[] magic) {
+        if (data.length < magic.length) return false;
+        for (int i = 0; i < magic.length; i++) {
+            if (data[i] != magic[i]) return false;
+        }
+        return true;
+    }
+
+    private String sanitizeFolderPath(String path) {
+        if (path == null) return "/";
+        // Strip traversal sequences and normalize
+        String clean = path.replaceAll("\\.\\.", "").replaceAll("//+", "/");
+        if (!clean.startsWith("/")) clean = "/" + clean;
+        return clean;
+    }
+
+    private String sanitizeFileName(String name) {
+        if (name == null) return "upload";
+        return name.replaceAll("[^a-zA-Z0-9._\\-]", "_");
     }
 }

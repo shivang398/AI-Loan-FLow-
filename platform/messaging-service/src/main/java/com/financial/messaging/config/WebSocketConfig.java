@@ -3,7 +3,10 @@ package com.financial.messaging.config;
 import com.financial.common.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -26,6 +29,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtTokenProvider tokenProvider;
 
+    @Value("${app.websocket.allowed-origins:http://localhost:3000,http://localhost:80}")
+    private String allowedOriginsRaw;
+
+    // Rate limiting: max 60 SEND frames per user per minute
+    private static final int MSG_LIMIT = 60;
+    private static final long MSG_WINDOW_MS = 60_000L;
+    private record RateWindow(java.util.concurrent.atomic.AtomicInteger count, long resetAt) {}
+    private final ConcurrentHashMap<String, RateWindow> msgRateMap = new ConcurrentHashMap<>();
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue");
@@ -35,8 +47,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] origins = allowedOriginsRaw.split(",");
         registry.addEndpoint("/ws-messaging")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(origins)
                 .withSockJS();
     }
 
@@ -59,6 +72,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         }
                     }
                 }
+
+                // Rate limit SEND frames
+                if (accessor != null && StompCommand.SEND.equals(accessor.getCommand())) {
+                    java.security.Principal user = accessor.getUser();
+                    String key = user != null ? user.getName() : "anonymous";
+                    long now = System.currentTimeMillis();
+                    RateWindow w = msgRateMap.compute(key, (k, existing) -> {
+                        if (existing == null || now >= existing.resetAt()) {
+                            return new RateWindow(new java.util.concurrent.atomic.AtomicInteger(0), now + MSG_WINDOW_MS);
+                        }
+                        return existing;
+                    });
+                    if (w.count().incrementAndGet() > MSG_LIMIT) {
+                        throw new org.springframework.messaging.MessageDeliveryException(message, "Rate limit exceeded");
+                    }
+                }
+
                 return message;
             }
         });

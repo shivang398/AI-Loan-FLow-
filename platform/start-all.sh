@@ -6,6 +6,9 @@ PID_FILE="$PLATFORM_DIR/.service-pids"
 LOG_DIR="$PLATFORM_DIR/logs"
 export PATH="/home/shivang/Desktop/Auditor/maven/apache-maven-3.9.6/bin:$PATH"
 
+# Use env-supplied JWT_SECRET or a deterministic local-dev placeholder (NOT for production)
+JWT_SECRET="${JWT_SECRET:-LocalDevSecretMustBeAtLeast32CharsLong!}"
+
 
 SERVICES=(
   "auth-service:8081"
@@ -62,7 +65,18 @@ for entry in "${SERVICES[@]}"; do
     continue
   fi
   LOG="$LOG_DIR/$SVC.log"
-  java -XX:TieredStopAtLevel=1 -Xmx256m -Dspring.datasource.hikari.maximum-pool-size=3 -Dspring.rabbitmq.host=localhost -Dspring.rabbitmq.port=5673 -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest -jar "$JAR" > "$LOG" 2>&1 &
+  java -XX:TieredStopAtLevel=1 -Xmx256m \
+    -Dserver.port="$PORT" -DPORT="$PORT" \
+    -Dspring.datasource.hikari.maximum-pool-size=3 \
+    -DDB_HOST=localhost -DDB_PORT=5434 \
+    -DDB_USER=postgres -DDB_PASSWORD=password \
+    -Dspring.rabbitmq.host=localhost -Dspring.rabbitmq.port=5673 \
+    -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest \
+    -DRABBITMQ_HOST=localhost -DRABBITMQ_PORT=5673 \
+    -DREDIS_HOST=localhost -DREDIS_PORT=6381 \
+    -Dspring.data.redis.host=localhost -Dspring.data.redis.port=6381 \
+    -DJWT_SECRET="$JWT_SECRET" \
+    -jar "$JAR" > "$LOG" 2>&1 &
   PID=$!
   echo "$SVC=$PID" >> "$PID_FILE"
   echo "    Started $SVC (PID $PID) → http://localhost:$PORT  [log: logs/$SVC.log]"

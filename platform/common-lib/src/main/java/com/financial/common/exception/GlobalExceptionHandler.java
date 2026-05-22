@@ -19,6 +19,17 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    /** Strips internal detail (stack paths, SQL, class names) before sending to client. */
+    private String sanitize(String msg) {
+        if (msg == null || msg.isBlank()) return "An error occurred";
+        // Block messages that leak internals
+        if (msg.contains("jdbc:") || msg.contains("HikariPool") || msg.contains("org.hibernate")
+                || msg.contains("java.") || msg.contains("com.financial")) {
+            return "An error occurred";
+        }
+        return msg.length() > 200 ? msg.substring(0, 200) : msg;
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
         String traceId = UUID.randomUUID().toString();
@@ -38,16 +49,18 @@ public class GlobalExceptionHandler {
                 );
             }
             case RuntimeException re -> {
+                // Log full message server-side; return a safe, generic message to client
                 log.warn("Business error [TraceID: {}]: {}", traceId, re.getMessage());
+                String safeMsg = sanitize(re.getMessage());
                 yield new ResponseEntity<>(
-                        ApiResponse.error(re.getMessage(), Collections.emptyList(), traceId),
+                        ApiResponse.error(safeMsg, Collections.emptyList(), traceId),
                         HttpStatus.BAD_REQUEST
                 );
             }
             case Exception e -> {
-                log.error("Unhandled internal error [TraceID: {}]: ", traceId, e);
+                log.error("Unhandled internal error [TraceID: {}]", traceId, e);
                 yield new ResponseEntity<>(
-                        ApiResponse.error("Unexpected internal error", List.of("Contact support with Trace ID"), traceId),
+                        ApiResponse.error("An internal error occurred", List.of("TraceID: " + traceId), traceId),
                         HttpStatus.INTERNAL_SERVER_ERROR
                 );
             }

@@ -47,20 +47,15 @@ public class WhatsAppWebhookController {
 
     @PostMapping
     public ResponseEntity<Void> handleWebhook(
-            @RequestBody String payload, 
-            @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature) {
-        
-        log.info("Received WhatsApp Webhook payload: {}", payload);
-        
-        if (signature != null && !validateSignature(payload, signature)) {
-            log.warn("Invalid WhatsApp Webhook signature!");
+            @RequestBody String payload,
+            @RequestHeader(value = "X-Hub-Signature-256", required = true) String signature) {
+
+        if (!validateSignature(payload, signature)) {
+            log.warn("Rejected WhatsApp webhook — invalid HMAC signature");
             return ResponseEntity.status(401).build();
         }
 
-        // Publish to RabbitMQ for asynchronous processing
         rabbitTemplate.convertAndSend("whatsapp.webhook.queue", payload);
-        log.info("Published WhatsApp webhook event to RabbitMQ");
-
         return ResponseEntity.ok().build();
     }
 

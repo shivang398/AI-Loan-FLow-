@@ -4,6 +4,7 @@ import com.financial.commission.entity.CommissionTransaction;
 import com.financial.commission.service.CommissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,10 +29,14 @@ public class CommissionTransactionController {
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ADMIN','FINANCE')")
     public ResponseEntity<CommissionTransaction> updateTransactionStatus(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body) {
         String status = body.get("status");
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("status is required");
+        }
         return ResponseEntity.ok(commissionService.updateTransactionStatus(id, status));
     }
 }

@@ -41,15 +41,15 @@ public class LoanService {
     }
 
     @Transactional
-    public void updateStatus(UUID loanId, LoanRequests.UpdateStatusRequest request) {
+    public void updateStatus(UUID loanId, LoanRequests.UpdateStatusRequest request, String updatedBy) {
         LoanApplication loan = loanApplicationRepository.findById(loanId)
                 .orElseThrow(() -> new RuntimeException("Loan not found"));
 
-        // Basic transition validation would go here
         loan.setStatus(request.getNewStatus());
         loanApplicationRepository.save(loan);
 
-        saveHistory(loan, request.getNewStatus(), request.getRemarks());
+        String remarks = (request.getRemarks() != null ? request.getRemarks() : "") + " [by:" + updatedBy + "]";
+        saveHistory(loan, request.getNewStatus(), remarks);
         eventPublisher.publishStatusUpdatedEvent(loan.getId(), request.getNewStatus());
     }
 

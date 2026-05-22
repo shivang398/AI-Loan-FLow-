@@ -17,16 +17,23 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    // No default — application refuses to start if JWT_SECRET is not set
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
 
     @Value("${app.jwt.expiration:900000}")
     private long jwtExpirationInMs;
 
+    // Maximum age past expiry that refresh is allowed (5 minutes)
+    private static final long REFRESH_GRACE_PERIOD_MS = 5 * 60 * 1000L;
+
     private Key key;
 
     @PostConstruct
     public void init() {
+        if (jwtSecret == null || jwtSecret.isBlank() || jwtSecret.length() < 32) {
+            throw new IllegalStateException("app.jwt.secret must be set and at least 32 characters");
+        }
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -93,6 +100,10 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    /**
+     * Extracts username and roles from an expired token only within the grace period.
+     * Throws RuntimeException if the token is expired beyond the grace window or tampered.
+     */
     public String[] getUsernameAndRolesIgnoreExpiry(String token) {
         try {
             Claims claims = Jwts.parser()
@@ -103,6 +114,10 @@ public class JwtTokenProvider {
             return new String[]{claims.getSubject(), claims.get("roles", String.class)};
         } catch (io.jsonwebtoken.ExpiredJwtException eje) {
             Claims claims = eje.getClaims();
+            Date expiration = claims.getExpiration();
+            if (expiration != null && System.currentTimeMillis() - expiration.getTime() > REFRESH_GRACE_PERIOD_MS) {
+                throw new RuntimeException("Token expired beyond refresh grace period");
+            }
             return new String[]{claims.getSubject(), claims.get("roles", String.class)};
         }
     }

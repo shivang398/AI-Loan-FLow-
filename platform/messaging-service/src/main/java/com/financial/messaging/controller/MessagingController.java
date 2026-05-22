@@ -7,6 +7,9 @@ import com.financial.messaging.entity.Message;
 import com.financial.messaging.repository.ConversationRepository;
 import com.financial.messaging.repository.MessageRepository;
 import com.financial.messaging.service.MessagingService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -35,7 +38,7 @@ public class MessagingController {
     }
 
     @PostMapping("/conversations")
-    public ResponseEntity<ApiResponse<Conversation>> createConversation(@RequestBody CreateConversationRequest request) {
+    public ResponseEntity<ApiResponse<Conversation>> createConversation(@Valid @RequestBody CreateConversationRequest request) {
         Conversation conversation = Conversation.builder()
                 .connectorId(request.getConnectorId())
                 .rmId(request.getRmId())
@@ -51,7 +54,7 @@ public class MessagingController {
     }
 
     @PostMapping("/status-update")
-    public ResponseEntity<ApiResponse<String>> sendStatusUpdate(@RequestBody StatusUpdateRequest request) {
+    public ResponseEntity<ApiResponse<String>> sendStatusUpdate(@Valid @RequestBody StatusUpdateRequest request) {
         messagingService.sendStatusToWhatsApp(request.getLoanId(), request.getStatus(), request.getConnectorPhone());
         return ResponseEntity.ok(ApiResponse.success("Status update sent via WhatsApp", "SENT", UUID.randomUUID().toString()));
     }
@@ -69,7 +72,7 @@ public class MessagingController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<ApiResponse<Message>> sendMessage(@RequestBody SendMessageRequest request) {
+    public ResponseEntity<ApiResponse<Message>> sendMessage(@Valid @RequestBody SendMessageRequest request) {
         UUID senderId = UUID.randomUUID(); 
         Message message = messagingService.sendMessage(
                 request.getConversationId(), 
@@ -83,7 +86,7 @@ public class MessagingController {
 
     @Data
     public static class CreateConversationRequest {
-        private UUID connectorId;
+        @NotNull private UUID connectorId;
         private UUID rmId;
         private UUID loanApplicationId;
         private ConversationType type;
@@ -91,15 +94,15 @@ public class MessagingController {
 
     @Data
     public static class SendMessageRequest {
-        private UUID conversationId;
-        private String body;
-        private String channel; // INTERNAL, WHATSAPP
+        @NotNull private UUID conversationId;
+        @NotNull @Size(min = 1, max = 4000) private String body;
+        @jakarta.validation.constraints.Pattern(regexp = "^(INTERNAL|WHATSAPP)$") private String channel;
     }
 
     @Data
     public static class StatusUpdateRequest {
-        private UUID loanId;
-        private String status;
+        @NotNull private UUID loanId;
+        @NotNull @Size(min = 1, max = 100) private String status;
         private String connectorPhone;
     }
 }

@@ -7,6 +7,8 @@ import com.financial.loan.service.LoanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -25,8 +27,12 @@ public class LoanController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<String>> updateStatus(@PathVariable UUID id, @Valid @RequestBody LoanRequests.UpdateStatusRequest request) {
-        loanService.updateStatus(id, request);
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','TEAM_LEADER')")
+    public ResponseEntity<ApiResponse<String>> updateStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody LoanRequests.UpdateStatusRequest request,
+            Authentication auth) {
+        loanService.updateStatus(id, request, auth.getName());
         return ResponseEntity.ok(ApiResponse.success("Status updated successfully", null, UUID.randomUUID().toString()));
     }
 }

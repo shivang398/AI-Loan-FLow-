@@ -11,5 +11,6 @@ import java.util.UUID;
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
     List<Document> findByLoanId(UUID loanId);
     List<Document> findByFolderPath(String folderPath);
+    List<Document> findByFolderPathAndUploadedBy(String folderPath, UUID uploadedBy);
     List<Document> findByOwnerId(UUID ownerId);
 }

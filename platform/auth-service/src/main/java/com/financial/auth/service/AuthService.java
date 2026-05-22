@@ -26,6 +26,12 @@ import java.util.stream.Collectors;
 @Service
 public class AuthService {
 
+    public static final String ROLE_CONNECTOR   = "CONNECTOR";
+    public static final String ROLE_ADMIN       = "ADMIN";
+    public static final String ROLE_RM          = "RM";
+    public static final String ROLE_OPERATIONS  = "OPERATIONS";
+    public static final String ROLE_TEAM_LEADER = "TEAM_LEADER";
+
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -58,7 +64,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setStatus("ACTIVE");
 
-        String roleName = request.role() != null ? request.role() : "CONNECTOR";
+        String roleName = request.role() != null ? request.role() : ROLE_CONNECTOR;
         Role userRole = roleRepository.findByName(roleName)
                 .orElseGet(() -> {
                     Role newRole = new Role();
@@ -81,6 +87,7 @@ public class AuthService {
         );
     }
 
+    @Transactional(readOnly = true)
     public Map<String, String> authenticateUser(AuthRequests.LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -104,6 +111,7 @@ public class AuthService {
         );
     }
 
+    @Transactional(readOnly = true)
     public Map<String, String> refreshToken(String token) {
         String[] parts;
         try {
