@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +20,13 @@ import java.util.UUID;
 public class LoanController {
 
     private final LoanService loanService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<LoanApplication>>> getLoans(
+            @RequestParam(required = false) UUID connectorId) {
+        List<LoanApplication> loans = loanService.getLoans(connectorId);
+        return ResponseEntity.ok(ApiResponse.success("Loans fetched successfully", loans, UUID.randomUUID().toString()));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<LoanApplication>> createLoan(@Valid @RequestBody LoanRequests.CreateLoanRequest request) {

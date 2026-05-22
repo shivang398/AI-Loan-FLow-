@@ -6,10 +6,13 @@ import com.financial.connector.entity.HierarchyMapping;
 import com.financial.connector.repository.ConnectorRepository;
 import com.financial.connector.repository.HierarchyMappingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,6 +32,7 @@ public class ConnectorService {
                 .region(request.getRegion())
                 .status("PENDING_APPROVAL")
                 .role(request.getRole() != null ? request.getRole() : "CONNECTOR")
+                .email(request.getEmail())
                 .build();
 
         return connectorRepository.save(connector);
@@ -38,17 +42,17 @@ public class ConnectorService {
     public void assignManager(UUID connectorId, ConnectorRequests.AssignManagerRequest request) {
         Connector connector = connectorRepository.findById(connectorId)
                 .orElseThrow(() -> new RuntimeException("Connector not found"));
-                
+
         Connector manager = connectorRepository.findById(request.getManagerId())
                 .orElseThrow(() -> new RuntimeException("Manager not found"));
-                
+
         HierarchyMapping mapping = HierarchyMapping.builder()
                 .connector(connector)
                 .manager(manager)
                 .role(request.getRole())
                 .assignedAt(Instant.now())
                 .build();
-                
+
         hierarchyMappingRepository.save(mapping);
     }
 
@@ -71,18 +75,40 @@ public class ConnectorService {
         if (request.getRole() != null) {
             connector.setRole(request.getRole());
         }
+        if (request.getEmail() != null) {
+            connector.setEmail(request.getEmail());
+        }
         return connectorRepository.save(connector);
     }
 
-    public java.util.List<Connector> getManagersByRole(String role) {
+    public List<Connector> getManagersByRole(String role) {
         return connectorRepository.findAllByRole(role);
     }
 
-    public java.util.List<Connector> listConnectors(String roles) {
+    public List<Connector> listConnectors(String roles) {
         if (roles == null || roles.isBlank()) {
             return connectorRepository.findAll();
         }
-        java.util.List<String> roleList = java.util.Arrays.asList(roles.split(","));
+        List<String> roleList = java.util.Arrays.asList(roles.split(","));
         return connectorRepository.findAllByRoleIn(roleList);
+    }
+
+    public Connector getMe(String email) {
+        return connectorRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Connector not found for email: " + email));
+    }
+
+    /** Returns the manager chain for a given connector (who they report to). */
+    public List<HierarchyMapping> getHierarchy(UUID connectorId) {
+        connectorRepository.findById(connectorId)
+                .orElseThrow(() -> new RuntimeException("Connector not found"));
+        return hierarchyMappingRepository.findByConnectorId(connectorId);
+    }
+
+    /** Returns everyone who reports directly to this connector (as their manager). */
+    public List<HierarchyMapping> getReportees(UUID managerId) {
+        connectorRepository.findById(managerId)
+                .orElseThrow(() -> new RuntimeException("Connector not found"));
+        return hierarchyMappingRepository.findByManagerId(managerId);
     }
 }

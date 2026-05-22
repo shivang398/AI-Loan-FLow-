@@ -1,13 +1,11 @@
 package com.financial.messaging.service;
 
 import com.financial.messaging.entity.Conversation;
-import com.financial.messaging.entity.ConversationType;
 import com.financial.messaging.entity.Message;
 import com.financial.messaging.repository.ConversationRepository;
 import com.financial.messaging.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +19,6 @@ public class MessagingService {
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
-    private final RabbitTemplate rabbitTemplate;
     private final SimpMessagingTemplate wsTemplate;
     private final WhatsAppService whatsappService;
 

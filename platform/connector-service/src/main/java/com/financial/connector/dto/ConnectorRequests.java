@@ -23,6 +23,8 @@ public class ConnectorRequests {
         private String region;
 
         private String role;
+
+        private String email;
     }
 
     @Data

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
-import { Button, Input, Space, Tag, Avatar, Badge, Tooltip, Modal, Form, Select, DatePicker, Row, Col, Card, Statistic, Divider, message, Spin } from 'antd';
+import { App, Button, Input, Space, Tag, Avatar, Badge, Tooltip, Modal, Form, Select, DatePicker, Row, Col, Card, Statistic, Divider, Spin } from 'antd';
 import {
   Search, Download, Shield, Edit2,
   UserPlus, Briefcase, Calendar, Building2, UserCog,
-  LayoutGrid, List as ListIcon
+  LayoutGrid, List as ListIcon, GitBranch
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
 
@@ -27,7 +27,7 @@ const DEPT_MAP: Record<string, string> = {
   TEAM_LEADER: 'Sales & Growth',
 };
 
-const STAFF_ROLES = ['ADMIN', 'RM', 'OPERATIONS', 'TEAM_LEADER'];
+const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER'];
 
 function connectorToRow(c: any) {
   const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
@@ -49,6 +49,7 @@ function connectorToRow(c: any) {
 }
 
 const UserManagement: React.FC = () => {
+  const { message } = App.useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [form] = Form.useForm();
@@ -242,7 +243,8 @@ const UserManagement: React.FC = () => {
           userId,
           firstName,
           lastName,
-          phone: '99' + Math.floor(10000000 + Math.random() * 90000000), // Random phone to satisfy unique constraint
+          email: values.email,
+          phone: '99' + Math.floor(10000000 + Math.random() * 90000000),
           region: 'NATIONAL',
           role: values.role
         });
@@ -281,6 +283,39 @@ const UserManagement: React.FC = () => {
         </Space>
       </div>
 
+      {/* Reporting Hierarchy Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        borderRadius: 16, padding: '18px 24px',
+        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        border: '1px solid rgba(99,102,241,0.2)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <GitBranch size={16} color="#818cf8" />
+          <span style={{ fontSize: 11, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Reporting Hierarchy
+          </span>
+        </div>
+        {[
+          { label: 'Channel Partner', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+          { label: 'Team Leader', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
+          { label: 'Relationship Manager', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+        ].map((item, i, arr) => (
+          <React.Fragment key={item.label}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: item.bg, border: `1px solid ${item.color}40`, borderRadius: 100, padding: '6px 16px' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, boxShadow: `0 0 6px ${item.color}` }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: item.color }}>{item.label}</span>
+            </div>
+            {i < arr.length - 1 && (
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 18, fontWeight: 300 }}>→</span>
+            )}
+          </React.Fragment>
+        ))}
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 'auto' }}>
+          RM is responsible for file review & approval
+        </span>
+      </div>
+
       <Row gutter={16}>
         <Col span={6}>
           <Card variant="borderless" className="pro-card">
@@ -288,18 +323,18 @@ const UserManagement: React.FC = () => {
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false} className="pro-card">
-            <Statistic title="Operations Team" value={opsCount} prefix={<Building2 size={18} />} valueStyle={{ color: '#f59e0b', fontWeight: 800 }} />
+          <Card variant="borderless" className="pro-card">
+            <Statistic title="Credit Operations" value={opsCount} prefix={<Building2 size={18} />} valueStyle={{ color: '#f59e0b', fontWeight: 800 }} />
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false} className="pro-card">
+          <Card variant="borderless" className="pro-card">
             <Statistic title="Field RMs" value={rmCount} prefix={<UserCog size={18} />} valueStyle={{ color: '#10b981', fontWeight: 800 }} />
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false} className="pro-card">
-            <Statistic title="Registered Since Launch" value={staffData.length} prefix={<Calendar size={18} />} valueStyle={{ color: '#3b82f6', fontWeight: 800 }} />
+          <Card variant="borderless" className="pro-card">
+            <Statistic title="Team Leaders" value={staffData.filter(s => s.role === 'TEAM_LEADER').length} prefix={<Calendar size={18} />} valueStyle={{ color: '#3b82f6', fontWeight: 800 }} />
           </Card>
         </Col>
       </Row>
@@ -312,11 +347,10 @@ const UserManagement: React.FC = () => {
             style={{ maxWidth: 400, borderRadius: 10, height: 40 }}
           />
           <Space>
-            <Select defaultValue="all" style={{ width: 160 }}>
+            <Select defaultValue="all" style={{ width: 180 }}>
               <Option value="all">All Departments</Option>
-              <Option value="credit">Credit Ops</Option>
               <Option value="sales">Sales & Growth</Option>
-              <Option value="executive">Executive</Option>
+              <Option value="credit">Credit Operations</Option>
             </Select>
             <Divider type="vertical" />
             <Space.Compact>
@@ -379,17 +413,22 @@ const UserManagement: React.FC = () => {
             <Col span={12}>
               <Form.Item name="department" label="Department" rules={[{ required: true }]}>
                 <Select placeholder="Select Department">
-                  <Option value="Executive">Executive / Admin</Option>
                   <Option value="Sales & Growth">Sales & Growth</Option>
                   <Option value="Credit Ops">Credit Operations</Option>
-                  <Option value="Technology">Technology</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="role" label="Access Role" rules={[{ required: true }]}>
-                <Select placeholder="Select Role">
-                  <Option value="ADMIN">System Admin</Option>
+                <Select
+                  placeholder="Select Role"
+                  onChange={(val) => {
+                    const deptMap: Record<string, string> = {
+                      RM: 'Sales & Growth', TEAM_LEADER: 'Sales & Growth', OPERATIONS: 'Credit Ops',
+                    };
+                    if (deptMap[val]) form.setFieldValue('department', deptMap[val]);
+                  }}
+                >
                   <Option value="RM">Relationship Manager</Option>
                   <Option value="OPERATIONS">Operations User</Option>
                   <Option value="TEAM_LEADER">Team Leader</Option>

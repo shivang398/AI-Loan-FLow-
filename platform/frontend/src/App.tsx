@@ -1,4 +1,5 @@
 import React from 'react';
+import { App as AntApp } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LandingPage from './pages/LandingPage';
@@ -12,7 +13,8 @@ import RegionalDashboard from './features/rm/components/RegionalDashboard';
 import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDashboard';
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
-import LeadOnboardingWizard from './features/connector/components/LeadOnboardingWizard';
+import CheckEligibility from './features/connector/components/CheckEligibility';
+import EmiCalculator from './features/connector/components/EmiCalculator';
 import { CibilCheckPage, BankStatementAnalyzerPage, FoirCalculatorPage } from './features/connector/components/ConnectorTools';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
 import OpsTeamMeetingPage from './features/team-meeting/components/OpsTeamMeetingPage';
@@ -22,6 +24,7 @@ import BusinessAnalytics from './features/analytics/components/BusinessAnalytics
 import ReportingDashboard from './features/reporting/components/ReportingDashboard';
 import ConnectorHub from './features/admin/components/ConnectorHub';
 import PayoutTracker from './features/admin/components/PayoutTracker';
+import PoliciesPage from './features/policies/components/PoliciesPage';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -29,6 +32,7 @@ const queryClient = new QueryClient();
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
+      <AntApp>
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
@@ -49,38 +53,44 @@ const App: React.FC = () => {
                 <Route path="/admin/reports"       element={<ReportingDashboard />} />
                 <Route path="/admin/payouts"       element={<PayoutTracker />} />
                 <Route path="/admin/analytics"     element={<BusinessAnalytics />} />
+                <Route path="/admin/policies"      element={<PoliciesPage />} />
                 <Route path="/admin/team-meeting"  element={<TeamMeeting />} />
               </Route>
 
               {/* RM Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['RM']} />}>
                 <Route path="/rm/dashboard"    element={<RegionalDashboard />} />
-                <Route path="/rm/connectors"   element={<div>Connector Tracker Page</div>} />
-                <Route path="/rm/workflow"     element={<div>Workflow Monitor Page</div>} />
+                <Route path="/rm/connectors"   element={<div style={{ padding: 40 }}>Connector Tracker — Coming Soon</div>} />
+                <Route path="/rm/workflow"     element={<div style={{ padding: 40 }}>Workflow Monitor — Coming Soon</div>} />
+                <Route path="/rm/policies"     element={<PoliciesPage />} />
                 <Route path="/rm/team-meeting" element={<TeamMeeting />} />
               </Route>
 
               {/* Team Leader Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['TEAM_LEADER']} />}>
                 <Route path="/tl/dashboard"    element={<TeamLeaderDashboard />} />
+                <Route path="/tl/policies"     element={<PoliciesPage />} />
                 <Route path="/tl/team-meeting" element={<TeamMeeting />} />
               </Route>
 
               {/* Operations Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['OPERATIONS']} />}>
                 <Route path="/ops/dashboard"    element={<OperationsDashboard />} />
+                <Route path="/ops/policies"     element={<PoliciesPage />} />
                 <Route path="/ops/team-meeting" element={<OpsTeamMeetingPage />} />
               </Route>
 
               {/* Connector Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['CONNECTOR']} />}>
-                <Route path="/connector/dashboard"    element={<ConnectorDashboard />} />
-                <Route path="/connector/onboard"      element={<LeadOnboardingWizard />} />
-                <Route path="/connector/cibil"        element={<CibilCheckPage />} />
-                <Route path="/connector/bsa"          element={<BankStatementAnalyzerPage />} />
-                <Route path="/connector/foir"         element={<FoirCalculatorPage />} />
-                <Route path="/connector/earnings"     element={<CommissionDashboard />} />
-                <Route path="/connector/team-meeting" element={<TeamMeeting />} />
+                <Route path="/connector/dashboard"          element={<ConnectorDashboard />} />
+                <Route path="/connector/check-eligibility"  element={<CheckEligibility />} />
+                <Route path="/connector/cibil"              element={<CibilCheckPage />} />
+                <Route path="/connector/bsa"                element={<BankStatementAnalyzerPage />} />
+                <Route path="/connector/foir"               element={<FoirCalculatorPage />} />
+                <Route path="/connector/emi-calculator"     element={<EmiCalculator />} />
+                <Route path="/connector/earnings"           element={<CommissionDashboard />} />
+                <Route path="/connector/policies"           element={<PoliciesPage />} />
+                <Route path="/connector/team-meeting"       element={<TeamMeeting />} />
               </Route>
             </Route>
           </Route>
@@ -95,6 +105,7 @@ const App: React.FC = () => {
           <Route path="*" element={<div>404 Not Found</div>} />
         </Routes>
       </BrowserRouter>
+      </AntApp>
     </QueryClientProvider>
   );
 };

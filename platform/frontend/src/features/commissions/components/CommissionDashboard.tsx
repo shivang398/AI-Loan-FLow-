@@ -1,173 +1,251 @@
-import React from 'react';
-import { Row, Col, Card, Typography, Table, Tag, Space, Button, Select, Statistic } from 'antd';
-import { 
-  IndianRupee, 
-  Calendar, 
-  Download, 
-  ArrowUpRight, 
-  Clock,
-  Filter
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Typography, Table, Tag, Space, Button, Select, Spin, Empty } from 'antd';
+import {
+  IndianRupee, Calendar, Download, ArrowUpRight, Clock, RefreshCw,
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer 
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 } from 'recharts';
+import apiClient from '../../../shared/services/apiClient';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../store';
+import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
 
-const data = [
-  { month: 'Jan', amount: 12000 },
-  { month: 'Feb', amount: 19000 },
-  { month: 'Mar', amount: 15000 },
-  { month: 'Apr', amount: 28000 },
-  { month: 'May', amount: 32000 },
-  { month: 'Jun', amount: 45000 },
-];
+interface Transaction {
+  id: string;
+  status: string;
+  totalAmount: number;
+  amountPaid: number;
+  paymentDate?: string;
+  loanId?: string;
+  createdAt?: string;
+}
+
+const STATUS_STYLE: Record<string, { color: string; label: string }> = {
+  FULLY_PAID:     { color: 'success',    label: 'Paid' },
+  PARTIALLY_PAID: { color: 'processing', label: 'Partial' },
+  PENDING:        { color: 'warning',    label: 'Pending' },
+  DISPUTED:       { color: 'error',      label: 'Disputed' },
+};
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(n);
 
 const CommissionDashboard: React.FC = () => {
-  const payoutHistory = [
-    { id: 'PAY-001', date: '2026-05-14', totalAmount: 32000, amountPaid: 32000, remainingAmount: 0, status: 'FULLY_PAID', ref: 'TXN_992182' },
-    { id: 'PAY-002', date: '2026-04-15', totalAmount: 28500, amountPaid: 10000, remainingAmount: 18500, status: 'PARTIALLY_PAID', ref: 'TXN_992181' },
-    { id: 'PAY-003', date: '---', totalAmount: 15000, amountPaid: 0, remainingAmount: 15000, status: 'PENDING', ref: '---' },
-    { id: 'PAY-004', date: '2026-02-01', totalAmount: 19000, amountPaid: 19000, remainingAmount: 0, status: 'FULLY_PAID', ref: 'TXN_992179' },
-  ];
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isConnector = user?.role === 'CONNECTOR';
 
-  const columns = [
-    { title: 'Payout ID', dataIndex: 'id', key: 'id', render: (id: string) => <Text strong>{id}</Text> },
-    { title: 'Total Comm.', dataIndex: 'totalAmount', key: 'totalAmount', render: (amt: number) => <Text className="font-bold">₹{amt.toLocaleString()}</Text> },
-    { title: 'Paid', dataIndex: 'amountPaid', key: 'amountPaid', render: (amt: number) => <Text className="text-emerald-600 font-bold">₹{amt.toLocaleString()}</Text> },
-    { title: 'Pending', dataIndex: 'remainingAmount', key: 'remainingAmount', render: (amt: number) => <Text className={amt > 0 ? "text-red-500 font-bold" : "text-slate-400 font-bold"}>₹{amt.toLocaleString()}</Text> },
-    { title: 'Last Payment Date', dataIndex: 'date', key: 'date' },
-    { 
-      title: 'Status', 
-      dataIndex: 'status', 
-      key: 'status', 
-      render: (status: string) => {
-        let color = 'default';
-        if (status === 'FULLY_PAID') color = 'success';
-        if (status === 'PARTIALLY_PAID') color = 'processing';
-        if (status === 'PENDING') color = 'warning';
-        return <Tag color={color} className="rounded-full border-none px-3 font-bold">{status.replace('_', ' ')}</Tag>;
-      }
-    },
-    { title: 'Reference', dataIndex: 'ref', key: 'ref', render: (ref: string) => <Text className="text-slate-400 font-mono text-xs">{ref}</Text> },
-    {
-      title: 'Action',
-      key: 'action',
-      render: () => <Button type="link" icon={<Download size={14} />}>Invoice</Button>
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [connectorId, setConnectorId] = useState<string | null>(null);
+  const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
+
+  useEffect(() => {
+    if (!isConnector) return;
+    const fetchProfile = async () => {
+      try {
+        const res = await apiClient.get('/connectors/me');
+        const id = res.data?.data?.id || res.data?.id;
+        if (id) setConnectorId(id);
+      } catch { /* no profile yet */ }
+    };
+    fetchProfile();
+  }, [isConnector]);
+
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = {};
+      if (connectorId) params.connectorId = connectorId;
+      const res = await apiClient.get('/commissions/transactions', { params });
+      const list: Transaction[] = (res.data?.data || res.data || []).map((t: any) => ({
+        id: t.id,
+        status: t.status,
+        totalAmount: Number(t.totalAmount || t.commissionAmount || 0),
+        amountPaid: Number(t.amountPaid || 0),
+        paymentDate: t.paymentDate,
+        loanId: t.loanId,
+        createdAt: t.createdAt,
+      }));
+      setTransactions(list);
+    } catch {
+      setTransactions([]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => { fetchTransactions(); }, [connectorId]);
+
+  const totalEarned = transactions.reduce((s, t) => s + t.amountPaid, 0);
+  const totalPending = transactions.filter(t => t.status === 'PENDING').reduce((s, t) => s + t.totalAmount, 0);
+  const totalCommission = transactions.reduce((s, t) => s + t.totalAmount, 0);
+  const partiallyPaidBalance = transactions
+    .filter(t => t.status === 'PARTIALLY_PAID')
+    .reduce((s, t) => s + (t.totalAmount - t.amountPaid), 0);
+
+  const chartData = React.useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const year = parseInt(yearFilter);
+    const byMonth: number[] = Array(12).fill(0);
+    transactions.forEach(t => {
+      const d = t.createdAt ? new Date(t.createdAt) : null;
+      if (d && d.getFullYear() === year) {
+        byMonth[d.getMonth()] += t.amountPaid;
+      }
+    });
+    return months.map((month, i) => ({ month, amount: byMonth[i] }));
+  }, [transactions, yearFilter]);
+
+  const columns: ColumnsType<Transaction> = [
+    {
+      title: 'Loan ID',
+      dataIndex: 'loanId',
+      key: 'loanId',
+      render: (v: string) => <Text code style={{ fontSize: 11 }}>{v ? v.slice(0, 8).toUpperCase() : '—'}</Text>,
+    },
+    {
+      title: 'Commission',
+      dataIndex: 'totalAmount',
+      key: 'total',
+      render: (v: number) => <Text strong>{fmt(v)}</Text>,
+    },
+    {
+      title: 'Paid',
+      dataIndex: 'amountPaid',
+      key: 'paid',
+      render: (v: number) => <Text style={{ color: '#059669', fontWeight: 700 }}>{fmt(v)}</Text>,
+    },
+    {
+      title: 'Pending',
+      key: 'pending',
+      render: (_: any, r: Transaction) => {
+        const p = r.totalAmount - r.amountPaid;
+        return <Text style={{ color: p > 0 ? '#dc2626' : '#94a3b8', fontWeight: 600 }}>{fmt(Math.max(0, p))}</Text>;
+      },
+    },
+    {
+      title: 'Payment Date',
+      dataIndex: 'paymentDate',
+      key: 'date',
+      render: (v: string) => v ? new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const s = STATUS_STYLE[status] || { color: 'default', label: status };
+        return <Tag color={s.color} style={{ borderRadius: 20, fontWeight: 700, border: 'none', padding: '0 10px' }}>{s.label}</Tag>;
+      },
+    },
+    {
+      title: '',
+      key: 'action',
+      render: () => <Button type="link" icon={<Download size={14} />} size="small">Invoice</Button>,
+    },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-end">
+    <div style={{ paddingBottom: 40 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <div>
-          <Title level={2} className="m-0 font-bold text-slate-800">Earnings & Commissions</Title>
-          <Text className="text-slate-500">Track your payouts and performance analytics.</Text>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--brand-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
+            My Earnings
+          </div>
+          <Title level={2} style={{ margin: 0 }}>Commissions & Payouts</Title>
+          <Text style={{ color: 'var(--text-muted)' }}>Track your earnings and commission history.</Text>
         </div>
         <Space>
-          <Select defaultValue="2026" className="w-32 rounded-lg">
-            <Select.Option value="2026">FY 2026</Select.Option>
-            <Select.Option value="2025">FY 2025</Select.Option>
+          <Select value={yearFilter} onChange={setYearFilter} style={{ width: 110 }}>
+            {[new Date().getFullYear(), new Date().getFullYear() - 1].map(y => (
+              <Select.Option key={y} value={String(y)}>FY {y}</Select.Option>
+            ))}
           </Select>
-          <Button type="primary" icon={<Download size={16} />} className="bg-blue-600">Export Statement</Button>
+          <Button icon={<RefreshCw size={14} />} onClick={fetchTransactions} loading={loading}>Refresh</Button>
+          <Button type="primary" icon={<Download size={14} />} style={{ background: '#4f46e5', border: 'none' }}>
+            Export
+          </Button>
         </Space>
       </div>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={8}>
-          <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-none shadow-xl rounded-3xl h-full flex flex-col justify-between p-2">
-            <div className="p-4">
-              <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest block mb-1">Available for Payout</Text>
-              <Title level={1} className="m-0 text-white font-black">₹12,450</Title>
-              <div className="flex items-center gap-2 mt-4 text-emerald-400">
-                <ArrowUpRight size={18} />
-                <Text className="text-emerald-400 font-bold">+18% growth</Text>
-              </div>
-            </div>
-            <div className="p-4 bg-white/5 rounded-2xl flex justify-between items-center">
-              <div>
-                <Text className="text-slate-400 text-[10px] uppercase font-bold block">Next Payout Date</Text>
-                <Text className="text-white font-medium">June 1, 2026</Text>
-              </div>
-              <Calendar className="text-slate-500" size={24} />
-            </div>
-          </Card>
-        </Col>
-        
-        <Col xs={24} lg={16}>
-          <Row gutter={[24, 24]}>
-            <Col span={12}>
-              <Card className="shadow-sm border-none rounded-2xl">
-                <Statistic
-                  title={<Text className="text-slate-500 font-medium">Lifetime Earnings</Text>}
-                  value={142500}
-                  prefix={<IndianRupee size={20} className="mr-1" />}
-                  valueStyle={{ fontWeight: 800 }}
-                />
-              </Card>
-            </Col>
-            <Col span={12}>
-              <Card className="shadow-sm border-none rounded-2xl">
-                <Statistic
-                  title={<Text className="text-slate-500 font-medium">Pending Payouts</Text>}
-                  value={8200}
-                  prefix={<Clock size={20} className="mr-1" />}
-                  valueStyle={{ fontWeight: 800, color: '#f59e0b' }}
-                />
-              </Card>
-            </Col>
-            <Col span={24}>
-              <Card title={<span className="text-slate-800 font-bold">Earnings Analytics</span>} className="shadow-sm border-none rounded-2xl">
-                <div className="h-[200px] min-h-[200px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data}>
-                      <defs>
-                        <linearGradient id="colorAmt" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                      <YAxis hide />
-                      <RechartsTooltip 
-                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="#3b82f6" 
-                        strokeWidth={3} 
-                        fillOpacity={1} 
-                        fill="url(#colorAmt)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spin size="large" /></div>
+      ) : (
+        <>
+          <Row gutter={[20, 20]} style={{ marginBottom: 28 }}>
+            {[
+              { label: 'Total Commission Paid', value: fmt(totalEarned), Icon: IndianRupee, color: '#4f46e5', bg: '#ede9fe', sub: 'All time' },
+              { label: 'Available for Payout', value: fmt(partiallyPaidBalance + totalPending), Icon: ArrowUpRight, color: '#10b981', bg: '#ecfdf5', sub: 'Ready to withdraw' },
+              { label: 'Pending Release', value: fmt(totalPending), Icon: Clock, color: '#f59e0b', bg: '#fffbeb', sub: 'Under review' },
+              { label: 'Total Commission', value: fmt(totalCommission), Icon: Calendar, color: '#3b82f6', bg: '#eff6ff', sub: 'All transactions' },
+            ].map(stat => (
+              <Col xs={12} md={6} key={stat.label}>
+                <div style={{ background: 'white', borderRadius: 16, padding: '20px', border: '1px solid var(--surface-3)', boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                    <stat.Icon size={16} color={stat.color} />
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                    {stat.label}
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: stat.color }}>{stat.value}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{stat.sub}</div>
                 </div>
-              </Card>
-            </Col>
+              </Col>
+            ))}
           </Row>
-        </Col>
-      </Row>
 
-      <Card 
-        title={<span className="text-slate-800 font-bold">Payout History</span>} 
-        className="shadow-sm border-none rounded-2xl overflow-hidden"
-        extra={<Button type="text" icon={<Filter size={16} />} className="text-slate-400" />}
-      >
-        <Table 
-          dataSource={payoutHistory} 
-          columns={columns} 
-          pagination={false}
-          className="border-none"
-        />
-      </Card>
+          <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '1px solid var(--surface-3)', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Title level={5} style={{ margin: 0 }}>Monthly Earnings — {yearFilter}</Title>
+            </div>
+            {chartData.every(d => d.amount === 0) ? (
+              <Empty description="No earnings data for this period" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: '40px 0' }} />
+            ) : (
+              <div style={{ height: 200 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ left: 10, right: 10 }}>
+                    <defs>
+                      <linearGradient id="commGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
+                    <RechartsTooltip formatter={(v) => fmt(Number(v))} />
+                    <Area type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={2.5} fill="url(#commGradient)" name="Earnings" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid var(--surface-3)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--surface-2)' }}>
+              <Title level={5} style={{ margin: 0 }}>Commission History</Title>
+            </div>
+            {transactions.length === 0 ? (
+              <Empty
+                description="No commission records yet. Approved loans will generate commission entries."
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ padding: '60px 0' }}
+              />
+            ) : (
+              <Table
+                dataSource={transactions}
+                columns={columns}
+                rowKey="id"
+                pagination={{ pageSize: 10, showSizeChanger: false }}
+                size="middle"
+              />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

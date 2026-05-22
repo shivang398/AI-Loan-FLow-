@@ -46,7 +46,13 @@ public class CommissionTransaction {
     private BigDecimal totalPayout;
 
     @Column(nullable = false)
-    private String status;   // PENDING, APPROVED, PAID
+    private String status;   // PENDING, PARTIALLY_PAID, PAID, DISPUTED
+
+    @Column(name = "amount_paid", precision = 15, scale = 2)
+    private BigDecimal amountPaid;
+
+    @Column(name = "payment_date")
+    private Instant paymentDate;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

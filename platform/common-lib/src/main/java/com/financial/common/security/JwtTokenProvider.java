@@ -82,8 +82,8 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(authToken);
             return true;
-        } catch (Exception ex) {
-            // Log exception here
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
+            // Covers expired, malformed, unsupported, and tampered tokens
         }
         return false;
     }

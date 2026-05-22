@@ -124,7 +124,7 @@ const SignupPage: React.FC = () => {
               Get started today
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', margin: 0, fontWeight: 400 }}>
-              Join Auditor OS as a partner or employee
+              Join Real Money Advisory as a partner or employee
             </p>
           </div>
 
@@ -235,7 +235,7 @@ const SignupPage: React.FC = () => {
               icon={<UserPlus size={18} style={{ marginRight: 4 }} />}
               style={{ height: 50, borderRadius: 12, fontWeight: 700, fontSize: 15, letterSpacing: '0.01em', marginTop: 12 }}
             >
-              Create Auditor OS Account
+              Create Real Money Account
             </Button>
           </Form>
 

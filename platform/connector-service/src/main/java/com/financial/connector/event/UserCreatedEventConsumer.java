@@ -60,6 +60,7 @@ public class UserCreatedEventConsumer {
                             .region("NATIONAL")
                             .status("ACTIVE")
                             .role(primaryRole)
+                            .email(email)
                             .build();
                     connectorRepository.save(profile);
                     log.info("Profile created for user ID: {} with role: {}", userId, primaryRole);

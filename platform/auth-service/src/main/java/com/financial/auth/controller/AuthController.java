@@ -28,7 +28,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Map<String, String>>> register(@Valid @RequestBody AuthRequests.RegisterRequest request) {
         Map<String, String> result = authService.registerUser(request);
@@ -83,7 +83,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("OK", "Current User Info", UUID.randomUUID().toString()));
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PutMapping("/users/{id}/status")
     public ResponseEntity<ApiResponse<String>> updateStatus(
             @PathVariable UUID id,

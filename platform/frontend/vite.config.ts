@@ -94,6 +94,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      '/ws/team-meeting': {
+        target: 'http://127.0.0.1:8087',
+        ws: true,
+        changeOrigin: true,
+      },
       // Catch-all for any other /api requests to auth-service or a default
       '/api': {
         target: 'http://127.0.0.1:8081',

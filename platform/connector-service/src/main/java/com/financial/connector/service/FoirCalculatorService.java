@@ -19,10 +19,18 @@ public class FoirCalculatorService {
     private static final int        CALC_SCALE    = 12;
     private static final RoundingMode ROUND       = RoundingMode.HALF_UP;
 
-    private static final BigDecimal SALARIED_ELIGIBLE   = new BigDecimal("50");
-    private static final BigDecimal SALARIED_BORDERLINE = new BigDecimal("55");
-    private static final BigDecimal SE_ELIGIBLE         = new BigDecimal("55");
-    private static final BigDecimal SE_BORDERLINE       = new BigDecimal("65");
+    private static final BigDecimal SALARIED_ELIGIBLE        = new BigDecimal("50");
+    private static final BigDecimal SALARIED_BORDERLINE      = new BigDecimal("55");
+    private static final BigDecimal GOVT_SALARIED_ELIGIBLE   = new BigDecimal("60");
+    private static final BigDecimal GOVT_SALARIED_BORDERLINE = new BigDecimal("65");
+    private static final BigDecimal SE_ELIGIBLE              = new BigDecimal("55");
+    private static final BigDecimal SE_BORDERLINE            = new BigDecimal("65");
+    private static final BigDecimal SEP_ELIGIBLE             = new BigDecimal("60");
+    private static final BigDecimal SEP_BORDERLINE           = new BigDecimal("70");
+    private static final BigDecimal NRI_ELIGIBLE             = new BigDecimal("50");
+    private static final BigDecimal NRI_BORDERLINE           = new BigDecimal("55");
+    private static final BigDecimal PENSIONER_ELIGIBLE       = new BigDecimal("40");
+    private static final BigDecimal PENSIONER_BORDERLINE     = new BigDecimal("50");
 
     public FoirResult calculate(FoirRequest req) {
         log.info("FOIR calculation for '{}' ({})", req.applicantName(), req.applicantType());
@@ -124,11 +132,25 @@ public class FoirCalculatorService {
     }
 
     private BigDecimal eligibleLimit(ApplicantType type) {
-        return type == ApplicantType.SALARIED ? SALARIED_ELIGIBLE : SE_ELIGIBLE;
+        return switch (type) {
+            case SALARIED                -> SALARIED_ELIGIBLE;
+            case GOVT_SALARIED           -> GOVT_SALARIED_ELIGIBLE;
+            case SELF_EMPLOYED           -> SE_ELIGIBLE;
+            case SELF_EMPLOYED_PROFESSIONAL -> SEP_ELIGIBLE;
+            case NRI                     -> NRI_ELIGIBLE;
+            case PENSIONER               -> PENSIONER_ELIGIBLE;
+        };
     }
 
     private BigDecimal borderlineLimit(ApplicantType type) {
-        return type == ApplicantType.SALARIED ? SALARIED_BORDERLINE : SE_BORDERLINE;
+        return switch (type) {
+            case SALARIED                -> SALARIED_BORDERLINE;
+            case GOVT_SALARIED           -> GOVT_SALARIED_BORDERLINE;
+            case SELF_EMPLOYED           -> SE_BORDERLINE;
+            case SELF_EMPLOYED_PROFESSIONAL -> SEP_BORDERLINE;
+            case NRI                     -> NRI_BORDERLINE;
+            case PENSIONER               -> PENSIONER_BORDERLINE;
+        };
     }
 
     private EligibilityStatus determineStatus(BigDecimal foirAfter, ApplicantType type) {
@@ -140,7 +162,14 @@ public class FoirCalculatorService {
     private String buildMessage(EligibilityStatus status, BigDecimal foirAfter,
                                 BigDecimal eligibleLimit, BigDecimal borderlineLimit,
                                 ApplicantType type) {
-        String lbl = type == ApplicantType.SALARIED ? "salaried" : "self-employed";
+        String lbl = switch (type) {
+            case SALARIED                -> "salaried";
+            case GOVT_SALARIED           -> "government salaried";
+            case SELF_EMPLOYED           -> "self-employed";
+            case SELF_EMPLOYED_PROFESSIONAL -> "self-employed professional";
+            case NRI                     -> "NRI";
+            case PENSIONER               -> "pensioner";
+        };
         return switch (status) {
             case ELIGIBLE ->
                 "FOIR of " + foirAfter + "% is within the acceptable limit of " + eligibleLimit

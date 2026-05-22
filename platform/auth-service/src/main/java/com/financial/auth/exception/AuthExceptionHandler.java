@@ -49,17 +49,17 @@ public class AuthExceptionHandler {
             }
             // Specific credential errors → 401
             case BadCredentialsException bce -> {
-                log.warn("Invalid credentials [TraceID: {}]", traceId);
+                log.warn("Invalid credentials [TraceID: {}]: {}", traceId, bce.getMessage());
                 yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Invalid email or password", Collections.emptyList(), traceId));
             }
             case DisabledException de -> {
-                log.warn("Disabled account login attempt [TraceID: {}]", traceId);
+                log.warn("Disabled account [TraceID: {}]: {}", traceId, de.getMessage());
                 yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Account is disabled", Collections.emptyList(), traceId));
             }
             case LockedException le -> {
-                log.warn("Locked account login attempt [TraceID: {}]", traceId);
+                log.warn("Locked account [TraceID: {}]: {}", traceId, le.getMessage());
                 yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Account is locked", Collections.emptyList(), traceId));
             }

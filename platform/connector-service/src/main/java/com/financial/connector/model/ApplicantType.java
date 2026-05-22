@@ -1,5 +1,10 @@
 package com.financial.connector.model;
 
 public enum ApplicantType {
-    SALARIED, SELF_EMPLOYED
+    SALARIED,
+    GOVT_SALARIED,
+    SELF_EMPLOYED,
+    SELF_EMPLOYED_PROFESSIONAL,
+    NRI,
+    PENSIONER
 }

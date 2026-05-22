@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../../shared/services/apiClient';
 import {
+  App,
   Card,
   Typography,
   Table,
@@ -15,7 +16,6 @@ import {
   Col,
   Statistic,
   Upload,
-  message,
   InputNumber,
   Spin
 } from 'antd';
@@ -35,6 +35,7 @@ const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
 const ReportingDashboard: React.FC = () => {
+  const { message } = App.useApp();
   const [isExporting, setIsExporting] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadForm] = Form.useForm();
@@ -121,19 +122,19 @@ const ReportingDashboard: React.FC = () => {
   ];
 
   const handleUpload = async (values: any) => {
-    const newReport = {
-      id: `MIS-${Date.now()}`,
-      rmName: values.rmName,
-      fileName: 'Uploaded_Report.xlsx',
-      volume: values.volume,
-      date: new Date().toLocaleString(),
-      status: 'PENDING_REVIEW'
-    };
-    // Optimistically add to list
-    setRmReports(prev => [newReport, ...prev]);
-    setShowUploadModal(false);
-    uploadForm.resetFields();
-    message.success('MIS Report submitted for review.');
+    try {
+      await apiClient.post('/reports/mis-uploads', {
+        rmName: values.rmName,
+        fileName: 'Uploaded_Report.xlsx',
+        volume: values.volume,
+      });
+      message.success('MIS Report submitted for review.');
+      setShowUploadModal(false);
+      uploadForm.resetFields();
+      fetchReports();
+    } catch {
+      message.error('Failed to submit report. Please try again.');
+    }
   };
 
   const handleGenerateMaster = async () => {
@@ -265,7 +266,7 @@ const ReportingDashboard: React.FC = () => {
                       </Select>
                     </Form.Item>
                     <Form.Item label="Recipients (Emails)">
-                      <Select mode="tags" placeholder="admin@auditor.com" defaultValue={['admin@auditor.com']} className="w-full" />
+                      <Select mode="tags" placeholder="admin@realmoney.in" defaultValue={['admin@realmoney.in']} className="w-full" />
                     </Form.Item>
                     <Button type="primary" className="bg-blue-600">Update Schedule</Button>
                   </Form>

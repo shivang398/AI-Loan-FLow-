@@ -34,8 +34,10 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/actuator/**").hasAuthority("ADMIN")
-                // BSA endpoints now require authentication — only authenticated connectors/admins
+                .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                // Landing page lead capture is public
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/eligibility/submissions").permitAll()
+                // BSA endpoints require authentication
                 .requestMatchers("/bsa/**", "/api/analyse/**", "/api/analyse").authenticated()
                 .anyRequest().authenticated()
             )

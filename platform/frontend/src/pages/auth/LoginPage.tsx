@@ -97,7 +97,7 @@ const LoginPage: React.FC = () => {
             color: 'white', fontSize: '2.25rem', fontWeight: 800,
             letterSpacing: '-0.03em', lineHeight: 1.15, margin: '0 0 16px',
           }}>
-            Hierarchical<br />Credit Platform
+            Real Money<br />Advisory Platform
           </h1>
           <p style={{
             color: 'rgba(255,255,255,0.5)', fontSize: '1.0625rem',
@@ -257,7 +257,7 @@ const LoginPage: React.FC = () => {
           <div style={{ marginTop: 32, textAlign: 'center' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', margin: 0 }}>
               Don't have access?{' '}
-              <a href="mailto:admin@platform.com" style={{ color: '#3b82f6', fontWeight: 600, textDecoration: 'none' }}>
+              <a href="mailto:admin@realmoney.in" style={{ color: '#3b82f6', fontWeight: 600, textDecoration: 'none' }}>
                 Contact administrator
               </a>
             </p>

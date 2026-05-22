@@ -41,6 +41,9 @@ public class Connector {
     @Column(name = "platform_role")
     private String role;
 
+    @Column(name = "email")
+    private String email;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

@@ -3,7 +3,8 @@ import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography } fr
 import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
-  Wallet, Plus, Files, FileText, ChevronDown, Search, UsersRound
+  Wallet, Files, FileText, ChevronDown, Search, UsersRound, Network,
+  BookOpen, Calculator, Zap,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,11 +24,12 @@ const DashboardLayout: React.FC = () => {
   const adminItems = [
     { key: '/dashboard',          icon: <LayoutDashboard size={18} />, label: 'Overview' },
     { key: '/admin/users',        icon: <Users size={18} />,           label: 'User Management' },
-    { key: '/admin/connectors',   icon: <Plus size={18} />,            label: 'Connector Hub' },
+    { key: '/admin/connectors',   icon: <Network size={18} />,         label: 'Channel Partner Hub' },
     { key: '/admin/payouts',      icon: <Wallet size={18} />,          label: 'Payout Tracker' },
     { key: '/admin/reports',      icon: <FileText size={18} />,        label: 'MIS Reports' },
     { key: '/admin/documents',    icon: <Files size={18} />,           label: 'Document Library' },
     { key: '/admin/analytics',    icon: <BarChart3 size={18} />,       label: 'Admin Analytics' },
+    { key: '/admin/policies',     icon: <BookOpen size={18} />,        label: 'Policies' },
     { key: '/admin/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
   ];
 
@@ -35,26 +37,31 @@ const DashboardLayout: React.FC = () => {
     { key: '/rm/dashboard',     icon: <LayoutDashboard size={18} />, label: 'Regional Hub' },
     { key: '/rm/connectors',    icon: <Users size={18} />,           label: 'Connector Tracker' },
     { key: '/rm/workflow',      icon: <ClipboardList size={18} />,   label: 'Workflow Monitor' },
+    { key: '/rm/policies',      icon: <BookOpen size={18} />,        label: 'Policies' },
     { key: '/rm/team-meeting',  icon: <UsersRound size={18} />,      label: 'Team Meeting' },
   ];
 
   const opsItems = [
     { key: '/ops/dashboard',     icon: <ClipboardList size={18} />, label: 'Ops Queue' },
-    { key: '/ops/team-meeting',  icon: <UsersRound size={18} />,    label: 'Team Meeting' },
+    { key: '/ops/policies',      icon: <BookOpen size={18} />,       label: 'Policies' },
+    { key: '/ops/team-meeting',  icon: <UsersRound size={18} />,     label: 'Team Meeting' },
   ];
 
   const connectorItems = [
-    { key: '/connector/dashboard',    icon: <LayoutDashboard size={18} />, label: 'Overview' },
-    { key: '/connector/onboard',      icon: <Plus size={18} />,            label: 'Add New Lead' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={18} />,     label: 'CIBIL Check' },
-    { key: '/connector/bsa',          icon: <Files size={18} />,           label: 'Statement Analyzer' },
-    { key: '/connector/foir',         icon: <BarChart3 size={18} />,       label: 'FOIR Calculator' },
-    { key: '/connector/earnings',     icon: <Wallet size={18} />,          label: 'My Earnings' },
-    { key: '/connector/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+    { key: '/connector/dashboard',      icon: <LayoutDashboard size={18} />, label: 'Overview' },
+    { key: '/connector/check-eligibility', icon: <Zap size={18} />,          label: 'Check Eligibility' },
+    { key: '/connector/cibil',          icon: <ShieldCheck size={18} />,     label: 'CIBIL Check' },
+    { key: '/connector/bsa',            icon: <Files size={18} />,           label: 'Statement Analyzer' },
+    { key: '/connector/foir',           icon: <BarChart3 size={18} />,       label: 'FOIR Calculator' },
+    { key: '/connector/emi-calculator', icon: <Calculator size={18} />,      label: 'EMI Calculator' },
+    { key: '/connector/earnings',       icon: <Wallet size={18} />,          label: 'My Earnings' },
+    { key: '/connector/policies',       icon: <BookOpen size={18} />,        label: 'Policies' },
+    { key: '/connector/team-meeting',   icon: <UsersRound size={18} />,      label: 'Team Meeting' },
   ];
 
   const tlItems = [
     { key: '/tl/dashboard',    icon: <LayoutDashboard size={18} />, label: 'Team Leader Hub' },
+    { key: '/tl/policies',     icon: <BookOpen size={18} />,        label: 'Policies' },
     { key: '/tl/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
   ];
 
@@ -114,10 +121,10 @@ const DashboardLayout: React.FC = () => {
           {!collapsed && (
             <div className="animate-fade-in">
               <div style={{ color: 'white', fontWeight: 900, fontSize: 18, letterSpacing: '-0.04em', lineHeight: 1.1 }}>
-                Auditor <span style={{ color: '#818cf8' }}>AI</span>
+                Real <span style={{ color: '#818cf8' }}>Money</span>
               </div>
               <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>
-                Financial Core
+                Advisory Platform
               </div>
             </div>
           )}

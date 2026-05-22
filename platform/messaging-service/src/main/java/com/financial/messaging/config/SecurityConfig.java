@@ -35,8 +35,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
-                // WebSocket upgrade is authenticated via STOMP CONNECT frame (JWT in header)
+                // WebSocket upgrades — auth handled in-protocol (STOMP header / first JSON frame)
                 .requestMatchers("/ws-messaging/**").permitAll()
+                .requestMatchers("/ws/team-meeting/**").permitAll()
                 // WhatsApp webhooks validated by HMAC signature — not JWT
                 .requestMatchers("/webhooks/**").permitAll()
                 .anyRequest().authenticated()

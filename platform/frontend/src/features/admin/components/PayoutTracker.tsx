@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { Card, Row, Col, Statistic, Tag, Input, Space, Button, Modal, Form, Select, DatePicker, InputNumber, message } from 'antd';
+import { App, Card, Row, Col, Statistic, Tag, Input, Space, Button, Modal, Form, Select, DatePicker, InputNumber } from 'antd';
 import { Wallet, Search, AlertCircle, CheckCircle2, Clock, Download, Edit2, History } from 'lucide-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
@@ -11,6 +11,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 const { Option } = Select;
 
 const PayoutTracker: React.FC = () => {
+  const { message } = App.useApp();
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState<any>(null);
   const [form] = Form.useForm();
@@ -26,20 +27,24 @@ const PayoutTracker: React.FC = () => {
       const txRes = await apiClient.get('/commissions/transactions');
       const txList = txRes.data?.data || txRes.data || [];
 
+      const statusMap: Record<string, string> = { PAID: 'FULLY_PAID' };
       const mapped = txList.map((t: any) => {
         const total = Number(t.totalPayout || t.connectorCommission || 0);
-        const status = t.status || 'PENDING';
-        const isPaid = status === 'PAID';
-        
+        const backendStatus = t.status || 'PENDING';
+        const displayStatus = statusMap[backendStatus] || backendStatus;
+        const paid = Number(t.amountPaid || 0);
+
         return {
           id: t.id,
           connectorId: t.connectorId,
           connector: connectorMap.get(t.connectorId) || 'Unknown Partner',
           totalAmount: total,
-          amountPaid: isPaid ? total : 0,
-          remainingAmount: isPaid ? 0 : total,
-          status: isPaid ? 'FULLY_PAID' : 'PENDING',
-          date: t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : '—'
+          amountPaid: paid,
+          remainingAmount: Math.max(0, total - paid),
+          status: displayStatus,
+          date: t.paymentDate
+            ? new Date(t.paymentDate).toISOString().split('T')[0]
+            : t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : '—',
         };
       });
       setRowData(mapped);
@@ -62,12 +67,20 @@ const PayoutTracker: React.FC = () => {
   };
 
   const handleUpdateSubmit = async (values: any) => {
-    const { status } = values;
-    const backendStatus = status === 'FULLY_PAID' ? 'PAID' : 'PENDING';
+    const { status, amountPaid, paymentDate } = values;
+    const backendStatus = status === 'FULLY_PAID' ? 'PAID' : status;
+
+    const body: any = { status: backendStatus };
+    if (backendStatus === 'PARTIALLY_PAID' && amountPaid != null) {
+      body.amountPaid = amountPaid;
+    }
+    if (paymentDate) {
+      body.paymentDate = paymentDate.toISOString();
+    }
 
     try {
-      await apiClient.put(`/commissions/transactions/${selectedPayout.id}/status`, { status: backendStatus });
-      message.success(`Payout status updated successfully.`);
+      await apiClient.put(`/commissions/transactions/${selectedPayout.id}/status`, body);
+      message.success('Payout status updated successfully.');
       setIsUpdateModalOpen(false);
       form.resetFields();
       fetchPayoutData();
@@ -78,7 +91,7 @@ const PayoutTracker: React.FC = () => {
 
   const columnDefs: any[] = [
     { field: 'id', headerName: 'Payout ID', width: 120, cellRenderer: (p: any) => <span style={{ fontWeight: 700, color: '#6366f1' }}>{p.value}</span> },
-    { field: 'connector', headerName: 'Connector Name', flex: 1.5, cellRenderer: (p: any) => <span style={{ fontWeight: 600 }}>{p.value}</span> },
+    { field: 'connector', headerName: 'Channel Partner', flex: 1.5, cellRenderer: (p: any) => <span style={{ fontWeight: 600 }}>{p.value}</span> },
     { 
       field: 'totalAmount', 
       headerName: 'Total Comm. (₹)', 
@@ -132,14 +145,14 @@ const PayoutTracker: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-header-title">Commission & Payout Tracker</h1>
-          <span className="page-header-subtitle">Manage partial and full settlements for connector commissions.</span>
+          <span className="page-header-subtitle">Manage partial and full settlements for channel partner commissions.</span>
         </div>
         <Button icon={<Download size={16} />} type="primary" className="bg-blue-600 font-bold">Download Settlement Report</Button>
       </div>
 
       <Row gutter={16}>
         <Col span={8}>
-          <Card bordered={false} className="pro-card shadow-sm" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+          <Card variant="borderless" className="pro-card shadow-sm" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
             <Statistic
               title={<span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Total Commission Outflow</span>}
               value={rowData.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)}
@@ -149,7 +162,7 @@ const PayoutTracker: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card bordered={false} className="pro-card shadow-sm">
+          <Card variant="borderless" className="pro-card shadow-sm">
             <Statistic 
               title="Pending Settlements (To Be Paid)" 
               value={rowData.reduce((acc, curr) => acc + curr.remainingAmount, 0)} 
@@ -159,7 +172,7 @@ const PayoutTracker: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card bordered={false} className="pro-card shadow-sm">
+          <Card variant="borderless" className="pro-card shadow-sm">
             <Statistic 
               title="Amount Successfully Paid" 
               value={rowData.reduce((acc, curr) => acc + curr.amountPaid, 0)} 
@@ -172,8 +185,8 @@ const PayoutTracker: React.FC = () => {
 
       <div className="pro-card shadow-sm" style={{ padding: 0 }}>
         <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Input 
-            placeholder="Search by Connector or Payout ID..." 
+          <Input
+            placeholder="Search by Channel Partner or Payout ID..."
             prefix={<Search size={18} className="text-slate-400" />}
             style={{ maxWidth: 400, borderRadius: 10 }}
           />
@@ -188,7 +201,7 @@ const PayoutTracker: React.FC = () => {
             columnDefs={columnDefs}
             rowHeight={60}
             headerHeight={45}
-            overlayNoRowsTemplate="<span style='color:#94a3b8;font-size:14px'>No commission records yet. They will appear here once connectors submit disbursed cases.</span>"
+            overlayNoRowsTemplate="<span style='color:#94a3b8;font-size:14px'>No commission records yet. They will appear here once channel partners submit disbursed cases.</span>"
           />
         </div>
       </div>
@@ -204,7 +217,7 @@ const PayoutTracker: React.FC = () => {
         {selectedPayout && (
           <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-500 font-medium">Connector:</span>
+              <span className="text-slate-500 font-medium">Channel Partner:</span>
               <span className="font-bold text-slate-800">{selectedPayout.connector}</span>
             </div>
             <div className="flex justify-between items-center mb-2">

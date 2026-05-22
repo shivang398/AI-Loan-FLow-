@@ -382,7 +382,7 @@ export const BankStatementAnalyzerPage: React.FC = () => {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type AppType = 'SALARIED' | 'SELF_EMPLOYED';
+type AppType = 'SALARIED' | 'GOVT_SALARIED' | 'SELF_EMPLOYED' | 'SELF_EMPLOYED_PROFESSIONAL' | 'NRI' | 'PENSIONER';
 type ObType  = 'HOME_LOAN_EMI' | 'CAR_LOAN_EMI' | 'PERSONAL_LOAN_EMI' | 'CREDIT_CARD_MINIMUM' | 'OTHER';
 
 interface EmiRow { id: number; type: ObType; amount: string; }
@@ -517,7 +517,15 @@ export const FoirCalculatorPage: React.FC = () => {
   const netIncome     = parseFloat(net)    || 0;
   const totalEmis     = emis.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
   const liveFoir      = netIncome > 0 ? (totalEmis / netIncome) * 100 : 0;
-  const [eligLim, bdLim] = applicantType === 'SALARIED' ? [50, 55] : [55, 65];
+  const FOIR_LIMITS: Record<AppType, [number, number]> = {
+    SALARIED: [50, 55],
+    GOVT_SALARIED: [60, 65],
+    SELF_EMPLOYED: [55, 65],
+    SELF_EMPLOYED_PROFESSIONAL: [60, 70],
+    NRI: [50, 55],
+    PENSIONER: [40, 50],
+  };
+  const [eligLim, bdLim] = FOIR_LIMITS[applicantType] ?? [50, 55];
   const liveEmi       = (() => {
     const P = parseFloat(loan) || 0, n = parseInt(tenure) || 0, r = parseFloat(rate) || 0;
     return P > 0 && n >= 12 && r >= 1 ? calcEmiJS(P, r, n) : 0;
@@ -652,19 +660,29 @@ export const FoirCalculatorPage: React.FC = () => {
               <label style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>
                 Applicant Type
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {(['SALARIED', 'SELF_EMPLOYED'] as AppType[]).map(t => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                {([
+                  { type: 'SALARIED' as AppType, label: '👔 Salaried' },
+                  { type: 'GOVT_SALARIED' as AppType, label: '🏛️ Govt / PSU' },
+                  { type: 'SELF_EMPLOYED' as AppType, label: '🏢 Self-Employed' },
+                  { type: 'SELF_EMPLOYED_PROFESSIONAL' as AppType, label: '⚕️ Professional' },
+                  { type: 'NRI' as AppType, label: '✈️ NRI' },
+                  { type: 'PENSIONER' as AppType, label: '👴 Pensioner' },
+                ]).map(({ type: t, label }) => (
                   <button key={t} onClick={() => setApplicantType(t)}
                     style={{
-                      padding: '12px 8px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
+                      padding: '10px 6px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
                       border: applicantType === t ? '2px solid #4f46e5' : '2px solid #e2e8f0',
                       background: applicantType === t ? '#eef2ff' : '#f8fafc',
                       color: applicantType === t ? '#4f46e5' : '#64748b',
-                      fontWeight: 700, fontSize: 13, transition: 'all 0.15s',
+                      fontWeight: 700, fontSize: 11, transition: 'all 0.15s', lineHeight: 1.4,
                     }}>
-                    {t === 'SALARIED' ? '👔 Salaried' : '🏢 Self-Employed'}
+                    {label}
                   </button>
                 ))}
+              </div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
+                FOIR limits: {eligLim}% eligible · {bdLim}% borderline (per RBI/IBA norms)
               </div>
             </div>
 
@@ -672,34 +690,32 @@ export const FoirCalculatorPage: React.FC = () => {
             <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
               Income Details
             </div>
-            {applicantType === 'SALARIED' ? (
-              <>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Gross Monthly Salary (CTC/12)</label>
-                  <Input prefix={<IndianRupee size={14} />} type="number" value={gross} onChange={e => setGross(e.target.value)}
-                    placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Net Take-Home Salary</label>
-                  <Input prefix={<IndianRupee size={14} />} type="number" value={net} onChange={e => setNet(e.target.value)}
-                    placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>After PF, TDS deductions</div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Avg Monthly Bank Credit (12-month avg)</label>
-                  <Input prefix={<IndianRupee size={14} />} type="number" value={gross} onChange={e => setGross(e.target.value)}
-                    placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Net Monthly Income (ITR / Declared)</label>
-                  <Input prefix={<IndianRupee size={14} />} type="number" value={net} onChange={e => setNet(e.target.value)}
-                    placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                </div>
-              </>
-            )}
+            {(() => {
+              const INCOME_LABELS: Record<AppType, { gross: string; net: string; hint: string }> = {
+                SALARIED:                { gross: 'Gross Monthly Salary (CTC/12)', net: 'Net Take-Home Salary', hint: 'After PF, TDS deductions' },
+                GOVT_SALARIED:           { gross: 'Gross Monthly Salary (CTC/12)', net: 'Net Take-Home Salary', hint: 'After GPF, IT deductions · DA included' },
+                SELF_EMPLOYED:           { gross: 'Avg Monthly Bank Credit (12-month avg)', net: 'Net Monthly Income (ITR / Declared)', hint: 'As per last 2 years ITR · banks typically take 2-yr avg' },
+                SELF_EMPLOYED_PROFESSIONAL: { gross: 'Gross Monthly Professional Income', net: 'Net Monthly Income (ITR / Declared)', hint: 'CA / Doctor / Lawyer · Form 26AS cross-checked' },
+                NRI:                     { gross: 'Foreign Monthly Income (INR equiv. at remittance rate)', net: 'Net Monthly Income after overseas deductions', hint: 'OFC / NRE credit average · typically 50% discount applied by banks' },
+                PENSIONER:               { gross: 'Gross Monthly Pension (govt / EPS)', net: 'Net Pension (after deductions)', hint: 'Age-adjusted tenure · max retirement age 60–65 yrs' },
+              };
+              const lbl = INCOME_LABELS[applicantType];
+              return (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>{lbl.gross}</label>
+                    <Input prefix={<IndianRupee size={14} />} type="number" value={gross} onChange={e => setGross(e.target.value)}
+                      placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>{lbl.net}</label>
+                    <Input prefix={<IndianRupee size={14} />} type="number" value={net} onChange={e => setNet(e.target.value)}
+                      placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{lbl.hint}</div>
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Existing EMIs */}
             <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
@@ -727,13 +743,22 @@ export const FoirCalculatorPage: React.FC = () => {
               <Plus size={15} /> Add EMI / Obligation
             </button>
 
+            {/* Minimum income warning */}
+            {netIncome > 0 && netIncome < 15000 && (
+              <div style={{ padding: '10px 14px', borderRadius: 10, background: '#fff7ed', border: '1px solid #fed7aa', marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c' }}>
+                  ⚠️ Income below ₹15,000/month — most Indian banks require minimum ₹15,000 net monthly income for personal loans (₹25,000 for home loans).
+                </div>
+              </div>
+            )}
+
             {/* Live FOIR preview */}
             {netIncome > 0 && (
               <div style={{ padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(79,70,229,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Current FOIR (without new loan)</div>
                   <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                    {applicantType === 'SALARIED' ? '≤50% eligible · ≤55% borderline' : '≤55% eligible · ≤65% borderline'}
+                    {`≤${eligLim}% eligible · ≤${bdLim}% borderline`}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>

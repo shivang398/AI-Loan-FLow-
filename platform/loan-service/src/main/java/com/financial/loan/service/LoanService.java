@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -38,6 +39,13 @@ public class LoanService {
         eventPublisher.publishFileCreatedEvent(loan.getId(), loan.getCustomerId());
 
         return loan;
+    }
+
+    public List<LoanApplication> getLoans(UUID connectorId) {
+        if (connectorId != null) {
+            return loanApplicationRepository.findByConnectorId(connectorId);
+        }
+        return loanApplicationRepository.findAll();
     }
 
     @Transactional
