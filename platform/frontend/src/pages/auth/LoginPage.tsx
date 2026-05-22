@@ -50,9 +50,8 @@ const LoginPage: React.FC = () => {
       if (!token || !role) throw new Error('Invalid login response from server');
       
       const user = { id: responseData?.id || email, email, role };
-      const refreshToken = responseData?.refreshToken || token;
-      
-      dispatch(setCredentials({ user, token, refreshToken }));
+
+      dispatch(setCredentials({ user, token }));
 
       // Dynamic redirection based on role
       let targetPath = '/dashboard';

@@ -139,3 +139,24 @@ html { scroll-behavior: smooth; }
           mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
   padding: 8px 0;
 }
+
+/* ─── Loan Products grid (3-col → 1-col) ─── */
+.loan-products-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 1023px) {
+  .loan-products-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Partner brands grid (2-col → 1-col) ─── */
+.partners-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 1023px) {
+  .partners-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Hide connector line on mobile ─── */
+@media (max-width: 1023px) {
+  .hide-on-mobile { display: none; }
+}

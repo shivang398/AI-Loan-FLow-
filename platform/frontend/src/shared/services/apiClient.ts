@@ -36,13 +36,8 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = store.getState().auth.refreshToken;
-        if (!refreshToken) throw new Error('No refresh token');
-
-        // Attempt token refresh — response is wrapped: { success, data: { token, role, email } }
-        const { data: apiResponse } = await axios.post('/api/auth/refresh', {
-          refreshToken,
-        });
+        // Attempt token refresh using httpOnly cookie (no body needed)
+        const { data: apiResponse } = await axios.post('/api/auth/refresh', {}, { withCredentials: true });
 
         const newToken = apiResponse?.data?.token;
         if (!newToken) throw new Error('Refresh failed: no token in response');
@@ -50,10 +45,8 @@ apiClient.interceptors.response.use(
         const currentUser = store.getState().auth.user;
         if (!currentUser) throw new Error('No user in store');
 
-        // Update store — use the new token as both access and refresh token
         store.dispatch(setCredentials({
           token: newToken,
-          refreshToken: newToken,
           user: currentUser,
         }));
 

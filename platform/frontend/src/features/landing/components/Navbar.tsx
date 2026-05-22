@@ -6,12 +6,12 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/landing.css';
 
 const NAV_LINKS = [
-  { label: 'Home',            href: '#hero' },
-  { label: 'Loan Products',   href: '#loan-products' },
-  { label: 'Lender Partners', href: '#lender-partners' },
-  { label: 'How It Works',    href: '#how-it-works' },
-  { label: 'About',           href: '#why-us' },
-  { label: 'Contact',         href: '#footer' },
+  { label: 'Home',         href: '#hero' },
+  { label: 'Loan Products', href: '#loan-products' },
+  { label: 'Our Partners',  href: '#partners' },
+  { label: 'How It Works',  href: '#how-it-works' },
+  { label: 'About',         href: '#why-us' },
+  { label: 'Contact',       href: '#footer' },
 ];
 
 const scrollTo = (href: string) => {
@@ -20,9 +20,9 @@ const scrollTo = (href: string) => {
 };
 
 const Navbar: React.FC = () => {
-  const [scrolled, setScrolled]       = useState(false);
-  const [drawerOpen, setDrawerOpen]   = useState(false);
-  const navigate                       = useNavigate();
+  const [scrolled, setScrolled]     = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate                     = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -49,32 +49,32 @@ const Navbar: React.FC = () => {
       >
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
-          {/* ── Logo ── */}
+          {/* Logo */}
           <button
             onClick={() => scrollTo('#hero')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <IndianRupee size={20} color="#0A1F44" strokeWidth={2.5} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg, #0A1F44, #1a3a6e)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(10,31,68,.25)' }}>
+              <IndianRupee size={20} color="#D4AF37" strokeWidth={2.5} />
             </div>
             <div style={{ textAlign: 'left', lineHeight: 1.15 }}>
-              <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, color: '#0A1F44', whiteSpace: 'nowrap' }}>
-                Real Money Advisory
+              <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 17, color: '#0A1F44', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
+                Real Money
               </div>
-              <div style={{ fontSize: 11, color: '#D4AF37', fontWeight: 600, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                Solution Pvt Ltd
+              <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                Personal Loan Advisory
               </div>
             </div>
           </button>
 
-          {/* ── Desktop Nav ── */}
+          {/* Desktop Nav */}
           <nav className="nav-desktop">
             {NAV_LINKS.map(link => (
               <button
                 key={link.label}
                 onClick={() => scrollTo(link.href)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#334155', fontFamily: 'Inter, sans-serif', padding: '4px 0', whiteSpace: 'nowrap' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
+                onMouseEnter={e => (e.currentTarget.style.color = '#0A1F44')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#334155')}
               >
                 {link.label}
@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
             </Button>
           </nav>
 
-          {/* ── Mobile Hamburger ── */}
+          {/* Mobile Hamburger */}
           <button
             className="nav-mobile-btn"
             onClick={() => setDrawerOpen(true)}
@@ -114,15 +114,15 @@ const Navbar: React.FC = () => {
         </div>
       </motion.header>
 
-      {/* ── Mobile Drawer ── */}
+      {/* Mobile Drawer */}
       <Drawer
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <IndianRupee size={16} color="#0A1F44" />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #0A1F44, #1a3a6e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IndianRupee size={16} color="#D4AF37" />
             </div>
-            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 700, color: '#0A1F44', fontSize: 15 }}>
-              Real Money Advisory
+            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, color: '#0A1F44', fontSize: 16 }}>
+              Real Money
             </span>
           </div>
         }

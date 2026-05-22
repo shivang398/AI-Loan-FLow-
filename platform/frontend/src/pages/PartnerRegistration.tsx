@@ -85,7 +85,7 @@ const PartnerRegistrationInner: React.FC = () => {
             </div>
             <div>
               <div className="text-2xl font-extrabold" style={{ color: '#FFFFFF', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
-                Real Money Advisory
+                Real Money
               </div>
               <div className="text-sm" style={{ color: '#D4AF37' }}>Channel Partner Registration</div>
             </div>
