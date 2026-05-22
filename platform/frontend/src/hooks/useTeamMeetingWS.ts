@@ -139,7 +139,9 @@ class SimulationEngine {
 
 /* ─── WebSocket constants ─── */
 const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/team-meeting`;
-const MAX_RECONNECT_DELAY_MS = 30_000;
+// After 2 fast retries (~2.5 s total) fall through to simulation — the backend
+// team-meeting WS endpoint is optional; simulation provides full UX offline.
+const MAX_RECONNECT_DELAY_MS = 1_500;
 
 export function useTeamMeetingWS() {
   const dispatch = useDispatch();
@@ -147,7 +149,7 @@ export function useTeamMeetingWS() {
   const { rooms } = useSelector((state: RootState) => state.teamMeeting);
 
   const wsRef           = useRef<WebSocket | null>(null);
-  const reconnectDelay  = useRef(1_000);
+  const reconnectDelay  = useRef(500);
   const reconnectTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSimulated     = useRef(false);
   const simEngine       = useRef(new SimulationEngine());
@@ -263,6 +265,9 @@ export function useTeamMeetingWS() {
         wsRef.current.close();
         wsRef.current = null;
       }
+      // Reset so a re-mount enters simulation quickly again
+      reconnectDelay.current = 500;
+      isSimulated.current = false;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

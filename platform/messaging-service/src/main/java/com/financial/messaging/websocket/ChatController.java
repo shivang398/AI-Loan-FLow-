@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
 import java.util.UUID;
 
 @Controller
@@ -21,23 +22,26 @@ public class ChatController {
 
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload ChatMessageRequest request, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("Received WebSocket message for conversation: {}", request.getConversationId());
-        
-        // In a real app, we would get the user ID from the principal
-        UUID senderId = UUID.randomUUID(); 
-        
+        Principal principal = headerAccessor.getUser();
+        String username = principal != null ? principal.getName() : "anonymous";
+        log.info("WebSocket message from {} for conversation: {}", username, request.getConversationId());
+
+        // Derive a stable UUID from the username so the same user always gets the same ID
+        UUID senderId = UUID.nameUUIDFromBytes(username.getBytes());
+
         messagingService.sendMessage(
                 request.getConversationId(),
-                request.getMessage(),
+                request.getBody(),
                 senderId,
-                request.getChannel() // "INTERNAL" or "WHATSAPP"
+                username,
+                request.getChannel()
         );
     }
 
     @Data
     public static class ChatMessageRequest {
         private UUID conversationId;
-        private String message;
+        private String body;
         private String channel;
     }
 }

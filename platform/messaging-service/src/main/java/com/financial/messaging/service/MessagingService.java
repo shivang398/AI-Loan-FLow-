@@ -26,44 +26,41 @@ public class MessagingService {
     private final WhatsAppService whatsappService;
 
     @Transactional
-    public Message sendMessage(UUID conversationId, String body, UUID senderId, String channel) {
+    public Message sendMessage(UUID conversationId, String body, UUID senderId, String senderUsername, String channel) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
 
         Message message = Message.builder()
                 .conversation(conversation)
                 .messageBody(body)
-                .senderType("OPERATIONS")
+                .senderType(senderUsername)
                 .internalSenderId(senderId)
                 .messageChannel(channel)
                 .messageType("TEXT")
-                .deliveryStatus("PENDING")
+                .deliveryStatus("SENT")
                 .build();
 
         message = messageRepository.save(message);
 
-        // 1. Push to Internal WebSockets (for the other internal person)
-        // If it's an internal chat, send to the RM or Ops user
-        String targetId = conversation.getConversationType() == ConversationType.INTERNAL_RM_OPS 
-                ? (conversation.getRmId().toString()) 
-                : (conversation.getAssignedOpsUserId() != null ? conversation.getAssignedOpsUserId().toString() : "BROADCAST");
+        // Broadcast to the conversation topic — all subscribers (both participants) receive it
+        wsTemplate.convertAndSend("/topic/conversations/" + conversationId, message);
 
-        wsTemplate.convertAndSendToUser(targetId, "/queue/messages", message);
-        
-        // 2. If it's a WhatsApp proxied conversation, send to WhatsApp but MASKED
-        if ("WHATSAPP".equals(channel) || conversation.getConversationType() != ConversationType.INTERNAL_RM_OPS) {
-            // Find connector or customer phone number (simulated here)
-            String recipientPhone = "+919876543210"; 
+        // Only proxy to WhatsApp when the caller explicitly requests it
+        if ("WHATSAPP".equals(channel)) {
+            String recipientPhone = "+919876543210";
             log.info("Proxying message to WhatsApp: {} -> {}", body, recipientPhone);
-            
-            // Actually call WhatsApp API
             whatsappService.sendMessage(recipientPhone, body);
-            
             message.setDeliveryStatus("SENT_TO_WHATSAPP");
             messageRepository.save(message);
         }
 
         return message;
+    }
+
+    /** Overload used by the REST endpoint (no senderUsername needed) */
+    @Transactional
+    public Message sendMessage(UUID conversationId, String body, UUID senderId, String channel) {
+        return sendMessage(conversationId, body, senderId, "INTERNAL", channel);
     }
 
     @Transactional

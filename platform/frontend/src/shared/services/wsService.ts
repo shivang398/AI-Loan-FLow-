@@ -8,9 +8,11 @@ class WebSocketService {
   public connect(url: string, onConnect: () => void) {
     if (this.client?.connected) return;
 
+    const token = localStorage.getItem('token');
     this.client = new Client({
       webSocketFactory: () => new SockJS(url),
-      debug: (str) => console.log('STOMP: ' + str),
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      debug: () => { /* suppress noise */ },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

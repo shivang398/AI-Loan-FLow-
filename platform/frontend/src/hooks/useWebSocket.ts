@@ -9,11 +9,11 @@ export const useWebSocket = (endpoint: string, topic: string) => {
 
   useEffect(() => {
     const socket = new SockJS(endpoint);
+    const token = localStorage.getItem('token');
     const client = new Client({
       webSocketFactory: () => socket,
-      debug: (str) => {
-        console.log(str);
-      },
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      debug: () => { /* suppress noise */ },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
