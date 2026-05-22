@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
-  Form, Input, InputNumber, Select, Button, App as AntdApp, ConfigProvider, Card, Space,
+  Form, Input, InputNumber, Select, Button, App as AntdApp, ConfigProvider, Card, Space, Alert,
 } from 'antd';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
-import { IndianRupee, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { IndianRupee, ArrowLeft, CheckCircle2, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { partnerRegistrationSchema, type PartnerRegistrationData } from '../features/landing/schemas/landingSchemas';
 import { registerPartner } from '../features/landing/api/landingApi';
@@ -20,14 +20,21 @@ const LOAN_PRODUCTS = [
 ];
 
 const landingTheme = {
-  token: { colorPrimary: '#0A1F44', colorLink: '#D4AF37', borderRadius: 8, fontFamily: 'Inter, sans-serif' },
+  token: {
+    colorPrimary: '#0A1F44',
+    colorLink: '#D4AF37',
+    borderRadius: 8,
+    fontFamily: 'Inter, sans-serif',
+  },
 };
 
+const fieldStyle: React.CSSProperties = { height: 46, borderRadius: 8 };
+
 const PartnerRegistrationInner: React.FC = () => {
-  const { message } = AntdApp.useApp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const {
     control,
@@ -35,19 +42,22 @@ const PartnerRegistrationInner: React.FC = () => {
     formState: { errors },
   } = useForm<PartnerRegistrationData>({
     resolver: zodResolver(partnerRegistrationSchema),
-    defaultValues: { interestedProducts: [], yearsOfExperience: 0 },
+    defaultValues: { interestedProducts: [], yearsOfExperience: 0, password: '', confirmPassword: '' },
   });
 
   const onSubmit = async (data: PartnerRegistrationData) => {
     setLoading(true);
+    setApiError(null);
     try {
       const result = await registerPartner(data);
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => navigate('/'), 3000);
-      }
-    } catch {
-      message.error('Registration failed. Please try again.');
+      if (result.success) setSuccess(true);
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'Registration failed. Please try again.';
+      setApiError(msg);
     } finally {
       setLoading(false);
     }
@@ -55,227 +65,238 @@ const PartnerRegistrationInner: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen py-12 px-4"
-      style={{ background: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6e 100%)' }}
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6e 100%)',
+        padding: '48px 16px',
+      }}
     >
-      {/* Header */}
-      <div className="max-w-2xl mx-auto mb-8 flex items-center justify-between gap-4">
+      {/* Top Nav */}
+      <div style={{ maxWidth: 680, margin: '0 auto 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-sm font-medium bg-transparent border-none cursor-pointer"
-          style={{ color: '#CBD5E1' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: 14, fontWeight: 500 }}
         >
           <ArrowLeft size={16} /> Back to Home
         </button>
         <button
           onClick={() => navigate('/login')}
-          className="flex items-center gap-2 text-sm font-medium bg-transparent border-none cursor-pointer"
-          style={{ color: '#D4AF37', fontWeight: 700 }}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D4AF37', fontWeight: 700, fontSize: 14 }}
         >
           Already have an account? <span style={{ textDecoration: 'underline' }}>Login →</span>
         </button>
       </div>
 
-      <div className="max-w-2xl mx-auto">
+      <div style={{ maxWidth: 680, margin: '0 auto' }}>
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: '#D4AF37' }}>
-              <IndianRupee size={24} color="#0A1F44" strokeWidth={2.5} />
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 14, background: '#D4AF37',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 8px 20px rgba(212,175,55,0.35)',
+            }}>
+              <IndianRupee size={26} color="#0A1F44" strokeWidth={2.5} />
             </div>
-            <div>
-              <div className="text-2xl font-extrabold" style={{ color: '#FFFFFF', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 Real Money
               </div>
-              <div className="text-sm" style={{ color: '#D4AF37' }}>Channel Partner Registration</div>
+              <div style={{ fontSize: 13, color: '#D4AF37', fontWeight: 600 }}>Channel Partner Registration</div>
             </div>
           </div>
-          <p style={{ color: '#94A3B8' }}>Join our network and start earning industry-best commissions</p>
+          <p style={{ color: '#94A3B8', margin: 0, fontSize: 15 }}>
+            Join our network and start earning industry-best commissions
+          </p>
         </div>
 
         <AnimatePresence mode="wait">
           {success ? (
             <motion.div
               key="success"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-16"
+              style={{ textAlign: 'center', padding: '60px 24px', background: 'white', borderRadius: 20 }}
             >
-              <CheckCircle2 size={64} color="#10B981" className="mx-auto mb-6" />
-              <h2
-                className="text-2xl font-extrabold mb-3"
-                style={{ color: '#FFFFFF', fontFamily: '"Plus Jakarta Sans", sans-serif' }}
-              >
-                Registration Successful!
+              <div style={{
+                width: 80, height: 80, borderRadius: '50%', background: '#f0fdf4',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 24px',
+              }}>
+                <CheckCircle2 size={48} color="#10B981" />
+              </div>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>
+                Account Created Successfully!
               </h2>
-              <p style={{ color: '#94A3B8' }}>
-                Thank you for registering! Our team will contact you within 24 hours to onboard you as a channel partner.
+              <p style={{ color: '#64748b', fontSize: 16, marginBottom: 8 }}>
+                Your channel partner account is ready. Sign in with your email and the password you just set.
               </p>
-              <p className="text-sm mt-4" style={{ color: '#64748B' }}>
-                Redirecting to home page in 3 seconds...
-              </p>
-              <button
-                onClick={() => navigate('/login')}
-                style={{ marginTop: 16, background: '#D4AF37', border: 'none', borderRadius: 8, padding: '10px 24px', color: '#0A1F44', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}
-              >
-                Go to Platform Login →
-              </button>
+              <div style={{
+                background: '#f8fafc', borderRadius: 12, padding: '16px 24px',
+                border: '1px solid #e2e8f0', display: 'inline-block', margin: '16px 0',
+              }}>
+                <p style={{ margin: 0, color: '#475569', fontSize: 14, fontWeight: 600 }}>
+                  Our team will contact you within 24 hours to complete your KYC and activate payouts.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                <button
+                  onClick={() => navigate('/login')}
+                  style={{
+                    background: '#0A1F44', border: 'none', borderRadius: 10,
+                    padding: '12px 28px', color: 'white', fontWeight: 700,
+                    cursor: 'pointer', fontSize: 15,
+                  }}
+                >
+                  Go to Platform Login →
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  style={{
+                    background: 'transparent', border: '1.5px solid #e2e8f0', borderRadius: 10,
+                    padding: '12px 28px', color: '#475569', fontWeight: 600,
+                    cursor: 'pointer', fontSize: 15,
+                  }}
+                >
+                  Back to Home
+                </button>
+              </div>
             </motion.div>
           ) : (
-            <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card style={{ borderRadius: 16, border: 'none' }}>
+            <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+              <Card style={{ borderRadius: 20, border: 'none', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+                {apiError && (
+                  <Alert
+                    type="error"
+                    message={apiError}
+                    showIcon
+                    closable
+                    onClose={() => setApiError(null)}
+                    style={{ marginBottom: 24, borderRadius: 10 }}
+                  />
+                )}
+
                 <Form layout="vertical" size="large" onFinish={handleSubmit(onSubmit)} noValidate>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-                    {/* Name */}
-                    <Form.Item
-                      label="Full Name"
-                      validateStatus={errors.name ? 'error' : ''}
-                      help={errors.name?.message}
-                    >
-                      <Controller
-                        name="name"
-                        control={control}
-                        render={({ field }) => <Input {...field} placeholder="Your full name" />}
-                      />
-                    </Form.Item>
 
-                    {/* Email */}
-                    <Form.Item
-                      label="Email Address"
-                      validateStatus={errors.email ? 'error' : ''}
-                      help={errors.email?.message}
-                    >
-                      <Controller
-                        name="email"
-                        control={control}
-                        render={({ field }) => <Input {...field} placeholder="you@email.com" type="email" />}
-                      />
-                    </Form.Item>
+                  {/* ── Section: Personal & Business Info ── */}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
+                      Personal & Business Details
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0 24px' }}>
 
-                    {/* Mobile */}
-                    <Form.Item
-                      label="Mobile Number"
-                      validateStatus={errors.mobile ? 'error' : ''}
-                      help={errors.mobile?.message}
-                    >
-                      <Controller
-                        name="mobile"
-                        control={control}
-                        render={({ field }) => (
-                          <Space.Compact style={{ width: '100%' }}>
-                              <Input value="+91" disabled style={{ width: 52, background: '#F8FAFC', color: '#334155', fontWeight: 600 }} />
-                              <Input {...field} placeholder="98765 43210" maxLength={10} style={{ flex: 1 }} />
+                      <Form.Item label="Full Name" validateStatus={errors.name ? 'error' : ''} help={errors.name?.message}>
+                        <Controller name="name" control={control}
+                          render={({ field }) => <Input {...field} placeholder="Your full name" style={fieldStyle} />} />
+                      </Form.Item>
+
+                      <Form.Item label="Email Address" validateStatus={errors.email ? 'error' : ''} help={errors.email?.message}>
+                        <Controller name="email" control={control}
+                          render={({ field }) => <Input {...field} type="email" placeholder="you@email.com" style={fieldStyle} />} />
+                      </Form.Item>
+
+                      <Form.Item label="Mobile Number" validateStatus={errors.mobile ? 'error' : ''} help={errors.mobile?.message}>
+                        <Controller name="mobile" control={control}
+                          render={({ field }) => (
+                            <Space.Compact style={{ width: '100%' }}>
+                              <Input value="+91" disabled style={{ width: 56, background: '#F8FAFC', color: '#334155', fontWeight: 700, textAlign: 'center', height: 46 }} />
+                              <Input {...field} placeholder="98765 43210" maxLength={10} style={{ flex: 1, height: 46 }} />
                             </Space.Compact>
-                        )}
-                      />
-                    </Form.Item>
+                          )} />
+                      </Form.Item>
 
-                    {/* Business Name */}
-                    <Form.Item
-                      label="Business / Firm Name"
-                      validateStatus={errors.businessName ? 'error' : ''}
-                      help={errors.businessName?.message}
-                    >
-                      <Controller
-                        name="businessName"
-                        control={control}
-                        render={({ field }) => <Input {...field} placeholder="Your firm name" />}
-                      />
-                    </Form.Item>
+                      <Form.Item label="Business / Firm Name" validateStatus={errors.businessName ? 'error' : ''} help={errors.businessName?.message}>
+                        <Controller name="businessName" control={control}
+                          render={({ field }) => <Input {...field} placeholder="Your firm name" style={fieldStyle} />} />
+                      </Form.Item>
 
-                    {/* City */}
-                    <Form.Item
-                      label="City"
-                      validateStatus={errors.city ? 'error' : ''}
-                      help={errors.city?.message}
-                    >
-                      <Controller
-                        name="city"
-                        control={control}
-                        render={({ field }) => <Input {...field} placeholder="Jaipur" />}
-                      />
-                    </Form.Item>
+                      <Form.Item label="City" validateStatus={errors.city ? 'error' : ''} help={errors.city?.message}>
+                        <Controller name="city" control={control}
+                          render={({ field }) => <Input {...field} placeholder="e.g. Mumbai, Jaipur" style={fieldStyle} />} />
+                      </Form.Item>
 
-                    {/* Years of Experience */}
-                    <Form.Item
-                      label="Years of Experience"
-                      validateStatus={errors.yearsOfExperience ? 'error' : ''}
-                      help={errors.yearsOfExperience?.message}
-                    >
-                      <Controller
-                        name="yearsOfExperience"
-                        control={control}
-                        render={({ field }) => (
-                          <InputNumber
-                            {...field}
-                            style={{ width: '100%' }}
-                            min={0}
-                            max={50}
-                            placeholder="5"
-                            suffix="years"
-                          />
-                        )}
-                      />
-                    </Form.Item>
+                      <Form.Item label="Years of Experience" validateStatus={errors.yearsOfExperience ? 'error' : ''} help={errors.yearsOfExperience?.message}>
+                        <Controller name="yearsOfExperience" control={control}
+                          render={({ field }) => (
+                            <InputNumber {...field} style={{ width: '100%', height: 46 }} min={0} max={50} placeholder="5" addonAfter="years" />
+                          )} />
+                      </Form.Item>
+                    </div>
                   </div>
 
-                  {/* Interested Products (full width) */}
-                  <Form.Item
-                    label="Interested Loan Products"
-                    validateStatus={errors.interestedProducts ? 'error' : ''}
-                    help={errors.interestedProducts?.message}
-                  >
-                    <Controller
-                      name="interestedProducts"
-                      control={control}
+                  {/* ── Loan Products ── */}
+                  <Form.Item label="Interested Loan Products" validateStatus={errors.interestedProducts ? 'error' : ''} help={(errors.interestedProducts as any)?.message}>
+                    <Controller name="interestedProducts" control={control}
                       render={({ field }) => (
-                        <Select
-                          {...field}
-                          mode="multiple"
-                          options={LOAN_PRODUCTS}
-                          placeholder="Select loan products you want to source"
-                          allowClear
-                        />
-                      )}
-                    />
+                        <Select {...field} mode="multiple" options={LOAN_PRODUCTS} placeholder="Select the loan products you want to source" allowClear style={{ width: '100%' }} />
+                      )} />
                   </Form.Item>
 
-                  {/* Message */}
+                  {/* ── Message ── */}
                   <Form.Item label="Message (optional)">
-                    <Controller
-                      name="message"
-                      control={control}
+                    <Controller name="message" control={control}
                       render={({ field }) => (
-                        <Input.TextArea
-                          {...field}
-                          rows={3}
-                          placeholder="Tell us about your client base and any specific requirements..."
-                          maxLength={500}
-                          showCount
-                        />
-                      )}
-                    />
+                        <Input.TextArea {...field} rows={3} placeholder="Tell us about your client base and any specific requirements..." maxLength={500} showCount />
+                      )} />
                   </Form.Item>
+
+                  {/* ── Password Section ── */}
+                  <div style={{
+                    borderTop: '1px solid #e2e8f0', paddingTop: 24, marginTop: 8,
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>
+                      Set Your Login Password
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0 24px' }}>
+                      <Form.Item label="Password" validateStatus={errors.password ? 'error' : ''} help={errors.password?.message}>
+                        <Controller name="password" control={control}
+                          render={({ field }) => (
+                            <Input.Password
+                              {...field}
+                              prefix={<Lock size={15} style={{ color: '#94a3b8', marginRight: 4 }} />}
+                              placeholder="Min. 8 characters"
+                              style={fieldStyle}
+                              iconRender={visible => visible ? <Eye size={15} /> : <EyeOff size={15} />}
+                            />
+                          )} />
+                      </Form.Item>
+
+                      <Form.Item label="Confirm Password" validateStatus={errors.confirmPassword ? 'error' : ''} help={errors.confirmPassword?.message}>
+                        <Controller name="confirmPassword" control={control}
+                          render={({ field }) => (
+                            <Input.Password
+                              {...field}
+                              prefix={<Lock size={15} style={{ color: '#94a3b8', marginRight: 4 }} />}
+                              placeholder="Re-enter your password"
+                              style={fieldStyle}
+                              iconRender={visible => visible ? <Eye size={15} /> : <EyeOff size={15} />}
+                            />
+                          )} />
+                      </Form.Item>
+                    </div>
+                  </div>
 
                   <Button
                     type="primary"
                     htmlType="submit"
                     block
-                    size="large"
                     loading={loading}
                     style={{
-                      background: '#0A1F44',
-                      borderColor: '#0A1F44',
-                      borderRadius: 8,
+                      background: 'linear-gradient(135deg, #0A1F44, #1a3a6e)',
+                      border: 'none',
+                      borderRadius: 10,
                       fontWeight: 700,
                       height: 52,
                       fontSize: 16,
+                      marginTop: 8,
+                      boxShadow: '0 8px 24px rgba(10,31,68,0.35)',
                     }}
                   >
-                    Submit Registration
+                    {loading ? 'Creating your account...' : 'Create Partner Account'}
                   </Button>
 
-                  <p className="text-xs text-center mt-3" style={{ color: '#94A3B8' }}>
+                  <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: 12, marginTop: 14, marginBottom: 0 }}>
                     By registering, you agree to our Terms of Service and Privacy Policy
                   </p>
                 </Form>

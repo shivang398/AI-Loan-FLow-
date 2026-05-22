@@ -33,17 +33,43 @@ export async function checkEligibility(data: EligibilityFormData): Promise<Eligi
 }
 
 export async function registerPartner(data: PartnerRegistrationData): Promise<{ success: boolean; partnerId: string }> {
-  try {
-    const res = await axios.post('/api/eligibility/submissions', {
-      fullName: data.name,
-      mobile: data.mobile,
-      loanType: 'partner_registration',
-      loanAmount: 0,
-      partnerData: data,
-    }, { timeout: 8000 });
-    const body = res.data?.data || res.data;
-    return { success: true, partnerId: body?.leadId || 'SUBMITTED' };
-  } catch {
-    return { success: true, partnerId: 'SUBMITTED-' + Date.now() };
-  }
+  // Step 1: Create auth account (public endpoint, no token required)
+  const authRes = await axios.post('/api/auth/register/partner', {
+    email: data.email,
+    password: data.password,
+    role: 'CONNECTOR',
+  }, { timeout: 10000 });
+
+  const userId = authRes.data?.data?.userId;
+  if (!userId) throw new Error('Registration did not return a user ID');
+
+  // Step 2: Login to get a JWT so we can hit authenticated endpoints
+  const loginRes = await axios.post('/api/auth/login', {
+    email: data.email,
+    password: data.password,
+  }, { timeout: 10000 });
+
+  const token = loginRes.data?.data?.token || loginRes.data?.data?.accessToken;
+  if (!token) throw new Error('Could not obtain session token after registration');
+
+  // Step 3: Create connector profile with full details
+  const nameParts = data.name.trim().split(' ');
+  const firstName = nameParts[0];
+  const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+  const connRes = await axios.post('/api/connectors', {
+    userId,
+    firstName,
+    lastName,
+    phone: data.mobile,
+    region: data.city,
+    email: data.email,
+    role: 'CONNECTOR',
+  }, {
+    timeout: 10000,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const connectorId = connRes.data?.data?.id;
+  return { success: true, partnerId: connectorId || userId };
 }

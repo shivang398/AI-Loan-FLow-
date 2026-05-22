@@ -65,7 +65,7 @@ const PoliciesPage: React.FC = () => {
       formData.append('category', values.category);
       formData.append('file', fileList[0].originFileObj as File);
       await apiClient.post('/policies/documents/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': undefined },
       });
       message.success('Policy document uploaded successfully');
       setUploadModalOpen(false);

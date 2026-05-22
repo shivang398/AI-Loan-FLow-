@@ -423,3 +423,134 @@ body {
   color: var(--text-secondary) !important;
   font-size: 0.8125rem !important;
 }
+
+/* ─── Mobile Responsive ─── */
+
+/* Login / Signup form panel */
+@media (max-width: 768px) {
+  .login-form-panel {
+    padding: 40px 24px;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  .login-form-panel > div {
+    padding-top: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-form-panel {
+    padding: 32px 20px;
+  }
+}
+
+/* Dashboard content area */
+@media (max-width: 768px) {
+  /* Tables: horizontal scroll on mobile */
+  .ant-table-wrapper {
+    overflow-x: auto !important;
+  }
+
+  .ant-table {
+    min-width: 600px;
+  }
+
+  /* Cards */
+  .ant-card-body {
+    padding: 16px !important;
+  }
+
+  .pro-card .ant-card-body {
+    padding: 16px !important;
+  }
+
+  /* Stats row */
+  .ant-row {
+    flex-wrap: wrap;
+  }
+
+  /* Statistic */
+  .ant-statistic-content-value {
+    font-size: 24px !important;
+  }
+
+  /* Modals */
+  .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px auto !important;
+  }
+
+  .ant-modal-content {
+    padding: 20px !important;
+  }
+
+  /* Drawer */
+  .ant-drawer-body {
+    padding: 0 !important;
+  }
+
+  /* Buttons in header */
+  .ant-space {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  /* Page headers */
+  .page-header-title {
+    font-size: 1.25rem !important;
+  }
+
+  /* Tabs */
+  .ant-tabs-nav {
+    overflow-x: auto;
+  }
+
+  /* Grid stats collapse to 1 col */
+  .ant-col-8 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .ant-col-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  .ant-col-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .ant-statistic-content-value {
+    font-size: 20px !important;
+  }
+}
+
+/* Ensure tables scroll on all screen sizes when content is wide */
+.ant-table-container {
+  overflow-x: auto;
+}
+
+/* Mobile-friendly form items */
+@media (max-width: 768px) {
+  .ant-form-item {
+    margin-bottom: 16px !important;
+  }
+
+  .ant-btn-lg, .ant-btn-default, .ant-btn-primary {
+    font-size: 14px;
+  }
+
+  /* ConnectorHub ag-grid */
+  .ag-root-wrapper {
+    overflow-x: auto !important;
+  }
+}

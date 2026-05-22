@@ -37,6 +37,11 @@ export const partnerRegistrationSchema = z.object({
     .max(50),
   interestedProducts: z.array(z.string()).min(1, 'Select at least one product'),
   message: z.string().max(500).optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string(),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
 });
 
 export type PartnerRegistrationData = z.infer<typeof partnerRegistrationSchema>;

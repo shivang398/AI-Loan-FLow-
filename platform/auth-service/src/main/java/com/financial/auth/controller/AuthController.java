@@ -35,6 +35,16 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("User registered successfully", result, UUID.randomUUID().toString()));
     }
 
+    // Public self-registration — only CONNECTOR role allowed
+    @PostMapping("/register/partner")
+    public ResponseEntity<ApiResponse<Map<String, String>>> registerPartner(@Valid @RequestBody AuthRequests.RegisterRequest request) {
+        AuthRequests.RegisterRequest connectorRequest = new AuthRequests.RegisterRequest(
+                request.email(), request.password(), "CONNECTOR"
+        );
+        Map<String, String> result = authService.registerUser(connectorRequest);
+        return ResponseEntity.ok(ApiResponse.success("Partner registered successfully", result, UUID.randomUUID().toString()));
+    }
+
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Map<String, String>>> login(
             @Valid @RequestBody AuthRequests.LoginRequest request,

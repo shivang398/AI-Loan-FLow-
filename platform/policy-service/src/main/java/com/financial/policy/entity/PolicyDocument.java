@@ -1,6 +1,11 @@
 package com.financial.policy.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -25,8 +30,7 @@ public class PolicyDocument {
     @Column(name = "mime_type", nullable = false)
     private String mimeType;
 
-    @Lob
-    @Column(name = "file_data", nullable = false)
+    @Column(name = "file_data", nullable = false, columnDefinition = "bytea")
     private byte[] fileData;
 
     @Column(name = "file_size_bytes")

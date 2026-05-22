@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography, Drawer } from 'antd';
 import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, Search, UsersRound, Network,
-  BookOpen, Calculator, Zap,
+  BookOpen, Calculator, Zap, Menu as MenuIcon, X,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,12 +14,32 @@ import { RootState } from '../store';
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
 
+const MOBILE_BREAKPOINT = 768;
+
 const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      if (!mobile) setMobileDrawerOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [location.pathname]);
 
   const adminItems = [
     { key: '/dashboard',          icon: <LayoutDashboard size={18} />, label: 'Overview' },
@@ -48,15 +68,15 @@ const DashboardLayout: React.FC = () => {
   ];
 
   const connectorItems = [
-    { key: '/connector/dashboard',      icon: <LayoutDashboard size={18} />, label: 'Overview' },
-    { key: '/connector/check-eligibility', icon: <Zap size={18} />,          label: 'Check Eligibility' },
-    { key: '/connector/cibil',          icon: <ShieldCheck size={18} />,     label: 'CIBIL Check' },
-    { key: '/connector/bsa',            icon: <Files size={18} />,           label: 'Statement Analyzer' },
-    { key: '/connector/foir',           icon: <BarChart3 size={18} />,       label: 'FOIR Calculator' },
-    { key: '/connector/emi-calculator', icon: <Calculator size={18} />,      label: 'EMI Calculator' },
-    { key: '/connector/earnings',       icon: <Wallet size={18} />,          label: 'My Earnings' },
-    { key: '/connector/policies',       icon: <BookOpen size={18} />,        label: 'Policies' },
-    { key: '/connector/team-meeting',   icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+    { key: '/connector/dashboard',        icon: <LayoutDashboard size={18} />, label: 'Overview' },
+    { key: '/connector/check-eligibility',icon: <Zap size={18} />,             label: 'Check Eligibility' },
+    { key: '/connector/cibil',            icon: <ShieldCheck size={18} />,     label: 'CIBIL Check' },
+    { key: '/connector/bsa',              icon: <Files size={18} />,           label: 'Statement Analyzer' },
+    { key: '/connector/foir',             icon: <BarChart3 size={18} />,       label: 'FOIR Calculator' },
+    { key: '/connector/emi-calculator',   icon: <Calculator size={18} />,      label: 'EMI Calculator' },
+    { key: '/connector/earnings',         icon: <Wallet size={18} />,          label: 'My Earnings' },
+    { key: '/connector/policies',         icon: <BookOpen size={18} />,        label: 'Policies' },
+    { key: '/connector/team-meeting',     icon: <UsersRound size={18} />,      label: 'Team Meeting' },
   ];
 
   const tlItems = [
@@ -90,101 +110,149 @@ const DashboardLayout: React.FC = () => {
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : 'AD';
   const displayRole = user?.role || 'ADMIN';
 
+  const SidebarContent = () => (
+    <>
+      {/* Logo */}
+      <div style={{
+        height: 80, display: 'flex', alignItems: 'center',
+        padding: collapsed && !isMobile ? '0 22px' : '0 28px', gap: 14,
+      }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 12,
+          background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, boxShadow: '0 8px 16px rgba(79,70,229,0.3)',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          <ShieldCheck size={22} color="white" strokeWidth={2.5} />
+        </div>
+        {(!collapsed || isMobile) && (
+          <div className="animate-fade-in">
+            <div style={{ color: 'white', fontWeight: 900, fontSize: 18, letterSpacing: '-0.04em', lineHeight: 1.1 }}>
+              Real <span style={{ color: '#818cf8' }}>Money</span>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>
+              Advisory Platform
+            </div>
+          </div>
+        )}
+        {isMobile && (
+          <Button
+            type="text"
+            icon={<X size={18} color="rgba(255,255,255,0.5)" />}
+            onClick={() => setMobileDrawerOpen(false)}
+            style={{ marginLeft: 'auto', color: 'white', border: 'none' }}
+          />
+        )}
+      </div>
+
+      <div style={{ height: 20 }} />
+
+      {(!collapsed || isMobile) && (
+        <div style={{ padding: '0 28px 12px', color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          Main Navigation
+        </div>
+      )}
+
+      <Menu
+        theme="dark"
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        items={menuItems}
+        onClick={({ key }) => navigate(key)}
+        className="pro-sider-menu"
+        style={{ background: 'transparent', border: 'none', padding: '0 14px' }}
+      />
+
+      {(!collapsed || isMobile) && (
+        <div style={{
+          position: 'absolute', bottom: 20, left: 28, right: 28,
+          padding: '16px', borderRadius: 20, background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600 }}>System Secure</Text>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <Layout style={{ minHeight: '100vh', background: 'var(--surface-1)' }}>
-      {/* ── Sidebar ── */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        className="pro-sider"
-        width={280}
-        style={{ position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}
-      >
-        {/* Logo Container */}
-        <div style={{
-          height: 80,
-          display: 'flex',
-          alignItems: 'center',
-          padding: collapsed ? '0 22px' : '0 28px',
-          gap: 14,
-        }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 12,
-            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, boxShadow: '0 8px 16px rgba(79,70,229,0.3)',
-            border: '1px solid rgba(255,255,255,0.1)'
-          }}>
-            <ShieldCheck size={22} color="white" strokeWidth={2.5} />
+
+      {/* ── Desktop Sidebar ── */}
+      {!isMobile && (
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          className="pro-sider"
+          width={280}
+          style={{ position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}
+        >
+          <SidebarContent />
+        </Sider>
+      )}
+
+      {/* ── Mobile Drawer Sidebar ── */}
+      {isMobile && (
+        <Drawer
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          placement="left"
+          width={280}
+          styles={{
+            body: { padding: 0, background: '#0f172a' },
+            header: { display: 'none' },
+            mask: { background: 'rgba(0,0,0,0.6)' },
+          }}
+          style={{ position: 'fixed' }}
+        >
+          <div className="pro-sider" style={{ height: '100%', position: 'relative', background: '#0f172a' }}>
+            <SidebarContent />
           </div>
-          {!collapsed && (
-            <div className="animate-fade-in">
-              <div style={{ color: 'white', fontWeight: 900, fontSize: 18, letterSpacing: '-0.04em', lineHeight: 1.1 }}>
-                Real <span style={{ color: '#818cf8' }}>Money</span>
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>
-                Advisory Platform
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div style={{ height: 20 }} />
-
-        {/* Menu Label */}
-        {!collapsed && (
-          <div style={{ padding: '0 28px 12px', color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Main Navigation
-          </div>
-        )}
-
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          className="pro-sider-menu"
-          style={{ background: 'transparent', border: 'none', padding: '0 14px' }}
-        />
-
-        {/* Sidebar Footer */}
-        {!collapsed && (
-          <div style={{ 
-            position: 'absolute', bottom: 20, left: 28, right: 28,
-            padding: '16px', borderRadius: 20, background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.05)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600 }}>System Secure</Text>
-            </div>
-          </div>
-        )}
-
-      </Sider>
+        </Drawer>
+      )}
 
       {/* ── Main Area ── */}
-      <Layout style={{ marginLeft: collapsed ? 80 : 280, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+      <Layout style={{
+        marginLeft: isMobile ? 0 : (collapsed ? 80 : 280),
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
         {/* Header */}
         <Header
           className="pro-header glass"
           style={{
-            padding: '0 40px', height: 72, display: 'flex',
-            alignItems: 'center', justifyContent: 'space-between',
-            position: 'sticky', top: 0, zIndex: 50,
+            padding: isMobile ? '0 16px' : '0 40px',
+            height: 72,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
-              onClick={() => setCollapsed(!collapsed)}
-              className="hover-scale"
-              style={{ color: 'var(--text-secondary)', width: 40, height: 40, borderRadius: 12 }}
-            />
-            {!collapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
+            {isMobile ? (
+              <Button
+                type="text"
+                icon={<MenuIcon size={22} />}
+                onClick={() => setMobileDrawerOpen(true)}
+                style={{ color: 'var(--text-secondary)', width: 40, height: 40, borderRadius: 12 }}
+              />
+            ) : (
+              <Button
+                type="text"
+                icon={collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+                onClick={() => setCollapsed(!collapsed)}
+                className="hover-scale"
+                style={{ color: 'var(--text-secondary)', width: 40, height: 40, borderRadius: 12 }}
+              />
+            )}
+            {!isMobile && !collapsed && (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <Text style={{ color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Platform
@@ -194,15 +262,21 @@ const DashboardLayout: React.FC = () => {
                 </Title>
               </div>
             )}
+            {isMobile && (
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                Real <span style={{ color: '#6366f1' }}>Money</span>
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Search Trigger */}
-            <Button 
-              type="text" 
-              icon={<Search size={19} />} 
-              style={{ color: 'var(--text-muted)', width: 40, height: 40, borderRadius: 12 }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12 }}>
+            {!isMobile && (
+              <Button
+                type="text"
+                icon={<Search size={19} />}
+                style={{ color: 'var(--text-muted)', width: 40, height: 40, borderRadius: 12 }}
+              />
+            )}
 
             <Tooltip title="Notifications">
               <Badge count={5} size="small" offset={[-6, 6]} color="#4f46e5">
@@ -214,44 +288,45 @@ const DashboardLayout: React.FC = () => {
               </Badge>
             </Tooltip>
 
-            <div style={{ width: 1, height: 28, background: 'var(--surface-3)', margin: '0 8px' }} />
+            {!isMobile && (
+              <div style={{ width: 1, height: 28, background: 'var(--surface-3)', margin: '0 8px' }} />
+            )}
 
             <Dropdown menu={userMenuItems} placement="bottomRight" arrow={{ pointAtCenter: true }}>
               <button style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                background: 'var(--surface-2)', border: '1px solid var(--surface-3)', 
-                cursor: 'pointer', padding: '6px 14px 6px 8px', borderRadius: 16,
+                display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14,
+                background: 'var(--surface-2)', border: '1px solid var(--surface-3)',
+                cursor: 'pointer', padding: isMobile ? '6px 10px 6px 6px' : '6px 14px 6px 8px', borderRadius: 16,
                 transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--brand-400)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--surface-3)')}
-              >
+              }}>
                 <Avatar
                   size={36}
-                  style={{ 
-                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)', 
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
                     fontWeight: 800, fontSize: 12,
-                    boxShadow: '0 4px 10px rgba(79,70,229,0.2)'
+                    boxShadow: '0 4px 10px rgba(79,70,229,0.2)',
                   }}
                 >
                   {initials}
                 </Avatar>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-                    {user?.email?.split('@')[0] || 'Admin'}
+                {!isMobile && (
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                      {user?.email?.split('@')[0] || 'Admin'}
+                    </div>
+                    <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      {displayRole}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    {displayRole}
-                  </div>
-                </div>
+                )}
                 <ChevronDown size={14} color="var(--text-muted)" />
               </button>
             </Dropdown>
           </div>
         </Header>
 
-        {/* Content Wrapper */}
-        <Content style={{ padding: '40px', minHeight: 'calc(100vh - 72px)' }}>
+        {/* Content */}
+        <Content style={{ padding: isMobile ? '20px 16px' : '40px', minHeight: 'calc(100vh - 72px)' }}>
           <div className="animate-fade-in-up">
             <Outlet />
           </div>

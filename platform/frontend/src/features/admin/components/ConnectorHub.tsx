@@ -354,6 +354,7 @@ const ConnectorHub: React.FC = () => {
         lastName: values.lastName,
         phone: values.phone || '',
         region: values.region || '',
+        email: values.email,
         role: 'CONNECTOR'
       });
       const connectorId = connRes.data?.data?.id;
