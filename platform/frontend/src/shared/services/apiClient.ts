@@ -28,8 +28,9 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
-    // Skip refresh for auth endpoints to prevent intercepting login/refresh failures
-    const isAuthEndpoint = originalRequest?.url?.includes('/auth/');
+    // Skip refresh for auth endpoints (URL may be relative without leading slash)
+    const url = originalRequest?.url ?? '';
+    const isAuthEndpoint = url.includes('auth/');
 
     // Handle 401 Unauthorized (only for non-auth endpoints and only once)
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {

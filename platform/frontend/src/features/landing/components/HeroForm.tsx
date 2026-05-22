@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Select, InputNumber, Checkbox, Button, App as AntdApp } from 'antd';
+import { Form, Input, Select, InputNumber, Checkbox, Button, App as AntdApp, Space } from 'antd';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { heroFormSchema, type HeroFormData } from '../schemas/landingSchemas';
@@ -81,7 +81,10 @@ const HeroForm: React.FC = () => {
           style={{ marginBottom: 16 }}
         >
           <Controller name="mobile" control={control} render={({ field }) => (
-            <Input {...field} addonBefore="+91" placeholder="98765 43210" maxLength={10} size="large" style={{ borderRadius: 10 }} />
+            <Space.Compact style={{ width: '100%' }}>
+              <Input value="+91" disabled style={{ width: 56, borderRadius: '10px 0 0 10px', background: '#F8FAFC', color: '#334155', fontWeight: 600 }} />
+              <Input {...field} placeholder="98765 43210" maxLength={10} size="large" style={{ borderRadius: '0 10px 10px 0', flex: 1 }} />
+            </Space.Compact>
           )} />
         </Form.Item>
 

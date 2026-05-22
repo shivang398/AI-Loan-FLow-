@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Form, Input, InputNumber, Select, Button, App as AntdApp, ConfigProvider, Card,
+  Form, Input, InputNumber, Select, Button, App as AntdApp, ConfigProvider, Card, Space,
 } from 'antd';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -162,7 +162,10 @@ const PartnerRegistrationInner: React.FC = () => {
                         name="mobile"
                         control={control}
                         render={({ field }) => (
-                          <Input {...field} addonBefore="+91" placeholder="98765 43210" maxLength={10} />
+                          <Space.Compact style={{ width: '100%' }}>
+                              <Input value="+91" disabled style={{ width: 52, background: '#F8FAFC', color: '#334155', fontWeight: 600 }} />
+                              <Input {...field} placeholder="98765 43210" maxLength={10} style={{ flex: 1 }} />
+                            </Space.Compact>
                         )}
                       />
                     </Form.Item>

@@ -58,10 +58,10 @@ public class GlobalExceptionHandler {
                 );
             }
             case Exception e -> {
-                log.error("Unhandled internal error [TraceID: {}]", traceId, e);
+                log.error("Unhandled error [TraceID: {}]: {}", traceId, e.getClass().getName(), e);
                 yield new ResponseEntity<>(
-                        ApiResponse.error("An internal error occurred", List.of("TraceID: " + traceId), traceId),
-                        HttpStatus.INTERNAL_SERVER_ERROR
+                        ApiResponse.error("Request could not be processed", Collections.emptyList(), traceId),
+                        HttpStatus.BAD_REQUEST
                 );
             }
         };

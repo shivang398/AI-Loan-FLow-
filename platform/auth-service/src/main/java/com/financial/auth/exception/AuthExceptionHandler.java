@@ -8,6 +8,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -44,20 +47,39 @@ public class AuthExceptionHandler {
                 yield ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ApiResponse.error("Validation failed", errors, traceId));
             }
+            // Specific credential errors → 401
             case BadCredentialsException bce -> {
-                log.warn("Invalid login attempt [TraceID: {}]: {}", traceId, bce.getMessage());
+                log.warn("Invalid credentials [TraceID: {}]", traceId);
                 yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Invalid email or password", Collections.emptyList(), traceId));
             }
+            case DisabledException de -> {
+                log.warn("Disabled account login attempt [TraceID: {}]", traceId);
+                yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Account is disabled", Collections.emptyList(), traceId));
+            }
+            case LockedException le -> {
+                log.warn("Locked account login attempt [TraceID: {}]", traceId);
+                yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Account is locked", Collections.emptyList(), traceId));
+            }
+            // Any other Spring Security auth exception → 401 (never leak internals)
+            case AuthenticationException ae -> {
+                log.warn("Authentication error [TraceID: {}]: {}", traceId, ae.getClass().getSimpleName());
+                yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Authentication failed", Collections.emptyList(), traceId));
+            }
+            // Business / runtime errors → 400
             case RuntimeException re -> {
                 log.warn("Auth business error [TraceID: {}]: {}", traceId, re.getMessage());
                 yield ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.error(re.getMessage(), Collections.emptyList(), traceId));
+                        .body(ApiResponse.error("Request could not be processed", Collections.emptyList(), traceId));
             }
+            // Checked exceptions (e.g. IO, SQL bubbling up) → 400, never 500
             case Exception e -> {
-                log.error("Unhandled auth error [TraceID: {}]: ", traceId, e);
-                yield ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(ApiResponse.error("An unexpected error occurred", Collections.emptyList(), traceId));
+                log.error("Unexpected auth error [TraceID: {}]: {}", traceId, e.getClass().getName(), e);
+                yield ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error("Request could not be processed", Collections.emptyList(), traceId));
             }
         };
     }
