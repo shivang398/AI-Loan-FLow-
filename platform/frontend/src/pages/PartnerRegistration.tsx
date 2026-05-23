@@ -218,7 +218,10 @@ const PartnerRegistrationInner: React.FC = () => {
                       <Form.Item label="Years of Experience" validateStatus={errors.yearsOfExperience ? 'error' : ''} help={errors.yearsOfExperience?.message}>
                         <Controller name="yearsOfExperience" control={control}
                           render={({ field }) => (
-                            <InputNumber {...field} style={{ width: '100%', height: 46 }} min={0} max={50} placeholder="5" addonAfter="years" />
+                            <Space.Compact style={{ width: '100%' }}>
+                              <InputNumber {...field} style={{ flex: 1, height: 46 }} min={0} max={50} placeholder="5" />
+                              <Input value="years" disabled style={{ width: 58, height: 46, textAlign: 'center', background: '#F8FAFC', color: '#334155', fontWeight: 600 }} />
+                            </Space.Compact>
                           )} />
                       </Form.Item>
                     </div>
