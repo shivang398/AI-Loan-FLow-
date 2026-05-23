@@ -140,4 +140,17 @@ public class AuthService {
         user.setStatus(status);
         userRepository.save(user);
     }
+
+    @Transactional(readOnly = true)
+    public Map<String, String> lookupUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String role = user.getRoles().isEmpty() ? "UNKNOWN" : user.getRoles().iterator().next().getName();
+        return Map.of(
+            "userId", user.getId().toString(),
+            "email", user.getEmail(),
+            "role", role,
+            "status", user.getStatus()
+        );
+    }
 }

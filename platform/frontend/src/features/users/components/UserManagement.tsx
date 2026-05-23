@@ -210,35 +210,54 @@ const UserManagement: React.FC = () => {
     }
   ];
 
+  const splitName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    return {
+      firstName: parts[0],
+      lastName: parts.length > 1 ? parts.slice(1).join(' ') : parts[0],
+    };
+  };
+
   const handleSaveStaff = async (values: any) => {
     try {
       if (editingStaff) {
-        const nameParts = values.name.trim().split(' ');
-        const firstName = nameParts[0] || values.name;
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const { firstName, lastName } = splitName(values.name);
         await apiClient.put(`/connectors/${editingStaff.id}`, {
           userId: editingStaff.userId,
           firstName,
           lastName,
           phone: editingStaff.phone || '9999999999',
           region: editingStaff.region || 'NATIONAL',
-          role: values.role
+          role: values.role,
+          email: editingStaff.email,
         });
         message.success(`Employee ${values.name} updated successfully`);
       } else {
-        // Step 1: Register user in auth-service
-        const authRes = await apiClient.post('/auth/register', {
-          email: values.email,
-          password: values.tempPassword,
-          role: values.role
-        });
-        const userId = authRes.data?.data?.userId;
-        if (!userId) throw new Error('Registration did not return a userId');
+        // Step 1: Try to register auth account; on 409 recover existing userId
+        let userId: string;
+        try {
+          const authRes = await apiClient.post('/auth/register', {
+            email: values.email,
+            password: values.tempPassword,
+            role: values.role,
+          });
+          userId = authRes.data?.data?.userId;
+          if (!userId) throw new Error('Registration did not return a userId');
+        } catch (regErr: any) {
+          if (regErr.response?.status === 409) {
+            // Email taken — look up existing userId to complete registration
+            const lookupRes = await apiClient.get('/auth/users/lookup', {
+              params: { email: values.email },
+            });
+            userId = lookupRes.data?.data?.userId;
+            if (!userId) throw new Error('Could not resolve existing user account');
+          } else {
+            throw regErr;
+          }
+        }
 
-        // Step 2: Create profile in connector-service
-        const nameParts = values.name.trim().split(' ');
-        const firstName = nameParts[0] || values.name;
-        const lastName = nameParts.slice(1).join(' ') || '';
+        // Step 2: Create connector profile
+        const { firstName, lastName } = splitName(values.name);
         await apiClient.post('/connectors', {
           userId,
           firstName,
@@ -246,7 +265,7 @@ const UserManagement: React.FC = () => {
           email: values.email,
           phone: '99' + Math.floor(10000000 + Math.random() * 90000000),
           region: 'NATIONAL',
-          role: values.role
+          role: values.role,
         });
 
         message.success(`Employee ${values.name} onboarded with role ${values.role}`);
@@ -271,7 +290,22 @@ const UserManagement: React.FC = () => {
           <span className="page-header-subtitle">Manage internal employees, departments, and platform access roles</span>
         </div>
         <Space size={12}>
-          <Button icon={<Download size={16} />}>Export HR Report</Button>
+          <Button icon={<Download size={16} />} onClick={() => {
+            const headers = ['Employee ID', 'Name', 'Email', 'Role', 'Department', 'Status', 'Joining Date'];
+            const rows = staffData.map(s =>
+              [s.empId, s.name, s.email, s.role, s.department, s.status, s.joinDate]
+                .map(v => `"${String(v ?? '').replace(/"/g, '""')}"`)
+                .join(',')
+            );
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `HR_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}>Export HR Report</Button>
           <Button
             type="primary"
             icon={<UserPlus size={16} />}
@@ -373,7 +407,7 @@ const UserManagement: React.FC = () => {
             <Spin size="large" />
           </div>
         ) : (
-          <div className="ag-theme-alpine h-[500px] w-full">
+          <div className="ag-theme-alpine" style={{ height: 500, width: '100%' }}>
             <AgGridReact
               rowData={staffData}
               columnDefs={columnDefs}

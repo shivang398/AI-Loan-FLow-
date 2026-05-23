@@ -6,9 +6,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,10 +22,8 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /** Strips internal detail (stack paths, SQL, class names) before sending to client. */
     private String sanitize(String msg) {
         if (msg == null || msg.isBlank()) return "An error occurred";
-        // Block messages that leak internals
         if (msg.contains("jdbc:") || msg.contains("HikariPool") || msg.contains("org.hibernate")
                 || msg.contains("java.") || msg.contains("com.financial")) {
             return "An error occurred";
@@ -33,9 +34,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
         String traceId = UUID.randomUUID().toString();
-        
-        // Using Java 26 Pattern Matching for Switch
+
         return switch (ex) {
+            case NoResourceFoundException nrfe -> {
+                log.warn("Not found [TraceID: {}]: {}", traceId, nrfe.getMessage());
+                yield new ResponseEntity<>(
+                        ApiResponse.error("Resource not found", Collections.emptyList(), traceId),
+                        HttpStatus.NOT_FOUND);
+            }
+            case HttpRequestMethodNotSupportedException hmns -> {
+                log.warn("Method not allowed [TraceID: {}]: {}", traceId, hmns.getMessage());
+                yield new ResponseEntity<>(
+                        ApiResponse.error("HTTP method not allowed", Collections.emptyList(), traceId),
+                        HttpStatus.METHOD_NOT_ALLOWED);
+            }
+            case MissingServletRequestParameterException msrp -> {
+                log.warn("Missing param [TraceID: {}]: {}", traceId, msrp.getMessage());
+                yield new ResponseEntity<>(
+                        ApiResponse.error("Missing required parameter: " + msrp.getParameterName(),
+                                Collections.emptyList(), traceId),
+                        HttpStatus.BAD_REQUEST);
+            }
             case MethodArgumentNotValidException manv -> {
                 List<String> errors = manv.getBindingResult()
                         .getFieldErrors()
@@ -45,24 +64,20 @@ public class GlobalExceptionHandler {
                 log.warn("Validation failed [TraceID: {}]: {}", traceId, errors);
                 yield new ResponseEntity<>(
                         ApiResponse.error("Validation failed", errors, traceId),
-                        HttpStatus.BAD_REQUEST
-                );
+                        HttpStatus.BAD_REQUEST);
             }
             case RuntimeException re -> {
-                // Log full message server-side; return a safe, generic message to client
                 log.warn("Business error [TraceID: {}]: {}", traceId, re.getMessage());
                 String safeMsg = sanitize(re.getMessage());
                 yield new ResponseEntity<>(
                         ApiResponse.error(safeMsg, Collections.emptyList(), traceId),
-                        HttpStatus.BAD_REQUEST
-                );
+                        HttpStatus.BAD_REQUEST);
             }
-            case Exception e -> {
-                log.error("Unhandled error [TraceID: {}]: {}", traceId, e.getClass().getName(), e);
+            default -> {
+                log.error("Unhandled error [TraceID: {}]: {}", traceId, ex.getClass().getName(), ex);
                 yield new ResponseEntity<>(
-                        ApiResponse.error("Request could not be processed", Collections.emptyList(), traceId),
-                        HttpStatus.BAD_REQUEST
-                );
+                        ApiResponse.error("An unexpected error occurred", Collections.emptyList(), traceId),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         };
     }

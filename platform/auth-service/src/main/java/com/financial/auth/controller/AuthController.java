@@ -94,6 +94,14 @@ public class AuthController {
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @GetMapping("/users/lookup")
+    public ResponseEntity<ApiResponse<Map<String, String>>> lookupUser(
+            @RequestParam String email) {
+        Map<String, String> result = authService.lookupUserByEmail(email);
+        return ResponseEntity.ok(ApiResponse.success("User found", result, UUID.randomUUID().toString()));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PutMapping("/users/{id}/status")
     public ResponseEntity<ApiResponse<String>> updateStatus(
             @PathVariable UUID id,
@@ -103,15 +111,11 @@ public class AuthController {
     }
 
     private void addRefreshCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie(REFRESH_COOKIE, token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);  // requires HTTPS in production
-        cookie.setPath("/auth/refresh");
-        cookie.setMaxAge(REFRESH_COOKIE_MAX_AGE);
-        // SameSite=Strict via header (Cookie API doesn't support it directly before Servlet 6)
+        // Path=/api/auth matches the browser-visible URL (Vite proxy: /api/auth/* → /auth/*)
+        // SameSite=Strict prevents CSRF; Secure is a no-op on localhost but enforced in production
         response.addHeader("Set-Cookie",
                 REFRESH_COOKIE + "=" + token
-                        + "; Path=/auth/refresh; HttpOnly; Secure; SameSite=Strict; Max-Age=" + REFRESH_COOKIE_MAX_AGE);
+                        + "; Path=/api/auth; HttpOnly; Secure; SameSite=Strict; Max-Age=" + REFRESH_COOKIE_MAX_AGE);
     }
 
     private String extractRefreshCookie(HttpServletRequest request) {

@@ -12,30 +12,31 @@ interface User {
 
 export interface AuthState {
   user: User | null;
-  token: string | null;   // access token — kept in memory only, never persisted
+  token: string | null;   // access token — stored in sessionStorage, cleared on tab close
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
 }
 
-// Restore only non-sensitive user profile from localStorage (no tokens)
-const storedUser = (() => {
-  try {
-    const raw = localStorage.getItem('user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-})();
-
 // Remove any legacy tokens left in localStorage from previous sessions
 localStorage.removeItem('token');
 localStorage.removeItem('refreshToken');
 
+// Restore session from sessionStorage (cleared on tab/browser close)
+const storedToken = (() => {
+  try { return sessionStorage.getItem('token') || null; } catch { return null; }
+})();
+const storedUser = (() => {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+})();
+
 const initialState: AuthState = {
   user: storedUser,
-  token: null,         // always starts null; obtained via /auth/refresh on page load
-  isAuthenticated: false,
+  token: storedToken,
+  isAuthenticated: !!(storedToken && storedUser),
   loading: false,
   error: null,
 };
@@ -50,20 +51,22 @@ const authSlice = createSlice({
     ) => {
       const { user, token } = action.payload;
       state.user = user;
-      state.token = token;           // memory only
+      state.token = token;
       state.isAuthenticated = true;
-      // Persist only the non-sensitive user profile
       localStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload;
       state.isAuthenticated = true;
+      sessionStorage.setItem('token', action.payload);
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
       localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;

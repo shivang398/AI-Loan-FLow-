@@ -3,7 +3,6 @@ import { AgGridReact } from 'ag-grid-react';
 import { App, Card, Row, Col, Statistic, Tag, Input, Space, Button, Modal, Form, Select, DatePicker, InputNumber } from 'antd';
 import { Wallet, Search, AlertCircle, CheckCircle2, Clock, Download, Edit2, History } from 'lucide-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
 import apiClient from '../../../shared/services/apiClient';
 
 ModuleRegistry.registerModules([AllCommunityModule]);

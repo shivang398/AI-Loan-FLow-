@@ -195,7 +195,8 @@ const ConnectorHub: React.FC = () => {
     },
     {
       headerName: 'Actions',
-      flex: 2.2,
+      width: 268,
+      minWidth: 268,
       pinned: 'right',
       cellRenderer: (params: any) => {
         const handleStatusChange = async (newStatus: string) => {
@@ -211,42 +212,44 @@ const ConnectorHub: React.FC = () => {
           }
         };
 
+        const btnBase: React.CSSProperties = { borderRadius: 6, fontSize: 11, fontWeight: 700, padding: '0 10px' };
+
         return (
-          <Space size={4}>
+          <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 6 }}>
             <Button
               size="small"
               onClick={() => openProfileDrawer(params.data, 'profile')}
-              style={{ borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#3b82f6', borderColor: '#bfdbfe' }}
+              style={{ ...btnBase, color: '#3b82f6', borderColor: '#bfdbfe' }}
             >
-              View Profile
+              Profile
             </Button>
             <Button
               size="small"
-              icon={<Percent size={12} />}
+              icon={<Percent size={11} />}
               onClick={() => openProfileDrawer(params.data, 'payout')}
-              style={{ borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#6366f1', borderColor: '#a5b4fc' }}
+              style={{ ...btnBase, color: '#6366f1', borderColor: '#a5b4fc' }}
             >
               Payout
             </Button>
             {params.data.status === 'PENDING_APPROVAL' && (
               <Button type="primary" size="small" onClick={() => handleStatusChange('ACTIVE')}
-                style={{ background: '#10b981', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                style={{ ...btnBase, background: '#10b981', border: 'none' }}>
                 Approve
               </Button>
             )}
             {params.data.status === 'ACTIVE' && (
               <Button danger size="small" onClick={() => handleStatusChange('INACTIVE')}
-                style={{ borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                style={btnBase}>
                 Suspend
               </Button>
             )}
             {params.data.status === 'INACTIVE' && (
-              <Button type="default" size="small" onClick={() => handleStatusChange('ACTIVE')}
-                style={{ borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+              <Button size="small" onClick={() => handleStatusChange('ACTIVE')}
+                style={{ ...btnBase, color: '#10b981', borderColor: '#bbf7d0' }}>
                 Activate
               </Button>
             )}
-          </Space>
+          </div>
         );
       }
     }
@@ -383,12 +386,86 @@ const ConnectorHub: React.FC = () => {
     }
   };
 
+  const [sliderIndex, setSliderIndex] = useState(0);
+
   const joinDate = drawerPartner?.createdAt
     ? new Date(drawerPartner.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
 
   const totalBusinessAmount = drawerChartData.reduce((s, d) => s + (d.amount || 0), 0);
   const totalDisbursals = drawerChartData.reduce((s, d) => s + (d.disbursals || 0), 0);
+
+  const activeCount = connectors.filter(c => c.status === 'ACTIVE').length;
+  const pendingCount = connectors.filter(c => c.status === 'PENDING_APPROVAL').length;
+  const regionMap: Record<string, number> = {};
+  connectors.forEach(c => { if (c.region && c.region !== '—') regionMap[c.region] = (regionMap[c.region] || 0) + 1; });
+  const topRegion = Object.entries(regionMap).sort((a, b) => b[1] - a[1])[0];
+
+  const slides = [
+    {
+      gradient: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+      accent: '#3b82f6',
+      icon: <Users size={32} color="#3b82f6" />,
+      label: 'NETWORK OVERVIEW',
+      title: `${connectors.length} Channel Partners`,
+      subtitle: `${activeCount} active · ${rms.length} dedicated RMs managing the network`,
+      stat: `${Math.round((activeCount / Math.max(connectors.length, 1)) * 100)}%`,
+      statLabel: 'activation rate',
+      dots: [
+        { value: activeCount, label: 'Active', color: '#10b981' },
+        { value: pendingCount, label: 'Pending', color: '#f59e0b' },
+        { value: rms.length, label: 'RMs', color: '#3b82f6' },
+      ]
+    },
+    {
+      gradient: 'linear-gradient(135deg, #1a1060 0%, #0f172a 100%)',
+      accent: '#8b5cf6',
+      icon: <TrendingUp size={32} color="#a78bfa" />,
+      label: 'GROWTH PIPELINE',
+      title: 'Partner Acquisition Funnel',
+      subtitle: 'Track onboarding stages from registration to first disbursement',
+      stat: pendingCount > 0 ? `${pendingCount}` : '0',
+      statLabel: 'awaiting approval',
+      dots: [
+        { value: connectors.length, label: 'Registered', color: '#8b5cf6' },
+        { value: activeCount, label: 'Approved', color: '#6366f1' },
+        { value: pendingCount, label: 'In Review', color: '#f59e0b' },
+      ]
+    },
+    {
+      gradient: 'linear-gradient(135deg, #064e3b 0%, #0f172a 100%)',
+      accent: '#10b981',
+      icon: <MapPin size={32} color="#34d399" />,
+      label: 'REGIONAL COVERAGE',
+      title: topRegion ? `${topRegion[0]} is Your Strongest Region` : 'Build Regional Coverage',
+      subtitle: topRegion
+        ? `${topRegion[1]} partner${topRegion[1] > 1 ? 's' : ''} operating in ${topRegion[0]} · Expand to under-served zones`
+        : 'Assign regions when onboarding partners to track geographic coverage',
+      stat: Object.keys(regionMap).length > 0 ? `${Object.keys(regionMap).length}` : '—',
+      statLabel: 'regions covered',
+      dots: Object.entries(regionMap).slice(0, 3).map(([k, v]) => ({ value: v, label: k, color: '#10b981' })),
+    },
+    {
+      gradient: 'linear-gradient(135deg, #7c2d12 0%, #0f172a 100%)',
+      accent: '#f97316',
+      icon: <Banknote size={32} color="#fb923c" />,
+      label: 'PAYOUT READINESS',
+      title: 'Commission Engine Active',
+      subtitle: 'Bank-wise payout slabs configured · Auto-calculates on each disbursement',
+      stat: `${payoutSlabs.length}`,
+      statLabel: 'payout slabs',
+      dots: [
+        { value: payoutSlabs.filter(s => s.status === 'ACTIVE').length, label: 'Active slabs', color: '#f97316' },
+        { value: payoutSlabs.filter(s => s.status === 'PROMOTIONAL').length, label: 'Promo', color: '#fbbf24' },
+        { value: rms.length, label: 'RM overseers', color: '#94a3b8' },
+      ]
+    },
+  ];
+
+  useEffect(() => {
+    const t = setInterval(() => setSliderIndex(i => (i + 1) % slides.length), 4500);
+    return () => clearInterval(t);
+  }, [slides.length]);
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -404,6 +481,87 @@ const ConnectorHub: React.FC = () => {
             Onboard New Partner
           </Button>
         </Space>
+      </div>
+
+      {/* ── Insight Slider ── */}
+      <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', height: 168, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+        {slides.map((slide, i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute', inset: 0,
+              background: slide.gradient,
+              padding: '24px 32px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              opacity: sliderIndex === i ? 1 : 0,
+              transform: sliderIndex === i ? 'translateX(0)' : 'translateX(40px)',
+              transition: 'opacity 0.55s ease, transform 0.55s ease',
+              pointerEvents: sliderIndex === i ? 'auto' : 'none',
+            }}
+          >
+            {/* Left: icon + text */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 22, flex: 1, minWidth: 0 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 18, flexShrink: 0,
+                background: `${slide.accent}20`,
+                border: `1px solid ${slide.accent}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {slide.icon}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: slide.accent, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>
+                  {slide.label}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'white', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 6 }}>
+                  {slide.title}
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500, lineHeight: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {slide.subtitle}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: big stat + mini dots */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexShrink: 0, marginLeft: 24 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 42, fontWeight: 900, color: slide.accent, lineHeight: 1, letterSpacing: '-0.04em' }}>
+                  {slide.stat}
+                </div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4 }}>
+                  {slide.statLabel}
+                </div>
+              </div>
+              {slide.dots.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {slide.dots.map((d, di) => (
+                    <div key={di} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: d.color, boxShadow: `0 0 6px ${d.color}` }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'white', minWidth: 16 }}>{d.value}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Slide navigation dots */}
+        <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setSliderIndex(i)}
+              style={{
+                width: sliderIndex === i ? 22 : 6,
+                height: 6, borderRadius: 100, border: 'none', padding: 0, cursor: 'pointer',
+                background: sliderIndex === i ? slides[sliderIndex].accent : 'rgba(255,255,255,0.25)',
+                transition: 'all 0.35s ease',
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       <Tabs defaultActiveKey="1" className="premium-tabs" items={[

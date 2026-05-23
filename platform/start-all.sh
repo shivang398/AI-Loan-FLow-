@@ -6,9 +6,11 @@ PID_FILE="$PLATFORM_DIR/.service-pids"
 LOG_DIR="$PLATFORM_DIR/logs"
 export PATH="/home/shivang/Desktop/Auditor/maven/apache-maven-3.9.6/bin:$PATH"
 
-# Use env-supplied JWT_SECRET or a deterministic local-dev placeholder (NOT for production)
+# JWT secret — must be set in production; falls back to local-dev placeholder
 JWT_SECRET="${JWT_SECRET:-LocalDevSecretMustBeAtLeast32CharsLong!}"
 
+# Token expiry: 8 hours for normal use
+JWT_EXPIRY_MS="${JWT_EXPIRY_MS:-28800000}"
 
 SERVICES=(
   "auth-service:8081"
@@ -21,7 +23,6 @@ SERVICES=(
   "rm-tracking-service:8088"
   "query-service:8089"
   "document-service:8090"
-  "notification-service:8091"
   "commission-service:8092"
   "reporting-service:8093"
   "analytics-service:8094"
@@ -31,22 +32,7 @@ SERVICES=(
 mkdir -p "$LOG_DIR"
 > "$PID_FILE"
 
-# echo "==> Starting infrastructure (PostgreSQL, RabbitMQ, Redis, LocalStack)..."
-# docker compose -f "$PLATFORM_DIR/docker-compose.yml" up -d
-# 
-# echo "==> Waiting for infrastructure to be healthy..."
-# for i in {1..30}; do
-#   HEALTHY=$(docker compose -f "$PLATFORM_DIR/docker-compose.yml" ps --format json 2>/dev/null \
-#     | grep -c '"Health":"healthy"' || true)
-#   TOTAL=4
-#   if [ "$HEALTHY" -ge "$TOTAL" ]; then
-#     echo "    Infrastructure ready."
-#     break
-#   fi
-#   echo "    Waiting... ($i/30)"
-#   sleep 3
-# done
-echo "==> Infrastructure assumed ready."
+echo "==> Infrastructure assumed ready (PostgreSQL:5434, Redis:6381)."
 
 echo ""
 echo "==> Building all services (skipping tests)..."
@@ -64,6 +50,11 @@ for entry in "${SERVICES[@]}"; do
     echo "    [SKIP] $SVC — JAR not found"
     continue
   fi
+
+  # Kill any stale process on this port
+  STALE=$(lsof -ti :"$PORT" 2>/dev/null || true)
+  [ -n "$STALE" ] && kill "$STALE" 2>/dev/null && sleep 1
+
   LOG="$LOG_DIR/$SVC.log"
   java -XX:TieredStopAtLevel=1 -Xmx256m \
     -Dserver.port="$PORT" -DPORT="$PORT" \
@@ -76,29 +67,55 @@ for entry in "${SERVICES[@]}"; do
     -DREDIS_HOST=localhost -DREDIS_PORT=6381 \
     -Dspring.data.redis.host=localhost -Dspring.data.redis.port=6381 \
     -DJWT_SECRET="$JWT_SECRET" \
+    -DJWT_EXPIRY_MS="$JWT_EXPIRY_MS" \
+    -Dmanagement.health.rabbit.enabled=false \
+    -Dmanagement.health.redis.enabled=false \
     -jar "$JAR" > "$LOG" 2>&1 &
   PID=$!
   echo "$SVC=$PID" >> "$PID_FILE"
-  echo "    Started $SVC (PID $PID) → http://localhost:$PORT  [log: logs/$SVC.log]"
+  echo "    Started $SVC (PID $PID) → http://localhost:$PORT"
 done
 
 echo ""
-echo "==> All services launched. URL summary:"
-echo ""
-echo "  Service                Port    URL"
-echo "  ─────────────────────────────────────────────────────"
+echo "==> Waiting for services to become healthy (up to 120s)..."
+ALL_OK=true
 for entry in "${SERVICES[@]}"; do
   SVC="${entry%%:*}"
   PORT="${entry##*:}"
-  printf "  %-22s %-7s http://localhost:%s\n" "$SVC" "$PORT" "$PORT"
+  for i in $(seq 1 24); do
+    CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "http://localhost:$PORT/actuator/health" 2>/dev/null || echo "000")
+    if [ "$CODE" = "200" ]; then
+      printf "    ✓ %-30s :%-5s UP\n" "$SVC" "$PORT"
+      break
+    fi
+    if [ "$i" -eq 24 ]; then
+      printf "    ✗ %-30s :%-5s FAILED (check logs/$SVC.log)\n" "$SVC" "$PORT"
+      ALL_OK=false
+    fi
+    sleep 5
+  done
+done
+
+echo ""
+if $ALL_OK; then
+  echo "==> All services healthy!"
+else
+  echo "==> Some services failed to start. Check logs/ for details."
+fi
+
+echo ""
+echo "  Service                        Port    URL"
+echo "  ────────────────────────────────────────────────────────"
+for entry in "${SERVICES[@]}"; do
+  SVC="${entry%%:*}"
+  PORT="${entry##*:}"
+  printf "  %-30s %-7s http://localhost:%s\n" "$SVC" "$PORT" "$PORT"
 done
 echo ""
-echo "  Infrastructure:"
-echo "  PostgreSQL             5434    localhost:5434"
-echo "  RabbitMQ management    15673   http://localhost:15673  (guest/guest)"
-echo "  Redis                  6381    localhost:6381"
-echo "  LocalStack S3          4566    http://localhost:4566"
+echo "  Database:   PostgreSQL → localhost:5434"
+echo "  Cache:      Redis      → localhost:6381"
+echo "  Frontend:   cd frontend && npm run dev → http://localhost:3000"
 echo ""
-echo "  Health endpoints:  http://localhost:<PORT>/actuator/health"
-echo "  PIDs stored in:    .service-pids"
-echo "  Logs in:           logs/"
+echo "  Admin login:  admin@platform.com / Admin@1234"
+echo "  Partner reg:  http://localhost:3000/partners/register"
+echo "  Logs:         $LOG_DIR/"
