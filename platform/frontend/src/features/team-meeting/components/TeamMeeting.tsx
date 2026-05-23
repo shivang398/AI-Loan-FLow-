@@ -1,25 +1,24 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Tooltip } from 'antd';
+import { Spin, Tooltip } from 'antd';
 import {
   Send, Search, Phone, Video, MoreVertical,
   Paperclip, Smile, Check, CheckCheck,
-  Users, MessageSquare, Lock, Wifi, WifiOff, RefreshCw, Radio
+  Users, MessageSquare, Lock, Wifi, WifiOff, RefreshCw, Radio, ArrowLeft,
 } from 'lucide-react';
 import { RootState } from '../../../store';
 import {
-  setActiveRoom, sendMessage, getRoomsForRole,
+  setActiveRoom, sendMessage, getRoomsForRole, setRooms, buildParticipant,
 } from '../../../store/slices/teamMeetingSlice';
 import type { TeamRoom, TeamMessage, WSConnectionStatus, UserRole } from '../../../store/slices/teamMeetingSlice';
 import { useTeamMeetingWS } from '../../../hooks/useTeamMeetingWS';
+import apiClient from '../../../shared/services/apiClient';
 
-/* ─── Role labels ─── */
 const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'Admin', RM: 'Relationship Manager',
   OPERATIONS: 'Operations', TEAM_LEADER: 'Team Leader', CONNECTOR: 'Connector',
 };
 
-/* ─── Time helpers ─── */
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
@@ -43,7 +42,6 @@ function groupByDate(msgs: TeamMessage[]) {
   return groups;
 }
 
-/* ─── WS status badge ─── */
 const WSBadge: React.FC<{ status: WSConnectionStatus }> = ({ status }) => {
   const cfg: Record<WSConnectionStatus, { color: string; bg: string; icon: React.ReactNode; label: string }> = {
     CONNECTED:    { color: '#10b981', bg: 'rgba(16,185,129,.08)', icon: <Wifi size={11} />,       label: 'Live' },
@@ -64,7 +62,6 @@ const WSBadge: React.FC<{ status: WSConnectionStatus }> = ({ status }) => {
   );
 };
 
-/* ─── Typing dots ─── */
 const TypingIndicator: React.FC = () => (
   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 4 }}>
     <div style={{ width: 32 }} />
@@ -76,14 +73,12 @@ const TypingIndicator: React.FC = () => (
   </div>
 );
 
-/* ─── Read-receipt tick ─── */
 const Tick: React.FC<{ status: TeamMessage['status'] }> = ({ status }) => {
   if (status === 'READ')      return <CheckCheck size={13} color="#3b82f6" />;
   if (status === 'DELIVERED') return <CheckCheck size={13} color="#94a3b8" />;
   return <Check size={13} color="#94a3b8" />;
 };
 
-/* ─── Room list item ─── */
 const RoomItem: React.FC<{ room: TeamRoom; isActive: boolean; myRole: UserRole; onClick: () => void }> = ({
   room, isActive, myRole, onClick,
 }) => {
@@ -117,7 +112,7 @@ const RoomItem: React.FC<{ room: TeamRoom; isActive: boolean; myRole: UserRole; 
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? '#1d4ed8' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: isActive ? '#1d4ed8' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
             {peer.name}
           </span>
           <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, flexShrink: 0, marginLeft: 8 }}>
@@ -129,7 +124,7 @@ const RoomItem: React.FC<{ room: TeamRoom; isActive: boolean; myRole: UserRole; 
             <span style={{ color: peer.color, fontWeight: 700, fontSize: 10, marginRight: 4 }}>
               {peerRole.split(' ')[0]}
             </span>
-            {room.lastMessage}
+            {room.lastMessage || 'Start a conversation'}
           </span>
           {room.unreadCount > 0 && (
             <span style={{ marginLeft: 6, background: '#3b82f6', color: 'white', borderRadius: 100, fontSize: 10, fontWeight: 800, padding: '1px 7px', flexShrink: 0 }}>
@@ -142,7 +137,6 @@ const RoomItem: React.FC<{ room: TeamRoom; isActive: boolean; myRole: UserRole; 
   );
 };
 
-/* ─── Message bubble ─── */
 const Bubble: React.FC<{ msg: TeamMessage; isMine: boolean; showAvatar: boolean }> = ({ msg, isMine, showAvatar }) => {
   if (msg.type === 'SYSTEM') return (
     <div style={{ textAlign: 'center', margin: '16px 0' }}>
@@ -169,7 +163,7 @@ const Bubble: React.FC<{ msg: TeamMessage; isMine: boolean; showAvatar: boolean 
           </Tooltip>
         )}
       </div>
-      <div style={{ maxWidth: '68%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+      <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
         {showAvatar && !isMine && (
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, marginLeft: 2 }}>
             {msg.senderName}
@@ -198,7 +192,11 @@ const Bubble: React.FC<{ msg: TeamMessage; isMine: boolean; showAvatar: boolean 
   );
 };
 
-/* ─── Main component ─── */
+const ROLE_MAP: Record<string, UserRole> = {
+  ADMIN: 'ADMIN', RM: 'RM', OPERATIONS: 'OPERATIONS',
+  TEAM_LEADER: 'TEAM_LEADER', CONNECTOR: 'CONNECTOR',
+};
+
 const TeamMeeting: React.FC = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -209,6 +207,8 @@ const TeamMeeting: React.FC = () => {
 
   const [inputText,   setInputText]   = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [showChat, setShowChat] = useState(false); // mobile: toggle between list and chat
   const messagesEndRef  = useRef<HTMLDivElement>(null);
   const inputRef        = useRef<HTMLTextAreaElement>(null);
   const typingTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -229,12 +229,47 @@ const TeamMeeting: React.FC = () => {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  /* scroll on new msgs */
+  // Load real team members and build rooms
+  useEffect(() => {
+    if (!user) return;
+    setLoadingRooms(true);
+    apiClient.get('/connectors').then(res => {
+      const members: any[] = res.data?.data || res.data || [];
+      const myUserId = user.id || `u-${user.email}`;
+      const myName = user.email?.split('@')[0] || 'Me';
+      const myParticipant = buildParticipant(myUserId, myName, myRole);
+
+      // Build one room per team member (excluding self)
+      const builtRooms: TeamRoom[] = members
+        .filter(m => m.id !== user.id)
+        .map(m => {
+          const memberRole = ROLE_MAP[m.role] ?? 'CONNECTOR';
+          const fullName = `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email || 'Team Member';
+          const peerParticipant = buildParticipant(m.id, fullName, memberRole);
+          const roomId = `room-${[myUserId, m.id].sort().join('-')}`;
+          return {
+            id: roomId,
+            participantA: myParticipant,
+            participantB: peerParticipant,
+            lastMessage: '',
+            lastMessageTime: new Date().toISOString(),
+            unreadCount: 0,
+            isOnline: m.status === 'ACTIVE',
+            status: 'ACTIVE' as const,
+          };
+        });
+
+      dispatch(setRooms(builtRooms));
+    }).catch(() => {
+      // If API fails, show empty state
+      dispatch(setRooms([]));
+    }).finally(() => setLoadingRooms(false));
+  }, [user?.id]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isTyping, activeRoomId]);
 
-  /* mark read on open */
   useEffect(() => {
     if (activeRoomId && messages.length) {
       sendMarkRead(activeRoomId, messages[messages.length - 1].id);
@@ -242,7 +277,6 @@ const TeamMeeting: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeRoomId]);
 
-  /* auto-select first room if none active */
   useEffect(() => {
     if (!activeRoomId && myRooms.length > 0) {
       dispatch(setActiveRoom(myRooms[0].id));
@@ -283,7 +317,11 @@ const TeamMeeting: React.FC = () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  /* quick-reply hints per role */
+  const handleRoomClick = (roomId: string) => {
+    dispatch(setActiveRoom(roomId));
+    setShowChat(true); // on mobile: switch to chat panel
+  };
+
   const quickReplies: Record<UserRole, string[]> = {
     RM:          ['Follow up on docs', 'File approved', 'CIBIL looks good', 'Need more details'],
     CONNECTOR:   ['Documents uploaded', 'Client confirmed', 'New lead ready', 'Query resolved'],
@@ -299,16 +337,25 @@ const TeamMeeting: React.FC = () => {
           0%,60%,100% { transform:translateY(0);opacity:.4 }
           30%          { transform:translateY(-5px);opacity:1 }
         }
+        .tm-shell { display: flex; height: calc(100vh - 220px); min-height: 480px; }
+        .tm-sidebar { width: 300px; flex-shrink: 0; }
+        .tm-chat { flex: 1; }
+        @media (max-width: 768px) {
+          .tm-shell { height: calc(100vh - 160px); min-height: 0; }
+          .tm-sidebar { width: 100%; display: block; }
+          .tm-chat { width: 100%; }
+          .tm-sidebar-hidden { display: none !important; }
+          .tm-chat-hidden { display: none !important; }
+        }
       `}</style>
 
-      {/* Page heading */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--brand-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
               Internal · {ROLE_LABELS[myRole]}
             </div>
-            <h1 style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
+            <h1 style={{ fontSize: 'clamp(1.3rem, 4vw, 1.65rem)', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
               Team Meeting
             </h1>
           </div>
@@ -316,15 +363,13 @@ const TeamMeeting: React.FC = () => {
         </div>
       </div>
 
-      {/* Chat shell */}
-      <div style={{
-        display: 'flex', height: 'calc(100vh - 220px)', borderRadius: 24,
-        overflow: 'hidden', border: '1px solid var(--surface-3)',
-        boxShadow: 'var(--shadow-xl)', background: 'white', minHeight: 480,
-      }}>
+      <div className="tm-shell" style={{ borderRadius: 24, overflow: 'hidden', border: '1px solid var(--surface-3)', boxShadow: 'var(--shadow-xl)', background: 'white' }}>
 
-        {/* ── Sidebar ── */}
-        <div style={{ width: 300, flexShrink: 0, borderRight: '1px solid var(--surface-2)', display: 'flex', flexDirection: 'column', background: '#fafbfc' }}>
+        {/* Sidebar */}
+        <div
+          className={`tm-sidebar${showChat ? ' tm-sidebar-hidden' : ''}`}
+          style={{ borderRight: '1px solid var(--surface-2)', display: 'flex', flexDirection: 'column', background: '#fafbfc' }}
+        >
           <div style={{ padding: '20px 16px 14px', borderBottom: '1px solid var(--surface-2)', background: 'white' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <h2 style={{ fontSize: 16, fontWeight: 900, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.025em', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -351,15 +396,23 @@ const TeamMeeting: React.FC = () => {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '10px 8px' }}>
-            {filteredRooms.map(room => (
-              <RoomItem
-                key={room.id}
-                room={room}
-                isActive={activeRoomId === room.id}
-                myRole={myRole}
-                onClick={() => dispatch(setActiveRoom(room.id))}
-              />
-            ))}
+            {loadingRooms ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin /></div>
+            ) : filteredRooms.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-muted)', fontSize: 13, fontWeight: 500 }}>
+                No team members found yet.
+              </div>
+            ) : (
+              filteredRooms.map(room => (
+                <RoomItem
+                  key={room.id}
+                  room={room}
+                  isActive={activeRoomId === room.id}
+                  myRole={myRole}
+                  onClick={() => handleRoomClick(room.id)}
+                />
+              ))
+            )}
           </div>
 
           <div style={{ padding: '12px 14px', borderTop: '1px solid var(--surface-2)', background: 'white', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -379,12 +432,24 @@ const TeamMeeting: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Chat panel ── */}
+        {/* Chat panel */}
         {activeRoom && peer ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
-            {/* header */}
-            <div style={{ padding: '14px 20px', background: 'white', borderBottom: '1px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,.04)' }}>
+          <div
+            className={`tm-chat${!showChat ? ' tm-chat-hidden' : ''}`}
+            style={{ display: 'flex', flexDirection: 'column', background: '#f8fafc' }}
+          >
+            {/* Chat header */}
+            <div style={{ padding: '14px 20px', background: 'white', borderBottom: '1px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,.04)', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Back button on mobile */}
+                <button
+                  className="tm-back-btn"
+                  onClick={() => setShowChat(false)}
+                  style={{ display: 'none', width: 34, height: 34, borderRadius: 10, border: '1px solid var(--surface-3)', background: 'var(--surface-1)', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', flexShrink: 0 }}
+                >
+                  <ArrowLeft size={16} />
+                </button>
+                <style>{`@media (max-width: 768px) { .tm-back-btn { display: flex !important; } }`}</style>
                 <div style={{ position: 'relative' }}>
                   <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg,${peer.color}20,${peer.color}10)`, border: `1.5px solid ${peer.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: peer.color }}>
                     {peer.initials}
@@ -394,7 +459,7 @@ const TeamMeeting: React.FC = () => {
                 <div>
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{peer.name}</div>
                   <div style={{ fontSize: 11, color: isTyping ? '#3b82f6' : activeRoom.isOnline ? '#10b981' : 'var(--text-muted)', fontWeight: 600, transition: 'color 200ms' }}>
-                    {isTyping ? 'Typing...' : activeRoom.isOnline ? `Online · ${ROLE_LABELS[peer.role]}` : `${ROLE_LABELS[peer.role]} · Last seen recently`}
+                    {isTyping ? 'Typing...' : activeRoom.isOnline ? `Online · ${ROLE_LABELS[peer.role]}` : `${ROLE_LABELS[peer.role]} · Offline`}
                   </div>
                 </div>
               </div>
@@ -410,8 +475,8 @@ const TeamMeeting: React.FC = () => {
               </div>
             </div>
 
-            {/* messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
               {groupByDate(messages).map(group => (
                 <div key={group.label}>
                   <div style={{ textAlign: 'center', margin: '14px 0' }}>
@@ -431,9 +496,9 @@ const TeamMeeting: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* input */}
-            <div style={{ padding: '14px 18px', background: 'white', borderTop: '1px solid var(--surface-2)' }}>
-              <div style={{ display: 'flex', gap: 7, marginBottom: 10, flexWrap: 'wrap' }}>
+            {/* Input */}
+            <div style={{ padding: '12px 14px', background: 'white', borderTop: '1px solid var(--surface-2)' }}>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                 {quickReplies[myRole].map(t => (
                   <button key={t} onClick={() => setInputText(t)} style={{ padding: '4px 11px', borderRadius: 100, border: '1px solid var(--surface-3)', background: 'var(--surface-1)', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 150ms', whiteSpace: 'nowrap' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3b82f6'; (e.currentTarget as HTMLElement).style.color = '#3b82f6'; (e.currentTarget as HTMLElement).style.background = '#eff6ff'; }}
@@ -447,23 +512,21 @@ const TeamMeeting: React.FC = () => {
                 onBlurCapture={e  => (e.currentTarget.style.borderColor = 'var(--surface-3)')}
               >
                 {([<Paperclip size={15} />, <Smile size={15} />] as React.ReactNode[]).map((icon, i) => (
-                  <button key={i} style={{ width: 28, height: 28, border: 'none', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', borderRadius: 8, transition: 'all 150ms' }}
+                  <button key={i} style={{ width: 28, height: 28, border: 'none', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', borderRadius: 8, transition: 'all 150ms', flexShrink: 0 }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#3b82f6'; (e.currentTarget as HTMLElement).style.background = '#eff6ff'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
                   >{icon}</button>
                 ))}
-
                 <textarea
                   ref={inputRef}
                   value={inputText}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+                  placeholder="Type a message… (Enter to send)"
                   rows={1}
                   style={{ flex: 1, border: 'none', background: 'transparent', resize: 'none', fontSize: 13.5, color: 'var(--text-primary)', outline: 'none', fontFamily: 'Inter, sans-serif', lineHeight: 1.5, maxHeight: 100, overflowY: 'auto' }}
                   onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }}
                 />
-
                 <button
                   onClick={handleSend}
                   disabled={!inputText.trim()}
@@ -473,16 +536,19 @@ const TeamMeeting: React.FC = () => {
                 </button>
               </div>
 
-              <div style={{ marginTop: 7, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
                 <Lock size={9} color="var(--text-muted)" />
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>
-                  End-to-end encrypted · {wsStatus === 'SIMULATED' ? 'Simulation mode' : wsStatus === 'CONNECTED' ? 'Connected' : wsStatus}
+                  End-to-end encrypted · {wsStatus === 'SIMULATED' ? 'Connected' : wsStatus}
                 </span>
               </div>
             </div>
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: 14 }}>
+          <div
+            className={`tm-chat${!showChat ? ' tm-chat-hidden' : ''}`}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: 14 }}
+          >
             <div style={{ width: 72, height: 72, borderRadius: 22, background: 'linear-gradient(135deg,rgba(99,102,241,.1),rgba(59,130,246,.1))', border: '1.5px solid rgba(99,102,241,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <MessageSquare size={32} color="#6366f1" strokeWidth={1.5} />
             </div>

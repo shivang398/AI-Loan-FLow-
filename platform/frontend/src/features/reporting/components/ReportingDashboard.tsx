@@ -17,7 +17,8 @@ import {
   Statistic,
   Upload,
   InputNumber,
-  Spin
+  Spin,
+  Divider
 } from 'antd';
 import {
   FileSpreadsheet,
@@ -28,7 +29,9 @@ import {
   Users,
   Briefcase,
   TrendingUp,
-  Inbox
+  Inbox,
+  Send,
+  Mail
 } from 'lucide-react';
 
 const { Title, Text } = Typography;
@@ -39,18 +42,30 @@ const ReportingDashboard: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadForm] = Form.useForm();
+  const [emailForm] = Form.useForm();
   const [rmList, setRmList] = useState<any[]>([]);
   const [rmReports, setRmReports] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
 
   useEffect(() => {
-    // Fetch RM list for upload modal dropdown
     apiClient.get('/connectors?roles=RM').then(res => {
       setRmList(res.data?.data || []);
     }).catch(() => {});
 
-    // Fetch uploaded MIS reports from backend
     fetchReports();
+
+    // Load existing email config — only if user is authenticated
+    if (sessionStorage.getItem('token')) {
+      apiClient.get('/reports/email-config').then(res => {
+        const cfg = res.data;
+        emailForm.setFieldsValue({
+          frequency: cfg.frequency || 'weekly',
+          recipients: Array.isArray(cfg.recipients) ? cfg.recipients : [],
+        });
+      }).catch(() => {});
+    }
   }, []);
 
   const fetchReports = async () => {
@@ -137,6 +152,38 @@ const ReportingDashboard: React.FC = () => {
     }
   };
 
+  const handleSaveEmailConfig = async (values: any) => {
+    setSavingEmail(true);
+    try {
+      await apiClient.post('/reports/email-config', {
+        frequency: values.frequency,
+        recipients: values.recipients || [],
+      });
+      message.success('Email schedule saved successfully.');
+    } catch {
+      message.error('Failed to save email configuration.');
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    const recipients = emailForm.getFieldValue('recipients') || [];
+    if (!recipients.length) {
+      message.warning('Please add at least one recipient email first.');
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const res = await apiClient.post('/reports/send-test-email', { recipients });
+      message.success(res.data?.message || 'Test email sent successfully.');
+    } catch {
+      message.error('Failed to send test email.');
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   const handleGenerateMaster = async () => {
     setIsExporting(true);
     try {
@@ -162,7 +209,7 @@ const ReportingDashboard: React.FC = () => {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div className="flex justify-between items-end">
+      <div className="flex justify-between items-end flex-wrap gap-3">
         <div>
           <Title level={2} className="m-0 font-bold text-slate-800">Master MIS & Operations</Title>
           <Text className="text-slate-500">Consolidate RM-uploaded reports into the Master Business Volume.</Text>
@@ -256,19 +303,40 @@ const ReportingDashboard: React.FC = () => {
             label: <div className="flex items-center gap-2"><Settings size={16} /> Export Configuration</div>,
             children: (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card title={<span className="font-bold text-slate-800">Automated Report Scheduling</span>} variant="borderless" className="shadow-sm rounded-2xl">
-                  <Form layout="vertical">
-                    <Form.Item label="Schedule Frequency">
-                      <Select defaultValue="weekly" className="w-full">
+                <Card
+                  title={<span className="font-bold text-slate-800 flex items-center gap-2"><Mail size={18} className="text-blue-600" /> Automated Report Scheduling</span>}
+                  variant="borderless"
+                  className="shadow-sm rounded-2xl"
+                >
+                  <Form form={emailForm} layout="vertical" onFinish={handleSaveEmailConfig}>
+                    <Form.Item name="frequency" label="Schedule Frequency" rules={[{ required: true }]}>
+                      <Select className="w-full">
                         <Select.Option value="daily">Daily Master Consolidation</Select.Option>
                         <Select.Option value="weekly">Weekly Business Summary</Select.Option>
                         <Select.Option value="monthly">Monthly Audit Report</Select.Option>
                       </Select>
                     </Form.Item>
-                    <Form.Item label="Recipients (Emails)">
-                      <Select mode="tags" placeholder="admin@realmoney.in" defaultValue={['admin@realmoney.in']} className="w-full" />
+                    <Form.Item name="recipients" label="Recipient Emails" rules={[{ required: true, message: 'Add at least one recipient' }]}>
+                      <Select
+                        mode="tags"
+                        placeholder="Type email and press Enter"
+                        className="w-full"
+                        tokenSeparators={[',', ' ']}
+                        open={false}
+                      />
                     </Form.Item>
-                    <Button type="primary" className="bg-blue-600">Update Schedule</Button>
+                    <Divider className="my-4" />
+                    <Space>
+                      <Button type="primary" htmlType="submit" loading={savingEmail} className="bg-blue-600 font-semibold">
+                        Update Schedule
+                      </Button>
+                      <Button icon={<Send size={14} />} loading={sendingTest} onClick={handleSendTestEmail} style={{ fontWeight: 600 }}>
+                        Send Test Email
+                      </Button>
+                    </Space>
+                    <div style={{ marginTop: 14, padding: '10px 14px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                      <strong>Note:</strong> Set <code>SMTP_USER</code> and <code>SMTP_PASSWORD</code> env vars on the reporting-service to enable actual email delivery. In dev mode, emails are logged to the console.
+                    </div>
                   </Form>
                 </Card>
               </div>

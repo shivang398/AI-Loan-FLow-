@@ -553,4 +553,37 @@ body {
   .ag-root-wrapper {
     overflow-x: auto !important;
   }
+
+  /* AG Grid container */
+  .ag-theme-alpine {
+    overflow-x: auto !important;
+  }
+
+  /* Page toolbars (header row with title + action buttons) */
+  .page-toolbar {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  /* Insight slider: reduce height on mobile */
+  .insight-slider {
+    height: auto !important;
+    min-height: 120px !important;
+  }
+
+  .insight-slider-inner {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 16px 20px !important;
+  }
+
+  .insight-slider-stats {
+    display: none !important;
+  }
+
+  /* Keep pro-card content from overflowing */
+  .pro-card {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
 }

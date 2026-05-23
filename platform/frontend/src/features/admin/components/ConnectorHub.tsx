@@ -469,7 +469,7 @@ const ConnectorHub: React.FC = () => {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-header-title">Channel Partner Hub</h1>
           <span className="page-header-subtitle">Manage channel partners and configure bank-wise payout slabs</span>
@@ -484,10 +484,11 @@ const ConnectorHub: React.FC = () => {
       </div>
 
       {/* ── Insight Slider ── */}
-      <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', height: 168, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+      <div className="insight-slider" style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', height: 168, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
         {slides.map((slide, i) => (
           <div
             key={i}
+            className="insight-slider-inner"
             style={{
               position: 'absolute', inset: 0,
               background: slide.gradient,
@@ -523,7 +524,7 @@ const ConnectorHub: React.FC = () => {
             </div>
 
             {/* Right: big stat + mini dots */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexShrink: 0, marginLeft: 24 }}>
+            <div className="insight-slider-stats" style={{ display: 'flex', alignItems: 'center', gap: 32, flexShrink: 0, marginLeft: 24 }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 42, fontWeight: 900, color: slide.accent, lineHeight: 1, letterSpacing: '-0.04em' }}>
                   {slide.stat}
@@ -577,7 +578,7 @@ const ConnectorHub: React.FC = () => {
                 <Col span={6}><Card className="pro-card"><Statistic title="Pending Approval" value={connectors.filter(c => c.status === 'PENDING_APPROVAL').length} prefix={<UserCheck size={18} />} valueStyle={{ color: '#f59e0b' }} /></Card></Col>
               </Row>
               <div className="pro-card" style={{ padding: 0 }}>
-                <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="page-toolbar" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Input placeholder="Search channel partners..." prefix={<Search size={18} />} style={{ maxWidth: 350, borderRadius: 10 }} />
                   <Button icon={<Download size={16} />}>Export List</Button>
                 </div>
@@ -586,6 +587,7 @@ const ConnectorHub: React.FC = () => {
                 ) : (
                   <div className="ag-theme-alpine" style={{ height: 450, width: '100%' }}>
                     <AgGridReact
+                      theme="legacy"
                       rowData={connectors}
                       columnDefs={connectorColumns}
                       rowHeight={64}

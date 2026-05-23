@@ -9,8 +9,8 @@ export PATH="/home/shivang/Desktop/Auditor/maven/apache-maven-3.9.6/bin:$PATH"
 # JWT secret — must be set in production; falls back to local-dev placeholder
 JWT_SECRET="${JWT_SECRET:-LocalDevSecretMustBeAtLeast32CharsLong!}"
 
-# Token expiry: 8 hours for normal use
-JWT_EXPIRY_MS="${JWT_EXPIRY_MS:-28800000}"
+# Token expiry: 24 hours for dev convenience (use 28800000 = 8h in production)
+JWT_EXPIRY_MS="${JWT_EXPIRY_MS:-86400000}"
 
 SERVICES=(
   "auth-service:8081"

@@ -114,8 +114,8 @@ const RegionalDashboard: React.FC = () => {
   return (
     <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       {/* Premium Header */}
-      <div style={{ 
-        background: 'white', padding: '24px 32px', borderRadius: 24, 
+      <div className="page-toolbar" style={{
+        background: 'white', padding: '24px 32px', borderRadius: 24,
         border: '1px solid var(--surface-3)', boxShadow: 'var(--shadow-sm)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>

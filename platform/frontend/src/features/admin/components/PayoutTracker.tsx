@@ -65,6 +65,36 @@ const PayoutTracker: React.FC = () => {
     setIsUpdateModalOpen(true);
   };
 
+  const handleDownloadReport = () => {
+    if (!rowData.length) {
+      message.warning('No payout data to download.');
+      return;
+    }
+    const headers = ['Payout ID', 'Channel Partner', 'Total Commission (₹)', 'Amount Paid (₹)', 'Pending (₹)', 'Settlement Status', 'Last Payment Date'];
+    const rows = rowData.map(r => [
+      r.id,
+      r.connector,
+      r.totalAmount,
+      r.amountPaid,
+      r.remainingAmount,
+      r.status,
+      r.date,
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `commission_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    message.success('Commission report downloaded.');
+  };
+
   const handleUpdateSubmit = async (values: any) => {
     const { status, amountPaid, paymentDate } = values;
     const backendStatus = status === 'FULLY_PAID' ? 'PAID' : status;
@@ -141,12 +171,12 @@ const PayoutTracker: React.FC = () => {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-header-title">Commission & Payout Tracker</h1>
           <span className="page-header-subtitle">Manage partial and full settlements for channel partner commissions.</span>
         </div>
-        <Button icon={<Download size={16} />} type="primary" className="bg-blue-600 font-bold">Download Settlement Report</Button>
+        <Button icon={<Download size={16} />} type="primary" className="bg-blue-600 font-bold" onClick={handleDownloadReport}>Download Commission Report</Button>
       </div>
 
       <Row gutter={16}>
@@ -183,7 +213,7 @@ const PayoutTracker: React.FC = () => {
       </Row>
 
       <div className="pro-card shadow-sm" style={{ padding: 0 }}>
-        <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="page-toolbar" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Input
             placeholder="Search by Channel Partner or Payout ID..."
             prefix={<Search size={18} className="text-slate-400" />}
@@ -194,8 +224,9 @@ const PayoutTracker: React.FC = () => {
             <Tag className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg bg-slate-100 border-none text-slate-600">All Time</Tag>
           </Space>
         </div>
-        <div className="ag-theme-alpine h-[450px] w-full">
+        <div className="ag-theme-alpine" style={{ height: 450, width: '100%' }}>
           <AgGridReact
+            theme="legacy"
             rowData={rowData}
             columnDefs={columnDefs}
             rowHeight={60}

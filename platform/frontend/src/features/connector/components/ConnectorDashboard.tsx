@@ -298,7 +298,7 @@ const ConnectorDashboard: React.FC = () => {
       </div>
 
       {/* ── Support Card ── */}
-      <div style={{ background: '#0f172a', borderRadius: 24, padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: '#0f172a', borderRadius: 24, padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
           <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <MessageSquare size={24} color="#10b981" />

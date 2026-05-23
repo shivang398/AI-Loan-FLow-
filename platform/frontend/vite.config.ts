@@ -10,6 +10,24 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      // Dedicated health-check routes — must come BEFORE the general service routes
+      // so they don't get caught and path-rewritten incorrectly.
+      // Each rewrites to /actuator/health on the target service directly.
+      '/api/svc-health/auth':        { target: 'http://127.0.0.1:8081', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/connector':   { target: 'http://127.0.0.1:8082', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/customer':    { target: 'http://127.0.0.1:8083', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/loan':        { target: 'http://127.0.0.1:8084', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/eligibility': { target: 'http://127.0.0.1:8085', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/policy':      { target: 'http://127.0.0.1:8086', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/messaging':   { target: 'http://127.0.0.1:8087', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/rm':          { target: 'http://127.0.0.1:8088', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/query':       { target: 'http://127.0.0.1:8089', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/document':    { target: 'http://127.0.0.1:8090', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/commission':  { target: 'http://127.0.0.1:8092', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/reporting':   { target: 'http://127.0.0.1:8093', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/analytics':   { target: 'http://127.0.0.1:8094', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/routing':     { target: 'http://127.0.0.1:8095', changeOrigin: true, rewrite: () => '/actuator/health' },
+
       '/api/auth': {
         target: 'http://127.0.0.1:8081',
         changeOrigin: true,

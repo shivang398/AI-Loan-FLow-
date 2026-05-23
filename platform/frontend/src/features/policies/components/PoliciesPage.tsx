@@ -89,15 +89,22 @@ const PoliciesPage: React.FC = () => {
     }
   };
 
-  const handleDownload = (doc: PolicyDoc) => {
-    const url = `/api/policies/documents/${doc.id}/download`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = doc.fileName;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = async (doc: PolicyDoc) => {
+    try {
+      const res = await apiClient.get(`/policies/documents/${doc.id}/download`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: String(res.headers['content-type'] || doc.mimeType) }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      message.error('Failed to download document');
+    }
   };
 
   const bankDocs = docs.filter(d => d.category === 'BANK');
@@ -127,7 +134,7 @@ const PoliciesPage: React.FC = () => {
         <div style={{ display: 'grid', gap: 12 }}>
           {items.map(doc => (
             <div key={doc.id} style={{
-              display: 'flex', alignItems: 'center', gap: 16,
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
               padding: '14px 18px', borderRadius: 14, background: 'var(--surface-1)',
               border: '1px solid var(--surface-2)',
             }}>
@@ -182,9 +189,9 @@ const PoliciesPage: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in-up" style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className="animate-fade-in-up" style={{ maxWidth: 900, margin: '0 auto', padding: '0 0 24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 28 }}>
         <div>
           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--brand-500)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
             Policy Library

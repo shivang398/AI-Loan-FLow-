@@ -284,7 +284,7 @@ const UserManagement: React.FC = () => {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-header-title">HR & Internal User Management</h1>
           <span className="page-header-subtitle">Manage internal employees, departments, and platform access roles</span>
@@ -374,7 +374,7 @@ const UserManagement: React.FC = () => {
       </Row>
 
       <div className="pro-card" style={{ padding: 0 }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="page-toolbar" style={{ padding: '16px 20px', borderBottom: '1px solid var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Input
             placeholder="Search by name, employee ID or department..."
             prefix={<Search size={18} style={{ color: 'var(--text-muted)' }} />}
@@ -409,6 +409,7 @@ const UserManagement: React.FC = () => {
         ) : (
           <div className="ag-theme-alpine" style={{ height: 500, width: '100%' }}>
             <AgGridReact
+              theme="legacy"
               rowData={staffData}
               columnDefs={columnDefs}
               rowHeight={64}

@@ -25,7 +25,7 @@ const TeamLeaderDashboard: React.FC = () => {
     <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       {/* Page Header */}
       <div className="page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="page-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h1 className="page-header-title">Team Leader Hub</h1>
             <span className="page-header-subtitle">Managing 12 Connectors · Regional Sector: North-West</span>
