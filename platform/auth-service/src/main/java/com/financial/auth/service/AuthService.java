@@ -107,7 +107,8 @@ public class AuthService {
         return Map.of(
             "token", jwt,
             "role", role,
-            "email", user.getEmail()
+            "email", user.getEmail(),
+            "id", user.getId().toString()
         );
     }
 

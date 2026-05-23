@@ -1,26 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  receiveMessage, setTyping, setWSStatus, setRoomOnline, updateMessageStatus,
+  receiveMessage, setTyping, setWSStatus, setRoomOnline,
 } from '../store/slices/teamMeetingSlice';
 import type { TeamMessage, TeamRoom, WSConnectionStatus } from '../store/slices/teamMeetingSlice';
 import { RootState } from '../store';
-
-/* ─── Wire protocol ─── */
-type WSOutbound =
-  | { type: 'JOIN_ROOM';    roomId: string; userId: string }
-  | { type: 'LEAVE_ROOM';   roomId: string; userId: string }
-  | { type: 'SEND_MESSAGE'; roomId: string; userId: string; payload: Omit<TeamMessage, 'id' | 'status'> }
-  | { type: 'TYPING_START'; roomId: string; userId: string }
-  | { type: 'TYPING_STOP';  roomId: string; userId: string }
-  | { type: 'MARK_READ';    roomId: string; userId: string; messageId: string };
-
-type WSInbound =
-  | { type: 'NEW_MESSAGE';     roomId: string; payload: TeamMessage }
-  | { type: 'TYPING_START';    roomId: string; senderId: string }
-  | { type: 'TYPING_STOP';     roomId: string; senderId: string }
-  | { type: 'PRESENCE_UPDATE'; roomId: string; userId: string; isOnline: boolean }
-  | { type: 'MESSAGE_STATUS';  roomId: string; messageId: string; status: TeamMessage['status'] };
 
 /* ─── Role-aware peer reply templates ─── */
 const ROLE_REPLIES: Record<string, string[]> = {
@@ -137,41 +121,17 @@ class SimulationEngine {
   clear() { this.timers.forEach(clearTimeout); this.timers = []; }
 }
 
-/* ─── WebSocket constants ─── */
-const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/team-meeting`;
-// After the first connection failure fall through to simulation immediately.
-// The backend WS endpoint is optional; simulation provides full UX offline.
-const MAX_RECONNECT_DELAY_MS = 400;
-
 export function useTeamMeetingWS() {
   const dispatch = useDispatch();
   const { user }  = useSelector((state: RootState) => state.auth);
   const { rooms } = useSelector((state: RootState) => state.teamMeeting);
 
-  const wsRef           = useRef<WebSocket | null>(null);
-  const reconnectDelay  = useRef(MAX_RECONNECT_DELAY_MS);
   const reconnectTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSimulated     = useRef(false);
   const simEngine       = useRef(new SimulationEngine());
 
   const setStatus = useCallback((s: WSConnectionStatus) => {
     dispatch(setWSStatus(s));
-  }, [dispatch]);
-
-  const send = useCallback((frame: WSOutbound) => {
-    if (!isSimulated.current && wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(frame));
-    }
-  }, []);
-
-  const handleFrame = useCallback((frame: WSInbound) => {
-    switch (frame.type) {
-      case 'NEW_MESSAGE':      dispatch(receiveMessage(frame.payload)); break;
-      case 'TYPING_START':     dispatch(setTyping({ roomId: frame.roomId, isTyping: true })); break;
-      case 'TYPING_STOP':      dispatch(setTyping({ roomId: frame.roomId, isTyping: false })); break;
-      case 'PRESENCE_UPDATE':  dispatch(setRoomOnline({ roomId: frame.roomId, isOnline: frame.isOnline })); break;
-      case 'MESSAGE_STATUS':   dispatch(updateMessageStatus({ messageId: frame.messageId, roomId: frame.roomId, status: frame.status })); break;
-    }
   }, [dispatch]);
 
   const enterSimulation = useCallback(() => {
@@ -184,75 +144,33 @@ export function useTeamMeetingWS() {
     }, 500);
   }, [rooms, setStatus, dispatch]);
 
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectTimer.current) return;
-    reconnectTimer.current = setTimeout(() => {
-      reconnectTimer.current = null;
-      if (reconnectDelay.current >= MAX_RECONNECT_DELAY_MS) {
-        enterSimulation();
-        return;
-      }
-      reconnectDelay.current = Math.min(reconnectDelay.current * 2, MAX_RECONNECT_DELAY_MS);
-      connect(); // eslint-disable-line
-    }, reconnectDelay.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enterSimulation]);
-
   const connect = useCallback(() => {
-    if (wsRef.current) return;
-    setStatus('CONNECTING');
-
-    let ws: WebSocket;
-    try { ws = new WebSocket(WS_URL); } catch { enterSimulation(); return; }
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      reconnectDelay.current = 1_000;
-      setStatus('CONNECTED');
-      rooms.forEach(r => send({ type: 'JOIN_ROOM', roomId: r.id, userId: user?.id ?? 'guest' }));
-    };
-    ws.onmessage = (ev) => {
-      try { handleFrame(JSON.parse(ev.data) as WSInbound); } catch { /* ignore */ }
-    };
-    ws.onerror = () => { /* errors always precede close */ };
-    ws.onclose = () => {
-      wsRef.current = null;
-      if (isSimulated.current) return;
-      setStatus('RECONNECTING');
-      scheduleReconnect();
-    };
-  }, [rooms, user, send, handleFrame, setStatus, enterSimulation, scheduleReconnect]);
+    // Go straight to simulation — no WS server for team-meeting is deployed.
+    // This prevents "WebSocket is closed before connection established" console errors.
+    if (!isSimulated.current) {
+      enterSimulation();
+    }
+  }, [enterSimulation]);
 
   /* ─── Public API ─── */
   const sendChatMessage = useCallback((
-    msgPayload: Omit<TeamMessage, 'id' | 'status'>,
+    _msgPayload: Omit<TeamMessage, 'id' | 'status'>,
     room: TeamRoom,
   ) => {
-    if (!isSimulated.current) {
-      send({ type: 'SEND_MESSAGE', roomId: msgPayload.roomId, userId: user?.id ?? 'guest', payload: msgPayload });
-    }
-    if (isSimulated.current) {
-      simEngine.current.simulateResponse(
-        room,
-        user?.role ?? 'RM',
-        (roomId) => dispatch(setTyping({ roomId, isTyping: true })),
-        (roomId) => dispatch(setTyping({ roomId, isTyping: false })),
-        (newMsg)  => dispatch(receiveMessage(newMsg)),
-      );
-    }
-  }, [send, user, dispatch]);
+    // Always in simulation mode — trigger role-aware auto-reply
+    simEngine.current.simulateResponse(
+      room,
+      user?.role ?? 'RM',
+      (roomId) => dispatch(setTyping({ roomId, isTyping: true })),
+      (roomId) => dispatch(setTyping({ roomId, isTyping: false })),
+      (newMsg)  => dispatch(receiveMessage(newMsg)),
+    );
+  }, [user, dispatch]);
 
-  const sendTypingStart = useCallback((roomId: string) => {
-    send({ type: 'TYPING_START', roomId, userId: user?.id ?? 'guest' });
-  }, [send, user]);
-
-  const sendTypingStop = useCallback((roomId: string) => {
-    send({ type: 'TYPING_STOP', roomId, userId: user?.id ?? 'guest' });
-  }, [send, user]);
-
-  const sendMarkRead = useCallback((roomId: string, messageId: string) => {
-    send({ type: 'MARK_READ', roomId, userId: user?.id ?? 'guest', messageId });
-  }, [send, user]);
+  // No-ops in simulation mode (kept for API compatibility)
+  const sendTypingStart = useCallback((_roomId: string) => {}, []);
+  const sendTypingStop  = useCallback((_roomId: string) => {}, []);
+  const sendMarkRead    = useCallback((_roomId: string, _messageId: string) => {}, []);
 
   /* ─── Lifecycle ─── */
   useEffect(() => {
@@ -260,13 +178,6 @@ export function useTeamMeetingWS() {
     return () => {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       simEngine.current.clear();
-      if (wsRef.current) {
-        wsRef.current.onclose = null;
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      // Reset so a re-mount enters simulation quickly again
-      reconnectDelay.current = MAX_RECONNECT_DELAY_MS;
       isSimulated.current = false;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

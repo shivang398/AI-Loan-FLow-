@@ -55,7 +55,7 @@ public class AuthController {
         addRefreshCookie(response, refreshToken);
         // Return only access token and user info — not the refresh token
         return ResponseEntity.ok(ApiResponse.success("Login successful",
-                Map.of("token", result.get("token"), "role", result.get("role"), "email", result.get("email")),
+                Map.of("token", result.get("token"), "role", result.get("role"), "email", result.get("email"), "id", result.get("id")),
                 UUID.randomUUID().toString()));
     }
 

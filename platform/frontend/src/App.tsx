@@ -13,7 +13,7 @@ import RegionalDashboard from './features/rm/components/RegionalDashboard';
 import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDashboard';
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
-import CheckEligibility from './features/connector/components/CheckEligibility';
+import WhatsAppPage from './features/operations/components/WhatsAppPage';
 import EmiCalculator from './features/connector/components/EmiCalculator';
 import { CibilCheckPage, BankStatementAnalyzerPage, FoirCalculatorPage } from './features/connector/components/ConnectorTools';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
@@ -75,15 +75,15 @@ const App: React.FC = () => {
 
               {/* Operations Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['OPERATIONS']} />}>
-                <Route path="/ops/dashboard"    element={<OperationsDashboard />} />
-                <Route path="/ops/policies"     element={<PoliciesPage />} />
-                <Route path="/ops/team-meeting" element={<OpsTeamMeetingPage />} />
+                <Route path="/ops/dashboard"          element={<OperationsDashboard />} />
+                <Route path="/ops/whatsapp"           element={<WhatsAppPage />} />
+                <Route path="/ops/policies"           element={<PoliciesPage />} />
+                <Route path="/ops/team-meeting"       element={<OpsTeamMeetingPage />} />
               </Route>
 
               {/* Connector Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['CONNECTOR']} />}>
                 <Route path="/connector/dashboard"          element={<ConnectorDashboard />} />
-                <Route path="/connector/check-eligibility"  element={<CheckEligibility />} />
                 <Route path="/connector/cibil"              element={<CibilCheckPage />} />
                 <Route path="/connector/bsa"                element={<BankStatementAnalyzerPage />} />
                 <Route path="/connector/foir"               element={<FoirCalculatorPage />} />

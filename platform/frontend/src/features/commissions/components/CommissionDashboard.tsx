@@ -39,20 +39,10 @@ const CommissionDashboard: React.FC = () => {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connectorId, setConnectorId] = useState<string | null>(null);
   const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
 
-  useEffect(() => {
-    if (!isConnector) return;
-    const fetchProfile = async () => {
-      try {
-        const res = await apiClient.get('/connectors/me');
-        const id = res.data?.data?.id || res.data?.id;
-        if (id) setConnectorId(id);
-      } catch { /* no profile yet */ }
-    };
-    fetchProfile();
-  }, [isConnector]);
+  const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  const connectorId = isConnector && user?.id && isUUID(user.id) ? user.id : null;
 
   const fetchTransactions = async () => {
     setLoading(true);
