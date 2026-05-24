@@ -83,6 +83,53 @@ public class MessagingController {
         return ResponseEntity.ok(ApiResponse.success("Message sent", message, UUID.randomUUID().toString()));
     }
 
+    /* ── WhatsApp Ops: list conversations ── */
+    @GetMapping("/whatsapp/conversations")
+    public ResponseEntity<ApiResponse<List<Conversation>>> getWhatsAppConversations() {
+        List<Conversation> conversations = conversationRepository
+                .findByConversationTypeOrderByUpdatedAtDesc(ConversationType.EXTERNAL_CUSTOMER_OPS);
+        return ResponseEntity.ok(ApiResponse.success("WhatsApp conversations fetched", conversations, UUID.randomUUID().toString()));
+    }
+
+    /* ── WhatsApp Ops: create conversation with customer info ── */
+    @PostMapping("/whatsapp/conversations")
+    public ResponseEntity<ApiResponse<Conversation>> createWhatsAppConversation(
+            @Valid @RequestBody CreateWhatsAppConversationRequest request) {
+        Conversation conversation = Conversation.builder()
+                .customerName(request.getCustomerName())
+                .customerPhone(request.getCustomerPhone())
+                .assignedOpsUserId(request.getAssignedOpsUserId())
+                .conversationType(ConversationType.EXTERNAL_CUSTOMER_OPS)
+                .conversationStatus(request.getCaseStatus() != null ? request.getCaseStatus() : "ACTIVE")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        conversation = conversationRepository.save(conversation);
+        return ResponseEntity.ok(ApiResponse.success("WhatsApp conversation created", conversation, UUID.randomUUID().toString()));
+    }
+
+    /* ── WhatsApp Ops: message templates ── */
+    @GetMapping("/whatsapp/templates")
+    public ResponseEntity<ApiResponse<List<java.util.Map<String, String>>>> getWhatsAppTemplates() {
+        var templates = List.of(
+            java.util.Map.of("name", "docs_pending",  "label", "Docs Pending",      "body", "Hi {{name}}, your loan application {{case_id}} requires additional documents."),
+            java.util.Map.of("name", "under_review",  "label", "Under Review",       "body", "Hi {{name}}, application {{case_id}} is under review. We will update you soon."),
+            java.util.Map.of("name", "approved",      "label", "Sanction Approved",  "body", "Congratulations {{name}}! Application {{case_id}} has been approved."),
+            java.util.Map.of("name", "disbursed",     "label", "Loan Disbursed",     "body", "Hi {{name}}, the loan for {{case_id}} has been disbursed. Check your account."),
+            java.util.Map.of("name", "rejected",      "label", "Application Rejected","body", "Hi {{name}}, application {{case_id}} could not be processed. Contact us for details."),
+            java.util.Map.of("name", "emi_reminder",  "label", "EMI Reminder",       "body", "Hi {{name}}, your EMI for {{case_id}} is due soon. Ensure sufficient balance.")
+        );
+        return ResponseEntity.ok(ApiResponse.success("Templates fetched", templates, UUID.randomUUID().toString()));
+    }
+
+    @Data
+    public static class CreateWhatsAppConversationRequest {
+        @NotNull @Size(min = 1, max = 255) private String customerName;
+        @NotNull @Size(min = 10, max = 20)  private String customerPhone;
+        private UUID assignedOpsUserId;
+        private String caseStatus;
+    }
+
     @Data
     public static class CreateConversationRequest {
         @NotNull private UUID connectorId;

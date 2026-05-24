@@ -35,6 +35,12 @@ public class Conversation {
     @Column(name = "assigned_ops_user_id")
     private UUID assignedOpsUserId;
 
+    @Column(name = "customer_name")
+    private String customerName;
+
+    @Column(name = "customer_phone")
+    private String customerPhone;
+
     @Column(name = "conversation_status", nullable = false)
     private String conversationStatus;
 

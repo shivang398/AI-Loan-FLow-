@@ -5,7 +5,7 @@ spring:
   application:
     name: eligibility-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/platform_eligibility
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/platform_eligibility
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:password}
   jpa:

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, Search, UsersRound, Network,
-  BookOpen, Calculator, MessageCircle, Menu as MenuIcon, X,
+  BookOpen, Calculator, Menu as MenuIcon, X,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -62,10 +62,9 @@ const DashboardLayout: React.FC = () => {
   ];
 
   const opsItems = [
-    { key: '/ops/dashboard',          icon: <ClipboardList size={18} />, label: 'Ops Queue' },
-    { key: '/ops/whatsapp',            icon: <MessageCircle size={18} />, label: 'WhatsApp' },
-    { key: '/ops/policies',           icon: <BookOpen size={18} />,       label: 'Policies' },
-    { key: '/ops/team-meeting',       icon: <UsersRound size={18} />,     label: 'Team Meeting' },
+    { key: '/ops/dashboard',    icon: <ClipboardList size={18} />, label: 'Ops Queue' },
+    { key: '/ops/policies',     icon: <BookOpen size={18} />,       label: 'Policies' },
+    { key: '/ops/team-meeting', icon: <UsersRound size={18} />,     label: 'Team Meeting' },
   ];
 
   const connectorItems = [

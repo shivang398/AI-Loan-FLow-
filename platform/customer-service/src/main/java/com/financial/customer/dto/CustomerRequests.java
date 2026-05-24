@@ -28,5 +28,9 @@ public class CustomerRequests {
         private String panNumber;
 
         private String aadhaarNumber;
+
+        private String loanType;
+
+        private java.math.BigDecimal loanAmount;
     }
 }

@@ -33,6 +33,11 @@ app:
     secret: ${JWT_SECRET}
   rabbitmq:
     exchange: platform.exchange
+  ops:
+    team-emails:
+      - ops1@realmoney.in
+      - ops2@realmoney.in
+      - ops3@realmoney.in
 
 management:
   health:

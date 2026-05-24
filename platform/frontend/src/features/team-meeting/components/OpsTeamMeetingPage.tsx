@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Tooltip, notification, Select } from 'antd';
+import { Tooltip, notification, Select, Modal, Input, Form } from 'antd';
 import {
   Send, Search, Phone, Video, MoreVertical,
   Paperclip, Smile, Check, CheckCheck,
   Users, MessageSquare, Lock, Wifi, WifiOff, RefreshCw, Radio,
-  Smartphone, MessageCircle, ChevronRight, X
+  Smartphone, MessageCircle, ChevronRight, X, Plus
 } from 'lucide-react';
+import apiClient from '../../../shared/services/apiClient';
 import { RootState } from '../../../store';
 import {
   setActiveRoom, sendMessage, getRoomsForRole,
@@ -149,176 +150,213 @@ const TmBubble: React.FC<{ msg: TeamMessage; isMine: boolean; showAvatar: boolea
 };
 
 /* ══════════════════════════════════════════════════════════
-   WhatsApp Tab
+   WhatsApp Tab  –  connected to messaging-service API
 ══════════════════════════════════════════════════════════ */
-interface WAContact {
+
+interface WAConversation {
   id: string;
-  name: string;
-  phone: string;
-  caseId: string;
-  status: string;
-  lastMsg: string;
-  time: string;
-  unread: number;
-  isOnline: boolean;
-  color: string;
+  customerName: string;
+  customerPhone: string;
+  conversationStatus: string;
+  updatedAt: string;
 }
-interface WAMessage { id: string; body: string; mine: boolean; time: string; status: 'sent' | 'delivered' | 'read' }
-
-const WA_CONTACTS: WAContact[] = [
-  { id: 'wa-1', name: 'Arjun Kumar',  phone: '+91 98765 43210', caseId: 'APP-99218', status: 'DOC_PENDING',  lastMsg: 'Will upload salary slip by 2 PM.', time: '10:42 AM', unread: 2,  isOnline: true,  color: '#10b981' },
-  { id: 'wa-2', name: 'Saira Bano',   phone: '+91 98765 43211', caseId: 'APP-99219', status: 'IN_REVIEW',    lastMsg: 'Bank statement submitted.',         time: '09:15 AM', unread: 0,  isOnline: true,  color: '#14b8a6' },
-  { id: 'wa-3', name: 'Rahul Das',    phone: '+91 98765 43212', caseId: 'APP-99220', status: 'QUERY_RAISED', lastMsg: 'What is the query about?',          time: 'Yesterday', unread: 1, isOnline: false, color: '#ef4444' },
-  { id: 'wa-4', name: 'John Doe',     phone: '+91 98765 43213', caseId: 'APP-99221', status: 'DOC_PENDING',  lastMsg: 'Documents being arranged.',         time: 'Yesterday', unread: 0, isOnline: false, color: '#f59e0b' },
-];
-
-const WA_MOCK_MSGS: Record<string, WAMessage[]> = {
-  'wa-1': [
-    { id: '1', body: 'Hi Arjun, your case APP-99218 is under review. Salary slip for last 3 months is still pending.', mine: true,  time: '09:30 AM', status: 'read' },
-    { id: '2', body: 'Sorry for the delay! My client had some issues with the bank portal. He will upload by 2 PM today.', mine: false, time: '09:35 AM', status: 'read' },
-    { id: '3', body: 'Please ensure it is self-attested. The file cannot move forward without it.', mine: true,  time: '09:40 AM', status: 'read' },
-    { id: '4', body: 'Will upload salary slip by 2 PM.', mine: false, time: '10:42 AM', status: 'delivered' },
-  ],
-  'wa-2': [
-    { id: '1', body: 'Hi Saira, APP-99219 is in credit review. All documents received.', mine: true,  time: '08:00 AM', status: 'read' },
-    { id: '2', body: 'Thank you! Please let me know once the decision is out.', mine: false, time: '08:05 AM', status: 'read' },
-    { id: '3', body: 'Bank statement submitted.', mine: false, time: '09:15 AM', status: 'delivered' },
-  ],
-  'wa-3': [
-    { id: '1', body: 'Hi Rahul, there is a query raised on APP-99220 regarding employment verification.', mine: true,  time: 'Yesterday 4:00 PM', status: 'read' },
-    { id: '2', body: 'What is the query about? I will resolve it immediately.', mine: false, time: 'Yesterday 4:10 PM', status: 'delivered' },
-  ],
-};
-
-const WA_REPLIES = [
-  'Understood, I will arrange the documents right away.',
-  'Can you please share the exact list of pending items?',
-  'I have informed the client. We will update by EOD.',
-  'The bank statement shows the required balance. Is there an issue?',
-  'Salary certificate has been dispatched. Please check.',
-];
+interface WAMsg { id: string; body: string; mine: boolean; time: string; status: 'sent' | 'delivered' | 'read' }
 
 const STATUS_CFG: Record<string, { color: string; bg: string; label: string }> = {
   DOC_PENDING:  { color: '#c2410c', bg: '#fff7ed', label: 'Docs Pending' },
   IN_REVIEW:    { color: '#1d4ed8', bg: '#eff6ff', label: 'In Review' },
   QUERY_RAISED: { color: '#b91c1c', bg: '#fef2f2', label: 'Query Raised' },
+  APPROVED:     { color: '#15803d', bg: '#f0fdf4', label: 'Approved' },
+  DISBURSED:    { color: '#0369a1', bg: '#f0f9ff', label: 'Disbursed' },
+  ACTIVE:       { color: '#1d4ed8', bg: '#eff6ff', label: 'Active' },
+};
+
+const COLORS = ['#10b981','#14b8a6','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#0ea5e9'];
+const convColor = (id: string) => COLORS[id.charCodeAt(0) % COLORS.length];
+
+const WaTick: React.FC<{ status: string }> = ({ status }) => {
+  if (status === 'read')      return <CheckCheck size={13} color="#25d366" />;
+  if (status === 'delivered') return <CheckCheck size={13} color="#94a3b8" />;
+  return <Check size={13} color="#94a3b8" />;
 };
 
 const WhatsAppTab: React.FC = () => {
-  const [activeId,    setActiveId]    = useState<string | null>(null);
-  const [msgsByChat,  setMsgsByChat]  = useState<Record<string, WAMessage[]>>(WA_MOCK_MSGS);
-  const [inputText,   setInputText]   = useState('');
-  const [search,      setSearch]      = useState('');
-  const [showStatus,  setShowStatus]  = useState(false);
-  const [selStatus,   setSelStatus]   = useState('APPROVED');
-  const [wsTyping,    setWsTyping]    = useState(false);
-  const scrollRef   = useRef<HTMLDivElement>(null);
-  const inputRef    = useRef<HTMLInputElement>(null);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [conversations, setConversations] = useState<WAConversation[]>([]);
+  const [activeId,      setActiveId]      = useState<string | null>(null);
+  const [messages,      setMessages]      = useState<WAMsg[]>([]);
+  const [inputText,     setInputText]     = useState('');
+  const [search,        setSearch]        = useState('');
+  const [loadingConvs,  setLoadingConvs]  = useState(false);
+  const [loadingMsgs,   setLoadingMsgs]   = useState(false);
+  const [sending,       setSending]       = useState(false);
+  const [showStatus,    setShowStatus]    = useState(false);
+  const [selStatus,     setSelStatus]     = useState('APPROVED');
+  const [showNewChat,   setShowNewChat]   = useState(false);
+  const [newForm]                         = Form.useForm();
+  const scrollRef  = useRef<HTMLDivElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
 
-  const activeContact = WA_CONTACTS.find(c => c.id === activeId) ?? null;
-  const messages = activeId ? (msgsByChat[activeId] ?? []) : [];
-  const filtered  = WA_CONTACTS.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  const active = conversations.find(c => c.id === activeId) ?? null;
+  const filtered = conversations.filter(c =>
+    c.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+    c.customerPhone?.includes(search)
+  );
+
+  /* load conversations */
+  useEffect(() => {
+    setLoadingConvs(true);
+    apiClient.get('/messaging/whatsapp/conversations')
+      .then(r => setConversations(r.data?.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingConvs(false));
+  }, []);
+
+  /* load messages on conversation select */
+  useEffect(() => {
+    if (!activeId) { setMessages([]); return; }
+    setLoadingMsgs(true);
+    apiClient.get(`/messaging/conversations/${activeId}/messages`)
+      .then(r => {
+        const raw: any[] = r.data?.data ?? [];
+        setMessages(raw.map(m => ({
+          id:     m.id,
+          body:   m.messageBody,
+          mine:   m.senderType === 'INTERNAL' || m.messageChannel === 'WHATSAPP',
+          time:   fmtTime(m.createdAt ?? new Date().toISOString()),
+          status: m.deliveryStatus === 'SENT_TO_WHATSAPP' ? 'delivered'
+                : m.deliveryStatus === 'READ'             ? 'read'
+                : m.deliveryStatus === 'DELIVERED'        ? 'delivered'
+                : 'sent',
+        })));
+      })
+      .catch(() => setMessages([]))
+      .finally(() => setLoadingMsgs(false));
+  }, [activeId]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages.length, wsTyping, activeId]);
+  }, [messages.length, activeId]);
 
-  const handleSend = useCallback(() => {
-    if (!inputText.trim() || !activeId) return;
-    const newMsg: WAMessage = { id: `wam-${Date.now()}`, body: inputText.trim(), mine: true, time: fmtTime(new Date().toISOString()), status: 'sent' };
-    setMsgsByChat(prev => ({ ...prev, [activeId]: [...(prev[activeId] ?? []), newMsg] }));
+  const handleSend = useCallback(async () => {
+    if (!inputText.trim() || !activeId || sending) return;
+    const body = inputText.trim();
     setInputText('');
-    inputRef.current?.focus();
+    setSending(true);
+    const optimistic: WAMsg = { id: `opt-${Date.now()}`, body, mine: true, time: fmtTime(new Date().toISOString()), status: 'sent' };
+    setMessages(prev => [...prev, optimistic]);
+    try {
+      await apiClient.post('/messaging/send', { conversationId: activeId, body, channel: 'WHATSAPP' });
+      setMessages(prev => prev.map(m => m.id === optimistic.id ? { ...m, status: 'delivered' } : m));
+    } catch {
+      notification.error({ message: 'Failed to send message', placement: 'topRight' });
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+    } finally {
+      setSending(false);
+      inputRef.current?.focus();
+    }
+  }, [inputText, activeId, sending]);
 
-    // simulate delivery → read receipts
-    setTimeout(() => setMsgsByChat(prev => {
-      const msgs = [...(prev[activeId] ?? [])];
-      const m = msgs.find(x => x.id === newMsg.id);
-      if (m) m.status = 'delivered';
-      return { ...prev, [activeId]: msgs };
-    }), 1000);
-
-    // simulate peer typing + reply
-    const td = 800 + Math.random() * 700;
-    const rd = td + 1500 + Math.random() * 2000;
-    if (typingTimer.current) clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => { setWsTyping(true); typingTimer.current = null; }, td);
-    setTimeout(() => {
-      setWsTyping(false);
-      const reply: WAMessage = {
-        id: `war-${Date.now()}`,
-        body: WA_REPLIES[Math.floor(Math.random() * WA_REPLIES.length)],
-        mine: false, time: fmtTime(new Date().toISOString()), status: 'delivered',
-      };
-      setMsgsByChat(prev => ({ ...prev, [activeId]: [...(prev[activeId] ?? []), reply] }));
-      // mark our sent msg as read
-      setMsgsByChat(prev => {
-        const msgs = [...(prev[activeId] ?? [])].map(x => x.id === newMsg.id ? { ...x, status: 'read' as const } : x);
-        return { ...prev, [activeId]: msgs };
+  const handlePushStatus = async () => {
+    if (!active) return;
+    try {
+      await apiClient.post('/messaging/status-update', {
+        loanId: activeId,
+        status: selStatus,
+        connectorPhone: active.customerPhone,
       });
-    }, rd);
-  }, [inputText, activeId]);
-
-  const handlePushStatus = () => {
-    notification.success({
-      message: 'Status sent via WhatsApp',
-      description: `Case status "${selStatus}" pushed to ${activeContact?.name} at ${activeContact?.phone}.`,
-      style: { borderRadius: 16, border: '1px solid #d1fae5' },
-      placement: 'topRight',
-    });
+      notification.success({
+        message: 'Status sent via WhatsApp',
+        description: `"${selStatus}" pushed to ${active.customerName} at ${active.customerPhone}.`,
+        style: { borderRadius: 16, border: '1px solid #d1fae5' },
+        placement: 'topRight',
+      });
+    } catch {
+      notification.error({ message: 'Failed to push status', placement: 'topRight' });
+    }
     setShowStatus(false);
   };
 
-  const WaTick: React.FC<{ status: string }> = ({ status }) => {
-    if (status === 'read')      return <CheckCheck size={13} color="#25d366" />;
-    if (status === 'delivered') return <CheckCheck size={13} color="#94a3b8" />;
-    return <Check size={13} color="#94a3b8" />;
+  const handleNewChat = async () => {
+    try {
+      const values = await newForm.validateFields();
+      const res = await apiClient.post('/messaging/whatsapp/conversations', {
+        customerName:  values.customerName,
+        customerPhone: values.customerPhone,
+        caseStatus:    'ACTIVE',
+      });
+      const created: WAConversation = res.data?.data;
+      setConversations(prev => [created, ...prev]);
+      setActiveId(created.id);
+      setShowNewChat(false);
+      newForm.resetFields();
+    } catch (err: any) {
+      if (err?.errorFields) return; // validation error, stay open
+      notification.error({ message: 'Failed to create conversation', placement: 'topRight' });
+    }
   };
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
       {/* Contact list */}
-      <div style={{ width: 280, flexShrink: 0, borderRight: '1px solid var(--surface-2)', display: 'flex', flexDirection: 'column', background: '#fafbfc' }}>
-        <div style={{ padding: '16px 14px 12px', borderBottom: '1px solid var(--surface-2)', background: 'white' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 10, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Smartphone size={15} color="#16a34a" />
+      <div style={{ width: 285, flexShrink: 0, borderRight: '1px solid var(--surface-2)', display: 'flex', flexDirection: 'column', background: '#fafbfc' }}>
+        <div style={{ padding: '14px 12px 10px', borderBottom: '1px solid var(--surface-2)', background: 'white' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 9, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Smartphone size={14} color="#16a34a" />
+              </div>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)' }}>WhatsApp</div>
+                <div style={{ fontSize: 9.5, color: 'var(--text-muted)', fontWeight: 600 }}>Official Business API · Ops only</div>
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>WhatsApp</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>External Connector Chat</div>
-            </div>
+            <button
+              onClick={() => setShowNewChat(true)}
+              title="Start new WhatsApp chat"
+              style={{ width: 30, height: 30, borderRadius: 9, border: '1.5px solid #bbf7d0', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#16a34a' }}
+            >
+              <Plus size={14} />
+            </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-1)', borderRadius: 10, padding: '7px 10px', border: '1px solid var(--surface-3)' }}>
-            <Search size={13} color="var(--text-muted)" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search connectors..." style={{ border: 'none', background: 'transparent', flex: 1, fontSize: 12, color: 'var(--text-primary)', outline: 'none' }} />
+            <Search size={12} color="var(--text-muted)" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers…" style={{ border: 'none', background: 'transparent', flex: 1, fontSize: 12, color: 'var(--text-primary)', outline: 'none' }} />
           </div>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px' }}>
+          {loadingConvs && (
+            <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>Loading…</div>
+          )}
+          {!loadingConvs && filtered.length === 0 && (
+            <div style={{ padding: 20, textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>No conversations yet.</div>
+              <button onClick={() => setShowNewChat(true)} style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 14px', cursor: 'pointer' }}>
+                + Start Chat
+              </button>
+            </div>
+          )}
           {filtered.map(c => {
             const isActive = activeId === c.id;
-            const sc = STATUS_CFG[c.status] ?? STATUS_CFG.IN_REVIEW;
+            const sc = STATUS_CFG[c.conversationStatus] ?? STATUS_CFG.ACTIVE;
+            const color = convColor(c.id);
             return (
-              <button key={c.id} onClick={() => setActiveId(c.id)} style={{ width: '100%', textAlign: 'left', padding: '11px 12px', background: isActive ? 'linear-gradient(90deg,rgba(34,197,94,.1),rgba(16,185,129,.06))' : 'transparent', border: 'none', borderRadius: 12, cursor: 'pointer', transition: 'all 200ms', display: 'flex', alignItems: 'center', gap: 11, marginBottom: 2, borderLeft: isActive ? '3px solid #16a34a' : '3px solid transparent' }}
+              <button key={c.id} onClick={() => setActiveId(c.id)}
+                style={{ width: '100%', textAlign: 'left', padding: '10px 10px', background: isActive ? 'linear-gradient(90deg,rgba(34,197,94,.1),rgba(16,185,129,.06))' : 'transparent', border: 'none', borderRadius: 11, cursor: 'pointer', transition: 'all 200ms', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2, borderLeft: isActive ? '3px solid #16a34a' : '3px solid transparent' }}
                 onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(248,250,252,.9)'; }}
                 onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: `${c.color}18`, border: `1.5px solid ${c.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: c.color }}>{c.name.slice(0, 2).toUpperCase()}</div>
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', border: '2px solid white', background: c.isOnline ? '#10b981' : '#94a3b8' }} />
+                <div style={{ width: 38, height: 38, borderRadius: 11, background: `${color}18`, border: `1.5px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color, flexShrink: 0 }}>
+                  {(c.customerName ?? 'CU').slice(0, 2).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: isActive ? '#15803d' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, flexShrink: 0, marginLeft: 6 }}>{c.time}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isActive ? '#15803d' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.customerName}</span>
+                    <span style={{ fontSize: 9.5, color: 'var(--text-muted)', fontWeight: 500, flexShrink: 0, marginLeft: 4 }}>{fmtRoomTime(c.updatedAt)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{c.lastMsg}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 6 }}>
-                      <span style={{ background: sc.bg, color: sc.color, borderRadius: 100, fontSize: 8.5, fontWeight: 800, padding: '1px 6px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sc.label}</span>
-                      {c.unread > 0 && <span style={{ background: '#22c55e', color: 'white', borderRadius: 100, fontSize: 9, fontWeight: 800, padding: '1px 6px' }}>{c.unread}</span>}
-                    </div>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{c.customerPhone}</span>
+                    <span style={{ background: sc.bg, color: sc.color, borderRadius: 100, fontSize: 8, fontWeight: 800, padding: '1px 6px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em', marginLeft: 4 }}>{sc.label}</span>
                   </div>
                 </div>
               </button>
@@ -328,37 +366,24 @@ const WhatsAppTab: React.FC = () => {
       </div>
 
       {/* Chat area */}
-      {activeContact ? (
+      {active ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f0f7f4' }}>
-          {/* chat header */}
+          {/* header */}
           <div style={{ padding: '12px 18px', background: 'white', borderBottom: '1px solid #e2f5eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ position: 'relative' }}>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: `${activeContact.color}18`, border: `1.5px solid ${activeContact.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: activeContact.color }}>
-                  {activeContact.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: activeContact.isOnline ? '#10b981' : '#94a3b8', border: '2px solid white' }} />
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${convColor(active.id)}18`, border: `1.5px solid ${convColor(active.id)}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: convColor(active.id) }}>
+                {(active.customerName ?? 'CU').slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{activeContact.name}</div>
-                <div style={{ fontSize: 11, color: wsTyping ? '#16a34a' : activeContact.isOnline ? '#10b981' : '#94a3b8', fontWeight: 600, transition: 'color 200ms' }}>
-                  {wsTyping ? 'Typing...' : activeContact.isOnline ? `Online · ${activeContact.phone}` : activeContact.phone}
-                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{active.customerName}</div>
+                <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>{active.customerPhone}</div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ background: STATUS_CFG[activeContact.status]?.bg ?? '#eff6ff', color: STATUS_CFG[activeContact.status]?.color ?? '#1d4ed8', borderRadius: 100, fontSize: 10, fontWeight: 800, padding: '3px 10px', border: 'none', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.04em' }}>
-                {activeContact.caseId}
+              <span style={{ background: (STATUS_CFG[active.conversationStatus] ?? STATUS_CFG.ACTIVE).bg, color: (STATUS_CFG[active.conversationStatus] ?? STATUS_CFG.ACTIVE).color, borderRadius: 100, fontSize: 9.5, fontWeight: 800, padding: '3px 10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {(STATUS_CFG[active.conversationStatus] ?? STATUS_CFG.ACTIVE).label}
               </span>
-              {[<Phone size={15} />, <MoreVertical size={15} />].map((icon, i) => (
-                <button key={i} style={{ width: 34, height: 34, borderRadius: 9, border: '1px solid #d1fae5', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#16a34a', transition: 'all 150ms' }}>
-                  {icon}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowStatus(true)}
-                style={{ padding: '6px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#16a34a,#15803d)', color: 'white', fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(22,163,74,.3)' }}
-              >
+              <button onClick={() => setShowStatus(true)} style={{ padding: '6px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#16a34a,#15803d)', color: 'white', fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 12px rgba(22,163,74,.3)' }}>
                 <Smartphone size={13} />Push Status
               </button>
             </div>
@@ -366,10 +391,11 @@ const WhatsAppTab: React.FC = () => {
 
           {/* messages */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ textAlign: 'center', marginBottom: 12 }}>
-              <span style={{ background: 'rgba(0,0,0,.06)', borderRadius: 100, padding: '4px 14px', fontSize: 10.5, color: '#64748b', fontWeight: 600 }}>Today</span>
-            </div>
-            {messages.map(m => (
+            {loadingMsgs ? (
+              <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 40 }}>Loading messages…</div>
+            ) : messages.length === 0 ? (
+              <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 40 }}>No messages yet. Send the first message via WhatsApp.</div>
+            ) : messages.map(m => (
               <div key={m.id} style={{ display: 'flex', justifyContent: m.mine ? 'flex-end' : 'flex-start' }}>
                 <div style={{ maxWidth: '72%' }}>
                   <div style={{ padding: '10px 14px', borderRadius: m.mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: m.mine ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'white', color: m.mine ? 'white' : '#0f172a', border: m.mine ? 'none' : '1px solid #e2f5eb', boxShadow: m.mine ? '0 4px 12px rgba(22,163,74,.25)' : '0 2px 8px rgba(0,0,0,.06)' }}>
@@ -382,15 +408,6 @@ const WhatsAppTab: React.FC = () => {
                 </div>
               </div>
             ))}
-            {wsTyping && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{ padding: '10px 16px', borderRadius: '18px 18px 18px 4px', background: 'white', border: '1px solid #e2f5eb', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#94a3b8', animation: 'otmDot 1.2s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* input */}
@@ -399,23 +416,23 @@ const WhatsAppTab: React.FC = () => {
               onFocusCapture={e => (e.currentTarget.style.borderColor = '#16a34a')}
               onBlurCapture={e  => (e.currentTarget.style.borderColor = '#bbf7d0')}
             >
-              <Paperclip size={16} color="#94a3b8" style={{ cursor: 'pointer', flexShrink: 0 }} />
+              <Smile size={16} color="#94a3b8" style={{ cursor: 'pointer', flexShrink: 0 }} />
               <input
                 ref={inputRef}
                 value={inputText}
                 onChange={e => setInputText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-                placeholder="Type a WhatsApp message..."
+                placeholder="Type a WhatsApp message…"
                 style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13.5, color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif' }}
               />
-              <Smile size={16} color="#94a3b8" style={{ cursor: 'pointer', flexShrink: 0 }} />
-              <button
-                onClick={handleSend}
-                disabled={!inputText.trim()}
-                style={{ width: 36, height: 36, borderRadius: 11, border: 'none', background: inputText.trim() ? 'linear-gradient(135deg,#16a34a,#15803d)' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: inputText.trim() ? 'pointer' : 'not-allowed', flexShrink: 0, transition: 'all 200ms', boxShadow: inputText.trim() ? '0 4px 12px rgba(22,163,74,.3)' : 'none' }}
-              >
-                <Send size={15} color={inputText.trim() ? 'white' : '#94a3b8'} />
+              <button onClick={handleSend} disabled={!inputText.trim() || sending}
+                style={{ width: 36, height: 36, borderRadius: 11, border: 'none', background: (inputText.trim() && !sending) ? 'linear-gradient(135deg,#16a34a,#15803d)' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: (inputText.trim() && !sending) ? 'pointer' : 'not-allowed', flexShrink: 0, transition: 'all 200ms', boxShadow: (inputText.trim() && !sending) ? '0 4px 12px rgba(22,163,74,.3)' : 'none' }}>
+                <Send size={15} color={(inputText.trim() && !sending) ? 'white' : '#94a3b8'} />
               </button>
+            </div>
+            <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+              <Smartphone size={9} color="var(--text-muted)" />
+              <span style={{ fontSize: 9.5, color: 'var(--text-muted)', fontWeight: 500 }}>Sent via WhatsApp Business API (official)</span>
             </div>
           </div>
         </div>
@@ -425,18 +442,17 @@ const WhatsAppTab: React.FC = () => {
             <MessageCircle size={32} color="#16a34a" strokeWidth={1.5} />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>WhatsApp</div>
-            <div style={{ fontSize: 12.5, color: '#64748b', fontWeight: 500, marginTop: 5 }}>Select a connector to start external communication.</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>WhatsApp Business</div>
+            <div style={{ fontSize: 12.5, color: '#64748b', fontWeight: 500, marginTop: 5 }}>Select a customer conversation or start a new one.</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#dcfce7', borderRadius: 100, padding: '5px 14px', border: '1px solid #bbf7d0' }}>
-            <Smartphone size={11} color="#16a34a" />
-            <span style={{ fontSize: 10.5, color: '#16a34a', fontWeight: 700 }}>WhatsApp Business API</span>
-          </div>
+          <button onClick={() => setShowNewChat(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg,#16a34a,#15803d)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 22px', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(22,163,74,.3)' }}>
+            <Plus size={14} />New Customer Chat
+          </button>
         </div>
       )}
 
       {/* Push status modal */}
-      {showStatus && (
+      {showStatus && active && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowStatus(false)}>
           <div style={{ background: 'white', borderRadius: 24, padding: 32, width: 380, boxShadow: '0 25px 50px rgba(0,0,0,.15)' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
@@ -451,13 +467,13 @@ const WhatsAppTab: React.FC = () => {
             <div style={{ background: '#f0fdf4', borderRadius: 14, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
               <Smartphone size={18} color="#16a34a" />
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{activeContact?.name}</div>
-                <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>{activeContact?.phone} · {activeContact?.caseId}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>{active.customerName}</div>
+                <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>{active.customerPhone}</div>
               </div>
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>New Case Status</label>
-              <Select className="w-full" style={{ width: '100%', height: 48 }} defaultValue="APPROVED" onChange={setSelStatus}
+              <Select style={{ width: '100%', height: 48 }} defaultValue="APPROVED" onChange={setSelStatus}
                 options={[
                   { value: 'DOC_PENDING', label: 'Documents Pending' },
                   { value: 'IN_REVIEW',   label: 'Under Review' },
@@ -476,6 +492,26 @@ const WhatsAppTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* New conversation modal */}
+      <Modal
+        open={showNewChat}
+        onCancel={() => { setShowNewChat(false); newForm.resetFields(); }}
+        onOk={handleNewChat}
+        title="Start WhatsApp Conversation"
+        okText="Start Chat"
+        okButtonProps={{ style: { background: '#16a34a', borderColor: '#16a34a' } }}
+        width={420}
+      >
+        <Form form={newForm} layout="vertical" style={{ marginTop: 12 }}>
+          <Form.Item name="customerName" label="Customer Name" rules={[{ required: true, message: 'Enter customer name' }]}>
+            <Input placeholder="e.g. Rahul Sharma" size="large" />
+          </Form.Item>
+          <Form.Item name="customerPhone" label="WhatsApp Number (with country code)" rules={[{ required: true, message: 'Enter phone number' }, { pattern: /^\+[1-9]\d{7,14}$/, message: 'Format: +919876543210' }]}>
+            <Input placeholder="+919876543210" size="large" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

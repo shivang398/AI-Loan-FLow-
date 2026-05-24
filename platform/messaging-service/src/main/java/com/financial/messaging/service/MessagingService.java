@@ -44,11 +44,15 @@ public class MessagingService {
 
         // Only proxy to WhatsApp when the caller explicitly requests it
         if ("WHATSAPP".equals(channel)) {
-            String recipientPhone = "+919876543210";
-            log.info("Proxying message to WhatsApp: {} -> {}", body, recipientPhone);
-            whatsappService.sendMessage(recipientPhone, body);
-            message.setDeliveryStatus("SENT_TO_WHATSAPP");
-            messageRepository.save(message);
+            String recipientPhone = conversation.getCustomerPhone();
+            if (recipientPhone == null || recipientPhone.isBlank()) {
+                log.warn("No customer phone on conversation {}; skipping WhatsApp delivery", conversationId);
+            } else {
+                log.info("Proxying message to WhatsApp: {} -> {}", body, recipientPhone);
+                whatsappService.sendMessage(recipientPhone, body);
+                message.setDeliveryStatus("SENT_TO_WHATSAPP");
+                messageRepository.save(message);
+            }
         }
 
         return message;

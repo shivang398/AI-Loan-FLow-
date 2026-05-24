@@ -53,6 +53,10 @@ public class WhatsAppService {
     }
 
     private String executeRequest(WhatsAppRequest request) {
+        if (phoneNumberId == null || phoneNumberId.isBlank() || accessToken == null || accessToken.isBlank()) {
+            log.warn("WhatsApp credentials not configured (WHATSAPP_PHONE_ID / WHATSAPP_TOKEN). Message not sent.");
+            return "SKIPPED_NO_CREDENTIALS";
+        }
         try {
             return restClient.post()
                     .uri(apiUrl + "/" + phoneNumberId + "/messages")
