@@ -31,7 +31,7 @@
     </modules>
 
     <properties>
-        <java.version>26</java.version>
+        <java.version>25</java.version>
         <spring-boot.version>4.0.6</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jjwt.version>0.12.5</jjwt.version>
@@ -139,7 +139,7 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>${java.version}</version>
+                                    <version>[25,)</version>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>3.9.0</version>
