@@ -117,6 +117,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      '/api/notifications': {
+        target: 'http://127.0.0.1:8091',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/notifications/, '/notifications'),
+      },
       // Catch-all for any other /api requests to auth-service or a default
       '/api': {
         target: 'http://127.0.0.1:8081',

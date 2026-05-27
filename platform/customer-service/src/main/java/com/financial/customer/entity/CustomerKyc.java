@@ -1,5 +1,6 @@
 package com.financial.customer.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,9 +24,11 @@ public class CustomerKyc {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @JsonIgnore
     @Column(name = "pan_number", nullable = false, unique = true)
     private String panNumber;
 
+    @JsonIgnore
     @Column(name = "aadhaar_number", unique = true)
     private String aadhaarNumber;
 

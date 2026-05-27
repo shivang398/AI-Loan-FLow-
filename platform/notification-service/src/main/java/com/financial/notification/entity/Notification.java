@@ -18,16 +18,21 @@ public class Notification {
     private UUID recipientId;
 
     @Column(nullable = false)
-    private String channel;   // EMAIL, SMS, WHATSAPP
+    private String channel;
 
     @Column(nullable = false)
-    private String type;      // APPROVED, REJECTED, QUERY_CREATED, etc.
+    private String type;
 
     @Column(nullable = false)
-    private String status;    // PENDING, SENT, FAILED
+    private String status;
 
     @Column(columnDefinition = "TEXT")
     private String content;
+
+    private String title;
+
+    @Column(nullable = false)
+    private boolean read = false;
 
     @Column(name = "idempotency_key", unique = true)
     private String idempotencyKey;
@@ -41,20 +46,6 @@ public class Notification {
 
     public Notification() {}
 
-    public Notification(UUID id, UUID recipientId, String channel, String type,
-                        String status, String content, String idempotencyKey,
-                        Integer retryCount, Instant createdAt) {
-        this.id = id;
-        this.recipientId = recipientId;
-        this.channel = channel;
-        this.type = type;
-        this.status = status;
-        this.content = content;
-        this.idempotencyKey = idempotencyKey;
-        this.retryCount = retryCount;
-        this.createdAt = createdAt;
-    }
-
     // Getters
     public UUID getId() { return id; }
     public UUID getRecipientId() { return recipientId; }
@@ -62,6 +53,8 @@ public class Notification {
     public String getType() { return type; }
     public String getStatus() { return status; }
     public String getContent() { return content; }
+    public String getTitle() { return title; }
+    public boolean isRead() { return read; }
     public String getIdempotencyKey() { return idempotencyKey; }
     public Integer getRetryCount() { return retryCount; }
     public Instant getCreatedAt() { return createdAt; }
@@ -73,11 +66,12 @@ public class Notification {
     public void setType(String type) { this.type = type; }
     public void setStatus(String status) { this.status = status; }
     public void setContent(String content) { this.content = content; }
+    public void setTitle(String title) { this.title = title; }
+    public void setRead(boolean read) { this.read = read; }
     public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
     public void setRetryCount(Integer retryCount) { this.retryCount = retryCount; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    // Builder
     public static NotificationBuilder builder() { return new NotificationBuilder(); }
 
     public static class NotificationBuilder {
@@ -87,6 +81,8 @@ public class Notification {
         private String type;
         private String status;
         private String content;
+        private String title;
+        private boolean read = false;
         private String idempotencyKey;
         private Integer retryCount = 0;
         private Instant createdAt;
@@ -97,12 +93,19 @@ public class Notification {
         public NotificationBuilder type(String type) { this.type = type; return this; }
         public NotificationBuilder status(String status) { this.status = status; return this; }
         public NotificationBuilder content(String content) { this.content = content; return this; }
+        public NotificationBuilder title(String title) { this.title = title; return this; }
+        public NotificationBuilder read(boolean read) { this.read = read; return this; }
         public NotificationBuilder idempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; return this; }
         public NotificationBuilder retryCount(Integer retryCount) { this.retryCount = retryCount; return this; }
         public NotificationBuilder createdAt(Instant createdAt) { this.createdAt = createdAt; return this; }
 
         public Notification build() {
-            return new Notification(id, recipientId, channel, type, status, content, idempotencyKey, retryCount, createdAt);
+            Notification n = new Notification();
+            n.id = id; n.recipientId = recipientId; n.channel = channel;
+            n.type = type; n.status = status; n.content = content;
+            n.title = title; n.read = read; n.idempotencyKey = idempotencyKey;
+            n.retryCount = retryCount; n.createdAt = createdAt;
+            return n;
         }
     }
 }

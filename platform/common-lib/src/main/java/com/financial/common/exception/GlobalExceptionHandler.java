@@ -22,18 +22,34 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private static final java.util.Set<String> DB_MARKERS = java.util.Set.of(
+            "jdbc", "sql", "hikaripool", "org.hibernate", "relation", "table",
+            "column", "constraint", "psql", "postgresql", "datasource",
+            "java.", "com.financial", "org.springframework.dao"
+    );
+
     private String sanitize(String msg) {
         if (msg == null || msg.isBlank()) return "An error occurred";
-        if (msg.contains("jdbc:") || msg.contains("HikariPool") || msg.contains("org.hibernate")
-                || msg.contains("java.") || msg.contains("com.financial")) {
-            return "An error occurred";
-        }
+        String lower = msg.toLowerCase(java.util.Locale.ROOT);
+        if (DB_MARKERS.stream().anyMatch(lower::contains)) return "An error occurred";
         return msg.length() > 200 ? msg.substring(0, 200) : msg;
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
         String traceId = UUID.randomUUID().toString();
+
+        // Intercept Spring Data/JPA/JDBC exceptions before they reach the RuntimeException
+        // branch where the raw SQL error message would otherwise leak to the client.
+        String exClass = ex.getClass().getName();
+        if (exClass.startsWith("org.springframework.dao.")
+                || exClass.startsWith("org.springframework.orm.")
+                || exClass.startsWith("org.springframework.jdbc.")) {
+            log.error("Database error [TraceID: {}] {}: {}", traceId, exClass, ex.getMessage());
+            return new ResponseEntity<>(
+                    ApiResponse.error("An error occurred", Collections.emptyList(), traceId),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         return switch (ex) {
             case NoResourceFoundException nrfe -> {

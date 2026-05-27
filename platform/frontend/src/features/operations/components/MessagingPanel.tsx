@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Avatar, Typography, Badge, Spin } from 'antd';
 import { Send, CheckCheck, Paperclip, MoreVertical, Search, Phone, Info, Smile, AtSign } from 'lucide-react';
 import { useWebSocket } from '../../../hooks/useWebSocket';
-import axios from 'axios';
+import api from '../../../shared/services/apiClient';
 
 const { Text, Title } = Typography;
 
@@ -62,9 +62,7 @@ const MessagingPanel: React.FC<Props> = ({
   /* Load existing messages from API */
   useEffect(() => {
     setLoading(true);
-    axios.get(`/api/messaging/conversations/${conversationId}/messages`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token') ?? ''}` },
-    })
+    api.get(`/messaging/conversations/${conversationId}/messages`)
       .then(res => {
         const data: Message[] = res.data?.data ?? [];
         if (data.length > 0) {

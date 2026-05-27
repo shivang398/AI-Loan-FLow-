@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography, Drawer } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography, Drawer, List, Spin } from 'antd';
 import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, Search, UsersRound, Network,
-  BookOpen, Calculator, Menu as MenuIcon, X,
+  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 import { RootState } from '../store';
+import api from '../shared/services/apiClient';
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -20,6 +21,10 @@ const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,6 +45,35 @@ const DashboardLayout: React.FC = () => {
   useEffect(() => {
     setMobileDrawerOpen(false);
   }, [location.pathname]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications/unread-count');
+      setUnreadCount(res.data?.data?.count ?? 0);
+    } catch { /* silently ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  const openNotifications = async () => {
+    setNotifOpen(true);
+    setNotifLoading(true);
+    try {
+      const res = await api.get('/notifications');
+      setNotifications(res.data?.data ?? []);
+    } catch { setNotifications([]); }
+    finally { setNotifLoading(false); }
+  };
+
+  const markAllRead = async () => {
+    await api.post('/notifications/read-all').catch(() => {});
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+  };
 
   const adminItems = [
     { key: '/dashboard',          icon: <LayoutDashboard size={18} />, label: 'Overview' },
@@ -278,14 +312,79 @@ const DashboardLayout: React.FC = () => {
             )}
 
             <Tooltip title="Notifications">
-              <Badge count={5} size="small" offset={[-6, 6]} color="#4f46e5">
+              <Badge count={unreadCount} size="small" offset={[-6, 6]} color="#4f46e5" overflowCount={99}>
                 <Button
                   type="text"
                   icon={<Bell size={19} />}
+                  onClick={openNotifications}
                   style={{ color: 'var(--text-muted)', width: 40, height: 40, borderRadius: 12 }}
                 />
               </Badge>
             </Tooltip>
+
+            <Drawer
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 800, color: '#0f172a' }}>Notifications</span>
+                  {notifications.some(n => !n.read) && (
+                    <Button type="text" icon={<CheckCheck size={14} />} onClick={markAllRead}
+                      style={{ fontSize: 12, color: '#4f46e5', fontWeight: 700 }}>
+                      Mark all read
+                    </Button>
+                  )}
+                </div>
+              }
+              placement="right"
+              width={380}
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              styles={{ body: { padding: 0 } }}
+            >
+              <Spin spinning={notifLoading}>
+                {notifications.length === 0 && !notifLoading ? (
+                  <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+                    <Bell size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
+                    <p style={{ margin: 0, fontWeight: 600 }}>No notifications yet</p>
+                  </div>
+                ) : (
+                  <List
+                    dataSource={notifications}
+                    renderItem={(n: any) => (
+                      <List.Item
+                        key={n.id}
+                        onClick={async () => {
+                          if (!n.read) {
+                            await api.post(`/notifications/${n.id}/read`).catch(() => {});
+                            setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+                            setUnreadCount(prev => Math.max(0, prev - 1));
+                          }
+                        }}
+                        style={{
+                          padding: '14px 20px',
+                          background: n.read ? 'transparent' : '#f5f3ff',
+                          borderBottom: '1px solid #f1f5f9',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s',
+                        }}
+                      >
+                        <div style={{ width: '100%' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontWeight: n.read ? 600 : 800, fontSize: 13, color: '#1e293b' }}>
+                              {n.title || n.type}
+                            </span>
+                            {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4f46e5', flexShrink: 0, marginTop: 4 }} />}
+                          </div>
+                          <p style={{ margin: 0, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{n.content}</p>
+                          <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 6, display: 'block' }}>
+                            {n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                          </span>
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </Spin>
+            </Drawer>
 
             {!isMobile && (
               <div style={{ width: 1, height: 28, background: 'var(--surface-3)', margin: '0 8px' }} />

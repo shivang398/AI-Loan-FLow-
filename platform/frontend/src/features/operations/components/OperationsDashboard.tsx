@@ -28,7 +28,7 @@ import {
   UserCheck,
   Users,
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../shared/services/apiClient';
 
 const { Text, Title } = Typography;
 
@@ -272,7 +272,7 @@ const OperationsDashboard: React.FC = () => {
   const fetchLeads = async () => {
     setLoadingLeads(true);
     try {
-      const res = await axios.get('/api/customers/leads');
+      const res = await api.get('/customers/leads');
       const data = res.data?.data ?? res.data ?? [];
       setLeads(Array.isArray(data) ? data : []);
     } catch {

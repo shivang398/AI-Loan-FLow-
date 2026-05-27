@@ -11,6 +11,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
@@ -23,7 +24,7 @@ public class WhatsAppWebhookController {
     @Value("${app.whatsapp.verify-token}")
     private String verifyToken;
 
-    @Value("${app.whatsapp.app-secret:my_app_secret}")
+    @Value("${app.whatsapp.app-secret}")
     private String appSecret;
 
     private final RabbitTemplate rabbitTemplate;
@@ -70,9 +71,10 @@ public class WhatsAppWebhookController {
             sha256_HMAC.init(secret_key);
 
             byte[] hashBytes = sha256_HMAC.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            String calculatedSignature = HexFormat.of().formatHex(hashBytes);
+            byte[] expected = HexFormat.of().formatHex(hashBytes).getBytes(StandardCharsets.UTF_8);
+            byte[] actual   = signature.getBytes(StandardCharsets.UTF_8);
 
-            return calculatedSignature.equalsIgnoreCase(signature);
+            return MessageDigest.isEqual(expected, actual);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             log.error("Error validating signature", e);
             return false;
