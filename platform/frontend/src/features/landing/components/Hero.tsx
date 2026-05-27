@@ -78,10 +78,10 @@ const Hero: React.FC = () => (
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 44 }}>
             <Button
               size="large"
-              onClick={() => scrollTo('#hero')}
+              onClick={() => scrollTo('#customer-register')}
               style={{ height: 54, paddingInline: 32, borderRadius: 10, fontWeight: 800, fontSize: 16, background: '#D4AF37', borderColor: '#D4AF37', color: '#0A1F44', boxShadow: '0 8px 28px rgba(212,175,55,.35)' }}
             >
-              Check My Eligibility →
+              Apply Now →
             </Button>
             <Button
               size="large"

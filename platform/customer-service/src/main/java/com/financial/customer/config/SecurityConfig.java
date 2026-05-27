@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.POST, "/customers").permitAll()
                 .requestMatchers(HttpMethod.GET, "/customers/leads").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/customers/leads/*/status").authenticated()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
                 .anyRequest().authenticated()
             )

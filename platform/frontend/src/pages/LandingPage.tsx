@@ -4,12 +4,12 @@ import Navbar              from '../features/landing/components/Navbar';
 import Hero                from '../features/landing/components/Hero';
 import LoanProducts        from '../features/landing/components/LoanProducts';
 import LenderPartners      from '../features/landing/components/LenderPartners';
-import WhyChooseUs         from '../features/landing/components/WhyChooseUs';
 import HowItWorks          from '../features/landing/components/HowItWorks';
 import EligibilityWidget   from '../features/landing/components/EligibilityWidget';
 import Testimonials        from '../features/landing/components/Testimonials';
 import Stats               from '../features/landing/components/Stats';
 import FAQ                 from '../features/landing/components/FAQ';
+import CustomerRegistrationSection from '../features/landing/components/CustomerRegistrationSection';
 import ChannelPartnerCTA   from '../features/landing/components/ChannelPartnerCTA';
 import Footer              from '../features/landing/components/Footer';
 import WhatsAppFloat       from '../features/landing/components/WhatsAppFloat';
@@ -33,12 +33,12 @@ const LandingPage: React.FC = () => (
         <Hero />
         <LoanProducts />
         <LenderPartners />
-        <WhyChooseUs />
         <HowItWorks />
         <EligibilityWidget />
         <Testimonials />
         <Stats />
         <FAQ />
+        <CustomerRegistrationSection />
         <ChannelPartnerCTA />
         <Footer />
         <WhatsAppFloat />

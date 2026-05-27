@@ -32,7 +32,7 @@ public class CommissionTransactionController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ADMIN','FINANCE')")
+    @PreAuthorize("hasAuthority('PARTNER_MANAGER')")
     public ResponseEntity<CommissionTransaction> updateTransactionStatus(
             @PathVariable UUID id,
             @RequestBody Map<String, Object> body) {

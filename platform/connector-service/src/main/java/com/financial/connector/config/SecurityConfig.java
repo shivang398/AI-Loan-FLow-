@@ -4,6 +4,7 @@ import com.financial.common.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -35,7 +36,15 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
-                .anyRequest().authenticated()
+                // CONNECTOR can read their own profile
+                .requestMatchers(HttpMethod.GET, "/connectors/me").hasAuthority("CONNECTOR")
+                // PARTNER_MANAGER owns all partner management operations
+                .requestMatchers(HttpMethod.GET,  "/connectors/**").hasAuthority("PARTNER_MANAGER")
+                .requestMatchers(HttpMethod.POST, "/connectors/**").hasAuthority("PARTNER_MANAGER")
+                .requestMatchers(HttpMethod.PUT,  "/connectors/**").hasAuthority("PARTNER_MANAGER")
+                // FOIR endpoints open to authenticated users
+                .requestMatchers("/foir/**").authenticated()
+                .anyRequest().hasAuthority("PARTNER_MANAGER")
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

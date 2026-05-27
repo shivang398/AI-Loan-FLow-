@@ -82,13 +82,6 @@ const Navbar: React.FC = () => {
             ))}
 
             <Button
-              onClick={() => scrollTo('#hero')}
-              style={{ background: '#D4AF37', borderColor: '#D4AF37', color: '#0A1F44', fontWeight: 700, borderRadius: 8, height: 40, paddingInline: 20, fontSize: 14, whiteSpace: 'nowrap' }}
-              type="primary"
-            >
-              Apply Now
-            </Button>
-            <Button
               onClick={() => navigate('/partners/register')}
               style={{ borderColor: '#0A1F44', color: '#0A1F44', fontWeight: 600, borderRadius: 8, height: 40, paddingInline: 16, fontSize: 13, whiteSpace: 'nowrap' }}
             >
@@ -145,9 +138,6 @@ const Navbar: React.FC = () => {
             </button>
           ))}
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <Button type="primary" block size="large" onClick={() => { scrollTo('#hero'); setDrawerOpen(false); }} style={{ background: '#D4AF37', borderColor: '#D4AF37', color: '#0A1F44', fontWeight: 700 }}>
-              Apply Now
-            </Button>
             <Button block size="large" onClick={() => { navigate('/partners/register'); setDrawerOpen(false); }} style={{ borderColor: '#0A1F44', color: '#0A1F44', fontWeight: 600 }}>
               Become a Partner
             </Button>

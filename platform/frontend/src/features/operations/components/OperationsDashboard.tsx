@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Button,
-  Tag,
   Space,
   Drawer,
-  Tabs,
   Timeline,
   Input,
   notification,
@@ -48,6 +46,38 @@ interface Lead {
   status: string;
   customerId: string;
   createdAt: string;
+  // Extended fields
+  profession?: string;
+  netMonthlySalary?: number;
+  gender?: string;
+  maritalStatus?: string;
+  dob?: string;
+  alternateContact?: string;
+  whatsappNo?: string;
+  officialEmail?: string;
+  currentAddressLine1?: string;
+  currentAddressLine2?: string;
+  currentState?: string;
+  currentDistrict?: string;
+  currentCity?: string;
+  currentPincode?: string;
+  residenceType?: string;
+  permanentAddressLine1?: string;
+  permanentAddressLine2?: string;
+  permanentState?: string;
+  permanentDistrict?: string;
+  permanentCity?: string;
+  permanentPincode?: string;
+  jobType?: string;
+  designation?: string;
+  modeOfSalary?: string;
+  officeAddress?: string;
+  officeState?: string;
+  officeDistrict?: string;
+  officeCity?: string;
+  officePincode?: string;
+  existingEmi?: number;
+  hasPriorPersonalLoan?: boolean;
 }
 
 // ─────────────────────────────────────────────
@@ -268,6 +298,7 @@ const OperationsDashboard: React.FC = () => {
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchLeads = async () => {
     setLoadingLeads(true);
@@ -296,13 +327,26 @@ const OperationsDashboard: React.FC = () => {
     setIsDrawerOpen(true);
   };
 
-  const handleMoveToReview = () => {
-    notification.success({
-      message: 'Lead Moved to Review',
-      description: 'The lead has been marked as In Review.',
-      style: { borderRadius: 16, border: '1px solid #d1fae5' },
-    });
-    setIsDrawerOpen(false);
+  const updateStatus = async (newStatus: string, successMsg: string) => {
+    if (!drawerLead) return;
+    setActionLoading(true);
+    try {
+      await api.put(`/customers/leads/${drawerLead.id}/status`, { status: newStatus });
+      setLeads(prev => prev.map(l => l.id === drawerLead.id ? { ...l, status: newStatus } : l));
+      setDrawerLead(prev => prev ? { ...prev, status: newStatus } : null);
+      notification.success({
+        message: successMsg,
+        style: { borderRadius: 16, border: '1px solid #d1fae5' },
+      });
+      if (newStatus === 'RESOLVED') setIsDrawerOpen(false);
+    } catch (err: any) {
+      notification.error({
+        message: err?.response?.data?.message || 'Failed to update lead status',
+        style: { borderRadius: 16 },
+      });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -390,56 +434,160 @@ const OperationsDashboard: React.FC = () => {
       >
         {drawerLead && (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f8fafc' }}>
-            <div style={{ background: '#fff', padding: '28px 32px', borderBottom: '1px solid #f1f5f9' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+            {/* Header */}
+            <div style={{ background: '#fff', padding: '24px 28px', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
                   <span style={{ background: '#eef2ff', color: '#4f46e5', borderRadius: 999, padding: '3px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                     Lead Review
                   </span>
-                  <Title level={2} style={{ margin: '8px 0 0', fontWeight: 900, letterSpacing: '-0.04em', color: '#0f172a' }}>
+                  <Title level={3} style={{ margin: '6px 0 0', fontWeight: 900, letterSpacing: '-0.04em', color: '#0f172a' }}>
                     {drawerLead.firstName} {drawerLead.lastName}
                   </Title>
                 </div>
-                <Avatar size={50} style={{ background: 'linear-gradient(135deg, #4f46e5, #6366f1)', fontWeight: 900, fontSize: 20 }}>
+                <Avatar size={46} style={{ background: 'linear-gradient(135deg, #4f46e5, #6366f1)', fontWeight: 900, fontSize: 18 }}>
                   {drawerLead.firstName[0]}
                 </Avatar>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 {[
-                  { label: 'Email',       value: drawerLead.email },
-                  { label: 'Mobile',      value: drawerLead.mobile },
-                  { label: 'Assigned To', value: drawerLead.assignedTo || 'Unassigned' },
-                  { label: 'Loan Type',   value: formatLoanType(drawerLead.loanType) },
                   { label: 'Loan Amount', value: formatAmount(drawerLead.loanAmount) },
+                  { label: 'Loan Type',   value: formatLoanType(drawerLead.loanType) },
                   { label: 'Lead Age',    value: getElapsed(drawerLead.createdAt) },
+                  { label: 'Assigned To', value: drawerLead.assignedTo || 'Unassigned' },
+                  { label: 'Profession',  value: drawerLead.profession || '—' },
+                  { label: 'Monthly Salary', value: drawerLead.netMonthlySalary ? formatAmount(drawerLead.netMonthlySalary) : '—' },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <Text style={{ display: 'block', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4 }}>{label}</Text>
-                    <Text style={{ fontWeight: 700, color: '#1e293b' }}>{value}</Text>
+                    <Text style={{ display: 'block', fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 3 }}>{label}</Text>
+                    <Text style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>{value}</Text>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto' }}>
-              <Card style={{ borderRadius: 14, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
-                <Title level={5} style={{ fontWeight: 900, marginBottom: 16, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <CheckCircle2 size={15} color="#10b981" /> KYC Status
+
+            {/* Scrollable body */}
+            <div style={{ flex: 1, padding: '20px 28px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* Personal Info */}
+              <Card size="small" style={{ borderRadius: 12, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                <Title level={5} style={{ fontWeight: 900, marginBottom: 12, color: '#1e293b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CheckCircle2 size={13} color="#4f46e5" /> Personal Information
+                </Title>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {[
+                    { label: 'Email',           value: drawerLead.email },
+                    { label: 'Mobile',          value: drawerLead.mobile },
+                    { label: 'Alt. Contact',    value: drawerLead.alternateContact || '—' },
+                    { label: 'WhatsApp',        value: drawerLead.whatsappNo || '—' },
+                    { label: 'Official Email',  value: drawerLead.officialEmail || '—' },
+                    { label: 'Gender',          value: drawerLead.gender || '—' },
+                    { label: 'Marital Status',  value: drawerLead.maritalStatus || '—' },
+                    { label: 'Date of Birth',   value: drawerLead.dob || '—' },
+                    { label: 'PAN Number',      value: drawerLead.panNumber },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <Text style={{ display: 'block', fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>{label}</Text>
+                      <Text style={{ fontWeight: 600, color: '#334155', fontSize: 12 }}>{value}</Text>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Address */}
+              <Card size="small" style={{ borderRadius: 12, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                <Title level={5} style={{ fontWeight: 900, marginBottom: 12, color: '#1e293b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FileText size={13} color="#059669" /> Address Details
+                </Title>
+                <div style={{ marginBottom: 10 }}>
+                  <Text style={{ display: 'block', fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Current Address</Text>
+                  <Text style={{ fontWeight: 600, color: '#334155', fontSize: 12, lineHeight: 1.6 }}>
+                    {[drawerLead.currentAddressLine1, drawerLead.currentAddressLine2, drawerLead.currentCity, drawerLead.currentDistrict, drawerLead.currentState, drawerLead.currentPincode].filter(Boolean).join(', ') || '—'}
+                  </Text>
+                  {drawerLead.residenceType && (
+                    <span style={{ display: 'inline-block', marginTop: 4, fontSize: 10, fontWeight: 700, color: '#6366f1', background: '#eef2ff', borderRadius: 6, padding: '2px 8px' }}>
+                      {drawerLead.residenceType}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <Text style={{ display: 'block', fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Permanent Address</Text>
+                  <Text style={{ fontWeight: 600, color: '#334155', fontSize: 12, lineHeight: 1.6 }}>
+                    {[drawerLead.permanentAddressLine1, drawerLead.permanentAddressLine2, drawerLead.permanentCity, drawerLead.permanentDistrict, drawerLead.permanentState, drawerLead.permanentPincode].filter(Boolean).join(', ') || '—'}
+                  </Text>
+                </div>
+              </Card>
+
+              {/* Employment */}
+              <Card size="small" style={{ borderRadius: 12, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                <Title level={5} style={{ fontWeight: 900, marginBottom: 12, color: '#1e293b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Activity size={13} color="#f59e0b" /> Employment & Finances
+                </Title>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  {[
+                    { label: 'Job Type',       value: drawerLead.jobType || '—' },
+                    { label: 'Designation',    value: drawerLead.designation || '—' },
+                    { label: 'Salary Mode',    value: drawerLead.modeOfSalary || '—' },
+                    { label: 'Existing EMI',   value: drawerLead.existingEmi ? formatAmount(drawerLead.existingEmi) : '₹0' },
+                    { label: 'Prior PL Loan',  value: drawerLead.hasPriorPersonalLoan != null ? (drawerLead.hasPriorPersonalLoan ? 'Yes' : 'No') : '—' },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <Text style={{ display: 'block', fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>{label}</Text>
+                      <Text style={{ fontWeight: 600, color: '#334155', fontSize: 12 }}>{value}</Text>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <Text style={{ display: 'block', fontSize: 9, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Office Address</Text>
+                  <Text style={{ fontWeight: 600, color: '#334155', fontSize: 12, lineHeight: 1.6 }}>
+                    {[drawerLead.officeAddress, drawerLead.officeCity, drawerLead.officeDistrict, drawerLead.officeState, drawerLead.officePincode].filter(Boolean).join(', ') || '—'}
+                  </Text>
+                </div>
+              </Card>
+
+              {/* KYC */}
+              <Card size="small" style={{ borderRadius: 12, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                <Title level={5} style={{ fontWeight: 900, marginBottom: 12, color: '#1e293b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CheckCircle2 size={13} color="#10b981" /> KYC Status
                 </Title>
                 <Timeline items={[
-                  { color: 'green',  children: <Text style={{ fontWeight: 700, color: '#1e293b' }}>PAN Submitted — {drawerLead.panNumber}</Text> },
-                  { color: 'orange', children: <Text style={{ fontWeight: 700, color: '#1e293b' }}>PAN Verification Pending</Text> },
-                  { color: 'gray',   children: <Text style={{ fontWeight: 600, color: '#94a3b8' }}>Aadhaar e-KYC</Text> },
-                  { color: 'gray',   children: <Text style={{ fontWeight: 600, color: '#94a3b8' }}>Credit Bureau Check</Text> },
+                  { color: 'green',  children: <Text style={{ fontWeight: 700, color: '#1e293b', fontSize: 12 }}>PAN Submitted — {drawerLead.panNumber}</Text> },
+                  { color: 'orange', children: <Text style={{ fontWeight: 700, color: '#1e293b', fontSize: 12 }}>PAN Verification Pending</Text> },
+                  { color: 'gray',   children: <Text style={{ fontWeight: 600, color: '#94a3b8', fontSize: 12 }}>Aadhaar e-KYC</Text> },
+                  { color: 'gray',   children: <Text style={{ fontWeight: 600, color: '#94a3b8', fontSize: 12 }}>Credit Bureau Check</Text> },
                 ]} />
               </Card>
             </div>
             <div style={{ background: '#fff', padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12 }}>
-              <Button style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #e2e8f0', color: '#94a3b8', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                Raise Query
-              </Button>
-              <Button type="primary" onClick={handleMoveToReview} style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#059669', border: 'none', boxShadow: '0 4px 14px rgba(5,150,105,0.25)', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                Move to Review
-              </Button>
+              {drawerLead?.status !== 'QUERY_RAISED' && drawerLead?.status !== 'RESOLVED' && (
+                <Button
+                  loading={actionLoading}
+                  onClick={() => updateStatus('QUERY_RAISED', 'Query raised on this lead')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #fca5a5', color: '#dc2626', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                >
+                  Raise Query
+                </Button>
+              )}
+              {drawerLead?.status === 'NEW' && (
+                <Button
+                  type="primary"
+                  loading={actionLoading}
+                  onClick={() => updateStatus('IN_REVIEW', 'Lead moved to In Review')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#059669', border: 'none', boxShadow: '0 4px 14px rgba(5,150,105,0.25)', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                >
+                  Move to Review
+                </Button>
+              )}
+              {drawerLead?.status === 'IN_REVIEW' && (
+                <Button
+                  type="primary"
+                  loading={actionLoading}
+                  onClick={() => updateStatus('RESOLVED', 'Lead marked as Resolved')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#4f46e5', border: 'none', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                >
+                  Mark Resolved
+                </Button>
+              )}
             </div>
           </div>
         )}

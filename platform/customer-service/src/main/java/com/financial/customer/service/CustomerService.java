@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +74,44 @@ public class CustomerService {
                 .assignedTo(assignedTo)
                 .status("NEW")
                 .customerId(customer.getId())
+                // General
+                .profession(request.getProfession())
+                .netMonthlySalary(request.getNetMonthlySalary())
+                // Personal
+                .gender(request.getGender())
+                .maritalStatus(request.getMaritalStatus())
+                .dob(request.getDob())
+                .alternateContact(request.getAlternateContact())
+                .whatsappNo(request.getWhatsappNo())
+                .officialEmail(request.getOfficialEmail())
+                // Current Address
+                .currentAddressLine1(request.getCurrentAddressLine1())
+                .currentAddressLine2(request.getCurrentAddressLine2())
+                .currentState(request.getCurrentState())
+                .currentDistrict(request.getCurrentDistrict())
+                .currentCity(request.getCurrentCity())
+                .currentPincode(request.getCurrentPincode())
+                .residenceType(request.getResidenceType())
+                // Permanent Address
+                .permanentAddressLine1(request.getPermanentAddressLine1())
+                .permanentAddressLine2(request.getPermanentAddressLine2())
+                .permanentState(request.getPermanentState())
+                .permanentDistrict(request.getPermanentDistrict())
+                .permanentCity(request.getPermanentCity())
+                .permanentPincode(request.getPermanentPincode())
+                // Employment
+                .jobType(request.getJobType())
+                .designation(request.getDesignation())
+                .modeOfSalary(request.getModeOfSalary())
+                // Office Address
+                .officeAddress(request.getOfficeAddress())
+                .officeState(request.getOfficeState())
+                .officeDistrict(request.getOfficeDistrict())
+                .officeCity(request.getOfficeCity())
+                .officePincode(request.getOfficePincode())
+                // Financial
+                .existingEmi(request.getExistingEmi())
+                .hasPriorPersonalLoan(request.getHasPriorPersonalLoan())
                 .build();
 
         leadRepository.save(lead);
@@ -82,8 +121,24 @@ public class CustomerService {
         return customer;
     }
 
-    public List<Lead> getAllLeads() {
-        return leadRepository.findAllByOrderByCreatedAtDesc();
+    public List<Lead> getLeads(String callerEmail, boolean isAdmin) {
+        if (isAdmin) {
+            return leadRepository.findAllByOrderByCreatedAtDesc();
+        }
+        return leadRepository.findByAssignedToOrderByCreatedAtDesc(callerEmail);
+    }
+
+    @Transactional
+    public Lead updateLeadStatus(UUID leadId, String newStatus, String callerEmail, boolean isAdmin) {
+        Lead lead = leadRepository.findById(leadId)
+                .orElseThrow(() -> new RuntimeException("Lead not found"));
+
+        if (!isAdmin && !callerEmail.equals(lead.getAssignedTo())) {
+            throw new RuntimeException("Access denied: this lead is not assigned to you");
+        }
+
+        lead.setStatus(newStatus);
+        return leadRepository.save(lead);
     }
 
     private synchronized String assignRoundRobin() {

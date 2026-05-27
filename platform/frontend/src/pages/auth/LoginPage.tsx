@@ -23,6 +23,7 @@ const LoginPage: React.FC = () => {
       else if (user.role === 'TEAM_LEADER') targetPath = '/tl/dashboard';
       else if (user.role === 'OPERATIONS') targetPath = '/ops/dashboard';
       else if (user.role === 'CONNECTOR') targetPath = '/connector/dashboard';
+      else if (user.role === 'PARTNER_MANAGER') targetPath = '/pm/partners';
       navigate(targetPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
@@ -59,6 +60,7 @@ const LoginPage: React.FC = () => {
       else if (role === 'TEAM_LEADER') targetPath = '/tl/dashboard';
       else if (role === 'OPERATIONS') targetPath = '/ops/dashboard';
       else if (role === 'CONNECTOR') targetPath = '/connector/dashboard';
+      else if (role === 'PARTNER_MANAGER') targetPath = '/pm/partners';
       else if (role === 'ADMIN') targetPath = '/dashboard';
 
       navigate(targetPath, { replace: true });

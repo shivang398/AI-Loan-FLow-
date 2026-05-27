@@ -44,16 +44,24 @@ const App: React.FC = () => {
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<DashboardOverview />} />
               
-              {/* Admin Specific Routes */}
+              {/* Admin Specific Routes — platform config only, no partner access */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="/admin/users"         element={<UserManagement />} />
-                <Route path="/admin/connectors"    element={<ConnectorHub />} />
                 <Route path="/admin/documents"     element={<DocumentLibrary />} />
                 <Route path="/admin/reports"       element={<ReportingDashboard />} />
-                <Route path="/admin/payouts"       element={<PayoutTracker />} />
                 <Route path="/admin/analytics"     element={<BusinessAnalytics />} />
                 <Route path="/admin/policies"      element={<PoliciesPage />} />
                 <Route path="/admin/team-meeting"  element={<TeamMeeting />} />
+              </Route>
+
+              {/* Partner Manager Routes — full ownership of partner lifecycle */}
+              <Route element={<ProtectedRoute allowedRoles={['PARTNER_MANAGER']} />}>
+                <Route path="/pm/partners"     element={<ConnectorHub />} />
+                <Route path="/pm/onboarding"   element={<ConnectorHub />} />
+                <Route path="/pm/payouts"      element={<PayoutTracker />} />
+                <Route path="/pm/commissions"  element={<CommissionDashboard />} />
+                <Route path="/pm/policies"     element={<PoliciesPage />} />
+                <Route path="/pm/team-meeting" element={<TeamMeeting />} />
               </Route>
 
               {/* RM Specific Routes */}

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, Search, UsersRound, Network,
-  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck,
+  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -78,13 +78,21 @@ const DashboardLayout: React.FC = () => {
   const adminItems = [
     { key: '/dashboard',          icon: <LayoutDashboard size={18} />, label: 'Overview' },
     { key: '/admin/users',        icon: <Users size={18} />,           label: 'User Management' },
-    { key: '/admin/connectors',   icon: <Network size={18} />,         label: 'Channel Partner Hub' },
-    { key: '/admin/payouts',      icon: <Wallet size={18} />,          label: 'Payout Tracker' },
     { key: '/admin/reports',      icon: <FileText size={18} />,        label: 'MIS Reports' },
     { key: '/admin/documents',    icon: <Files size={18} />,           label: 'Document Library' },
-    { key: '/admin/analytics',    icon: <BarChart3 size={18} />,       label: 'Admin Analytics' },
+    { key: '/admin/analytics',    icon: <BarChart3 size={18} />,       label: 'Analytics' },
     { key: '/admin/policies',     icon: <BookOpen size={18} />,        label: 'Policies' },
     { key: '/admin/team-meeting', icon: <UsersRound size={18} />,      label: 'Team Meeting' },
+  ];
+
+  const partnerManagerItems = [
+    { key: '/dashboard',             icon: <LayoutDashboard size={18} />, label: 'Overview' },
+    { key: '/pm/partners',           icon: <Network size={18} />,         label: 'Partner Hub' },
+    { key: '/pm/onboarding',         icon: <UserCheck size={18} />,       label: 'Onboarding' },
+    { key: '/pm/payouts',            icon: <Wallet size={18} />,          label: 'Payout Tracker' },
+    { key: '/pm/commissions',        icon: <BarChart3 size={18} />,       label: 'Commission Slabs' },
+    { key: '/pm/policies',           icon: <BookOpen size={18} />,        label: 'Policies' },
+    { key: '/pm/team-meeting',       icon: <UsersRound size={18} />,      label: 'Team Meeting' },
   ];
 
   const rmItems = [
@@ -119,11 +127,12 @@ const DashboardLayout: React.FC = () => {
   ];
 
   const menuItems = [
-    ...(user?.role === 'ADMIN' ? adminItems : []),
-    ...(user?.role === 'RM' ? rmItems : []),
-    ...(user?.role === 'TEAM_LEADER' ? tlItems : []),
-    ...(user?.role === 'OPERATIONS' ? opsItems : []),
-    ...(user?.role === 'CONNECTOR' ? connectorItems : []),
+    ...(user?.role === 'ADMIN'           ? adminItems          : []),
+    ...(user?.role === 'PARTNER_MANAGER' ? partnerManagerItems : []),
+    ...(user?.role === 'RM'              ? rmItems             : []),
+    ...(user?.role === 'TEAM_LEADER'     ? tlItems             : []),
+    ...(user?.role === 'OPERATIONS'      ? opsItems            : []),
+    ...(user?.role === 'CONNECTOR'       ? connectorItems      : []),
   ];
 
   const handleLogout = () => {

@@ -29,7 +29,7 @@ public class PayoutSlabController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN','FINANCE')")
+    @PreAuthorize("hasAuthority('PARTNER_MANAGER')")
     public ResponseEntity<PayoutSlab> createOrUpdateSlab(@Valid @RequestBody PayoutSlab slab) {
         if (slab.getStatus() == null) {
             slab.setStatus("ACTIVE");

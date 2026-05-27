@@ -26,11 +26,12 @@ import java.util.stream.Collectors;
 @Service
 public class AuthService {
 
-    public static final String ROLE_CONNECTOR   = "CONNECTOR";
-    public static final String ROLE_ADMIN       = "ADMIN";
-    public static final String ROLE_RM          = "RM";
-    public static final String ROLE_OPERATIONS  = "OPERATIONS";
-    public static final String ROLE_TEAM_LEADER = "TEAM_LEADER";
+    public static final String ROLE_CONNECTOR        = "CONNECTOR";
+    public static final String ROLE_ADMIN            = "ADMIN";
+    public static final String ROLE_RM               = "RM";
+    public static final String ROLE_OPERATIONS       = "OPERATIONS";
+    public static final String ROLE_TEAM_LEADER      = "TEAM_LEADER";
+    public static final String ROLE_PARTNER_MANAGER  = "PARTNER_MANAGER";
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
