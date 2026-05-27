@@ -28,19 +28,38 @@ const Counter: React.FC<{ target: number; prefix: string; suffix: string; isDeci
 };
 
 const Stats: React.FC = () => (
-  <section id="stats" style={{ background: 'linear-gradient(135deg, #071730 0%, #0A1F44 60%, #0f2a5a 100%)', padding: '88px 0', position: 'relative', overflow: 'hidden' }}>
-    {/* Decorative */}
-    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', position: 'relative' }}>
+  <section id="stats" style={{ background: '#0A1F44', padding: '80px 0' }}>
+    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <h2 style={{
+          fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800,
+          fontSize: 'clamp(22px, 2.5vw, 32px)', color: '#ffffff', margin: 0,
+        }}>
+          Numbers That Speak for Themselves
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, marginTop: 10 }}>
+          Real impact. Real borrowers. Real outcomes.
+        </p>
+      </div>
       <div className="stat-grid">
         {STATS.map((s, i) => (
-          <motion.div key={s.label} style={{ textAlign: 'center' }}
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.45, delay: i * 0.07 }}>
-            <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 'clamp(26px, 3vw, 40px)', color: '#D4AF37', lineHeight: 1, marginBottom: 10 }}>
+          <motion.div
+            key={s.label}
+            style={{ textAlign: 'center', padding: '20px 0' }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.4, delay: i * 0.07 }}
+          >
+            <div style={{
+              fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800,
+              fontSize: 'clamp(24px, 3vw, 38px)', color: '#93C5FD', lineHeight: 1, marginBottom: 10,
+            }}>
               <Counter target={s.value} prefix={s.prefix} suffix={s.suffix} isDecimal={!Number.isInteger(s.value)} />
             </div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#64748B', letterSpacing: '0.02em', lineHeight: 1.4 }}>{s.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.02em', lineHeight: 1.4 }}>
+              {s.label}
+            </div>
           </motion.div>
         ))}
       </div>

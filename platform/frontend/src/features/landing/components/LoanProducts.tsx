@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from 'antd';
 import { motion } from 'framer-motion';
-import { Wallet, GraduationCap, Briefcase, ArrowRight, ExternalLink } from 'lucide-react';
+import { Wallet, GraduationCap, Briefcase, ArrowRight, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { LOAN_PRODUCTS } from '../constants/landingData';
 
 const ICON_MAP: Record<string, React.ElementType> = { Wallet, GraduationCap, Briefcase };
@@ -11,65 +11,69 @@ const scrollTo = (id: string) => {
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
 
-const SectionLabel: React.FC<{ text: string }> = ({ text }) => (
-  <span style={{ display: 'inline-block', background: 'rgba(10,31,68,.07)', color: '#0A1F44', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '5px 14px', borderRadius: 100, marginBottom: 12 }}>
-    {text}
-  </span>
-);
-
 const LoanProducts: React.FC = () => (
-  <section id="loan-products" style={{ background: '#F8FAFC', padding: '96px 0' }}>
+  <section id="loan-products" style={{ background: '#F9FAFB', padding: '96px 0' }}>
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
       <div style={{ textAlign: 'center', marginBottom: 60 }}>
-        <SectionLabel text="What We Offer" />
-        <h2 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 'clamp(30px, 3.5vw, 44px)', color: '#0A1F44', margin: '8px 0 16px' }}>
-          Our Loan Products
+        <span style={{
+          display: 'inline-block', background: '#EFF6FF', color: '#2563EB',
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase',
+          padding: '4px 14px', borderRadius: 4, marginBottom: 14,
+        }}>
+          Our Products
+        </span>
+        <h2 style={{
+          fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800,
+          fontSize: 'clamp(28px, 3.5vw, 40px)', color: '#0A1F44', margin: '0 0 14px',
+        }}>
+          Loan Solutions for Every Need
         </h2>
-        <p style={{ color: '#64748B', fontSize: 16, maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
-          Personal loans are our core strength. For education and business, we work with exclusive, trusted partners to bring you the best deal.
+        <p style={{ color: '#6B7280', fontSize: 16, maxWidth: 520, margin: '0 auto', lineHeight: 1.75 }}>
+          Personal loans are our core expertise. For education and business, we work with exclusive, trusted partners to secure the right deal for you.
         </p>
       </div>
 
-      <div className="loan-products-grid" style={{ display: 'grid', gap: '2rem' }}>
+      <div className="loan-products-grid" style={{ display: 'grid', gap: '1.75rem' }}>
         {LOAN_PRODUCTS.map((p, i) => {
           const Icon = ICON_MAP[p.icon];
           const isMain = p.highlight;
           return (
             <motion.div
               key={p.key}
-              initial={{ opacity: 0, y: 28 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
               style={{
-                background: isMain ? 'linear-gradient(145deg, #0A1F44, #1a3a6e)' : '#fff',
-                borderRadius: 22,
-                padding: '32px 28px',
-                border: isMain ? '1.5px solid rgba(212,175,55,.3)' : '1.5px solid #E2E8F0',
+                background: '#ffffff',
+                borderRadius: 14,
+                padding: '28px 24px',
+                border: isMain ? '1.5px solid #BFDBFE' : '1.5px solid #E5E7EB',
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: isMain ? '0 20px 60px rgba(10,31,68,.25)' : '0 2px 16px rgba(10,31,68,.05)',
+                boxShadow: isMain ? '0 8px 32px rgba(37,99,235,.08)' : '0 2px 8px rgba(0,0,0,.04)',
               }}
             >
-              {/* Gold shimmer for main card */}
+              {/* Featured top stripe */}
               {isMain && (
-                <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(212,175,55,.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: '#2563EB' }} />
               )}
 
               {/* Badge */}
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 18, marginTop: isMain ? 8 : 0 }}>
                 <span style={{
                   display: 'inline-block',
-                  padding: '4px 12px',
-                  borderRadius: 100,
-                  fontSize: 11,
+                  padding: '3px 10px',
+                  borderRadius: 4,
+                  fontSize: 10,
                   fontWeight: 700,
-                  letterSpacing: '0.05em',
-                  background: isMain ? 'rgba(212,175,55,.2)' : p.partner ? 'rgba(59,130,246,.1)' : 'rgba(10,31,68,.07)',
-                  color: isMain ? '#D4AF37' : p.partner ? '#3B82F6' : '#0A1F44',
-                  border: isMain ? '1px solid rgba(212,175,55,.35)' : 'none',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase' as const,
+                  background: isMain ? '#EFF6FF' : p.partner ? '#F0FDF4' : '#F9FAFB',
+                  color: isMain ? '#2563EB' : p.partner ? '#15803D' : '#374151',
+                  border: isMain ? '1px solid #BFDBFE' : 'none',
                 }}>
                   {p.badge}
                 </span>
@@ -77,51 +81,62 @@ const LoanProducts: React.FC = () => (
 
               {/* Icon */}
               <div style={{
-                width: 52, height: 52, borderRadius: 16,
-                background: isMain ? 'rgba(212,175,55,.15)' : 'rgba(10,31,68,.06)',
+                width: 48, height: 48, borderRadius: 10,
+                background: isMain ? '#EFF6FF' : '#F9FAFB',
+                border: `1px solid ${isMain ? '#BFDBFE' : '#E5E7EB'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 18,
+                marginBottom: 16,
               }}>
-                {Icon && <Icon size={26} color={isMain ? '#D4AF37' : '#0A1F44'} />}
+                {Icon && <Icon size={22} color={isMain ? '#2563EB' : '#0A1F44'} />}
               </div>
 
-              <h3 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 20, color: isMain ? '#FFFFFF' : '#0A1F44', margin: '0 0 8px' }}>
+              <h3 style={{
+                fontFamily: '"Plus Jakarta Sans", sans-serif',
+                fontWeight: 700, fontSize: 19,
+                color: '#0A1F44', margin: '0 0 8px',
+              }}>
                 {p.title}
               </h3>
-              <p style={{ fontSize: 14, color: isMain ? '#94A3B8' : '#64748B', margin: '0 0 20px', lineHeight: 1.7, flex: 1 }}>
+              <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 18px', lineHeight: 1.75, flex: 1 }}>
                 {p.description}
               </p>
 
               {/* Features */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
                 {p.features.map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: isMain ? '#D4AF37' : '#10B981', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: isMain ? '#CBD5E1' : '#475569', fontWeight: 500 }}>{f}</span>
+                  <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <CheckCircle2 size={14} color={isMain ? '#2563EB' : '#10B981'} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ fontSize: 13, color: '#374151', fontWeight: 500, lineHeight: 1.4 }}>{f}</span>
                   </div>
                 ))}
               </div>
 
               {/* Partner tag */}
               {p.partner && (
-                <div style={{ background: isMain ? 'rgba(212,175,55,.1)' : '#F0F7FF', borderRadius: 10, padding: '10px 14px', marginBottom: 20, border: `1px solid ${isMain ? 'rgba(212,175,55,.2)' : '#DBEAFE'}` }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: isMain ? '#D4AF37' : '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                <div style={{
+                  background: '#F9FAFB', borderRadius: 8, padding: '10px 14px', marginBottom: 18,
+                  border: '1px solid #E5E7EB',
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2 }}>
                     Exclusive Partner
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: isMain ? '#FFFFFF' : '#1E40AF' }}>{p.partner}</div>
-                  <div style={{ fontSize: 11, color: isMain ? '#94A3B8' : '#64748B' }}>{p.partnerNote}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0A1F44' }}>{p.partner}</div>
+                  <div style={{ fontSize: 11, color: '#9CA3AF' }}>{p.partnerNote}</div>
                 </div>
               )}
 
               {/* Rate + Max */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 18, borderTop: `1px solid ${isMain ? 'rgba(255,255,255,.1)' : '#F1F5F9'}`, marginBottom: 22 }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between',
+                paddingTop: 16, borderTop: '1px solid #F3F4F6', marginBottom: 18,
+              }}>
                 <div>
-                  <div style={{ fontSize: 11, color: isMain ? '#64748B' : '#94A3B8', fontWeight: 500, marginBottom: 3 }}>Starting from</div>
-                  <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, color: '#D4AF37' }}>{p.rate}</div>
+                  <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500, marginBottom: 3 }}>Starting from</div>
+                  <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, color: '#2563EB' }}>{p.rate}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 11, color: isMain ? '#64748B' : '#94A3B8', fontWeight: 500, marginBottom: 3 }}>Loan up to</div>
-                  <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, color: isMain ? '#FFFFFF' : '#0A1F44' }}>{p.maxAmount}</div>
+                  <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500, marginBottom: 3 }}>Loan up to</div>
+                  <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, color: '#0A1F44' }}>{p.maxAmount}</div>
                 </div>
               </div>
 
@@ -129,26 +144,26 @@ const LoanProducts: React.FC = () => (
               {p.partnerUrl ? (
                 <a href={p.partnerUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                   <Button block size="large" style={{
-                    height: 46, borderRadius: 12, fontWeight: 700, fontSize: 14,
-                    background: 'transparent', borderColor: '#3B82F6', color: '#3B82F6',
+                    height: 44, borderRadius: 8, fontWeight: 700, fontSize: 13,
+                    background: 'transparent', borderColor: '#D1D5DB', color: '#374151',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}>
-                    Visit {p.partner} <ExternalLink size={14} />
+                    Visit {p.partner} <ExternalLink size={13} />
                   </Button>
                 </a>
               ) : (
                 <Button
                   block size="large"
-                  onClick={() => scrollTo('#hero')}
+                  onClick={() => scrollTo('#customer-register')}
                   style={{
-                    height: 46, borderRadius: 12, fontWeight: 700, fontSize: 14,
-                    background: isMain ? '#D4AF37' : 'transparent',
-                    borderColor: isMain ? '#D4AF37' : '#0A1F44',
-                    color: isMain ? '#0A1F44' : '#0A1F44',
+                    height: 44, borderRadius: 8, fontWeight: 700, fontSize: 13,
+                    background: isMain ? '#2563EB' : 'transparent',
+                    borderColor: isMain ? '#2563EB' : '#0A1F44',
+                    color: isMain ? '#ffffff' : '#0A1F44',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}
                 >
-                  {isMain ? 'Apply Now' : 'Enquire Now'} <ArrowRight size={14} />
+                  {isMain ? 'Apply Now' : 'Enquire Now'} <ArrowRight size={13} />
                 </Button>
               )}
             </motion.div>

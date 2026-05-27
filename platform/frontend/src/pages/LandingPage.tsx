@@ -18,8 +18,8 @@ import '../features/landing/styles/landing.css';
 
 const landingTheme = {
   token: {
-    colorPrimary: '#0A1F44',
-    colorLink: '#D4AF37',
+    colorPrimary: '#2563EB',
+    colorLink: '#2563EB',
     borderRadius: 8,
     fontFamily: 'Inter, sans-serif',
   },

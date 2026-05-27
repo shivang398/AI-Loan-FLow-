@@ -14,8 +14,9 @@ const MobileStickyBar: React.FC = () => (
       style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 0', background: '#0A1F44', color: '#FFFFFF', fontWeight: 700, fontSize: 14, textDecoration: 'none', fontFamily: 'Inter, sans-serif' }}>
       <Phone size={17} /> Call Now
     </a>
-    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 0', background: '#D4AF37', color: '#0A1F44', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+    <button
+      onClick={() => { const el = document.getElementById('customer-register'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
+      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 0', background: '#2563EB', color: '#ffffff', fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
       Apply Now
     </button>
   </div>

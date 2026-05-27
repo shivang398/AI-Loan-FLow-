@@ -12,148 +12,153 @@ const scrollTo = (id: string) => {
 const PartnerCard: React.FC<{ partner: typeof PARTNERS[0]; index: number }> = ({ partner, index }) => {
   const Icon = partner.id === 'saral-vidya' ? GraduationCap : Briefcase;
   const isBlue = partner.id === 'saral-vidya';
+  const accentColor = isBlue ? '#2563EB' : '#0A1F44';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 32 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.5, delay: index * 0.15 }}
+      transition={{ duration: 0.4, delay: index * 0.12 }}
       style={{
-        background: isBlue
-          ? 'linear-gradient(145deg, #0d2a50, #1a3f70)'
-          : 'linear-gradient(145deg, #071730, #0A1F44)',
-        borderRadius: 28,
-        padding: '44px 40px',
-        border: `1.5px solid ${isBlue ? 'rgba(59,130,246,.25)' : 'rgba(212,175,55,.2)'}`,
+        background: '#ffffff',
+        borderRadius: 14,
+        padding: '36px 32px',
+        border: '1.5px solid #E5E7EB',
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 24px 64px rgba(4,13,30,.4)',
+        boxShadow: '0 4px 16px rgba(0,0,0,.05)',
       }}
     >
-      {/* Background pattern */}
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }} />
-      {/* Glow */}
-      <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, borderRadius: '50%', background: `radial-gradient(circle, ${isBlue ? 'rgba(59,130,246,.12)' : 'rgba(212,175,55,.1)'} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      {/* Top color stripe */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: accentColor }} />
 
-      <div style={{ position: 'relative' }}>
-        {/* Top row: icon + exclusive badge */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: 20,
-            background: isBlue ? 'rgba(59,130,246,.15)' : 'rgba(212,175,55,.12)',
-            border: `1.5px solid ${isBlue ? 'rgba(59,130,246,.3)' : 'rgba(212,175,55,.25)'}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Icon size={30} color={isBlue ? '#3B82F6' : '#D4AF37'} />
-          </div>
-          <span style={{
-            display: 'inline-block', padding: '5px 14px', borderRadius: 100,
-            fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
-            background: isBlue ? 'rgba(59,130,246,.15)' : 'rgba(212,175,55,.15)',
-            border: `1px solid ${isBlue ? 'rgba(59,130,246,.3)' : 'rgba(212,175,55,.3)'}`,
-            color: isBlue ? '#60A5FA' : '#D4AF37',
-          }}>
-            Exclusive Partner
-          </span>
-        </div>
-
-        {/* Brand name + tagline */}
-        <h3 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 'clamp(28px, 2.5vw, 36px)', color: '#FFFFFF', margin: '0 0 6px', lineHeight: 1.1 }}>
-          {partner.brand}
-        </h3>
-        <p style={{ fontSize: 14, color: isBlue ? '#60A5FA' : '#D4AF37', fontWeight: 600, margin: '0 0 4px', letterSpacing: '0.02em' }}>
-          {partner.tagline}
-        </p>
-        {partner.domain && (
-          <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 20px' }}>
-            {partner.domain}
-          </p>
-        )}
-
-        {/* Lender powered-by */}
+      {/* Top row: icon + exclusive badge */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, marginTop: 8 }}>
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(255,255,255,.06)', borderRadius: 10,
-          padding: '8px 16px', marginBottom: 24,
-          border: '1px solid rgba(255,255,255,.08)',
+          width: 56, height: 56, borderRadius: 12,
+          background: isBlue ? '#EFF6FF' : '#F9FAFB',
+          border: `1.5px solid ${isBlue ? '#BFDBFE' : '#E5E7EB'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade80' }} />
-          <span style={{ fontSize: 12, color: '#CBD5E1', fontWeight: 600 }}>
-            {partner.lenderNote}: <strong style={{ color: '#FFFFFF' }}>{partner.lender}</strong>
-          </span>
+          <Icon size={26} color={accentColor} />
         </div>
-
-        <p style={{ fontSize: 15, color: '#94A3B8', lineHeight: 1.75, margin: '0 0 28px' }}>
-          {partner.description}
-        </p>
-
-        {/* Features */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', marginBottom: 28 }}>
-          {partner.features.map(f => (
-            <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <CheckCircle2 size={15} color={isBlue ? '#3B82F6' : '#D4AF37'} style={{ flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 13, color: '#CBD5E1', fontWeight: 500, lineHeight: 1.4 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Key metrics */}
-        <div style={{ display: 'flex', gap: 20, marginBottom: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.07)' }}>
-          <div>
-            <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 22, color: '#FFFFFF', lineHeight: 1 }}>{partner.highlight}</div>
-            <div style={{ fontSize: 11, color: '#64748B', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Max Amount</div>
-          </div>
-          <div style={{ width: 1, background: 'rgba(255,255,255,.08)' }} />
-          <div>
-            <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 22, color: isBlue ? '#60A5FA' : '#D4AF37', lineHeight: 1 }}>{partner.rate}</div>
-            <div style={{ fontSize: 11, color: '#64748B', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Interest Rate</div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        {partner.url ? (
-          <a href={partner.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
-            <Button block size="large" style={{
-              height: 52, borderRadius: 14, fontWeight: 800, fontSize: 15,
-              background: isBlue ? '#3B82F6' : 'transparent',
-              borderColor: isBlue ? '#3B82F6' : 'rgba(212,175,55,.5)',
-              color: isBlue ? '#FFFFFF' : '#D4AF37',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: isBlue ? '0 8px 28px rgba(59,130,246,.3)' : 'none',
-            }}>
-              Visit {partner.brand} <ExternalLink size={15} />
-            </Button>
-          </a>
-        ) : (
-          <Button block size="large" onClick={() => scrollTo('#hero')} style={{
-            height: 52, borderRadius: 14, fontWeight: 800, fontSize: 15,
-            background: '#D4AF37', borderColor: '#D4AF37', color: '#0A1F44',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            boxShadow: '0 8px 28px rgba(212,175,55,.3)',
-          }}>
-            Apply for Business Loan <ArrowRight size={15} />
-          </Button>
-        )}
+        <span style={{
+          display: 'inline-block', padding: '4px 12px', borderRadius: 4,
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const,
+          background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#6B7280',
+        }}>
+          Exclusive Partner
+        </span>
       </div>
+
+      {/* Brand name + tagline */}
+      <h3 style={{
+        fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800,
+        fontSize: 'clamp(24px, 2.5vw, 32px)', color: '#0A1F44', margin: '0 0 4px', lineHeight: 1.15,
+      }}>
+        {partner.brand}
+      </h3>
+      <p style={{ fontSize: 14, color: accentColor, fontWeight: 600, margin: '0 0 4px', letterSpacing: '0.01em' }}>
+        {partner.tagline}
+      </p>
+      {partner.domain && (
+        <p style={{ fontSize: 13, color: '#9CA3AF', margin: '0 0 18px' }}>
+          {partner.domain}
+        </p>
+      )}
+
+      {/* Lender powered-by */}
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        background: '#F9FAFB', borderRadius: 8,
+        padding: '8px 14px', marginBottom: 20,
+        border: '1px solid #E5E7EB',
+        alignSelf: 'flex-start',
+      }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', flexShrink: 0 }} />
+        <span style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>
+          {partner.lenderNote}: <strong style={{ color: '#0A1F44' }}>{partner.lender}</strong>
+        </span>
+      </div>
+
+      <p style={{ fontSize: 15, color: '#6B7280', lineHeight: 1.8, margin: '0 0 24px' }}>
+        {partner.description}
+      </p>
+
+      {/* Features */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', marginBottom: 24 }}>
+        {partner.features.map(f => (
+          <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+            <CheckCircle2 size={14} color={accentColor} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span style={{ fontSize: 13, color: '#374151', fontWeight: 500, lineHeight: 1.45 }}>{f}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Key metrics */}
+      <div style={{
+        display: 'flex', gap: 24, marginBottom: 28,
+        paddingTop: 18, borderTop: '1px solid #F3F4F6',
+      }}>
+        <div>
+          <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 22, color: '#0A1F44', lineHeight: 1 }}>{partner.highlight}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: '0.04em', fontWeight: 500 }}>Max Amount</div>
+        </div>
+        <div style={{ width: 1, background: '#E5E7EB' }} />
+        <div>
+          <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 22, color: accentColor, lineHeight: 1 }}>{partner.rate}</div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, textTransform: 'uppercase' as const, letterSpacing: '0.04em', fontWeight: 500 }}>Interest Rate</div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      {partner.url ? (
+        <a href={partner.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
+          <Button block size="large" style={{
+            height: 48, borderRadius: 8, fontWeight: 700, fontSize: 14,
+            background: accentColor,
+            borderColor: accentColor,
+            color: '#ffffff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            Visit {partner.brand} <ExternalLink size={14} />
+          </Button>
+        </a>
+      ) : (
+        <Button block size="large" onClick={() => scrollTo('#customer-register')} style={{
+          height: 48, borderRadius: 8, fontWeight: 700, fontSize: 14,
+          background: '#0A1F44', borderColor: '#0A1F44', color: '#ffffff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          Apply for Business Loan <ArrowRight size={14} />
+        </Button>
+      )}
     </motion.div>
   );
 };
 
 const LenderPartners: React.FC = () => (
-  <section id="partners" style={{ background: '#060F1E', padding: '96px 0' }}>
+  <section id="partners" style={{ background: '#ffffff', padding: '96px 0' }}>
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-      <div style={{ textAlign: 'center', marginBottom: 64 }}>
-        <span style={{ display: 'inline-block', background: 'rgba(212,175,55,.12)', border: '1px solid rgba(212,175,55,.25)', color: '#D4AF37', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '5px 16px', borderRadius: 100, marginBottom: 16 }}>
-          Our Brands
+      <div style={{ textAlign: 'center', marginBottom: 60 }}>
+        <span style={{
+          display: 'inline-block', background: '#EFF6FF', color: '#2563EB',
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase' as const,
+          padding: '4px 14px', borderRadius: 4, marginBottom: 14,
+        }}>
+          Our Partner Brands
         </span>
-        <h2 style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 'clamp(30px, 3.5vw, 46px)', color: '#FFFFFF', margin: '0 0 18px', lineHeight: 1.15 }}>
-          Exclusive Partner Brands
+        <h2 style={{
+          fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800,
+          fontSize: 'clamp(28px, 3.5vw, 40px)', color: '#0A1F44', margin: '0 0 14px', lineHeight: 1.2,
+        }}>
+          Specialised Brands. Trusted Partners.
         </h2>
-        <p style={{ color: '#64748B', fontSize: 16, maxWidth: 560, margin: '0 auto', lineHeight: 1.75 }}>
-          Beyond personal loans, we have built dedicated brands for education and business financing — each with a single, trusted lender partner for quality you can count on.
+        <p style={{ color: '#6B7280', fontSize: 16, maxWidth: 560, margin: '0 auto', lineHeight: 1.8 }}>
+          Beyond personal loans, we operate dedicated brands for education and business financing — each backed by a single, carefully selected lender for consistent quality.
         </p>
       </div>
 
@@ -165,15 +170,15 @@ const LenderPartners: React.FC = () => (
 
       {/* Bottom note */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.5 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-        style={{ textAlign: 'center', marginTop: 48 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        style={{ textAlign: 'center', marginTop: 40 }}
       >
-        <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.7 }}>
-          We work exclusively with these partners for education and business loans —<br />
-          <span style={{ color: '#64748B' }}>no other lenders, no hidden tie-ups, complete transparency.</span>
+        <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.7 }}>
+          We work exclusively with these partners for education and business financing —
+          no hidden tie-ups, complete transparency.
         </p>
       </motion.div>
     </div>
