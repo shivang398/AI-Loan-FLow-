@@ -24,7 +24,7 @@ http {
     types_hash_max_size 2048;
     client_max_body_size 50M;
 
-    # Docker/Railway internal DNS — resolves hostnames at request time, not startup
+    # Use dynamic resolver so hostnames are resolved at request time, not startup
     resolver ${NAMESERVER} valid=30s ipv6=off;
 
     server {

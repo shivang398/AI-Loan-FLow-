@@ -24,7 +24,7 @@ public class CustomerService {
     private final LeadRepository leadRepository;
     private final CustomerEventPublisher eventPublisher;
 
-    @Value("${app.ops.team-emails}")
+    @Value("#{'${app.ops.team-emails}'.split(',')}")
     private List<String> opsTeamEmails;
 
     @Transactional
