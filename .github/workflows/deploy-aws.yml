@@ -1,0 +1,200 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Comma-separated services to deploy (leave empty for all)'
+        required: false
+        default: ''
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER: platform-cluster
+
+jobs:
+  # ── Build & Push backend Java services ──────────────────────────────────────
+  build-backend:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        service:
+          - auth-service
+          - connector-service
+          - customer-service
+          - loan-service
+          - eligibility-service
+          - policy-service
+          - sm-routing-service
+          - rm-tracking-service
+          - query-service
+          - document-service
+          - notification-service
+          - commission-service
+          - reporting-service
+          - analytics-service
+          - messaging-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./platform
+          file: ./platform/Dockerfile
+          push: true
+          build-args: SERVICE_NAME=${{ matrix.service }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:latest
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:cache
+          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:cache,mode=max
+
+  # ── Build & Push frontend ────────────────────────────────────────────────────
+  build-frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./platform/frontend
+          file: ./platform/frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/platform-frontend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/platform-frontend:latest
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-frontend:cache
+          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-frontend:cache,mode=max
+
+  # ── Deploy to ECS ────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Fetch infrastructure stack outputs
+        id: stack
+        run: |
+          STACK_NAME=platform-infrastructure
+          get_output() {
+            aws cloudformation describe-stacks \
+              --stack-name "$STACK_NAME" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" \
+              --output text
+          }
+          echo "rds_endpoint=$(get_output RDSEndpoint)" >> $GITHUB_OUTPUT
+          echo "redis_endpoint=$(get_output RedisEndpoint)" >> $GITHUB_OUTPUT
+          echo "ecs_cluster=$(get_output ECSClusterName)" >> $GITHUB_OUTPUT
+          echo "execution_role=$(get_output ECSTaskExecutionRoleArn)" >> $GITHUB_OUTPUT
+          echo "task_role=$(get_output ECSTaskRoleArn)" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(get_output DocumentsBucketName)" >> $GITHUB_OUTPUT
+          echo "cloudmap_ns=$(get_output CloudMapNamespaceId)" >> $GITHUB_OUTPUT
+          echo "private_subnet1=$(get_output PrivateSubnet1Id)" >> $GITHUB_OUTPUT
+          echo "private_subnet2=$(get_output PrivateSubnet2Id)" >> $GITHUB_OUTPUT
+          echo "public_subnet1=$(get_output PublicSubnet1Id)" >> $GITHUB_OUTPUT
+          echo "public_subnet2=$(get_output PublicSubnet2Id)" >> $GITHUB_OUTPUT
+          echo "backend_sg=$(get_output BackendSecurityGroupId)" >> $GITHUB_OUTPUT
+          echo "frontend_sg=$(get_output FrontendSecurityGroupId)" >> $GITHUB_OUTPUT
+          echo "rabbitmq_sg=$(get_output RabbitMQSecurityGroupId)" >> $GITHUB_OUTPUT
+          echo "frontend_tg=$(get_output FrontendTargetGroupArn)" >> $GITHUB_OUTPUT
+          echo "efs_id=$(get_output EFSFileSystemId)" >> $GITHUB_OUTPUT
+
+      - name: Run deploy script
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          RDS_ENDPOINT: ${{ steps.stack.outputs.rds_endpoint }}
+          REDIS_ENDPOINT: ${{ steps.stack.outputs.redis_endpoint }}
+          ECS_CLUSTER: ${{ steps.stack.outputs.ecs_cluster }}
+          EXECUTION_ROLE_ARN: ${{ steps.stack.outputs.execution_role }}
+          TASK_ROLE_ARN: ${{ steps.stack.outputs.task_role }}
+          S3_BUCKET: ${{ steps.stack.outputs.s3_bucket }}
+          CLOUDMAP_NS_ID: ${{ steps.stack.outputs.cloudmap_ns }}
+          PRIVATE_SUBNET_1: ${{ steps.stack.outputs.private_subnet1 }}
+          PRIVATE_SUBNET_2: ${{ steps.stack.outputs.private_subnet2 }}
+          PUBLIC_SUBNET_1: ${{ steps.stack.outputs.public_subnet1 }}
+          PUBLIC_SUBNET_2: ${{ steps.stack.outputs.public_subnet2 }}
+          BACKEND_SG: ${{ steps.stack.outputs.backend_sg }}
+          FRONTEND_SG: ${{ steps.stack.outputs.frontend_sg }}
+          RABBITMQ_SG: ${{ steps.stack.outputs.rabbitmq_sg }}
+          FRONTEND_TG_ARN: ${{ steps.stack.outputs.frontend_tg }}
+          EFS_ID: ${{ steps.stack.outputs.efs_id }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
+          WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
+          WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
+        run: |
+          chmod +x aws/scripts/deploy.sh
+          aws/scripts/deploy.sh
+
+      - name: Print application URL
+        run: |
+          ALB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name platform-infrastructure \
+            --query "Stacks[0].Outputs[?OutputKey=='ALBDNSName'].OutputValue" \
+            --output text)
+          echo ""
+          echo "✅ Deployment complete!"
+          echo "🌐 Application URL: http://$ALB_DNS"
+          echo ""

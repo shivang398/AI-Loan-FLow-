@@ -1,0 +1,925 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Platform Infrastructure — VPC, RDS PostgreSQL, ElastiCache Redis,
+  RabbitMQ (ECS), ECS Fargate Cluster, ALB, Cloud Map, ECR, IAM, S3.
+
+# ──────────────────────────────────────────────────────────────────────────────
+Parameters:
+# ──────────────────────────────────────────────────────────────────────────────
+
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+    Description: Deployment environment (affects instance sizes and HA settings)
+
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: Master password for RDS PostgreSQL
+
+  RabbitMQPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Default: ChangeMe_Rabbit123
+    Description: RabbitMQ admin password
+
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: JWT signing secret (at least 32 chars)
+
+  MailUsername:
+    Type: String
+    Default: ''
+    Description: SMTP username for notification-service (e.g. Gmail address)
+
+  MailPassword:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: SMTP password / app-password for notification-service
+
+  WhatsAppToken:
+    Type: String
+    NoEcho: true
+    Default: ''
+  WhatsAppPhoneId:
+    Type: String
+    Default: ''
+  WhatsAppVerifyToken:
+    Type: String
+    NoEcho: true
+    Default: ''
+  WhatsAppAppSecret:
+    Type: String
+    NoEcho: true
+    Default: ''
+
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: ACM certificate ARN for HTTPS on the ALB (leave empty for HTTP only)
+
+# ──────────────────────────────────────────────────────────────────────────────
+Conditions:
+# ──────────────────────────────────────────────────────────────────────────────
+
+  IsProd: !Equals [!Ref Environment, prod]
+  HasCertificate: !Not [!Equals [!Ref CertificateArn, '']]
+
+# ──────────────────────────────────────────────────────────────────────────────
+Resources:
+# ──────────────────────────────────────────────────────────────────────────────
+
+  # ── VPC ────────────────────────────────────────────────────────────────────
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: [{Key: Name, Value: platform-vpc}]
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags: [{Key: Name, Value: platform-public-1}]
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags: [{Key: Name, Value: platform-public-2}]
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.10.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags: [{Key: Name, Value: platform-private-1}]
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.11.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags: [{Key: Name, Value: platform-private-2}]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: [{Key: Name, Value: platform-igw}]
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  NATElasticIP:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATElasticIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags: [{Key: Name, Value: platform-nat}]
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags: [{Key: Name, Value: platform-public-rt}]
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags: [{Key: Name, Value: platform-private-rt}]
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway
+
+  PrivateSubnet1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  # ── Security Groups ─────────────────────────────────────────────────────────
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public ALB — allow HTTP and HTTPS
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 80,  ToPort: 80,  CidrIp: 0.0.0.0/0}
+        - {IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0}
+      Tags: [{Key: Name, Value: platform-alb-sg}]
+
+  FrontendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Frontend Nginx ECS — accepts traffic from ALB only
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags: [{Key: Name, Value: platform-frontend-sg}]
+
+  BackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Backend Java ECS — accepts from frontend and peer services
+      VpcId: !Ref VPC
+      Tags: [{Key: Name, Value: platform-backend-sg}]
+
+  BackendFromFrontendIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref BackendSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      SourceSecurityGroupId: !Ref FrontendSecurityGroup
+
+  BackendSelfIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref BackendSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      SourceSecurityGroupId: !Ref BackendSecurityGroup
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS PostgreSQL — accepts from backend services only
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref BackendSecurityGroup
+      Tags: [{Key: Name, Value: platform-rds-sg}]
+
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ElastiCache Redis — accepts from backend services only
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref BackendSecurityGroup
+      Tags: [{Key: Name, Value: platform-redis-sg}]
+
+  RabbitMQSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RabbitMQ ECS — accepts from backend services
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 5672,  ToPort: 5672,  SourceSecurityGroupId: !Ref BackendSecurityGroup}
+        - {IpProtocol: tcp, FromPort: 15672, ToPort: 15672, SourceSecurityGroupId: !Ref BackendSecurityGroup}
+      Tags: [{Key: Name, Value: platform-rabbitmq-sg}]
+
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EFS for RabbitMQ data persistence
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref RabbitMQSecurityGroup
+      Tags: [{Key: Name, Value: platform-efs-sg}]
+
+  # ── RDS PostgreSQL ──────────────────────────────────────────────────────────
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Platform RDS subnet group
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: platform-postgres
+      DBInstanceClass: !If [IsProd, db.t3.medium, db.t3.micro]
+      Engine: postgres
+      EngineVersion: '15.7'
+      MasterUsername: postgres
+      MasterUserPassword: !Ref DBPassword
+      DBName: postgres
+      AllocatedStorage: !If [IsProd, '100', '20']
+      MaxAllocatedStorage: !If [IsProd, '500', '100']
+      StorageType: gp3
+      StorageEncrypted: true
+      MultiAZ: !If [IsProd, true, false]
+      BackupRetentionPeriod: !If [IsProd, 7, 1]
+      DeletionProtection: !If [IsProd, true, false]
+      EnablePerformanceInsights: !If [IsProd, true, false]
+      VPCSecurityGroups: [!Ref RDSSecurityGroup]
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+      Tags: [{Key: Name, Value: platform-postgres}]
+
+  # ── ElastiCache Redis ───────────────────────────────────────────────────────
+
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Platform Redis subnet group
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  RedisCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupDescription: Platform Redis cluster
+      NumCacheClusters: !If [IsProd, 2, 1]
+      CacheNodeType: cache.t3.micro
+      Engine: redis
+      EngineVersion: '7.1'
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      SecurityGroupIds: [!Ref RedisSecurityGroup]
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AutomaticFailoverEnabled: !If [IsProd, true, false]
+      Tags: [{Key: Name, Value: platform-redis}]
+
+  # ── EFS (RabbitMQ data persistence) ────────────────────────────────────────
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      ThroughputMode: bursting
+      Tags: [{Key: Name, Value: platform-rabbitmq-data}]
+
+  EFSMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnet1
+      SecurityGroups: [!Ref EFSSecurityGroup]
+
+  EFSMountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnet2
+      SecurityGroups: [!Ref EFSSecurityGroup]
+
+  # ── S3 Bucket ───────────────────────────────────────────────────────────────
+
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 90
+
+  # ── ECR Repositories ────────────────────────────────────────────────────────
+
+  ECRFrontend:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-frontend
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRAuthService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-auth-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRConnectorService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-connector-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRCustomerService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-customer-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRLoanService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-loan-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECREligibilityService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-eligibility-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRPolicyService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-policy-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRSmRoutingService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-sm-routing-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRRmTrackingService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-rm-tracking-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRQueryService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-query-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRDocumentService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-document-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRNotificationService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-notification-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRCommissionService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-commission-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRReportingService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-reporting-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRAnalyticsService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-analytics-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRMessagingService:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-messaging-service
+      ImageScanningConfiguration: {ScanOnPush: true}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  ECRRabbitMQ:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: platform-rabbitmq
+      ImageScanningConfiguration: {ScanOnPush: false}
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":3},"action":{"type":"expire"}}]}'
+
+  # ── ECS Cluster ─────────────────────────────────────────────────────────────
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: platform-cluster
+      CapacityProviders: [FARGATE, FARGATE_SPOT]
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+      ClusterSettings:
+        - Name: containerInsights
+          Value: !If [IsProd, enabled, disabled]
+
+  # ── AWS Cloud Map (private service discovery) ────────────────────────────────
+
+  CloudMapNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: platform.local
+      Vpc: !Ref VPC
+      Description: Internal DNS namespace for ECS service-to-service discovery
+
+  # ── Application Load Balancer ────────────────────────────────────────────────
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: platform-alb
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups: [!Ref ALBSecurityGroup]
+      Subnets: [!Ref PublicSubnet1, !Ref PublicSubnet2]
+      LoadBalancerAttributes:
+        - {Key: idle_timeout.timeout_seconds, Value: '60'}
+        - {Key: routing.http2.enabled, Value: 'true'}
+
+  FrontendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: platform-frontend-tg
+      Port: 8080
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VPC
+      HealthCheckPath: /index.html
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - !If
+          - HasCertificate
+          - Type: redirect
+            RedirectConfig:
+              Protocol: HTTPS
+              Port: '443'
+              StatusCode: HTTP_301
+          - Type: forward
+            TargetGroupArn: !Ref FrontendTargetGroup
+
+  HTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasCertificate
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref FrontendTargetGroup
+
+  # ── IAM Roles ────────────────────────────────────────────────────────────────
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: platform-ecs-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: ecs-tasks.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SSMReadSecrets
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [ssm:GetParameters, ssm:GetParameter]
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/platform/*'
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: platform-ecs-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: ecs-tasks.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3DocumentAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource:
+                  - !GetAtt DocumentsBucket.Arn
+                  - !Sub '${DocumentsBucket.Arn}/*'
+        - PolicyName: ECSExec
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssmmessages:CreateControlChannel
+                  - ssmmessages:CreateDataChannel
+                  - ssmmessages:OpenControlChannel
+                  - ssmmessages:OpenDataChannel
+                Resource: '*'
+
+  # ── SSM Parameter Store (secrets) ───────────────────────────────────────────
+
+  SSMDBPassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/db/password
+      Type: SecureString
+      Value: !Ref DBPassword
+      Description: RDS master password
+
+  SSMRabbitMQPassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/rabbitmq/password
+      Type: SecureString
+      Value: !Ref RabbitMQPassword
+      Description: RabbitMQ admin password
+
+  SSMJwtSecret:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/jwt/secret
+      Type: SecureString
+      Value: !Ref JwtSecret
+      Description: JWT signing secret
+
+  SSMMailPassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/mail/password
+      Type: SecureString
+      Value: !Ref MailPassword
+      Description: SMTP password for notification service
+
+  SSMWhatsAppToken:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/whatsapp/token
+      Type: SecureString
+      Value: !Ref WhatsAppToken
+
+  SSMWhatsAppAppSecret:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/whatsapp/app-secret
+      Type: SecureString
+      Value: !Ref WhatsAppAppSecret
+
+  # ── CloudWatch Log Groups ────────────────────────────────────────────────────
+
+  LogGroupFrontend:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/frontend
+      RetentionInDays: 14
+
+  LogGroupRabbitMQ:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/rabbitmq
+      RetentionInDays: 7
+
+  LogGroupAuthService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/auth-service
+      RetentionInDays: 14
+
+  LogGroupConnectorService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/connector-service
+      RetentionInDays: 14
+
+  LogGroupCustomerService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/customer-service
+      RetentionInDays: 14
+
+  LogGroupLoanService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/loan-service
+      RetentionInDays: 14
+
+  LogGroupEligibilityService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/eligibility-service
+      RetentionInDays: 14
+
+  LogGroupPolicyService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/policy-service
+      RetentionInDays: 14
+
+  LogGroupSmRoutingService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/sm-routing-service
+      RetentionInDays: 14
+
+  LogGroupRmTrackingService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/rm-tracking-service
+      RetentionInDays: 14
+
+  LogGroupQueryService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/query-service
+      RetentionInDays: 14
+
+  LogGroupDocumentService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/document-service
+      RetentionInDays: 14
+
+  LogGroupNotificationService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/notification-service
+      RetentionInDays: 14
+
+  LogGroupCommissionService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/commission-service
+      RetentionInDays: 14
+
+  LogGroupReportingService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/reporting-service
+      RetentionInDays: 14
+
+  LogGroupAnalyticsService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/analytics-service
+      RetentionInDays: 14
+
+  LogGroupMessagingService:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/platform/messaging-service
+      RetentionInDays: 14
+
+# ──────────────────────────────────────────────────────────────────────────────
+Outputs:
+# ──────────────────────────────────────────────────────────────────────────────
+
+  VPCId:
+    Value: !Ref VPC
+    Export: {Name: platform-vpc-id}
+
+  PublicSubnet1Id:
+    Value: !Ref PublicSubnet1
+    Export: {Name: platform-public-subnet-1}
+
+  PublicSubnet2Id:
+    Value: !Ref PublicSubnet2
+    Export: {Name: platform-public-subnet-2}
+
+  PrivateSubnet1Id:
+    Value: !Ref PrivateSubnet1
+    Export: {Name: platform-private-subnet-1}
+
+  PrivateSubnet2Id:
+    Value: !Ref PrivateSubnet2
+    Export: {Name: platform-private-subnet-2}
+
+  RDSEndpoint:
+    Value: !GetAtt DBInstance.Endpoint.Address
+    Export: {Name: platform-rds-endpoint}
+
+  RDSPort:
+    Value: !GetAtt DBInstance.Endpoint.Port
+    Export: {Name: platform-rds-port}
+
+  RedisEndpoint:
+    Value: !GetAtt RedisCluster.PrimaryEndPoint.Address
+    Export: {Name: platform-redis-endpoint}
+
+  RedisPort:
+    Value: !GetAtt RedisCluster.PrimaryEndPoint.Port
+    Export: {Name: platform-redis-port}
+
+  ECSClusterName:
+    Value: !Ref ECSCluster
+    Export: {Name: platform-ecs-cluster}
+
+  CloudMapNamespaceId:
+    Value: !GetAtt CloudMapNamespace.Id
+    Export: {Name: platform-cloudmap-namespace-id}
+
+  CloudMapNamespaceArn:
+    Value: !GetAtt CloudMapNamespace.Arn
+    Export: {Name: platform-cloudmap-namespace-arn}
+
+  ALBDNSName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export: {Name: platform-alb-dns}
+
+  ALBArn:
+    Value: !Ref ApplicationLoadBalancer
+    Export: {Name: platform-alb-arn}
+
+  FrontendTargetGroupArn:
+    Value: !Ref FrontendTargetGroup
+    Export: {Name: platform-frontend-tg-arn}
+
+  DocumentsBucketName:
+    Value: !Ref DocumentsBucket
+    Export: {Name: platform-documents-bucket}
+
+  DocumentsBucketArn:
+    Value: !GetAtt DocumentsBucket.Arn
+    Export: {Name: platform-documents-bucket-arn}
+
+  ECSTaskExecutionRoleArn:
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+    Export: {Name: platform-ecs-execution-role-arn}
+
+  ECSTaskRoleArn:
+    Value: !GetAtt ECSTaskRole.Arn
+    Export: {Name: platform-ecs-task-role-arn}
+
+  BackendSecurityGroupId:
+    Value: !Ref BackendSecurityGroup
+    Export: {Name: platform-backend-sg}
+
+  FrontendSecurityGroupId:
+    Value: !Ref FrontendSecurityGroup
+    Export: {Name: platform-frontend-sg}
+
+  RabbitMQSecurityGroupId:
+    Value: !Ref RabbitMQSecurityGroup
+    Export: {Name: platform-rabbitmq-sg}
+
+  EFSFileSystemId:
+    Value: !Ref EFSFileSystem
+    Export: {Name: platform-efs-id}
