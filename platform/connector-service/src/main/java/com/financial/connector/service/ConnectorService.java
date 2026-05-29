@@ -24,18 +24,34 @@ public class ConnectorService {
 
     @Transactional
     public Connector createConnector(ConnectorRequests.CreateConnectorRequest request) {
-        Connector connector = Connector.builder()
-                .userId(request.getUserId())
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .phone(request.getPhone() != null ? request.getPhone() : "")
-                .region(request.getRegion())
-                .status("PENDING_APPROVAL")
-                .role(request.getRole() != null ? request.getRole() : "CONNECTOR")
-                .email(request.getEmail())
-                .build();
-
-        return connectorRepository.save(connector);
+        // Upsert: if a profile already exists for this userId (auto-created by the auth event),
+        // update it with the proper name/details rather than creating a duplicate.
+        return connectorRepository.findByUserId(request.getUserId())
+                .map(existing -> {
+                    existing.setFirstName(request.getFirstName());
+                    existing.setLastName(request.getLastName() != null ? request.getLastName() : "");
+                    if (request.getPhone() != null && !request.getPhone().isBlank()) {
+                        existing.setPhone(request.getPhone());
+                    }
+                    if (request.getRegion() != null) existing.setRegion(request.getRegion());
+                    if (request.getRole() != null) existing.setRole(request.getRole());
+                    if (request.getEmail() != null) existing.setEmail(request.getEmail());
+                    existing.setStatus("ACTIVE");
+                    return connectorRepository.save(existing);
+                })
+                .orElseGet(() -> {
+                    Connector connector = Connector.builder()
+                            .userId(request.getUserId())
+                            .firstName(request.getFirstName())
+                            .lastName(request.getLastName() != null ? request.getLastName() : "")
+                            .phone(request.getPhone() != null ? request.getPhone() : "")
+                            .region(request.getRegion())
+                            .status("ACTIVE")
+                            .role(request.getRole() != null ? request.getRole() : "CONNECTOR")
+                            .email(request.getEmail())
+                            .build();
+                    return connectorRepository.save(connector);
+                });
     }
 
     @Transactional

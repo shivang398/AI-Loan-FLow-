@@ -22,7 +22,7 @@ public class WhatsAppWebhookConsumer {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final SimpMessagingTemplate wsTemplate;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @RabbitListener(queues = "whatsapp.webhook.queue")
     @Transactional

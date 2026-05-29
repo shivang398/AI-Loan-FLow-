@@ -21,6 +21,7 @@ export default defineConfig({
       '/api/svc-health/policy':      { target: 'http://127.0.0.1:8086', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/messaging':   { target: 'http://127.0.0.1:8087', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/document':    { target: 'http://127.0.0.1:8090', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/notification':{ target: 'http://127.0.0.1:8091', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/commission':  { target: 'http://127.0.0.1:8092', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/reporting':   { target: 'http://127.0.0.1:8093', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/analytics':   { target: 'http://127.0.0.1:8094', changeOrigin: true, rewrite: () => '/actuator/health' },

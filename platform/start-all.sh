@@ -20,9 +20,8 @@ SERVICES=(
   "eligibility-service:8085"
   "policy-service:8086"
   "messaging-service:8087"
-  "rm-tracking-service:8088"
-  "query-service:8089"
   "document-service:8090"
+  "notification-service:8091"
   "commission-service:8092"
   "reporting-service:8093"
   "analytics-service:8094"
@@ -64,6 +63,7 @@ for entry in "${SERVICES[@]}"; do
     -Dspring.rabbitmq.host=localhost -Dspring.rabbitmq.port=5673 \
     -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest \
     -DRABBITMQ_HOST=localhost -DRABBITMQ_PORT=5673 \
+    -DRABBITMQ_USER=guest -DRABBITMQ_PASS=guest \
     -DREDIS_HOST=localhost -DREDIS_PORT=6381 \
     -Dspring.data.redis.host=localhost -Dspring.data.redis.port=6381 \
     -DJWT_SECRET="$JWT_SECRET" \

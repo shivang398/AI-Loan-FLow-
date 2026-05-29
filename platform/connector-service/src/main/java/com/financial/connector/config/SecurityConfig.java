@@ -37,14 +37,15 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
                 // CONNECTOR can read their own profile
-                .requestMatchers(HttpMethod.GET, "/connectors/me").hasAuthority("CONNECTOR")
-                // PARTNER_MANAGER owns all partner management operations
-                .requestMatchers(HttpMethod.GET,  "/connectors/**").hasAuthority("PARTNER_MANAGER")
-                .requestMatchers(HttpMethod.POST, "/connectors/**").hasAuthority("PARTNER_MANAGER")
-                .requestMatchers(HttpMethod.PUT,  "/connectors/**").hasAuthority("PARTNER_MANAGER")
+                .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN")
+                // ADMIN and PARTNER_MANAGER own all partner management operations
+                .requestMatchers(HttpMethod.GET,  "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER")
+                .requestMatchers(HttpMethod.POST, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT,  "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 // FOIR endpoints open to authenticated users
                 .requestMatchers("/foir/**").authenticated()
-                .anyRequest().hasAuthority("PARTNER_MANAGER")
+                .anyRequest().hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
