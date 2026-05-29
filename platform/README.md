@@ -3,7 +3,7 @@
 
 ## Prerequisites
 - Docker & Docker Compose
-- Java 21+
+- Java 25+ (Eclipse Temurin recommended)
 - Maven 3.9+
 
 ---
@@ -22,7 +22,7 @@ docker-compose ps
 
 ---
 
-## Step 2: Verify All 14 Databases Created
+## Step 2: Verify All 13 Databases Created
 ```bash
 docker exec platform-postgres psql -U postgres -c "\l" | grep platform
 ```
@@ -37,11 +37,10 @@ platform_customer
 platform_document
 platform_eligibility
 platform_loan
+platform_messaging
 platform_notification
 platform_policy
-platform_query
 platform_reporting
-platform_rm_tracking
 platform_routing
 ```
 
@@ -51,6 +50,9 @@ platform_routing
 Run each service in a separate terminal:
 
 ```bash
+# Install common-lib first (once per checkout)
+mvn -pl common-lib install -DskipTests -q
+
 # Terminal 1 — Auth Service (port 8081)
 cd auth-service && mvn spring-boot:run
 
@@ -69,29 +71,26 @@ cd eligibility-service && mvn spring-boot:run
 # Terminal 6 — Policy Service (port 8086)
 cd policy-service && mvn spring-boot:run
 
-# Terminal 7 — SM Routing Service (port 8087)
-cd sm-routing-service && mvn spring-boot:run
+# Terminal 7 — Messaging Service (port 8087)
+cd messaging-service && mvn spring-boot:run
 
-# Terminal 8 — RM Tracking Service (port 8088)
-cd rm-tracking-service && mvn spring-boot:run
-
-# Terminal 9 — Query Service (port 8089)
-cd query-service && mvn spring-boot:run
-
-# Terminal 10 — Document Service (port 8090)
+# Terminal 8 — Document Service (port 8090)
 cd document-service && mvn spring-boot:run
 
-# Terminal 11 — Notification Service (port 8091)
+# Terminal 9 — Notification Service (port 8091)
 cd notification-service && mvn spring-boot:run
 
-# Terminal 12 — Commission Service (port 8092)
+# Terminal 10 — Commission Service (port 8092)
 cd commission-service && mvn spring-boot:run
 
-# Terminal 13 — Reporting Service (port 8093)
+# Terminal 11 — Reporting Service (port 8093)
 cd reporting-service && mvn spring-boot:run
 
-# Terminal 14 — Analytics Service (port 8094)
+# Terminal 12 — Analytics Service (port 8094)
 cd analytics-service && mvn spring-boot:run
+
+# Terminal 13 — SM Routing Service (port 8095, background/event-driven)
+cd sm-routing-service && mvn spring-boot:run
 ```
 
 ---
@@ -188,19 +187,18 @@ curl -OJ http://localhost:8093/reports/connector-summary/download
 http://localhost:15672 (guest/guest)
 
 ## Service Port Map
-| Service             | Port |
-|---------------------|------|
-| auth-service        | 8081 |
-| connector-service   | 8082 |
-| customer-service    | 8083 |
-| loan-service        | 8084 |
-| eligibility-service | 8085 |
-| policy-service      | 8086 |
-| sm-routing-service  | 8087 |
-| rm-tracking-service | 8088 |
-| query-service       | 8089 |
-| document-service    | 8090 |
-| notification-service| 8091 |
-| commission-service  | 8092 |
-| reporting-service   | 8093 |
-| analytics-service   | 8094 |
+| Service              | Port |
+|----------------------|------|
+| auth-service         | 8081 |
+| connector-service    | 8082 |
+| customer-service     | 8083 |
+| loan-service         | 8084 |
+| eligibility-service  | 8085 |
+| policy-service       | 8086 |
+| messaging-service    | 8087 |
+| document-service     | 8090 |
+| notification-service | 8091 |
+| commission-service   | 8092 |
+| reporting-service    | 8093 |
+| analytics-service    | 8094 |
+| sm-routing-service   | 8095 |

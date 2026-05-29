@@ -3,23 +3,23 @@ package com.financial.eligibility.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.eligibility.dto.CibilRequestDto;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.ColumnText;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfPageEventHelper;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
+import java.awt.Color;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.ColumnText;
+import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfPageEventHelper;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,25 +55,25 @@ public class CibilService {
 
     // ── Colours matching TransUnion CIBIL palette ─────────────────────────────
 
-    private static final BaseColor CIBIL_DARK_BLUE  = new BaseColor(0,  60, 113);   // #003C71
-    private static final BaseColor CIBIL_MID_BLUE   = new BaseColor(0, 114, 188);   // #0072BC
-    private static final BaseColor CIBIL_LIGHT_BLUE = new BaseColor(215, 234, 248); // #D7EAF8
-    private static final BaseColor HEADER_GREY      = new BaseColor(64,  64,  64);  // #404040
-    private static final BaseColor TABLE_HEADER_BG  = new BaseColor(0,  60, 113);
-    private static final BaseColor TABLE_ALT_ROW    = new BaseColor(242, 247, 253);
-    private static final BaseColor TABLE_ROW        = BaseColor.WHITE;
-    private static final BaseColor BORDER_LIGHT     = new BaseColor(200, 215, 230);
-    private static final BaseColor SCORE_GREEN      = new BaseColor( 21, 128,  61);  // 750+
-    private static final BaseColor SCORE_LIME       = new BaseColor( 77, 175,  74);  // 700-749
-    private static final BaseColor SCORE_AMBER      = new BaseColor(245, 158,  11);  // 650-699
-    private static final BaseColor SCORE_ORANGE     = new BaseColor(234,  88,  12);  // 550-649
-    private static final BaseColor SCORE_RED        = new BaseColor(185,  28,  28);  // <550
+    private static final Color CIBIL_DARK_BLUE  = new Color(0,  60, 113);   // #003C71
+    private static final Color CIBIL_MID_BLUE   = new Color(0, 114, 188);   // #0072BC
+    private static final Color CIBIL_LIGHT_BLUE = new Color(215, 234, 248); // #D7EAF8
+    private static final Color HEADER_GREY      = new Color(64,  64,  64);  // #404040
+    private static final Color TABLE_HEADER_BG  = new Color(0,  60, 113);
+    private static final Color TABLE_ALT_ROW    = new Color(242, 247, 253);
+    private static final Color TABLE_ROW        = Color.WHITE;
+    private static final Color BORDER_LIGHT     = new Color(200, 215, 230);
+    private static final Color SCORE_GREEN      = new Color( 21, 128,  61);  // 750+
+    private static final Color SCORE_LIME       = new Color( 77, 175,  74);  // 700-749
+    private static final Color SCORE_AMBER      = new Color(245, 158,  11);  // 650-699
+    private static final Color SCORE_ORANGE     = new Color(234,  88,  12);  // 550-649
+    private static final Color SCORE_RED        = new Color(185,  28,  28);  // <550
 
     // ── Fonts ─────────────────────────────────────────────────────────────────
 
-    private Font bold(float sz, BaseColor c)  { return FontFactory.getFont(FontFactory.HELVETICA_BOLD,  sz, c); }
-    private Font reg(float sz, BaseColor c)   { return FontFactory.getFont(FontFactory.HELVETICA,        sz, c); }
-    private Font italic(float sz, BaseColor c){ return FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, sz, c); }
+    private Font bold(float sz, Color c)  { return FontFactory.getFont(FontFactory.HELVETICA_BOLD,  sz, c); }
+    private Font reg(float sz, Color c)   { return FontFactory.getFont(FontFactory.HELVETICA,        sz, c); }
+    private Font italic(float sz, Color c){ return FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, sz, c); }
 
     // ── Public entry point ────────────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ public class CibilService {
                         cb.lineTo(d.right(), d.bottom() - 10);
                         cb.stroke();
                         // Page footer text
-                        Font footFont = reg(7, new BaseColor(120, 120, 120));
+                        Font footFont = reg(7, new Color(120, 120, 120));
                         ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
                             new Phrase("CONFIDENTIAL — For authorised use only. Not for public distribution.", footFont),
                             d.left(), d.bottom() - 22, 0);
@@ -258,10 +258,10 @@ public class CibilService {
 
         // CIBIL title text in bar
         ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
-            new Phrase("CREDIT INFORMATION REPORT (CIR)", bold(13, BaseColor.WHITE)),
+            new Phrase("CREDIT INFORMATION REPORT (CIR)", bold(13, Color.WHITE)),
             left + 6, top + 18, 0);
         ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-            new Phrase("TransUnion CIBIL  |  Regulated by RBI", reg(8, new BaseColor(180, 210, 240))),
+            new Phrase("TransUnion CIBIL  |  Regulated by RBI", reg(8, new Color(180, 210, 240))),
             right - 6, top + 18, 0);
 
         doc.add(vGap(20));
@@ -272,10 +272,10 @@ public class CibilService {
             demoTable.setSpacingAfter(6);
             PdfPCell demoCell = new PdfPCell(new Phrase(
                 "⚠  DEMO MODE — CIBIL API credentials not configured. Data shown is illustrative only.",
-                bold(8, new BaseColor(185, 28, 28))));
-            demoCell.setBackgroundColor(new BaseColor(254, 226, 226));
+                bold(8, new Color(185, 28, 28))));
+            demoCell.setBackgroundColor(new Color(254, 226, 226));
             demoCell.setPadding(7);
-            demoCell.setBorderColor(new BaseColor(185, 28, 28));
+            demoCell.setBorderColor(new Color(185, 28, 28));
             demoTable.addCell(demoCell);
             doc.add(demoTable);
         }
@@ -312,7 +312,7 @@ public class CibilService {
         PdfPTable t = new PdfPTable(1);
         t.setWidthPercentage(100);
         t.setSpacingAfter(4);
-        PdfPCell cell = new PdfPCell(new Phrase(title, bold(9, BaseColor.WHITE)));
+        PdfPCell cell = new PdfPCell(new Phrase(title, bold(9, Color.WHITE)));
         cell.setBackgroundColor(TABLE_HEADER_BG);
         cell.setPadding(6);
         cell.setBorder(Rectangle.NO_BORDER);
@@ -331,7 +331,7 @@ public class CibilService {
         boolean alt = false;
         int col = 0;
         for (String[] row : rows) {
-            BaseColor rowBg = alt ? TABLE_ALT_ROW : TABLE_ROW;
+            Color rowBg = alt ? TABLE_ALT_ROW : TABLE_ROW;
             if (col == 0) alt = !alt;
             table.addCell(labelCell(row[0], rowBg));
             table.addCell(valueCell(row[1], rowBg));
@@ -355,7 +355,7 @@ public class CibilService {
         panel.setSpacingAfter(4);
 
         // Left: big score
-        BaseColor scoreColor = scoreColor(score);
+        Color scoreColor = scoreColor(score);
         PdfPCell scoreCell = new PdfPCell();
         scoreCell.setBorderColor(BORDER_LIGHT);
         scoreCell.setPadding(14);
@@ -389,12 +389,12 @@ public class CibilService {
             {"300 – 549", "VERY POOR",  "Unlikely to be approved. Significant credit issues."},
         };
         for (String[] band : bands) {
-            BaseColor bc = bandColor(band[0]);
+            Color bc = bandColor(band[0]);
             String marker = isInBand(score, band[0]) ? "▶ " : "   ";
             legend.add(new Chunk(marker + band[0] + " — " + band[1] + "\n",
                 bold(8, isInBand(score, band[0]) ? bc : HEADER_GREY)));
             if (isInBand(score, band[0])) {
-                legend.add(new Chunk("     " + band[2] + "\n", italic(7, new BaseColor(80,80,80))));
+                legend.add(new Chunk("     " + band[2] + "\n", italic(7, new Color(80,80,80))));
             }
         }
         legendCell.addElement(legend);
@@ -413,7 +413,7 @@ public class CibilService {
 
         String[] heads = {"Total Accounts","Active","Closed","Overdue","Total Balance (₹)","Total Overdue (₹)"};
         for (String h : heads) {
-            PdfPCell c = new PdfPCell(new Phrase(h, bold(8, BaseColor.WHITE)));
+            PdfPCell c = new PdfPCell(new Phrase(h, bold(8, Color.WHITE)));
             c.setBackgroundColor(CIBIL_MID_BLUE);
             c.setPadding(7);
             c.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -446,7 +446,7 @@ public class CibilService {
         PdfPTable hdr = new PdfPTable(1);
         hdr.setWidthPercentage(100);
         PdfPCell hdrCell = new PdfPCell(new Phrase(
-            "  " + idx + ".  " + acct.memberName + "  |  " + acct.accountType, bold(9, BaseColor.WHITE)));
+            "  " + idx + ".  " + acct.memberName + "  |  " + acct.accountType, bold(9, Color.WHITE)));
         hdrCell.setBackgroundColor(CIBIL_MID_BLUE);
         hdrCell.setPadding(5);
         hdrCell.setBorder(Rectangle.NO_BORDER);
@@ -460,7 +460,7 @@ public class CibilService {
 
         String[] cols = {"Account No.", "Ownership", "Date Opened", "Date Closed", "Credit Limit / Sanctioned", "Current Balance"};
         for (String c : cols) {
-            PdfPCell cell = new PdfPCell(new Phrase(c, bold(7, BaseColor.WHITE)));
+            PdfPCell cell = new PdfPCell(new Phrase(c, bold(7, Color.WHITE)));
             cell.setBackgroundColor(TABLE_HEADER_BG);
             cell.setPadding(5);
             cell.setBorderColor(CIBIL_DARK_BLUE);
@@ -475,7 +475,7 @@ public class CibilService {
             "₹" + formatAmount(acct.currentBalance),
         };
         for (int i = 0; i < vals.length; i++) {
-            BaseColor bg = (i % 2 == 0) ? TABLE_ALT_ROW : TABLE_ROW;
+            Color bg = (i % 2 == 0) ? TABLE_ALT_ROW : TABLE_ROW;
             PdfPCell cell = new PdfPCell(new Phrase(vals[i], reg(8, HEADER_GREY)));
             cell.setPadding(5);
             cell.setBackgroundColor(bg);
@@ -509,7 +509,7 @@ public class CibilService {
         lc.setBorderColor(BORDER_LIGHT);
         t.addCell(lc);
         PdfPCell vc = new PdfPCell(new Phrase(value, bold(8, highlight ? SCORE_RED : HEADER_GREY)));
-        vc.setBackgroundColor(highlight ? new BaseColor(255, 235, 235) : TABLE_ROW);
+        vc.setBackgroundColor(highlight ? new Color(255, 235, 235) : TABLE_ROW);
         vc.setPadding(5);
         vc.setBorderColor(BORDER_LIGHT);
         t.addCell(vc);
@@ -522,19 +522,19 @@ public class CibilService {
         t.setWidthPercentage(100);
         for (int i = 0; i < cols; i++) {
             String h = history.get(i);
-            BaseColor bg = paymentColor(h);
-            PdfPCell c = new PdfPCell(new Phrase(h, bold(6, BaseColor.WHITE)));
+            Color bg = paymentColor(h);
+            PdfPCell c = new PdfPCell(new Phrase(h, bold(6, Color.WHITE)));
             c.setBackgroundColor(bg);
             c.setHorizontalAlignment(Element.ALIGN_CENTER);
             c.setPadding(3);
-            c.setBorderColor(BaseColor.WHITE);
+            c.setBorderColor(Color.WHITE);
             t.addCell(c);
         }
         doc.add(t);
         // Legend
         Paragraph leg = new Paragraph(
             "  STD = Standard (on-time)  |  SMA = Special Mention  |  SUB = Sub-Standard  |  DBT = Doubtful  |  LSS = Loss  |  XXX = No payment due",
-            reg(6, new BaseColor(130, 130, 130)));
+            reg(6, new Color(130, 130, 130)));
         leg.setSpacingAfter(2);
         doc.add(leg);
     }
@@ -548,7 +548,7 @@ public class CibilService {
         t.setSpacingAfter(4);
 
         for (String h : new String[]{"Date of Enquiry", "Enquiring Member", "Purpose", "Amount (₹)", "Product Type"}) {
-            PdfPCell c = new PdfPCell(new Phrase(h, bold(8, BaseColor.WHITE)));
+            PdfPCell c = new PdfPCell(new Phrase(h, bold(8, Color.WHITE)));
             c.setBackgroundColor(TABLE_HEADER_BG);
             c.setPadding(6);
             c.setBorderColor(CIBIL_DARK_BLUE);
@@ -564,7 +564,7 @@ public class CibilService {
         } else {
             boolean alt = false;
             for (EnquiryRecord e : enquiries) {
-                BaseColor bg = alt ? TABLE_ALT_ROW : TABLE_ROW;
+                Color bg = alt ? TABLE_ALT_ROW : TABLE_ROW;
                 for (String v : new String[]{e.date, e.memberName, e.purpose, e.amount, e.productType}) {
                     PdfPCell c = new PdfPCell(new Phrase(v, reg(8, HEADER_GREY)));
                     c.setPadding(5);
@@ -586,7 +586,7 @@ public class CibilService {
         PdfPCell cell = new PdfPCell();
         cell.setPadding(10);
         cell.setBorderColor(CIBIL_MID_BLUE);
-        cell.setBackgroundColor(new BaseColor(240, 247, 255));
+        cell.setBackgroundColor(new Color(240, 247, 255));
 
         Paragraph p = new Paragraph();
         p.add(new Chunk("REGULATORY NOTICES\n\n", bold(9, CIBIL_DARK_BLUE)));
@@ -617,7 +617,7 @@ public class CibilService {
                 "⚠  DEMO DATA NOTICE: This report was generated in demo mode because CIBIL API credentials "
                 + "(TENACIO_CLIENT_ID / TENACIO_API_KEY / TENACIO_WORKFLOW_ID) are not configured in the "
                 + "environment. All credit data shown is fictitious and for format demonstration only.\n",
-                bold(7.5f, new BaseColor(185, 28, 28))));
+                bold(7.5f, new Color(185, 28, 28))));
         }
         cell.addElement(p);
         box.addCell(cell);
@@ -836,7 +836,7 @@ public class CibilService {
 
     // ── Cell helpers ──────────────────────────────────────────────────────────
 
-    private PdfPCell labelCell(String text, BaseColor bg) {
+    private PdfPCell labelCell(String text, Color bg) {
         PdfPCell c = new PdfPCell(new Phrase(text, bold(8, CIBIL_DARK_BLUE)));
         c.setBackgroundColor(CIBIL_LIGHT_BLUE);
         c.setPadding(5);
@@ -844,7 +844,7 @@ public class CibilService {
         return c;
     }
 
-    private PdfPCell valueCell(String text, BaseColor bg) {
+    private PdfPCell valueCell(String text, Color bg) {
         PdfPCell c = new PdfPCell(new Phrase(text, reg(8, HEADER_GREY)));
         c.setBackgroundColor(bg);
         c.setPadding(5);
@@ -870,9 +870,8 @@ public class CibilService {
     }
 
     private Chunk vGapInline(float pts) {
-        Chunk c = new Chunk("\n");
-        c.setLineHeight(pts);
-        return c;
+        // Chunk.setLineHeight() does not exist in OpenPDF; spacing is controlled by the surrounding Paragraph
+        return new Chunk("\n");
     }
 
     private String formatAmount(long amount) {
@@ -913,7 +912,7 @@ public class CibilService {
         return sb.length() == 0 ? "—" : sb.toString();
     }
 
-    private BaseColor scoreColor(int score) {
+    private Color scoreColor(int score) {
         if (score >= 750) return SCORE_GREEN;
         if (score >= 700) return SCORE_LIME;
         if (score >= 650) return SCORE_AMBER;
@@ -921,7 +920,7 @@ public class CibilService {
         return SCORE_RED;
     }
 
-    private BaseColor bandColor(String band) {
+    private Color bandColor(String band) {
         if (band.startsWith("750")) return SCORE_GREEN;
         if (band.startsWith("700")) return SCORE_LIME;
         if (band.startsWith("650")) return SCORE_AMBER;
@@ -939,13 +938,13 @@ public class CibilService {
         } catch (Exception e) { return false; }
     }
 
-    private BaseColor paymentColor(String code) {
+    private Color paymentColor(String code) {
         return switch (code.toUpperCase()) {
             case "STD" -> SCORE_GREEN;
             case "SMA" -> SCORE_AMBER;
             case "SUB" -> SCORE_ORANGE;
             case "DBT", "LSS" -> SCORE_RED;
-            default -> new BaseColor(180, 180, 180); // XXX / unknown
+            default -> new Color(180, 180, 180); // XXX / unknown
         };
     }
 

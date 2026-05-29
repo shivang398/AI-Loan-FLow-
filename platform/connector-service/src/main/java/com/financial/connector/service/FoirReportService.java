@@ -3,8 +3,9 @@ package com.financial.connector.service;
 import com.financial.connector.model.EligibilityStatus;
 import com.financial.connector.model.FoirResult;
 import com.financial.connector.model.LoanObligation;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+import java.awt.Color;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,24 +23,24 @@ import java.util.Locale;
 @Slf4j
 public class FoirReportService {
 
-    private static final BaseColor BRAND      = new BaseColor(79, 70, 229);
-    private static final BaseColor BRAND_LIGHT= new BaseColor(238, 242, 255);
-    private static final BaseColor SUCCESS    = new BaseColor(5, 150, 105);
-    private static final BaseColor SUCCESS_BG = new BaseColor(209, 250, 229);
-    private static final BaseColor WARN       = new BaseColor(217, 119, 6);
-    private static final BaseColor WARN_BG    = new BaseColor(254, 243, 199);
-    private static final BaseColor DANGER     = new BaseColor(220, 38, 38);
-    private static final BaseColor DANGER_BG  = new BaseColor(254, 226, 226);
-    private static final BaseColor HEADER_BG  = new BaseColor(15, 23, 42);
-    private static final BaseColor ROW_ALT    = new BaseColor(248, 250, 252);
-    private static final BaseColor BORDER_CLR = new BaseColor(226, 232, 240);
-    private static final BaseColor TEXT_MUTED = new BaseColor(100, 116, 139);
+    private static final Color BRAND      = new Color(79, 70, 229);
+    private static final Color BRAND_LIGHT= new Color(238, 242, 255);
+    private static final Color SUCCESS    = new Color(5, 150, 105);
+    private static final Color SUCCESS_BG = new Color(209, 250, 229);
+    private static final Color WARN       = new Color(217, 119, 6);
+    private static final Color WARN_BG    = new Color(254, 243, 199);
+    private static final Color DANGER     = new Color(220, 38, 38);
+    private static final Color DANGER_BG  = new Color(254, 226, 226);
+    private static final Color HEADER_BG  = new Color(15, 23, 42);
+    private static final Color ROW_ALT    = new Color(248, 250, 252);
+    private static final Color BORDER_CLR = new Color(226, 232, 240);
+    private static final Color TEXT_MUTED = new Color(100, 116, 139);
 
     private static final Font FONT_TITLE      = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, BRAND);
     private static final Font FONT_SECTION    = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, HEADER_BG);
     private static final Font FONT_LABEL      = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9,  TEXT_MUTED);
     private static final Font FONT_VALUE_BOLD = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, HEADER_BG);
-    private static final Font FONT_TH         = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9,  BaseColor.WHITE);
+    private static final Font FONT_TH         = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9,  Color.WHITE);
     private static final Font FONT_TD         = FontFactory.getFont(FontFactory.HELVETICA,      9,  HEADER_BG);
     private static final Font FONT_SMALL      = FontFactory.getFont(FontFactory.HELVETICA,      8,  TEXT_MUTED);
 
@@ -113,8 +114,8 @@ public class FoirReportService {
     private void addFoirSection(Document doc, FoirResult r) throws DocumentException {
         doc.add(sectionHeader("FOIR Analysis"));
 
-        BaseColor sc = statusColor(r.eligibilityStatus());
-        BaseColor sb = statusBg(r.eligibilityStatus());
+        Color sc = statusColor(r.eligibilityStatus());
+        Color sb = statusBg(r.eligibilityStatus());
 
         PdfPTable banner = new PdfPTable(1);
         banner.setWidthPercentage(100);
@@ -211,7 +212,7 @@ public class FoirReportService {
         Font vf = highlight ? FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, WARN) : FONT_VALUE_BOLD;
         PdfPCell vc = new PdfPCell(new Phrase(value, vf));
         vc.setBorderColor(BORDER_CLR); vc.setPadding(7);
-        vc.setBackgroundColor(highlight ? WARN_BG : BaseColor.WHITE);
+        vc.setBackgroundColor(highlight ? WARN_BG : Color.WHITE);
         t.addCell(lc); t.addCell(vc);
     }
 
@@ -220,7 +221,7 @@ public class FoirReportService {
         c.setBackgroundColor(HEADER_BG); c.setPadding(8); c.setBorderColor(HEADER_BG); t.addCell(c);
     }
 
-    private void addTr(PdfPTable t, String c1, String c2, String c3, boolean danger, BaseColor bg) {
+    private void addTr(PdfPTable t, String c1, String c2, String c3, boolean danger, Color bg) {
         Font f = danger ? FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, DANGER) : FONT_TD;
         PdfPCell a = new PdfPCell(new Phrase(c1, f));
         a.setPadding(7); a.setBorderColor(BORDER_CLR); if (bg != null) a.setBackgroundColor(bg); t.addCell(a);
@@ -246,10 +247,10 @@ public class FoirReportService {
         return "₹" + nf.format(amount);
     }
 
-    private BaseColor statusColor(EligibilityStatus s) {
+    private Color statusColor(EligibilityStatus s) {
         return switch (s) { case ELIGIBLE -> SUCCESS; case BORDERLINE -> WARN; case NOT_ELIGIBLE -> DANGER; };
     }
-    private BaseColor statusBg(EligibilityStatus s) {
+    private Color statusBg(EligibilityStatus s) {
         return switch (s) { case ELIGIBLE -> SUCCESS_BG; case BORDERLINE -> WARN_BG; case NOT_ELIGIBLE -> DANGER_BG; };
     }
     private String statusLabel(EligibilityStatus s) {
@@ -264,19 +265,19 @@ public class FoirReportService {
         public void onEndPage(PdfWriter writer, Document document) {
             PdfContentByte cb = writer.getDirectContent();
             Rectangle pg = document.getPageSize();
-            cb.setColorFill(new BaseColor(79, 70, 229));
+            cb.setColorFill(new Color(79, 70, 229));
             cb.rectangle(pg.getLeft(), pg.getTop() - 30, pg.getWidth(), 30);
             cb.fill();
             ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
                 new Phrase("Auditor AI  ·  FOIR Analysis Report",
-                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.WHITE)),
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9, Color.WHITE)),
                 pg.getLeft(45), pg.getTop() - 18, 0);
             ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-                new Phrase(applicantName, FontFactory.getFont(FontFactory.HELVETICA, 9, BaseColor.WHITE)),
+                new Phrase(applicantName, FontFactory.getFont(FontFactory.HELVETICA, 9, Color.WHITE)),
                 pg.getRight(45), pg.getTop() - 18, 0);
             ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
                 new Phrase("Page " + writer.getPageNumber() + "  ·  Confidential — For Internal Use Only",
-                    FontFactory.getFont(FontFactory.HELVETICA, 7, new BaseColor(100, 116, 139))),
+                    FontFactory.getFont(FontFactory.HELVETICA, 7, new Color(100, 116, 139))),
                 (pg.getLeft() + pg.getRight()) / 2, pg.getBottom(20), 0);
         }
     }
