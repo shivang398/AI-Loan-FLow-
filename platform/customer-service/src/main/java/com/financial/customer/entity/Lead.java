@@ -1,5 +1,6 @@
 package com.financial.customer.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -33,6 +34,7 @@ public class Lead {
     @Column(nullable = false)
     private String mobile;
 
+    @JsonIgnore
     @Column(name = "pan_number", nullable = false)
     private String panNumber;
 

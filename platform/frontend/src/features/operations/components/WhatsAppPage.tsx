@@ -223,7 +223,8 @@ const WhatsAppPage: React.FC = () => {
   /* ── WebSocket for real-time inbound messages ── */
   useEffect(() => {
     if (!activeConvId) return;
-    const ws = new WebSocket(`ws://${window.location.hostname}:8087/ws-messaging/websocket`);
+    const wsToken = localStorage.getItem('token') ?? '';
+    const ws = new WebSocket(`ws://${window.location.hostname}:8087/ws-messaging/websocket?token=${encodeURIComponent(wsToken)}`);
     wsRef.current = ws;
     ws.onopen = () => {
       setWsConnected(true);

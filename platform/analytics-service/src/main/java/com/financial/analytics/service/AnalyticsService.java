@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class AnalyticsService {
             AnalyticsSnapshot snapshot = AnalyticsSnapshot.builder()
                     .snapshotDate(date)
                     .metricType(req.getMetricType())
-                    .metricValue(req.getMetricValue() != null ? req.getMetricValue() : 0.0)
+                    .metricValue(Objects.requireNonNullElse(req.getMetricValue(), 0.0))
                     .dimension(req.getDimension())
                     .dimensionValue(req.getDimensionValue())
                     .build();

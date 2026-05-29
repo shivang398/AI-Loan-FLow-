@@ -5,7 +5,6 @@ import com.financial.analytics.entity.AnalyticsSnapshot;
 import com.financial.analytics.repository.AnalyticsSnapshotRepository;
 import com.financial.analytics.service.AnalyticsService;
 import com.financial.common.dto.ApiResponse;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;

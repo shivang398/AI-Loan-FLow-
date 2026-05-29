@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Button, DatePicker, Space, Spin, Empty, notification } from 'antd';
+import { Row, Col, Button, DatePicker, Space, Spin, Empty } from 'antd';
 import {
-  Target, Download, IndianRupee,
+  Target, IndianRupee,
   TrendingUp, TrendingDown, Users, FileText, RefreshCw,
 } from 'lucide-react';
 import {
@@ -14,7 +14,6 @@ import dayjs, { Dayjs } from 'dayjs';
 const { RangePicker } = DatePicker;
 const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6'];
 
-// ─── Types ───────────────────────────────────────────────
 interface AnalyticsSnapshot {
   id: string;
   snapshotDate: string;
@@ -24,7 +23,6 @@ interface AnalyticsSnapshot {
   dimensionValue: string | null;
 }
 
-// ─── Helpers ─────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -47,7 +45,6 @@ const EmptyChart = ({ message }: { message: string }) => (
   </div>
 );
 
-// Build disbursement trend from analytics snapshots
 const buildTrendFromSnapshots = (
   snapshots: AnalyticsSnapshot[],
   tab: 'week' | 'month' | 'quarter'
@@ -58,22 +55,20 @@ const buildTrendFromSnapshots = (
   if (tab === 'week') {
     return Array.from({ length: 7 }, (_, i) => {
       const d = now.subtract(6 - i, 'day');
-      const label = d.format('ddd');
       const match = disbursalSnaps.find(s => s.snapshotDate === d.format('YYYY-MM-DD'));
-      return { name: label, amount: (match?.metricValue ?? 0).toFixed(2) };
+      return { name: d.format('ddd'), amount: (match?.metricValue ?? 0).toFixed(2) };
     });
   }
   if (tab === 'month') {
     return Array.from({ length: 4 }, (_, i) => {
       const weekStart = now.subtract((3 - i + 1) * 7, 'day');
-      const weekEnd = now.subtract((3 - i) * 7, 'day');
+      const weekEnd   = now.subtract((3 - i) * 7, 'day');
       const total = disbursalSnaps
         .filter(s => dayjs(s.snapshotDate).isAfter(weekStart) && dayjs(s.snapshotDate).isBefore(weekEnd))
         .reduce((sum, s) => sum + s.metricValue, 0);
       return { name: `Wk ${i + 1}`, amount: total.toFixed(2) };
     });
   }
-  // quarter — monthly
   return Array.from({ length: 3 }, (_, i) => {
     const m = now.subtract(2 - i, 'month');
     const total = disbursalSnaps
@@ -83,188 +78,130 @@ const buildTrendFromSnapshots = (
   });
 };
 
-// Build disbursement trend from raw loan data (fallback)
-const buildTrendFromLoans = (
-  loanList: any[],
-  tab: 'week' | 'month' | 'quarter'
-): { name: string; amount: string }[] => {
-  const now = dayjs();
-  if (tab === 'week') {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = now.subtract(6 - i, 'day');
-      const dayLoans = loanList.filter(l => {
-        const ld = l.createdAt ? dayjs(l.createdAt) : null;
-        return ld && ld.format('YYYY-MM-DD') === d.format('YYYY-MM-DD');
-      });
-      return { name: d.format('ddd'), amount: dayLoans.reduce((s: number, l: any) => s + (l.loanAmount || l.amount || 0) / 10000000, 0).toFixed(2) };
-    });
-  }
-  if (tab === 'month') {
-    return Array.from({ length: 4 }, (_, i) => {
-      const start = now.subtract((4 - i) * 7, 'day');
-      const end = now.subtract((3 - i) * 7, 'day');
-      const wLoans = loanList.filter(l => {
-        const ld = l.createdAt ? dayjs(l.createdAt) : null;
-        return ld && ld.isAfter(start) && ld.isBefore(end);
-      });
-      return { name: `Wk ${i + 1}`, amount: wLoans.reduce((s: number, l: any) => s + (l.loanAmount || l.amount || 0) / 10000000, 0).toFixed(2) };
-    });
-  }
-  return Array.from({ length: 3 }, (_, i) => {
-    const m = now.subtract(2 - i, 'month');
-    const mLoans = loanList.filter(l => {
-      const ld = l.createdAt ? dayjs(l.createdAt) : null;
-      return ld && ld.format('YYYY-MM') === m.format('YYYY-MM');
-    });
-    return { name: m.format('MMM'), amount: mLoans.reduce((s: number, l: any) => s + (l.loanAmount || l.amount || 0) / 10000000, 0).toFixed(2) };
-  });
-};
-
-// ─── Main Component ───────────────────────────────────────
 const BusinessAnalytics: React.FC = () => {
-  const [activeTab, setActiveTab]     = useState<'week' | 'month' | 'quarter'>('week');
-  const [loading, setLoading]         = useState(true);
-  const [syncing, setSyncing]         = useState(false);
-  const [dates, setDates]             = useState<[Dayjs, Dayjs] | null>(null);
+  const [activeTab, setActiveTab] = useState<'week' | 'month' | 'quarter'>('week');
+  const [loading, setLoading]     = useState(true);
+  const [syncing, setSyncing]     = useState(false);
+  const [dates, setDates]         = useState<[Dayjs, Dayjs] | null>(null);
 
-  // Raw data from source services
-  const [loans, setLoans]             = useState<any[]>([]);
-  const [connectors, setConnectors]   = useState<any[]>([]);
-  const [commissions, setCommissions] = useState<any[]>([]);
+  const [connectors, setConnectors] = useState<any[]>([]);
 
-  // Analytics service data
-  const [summary, setSummary]         = useState<Record<string, number>>({});
-  const [snapshots, setSnapshots]     = useState<AnalyticsSnapshot[]>([]);
-
-  // Derived chart data
+  const [summary, setSummary]               = useState<Record<string, number>>({});
   const [disbursementData, setDisbursementData] = useState<any[]>([]);
   const [rejectionData, setRejectionData]       = useState<any[]>([]);
 
-  // ── Push today's computed metrics to analytics-service ──
-  const pushToAnalytics = useCallback(async (
+  // Sync today's computed metrics into analytics-service (upsert, safe to repeat)
+  const syncToAnalytics = useCallback(async (
     loanList: any[], connList: any[], commList: any[]
   ) => {
     const today = dayjs().format('YYYY-MM-DD');
-    const totalLoans = loanList.length;
-    const approvedLoans = loanList.filter(l => ['APPROVED', 'DISBURSED', 'ACTIVE'].includes(l.status?.toUpperCase?.())).length;
+    const totalLoans    = loanList.length;
+    const approved      = loanList.filter(l => ['APPROVED', 'DISBURSED', 'ACTIVE'].includes(l.status?.toUpperCase?.())).length;
+    const rejected      = loanList.filter(l => ['REJECTED', 'DECLINED', 'CLOSED'].includes(l.status?.toUpperCase?.())).length;
     const totalDisbursed = loanList.reduce((s, l) => s + (l.loanAmount || l.amount || 0), 0);
     const totalCommission = commList.reduce((s, c) => s + (c.connectorCommission || c.totalPayout || 0), 0);
-    const activePartners = connList.filter(c => c.status === 'ACTIVE').length;
-    const rejected = loanList.filter(l => ['REJECTED', 'DECLINED', 'CLOSED'].includes(l.status?.toUpperCase?.())).length;
+    const activePartners  = connList.filter(c => c.status === 'ACTIVE').length;
 
     const snapshots = [
-      { snapshotDate: today, metricType: 'TOTAL_LOANS',      metricValue: totalLoans,                          dimension: null, dimensionValue: null },
-      { snapshotDate: today, metricType: 'APPROVAL_RATE',    metricValue: totalLoans > 0 ? (approvedLoans / totalLoans) * 100 : 0, dimension: null, dimensionValue: null },
-      { snapshotDate: today, metricType: 'DISBURSED_AMOUNT', metricValue: totalDisbursed / 10000000,           dimension: null, dimensionValue: null },
-      { snapshotDate: today, metricType: 'ACTIVE_PARTNERS',  metricValue: activePartners,                      dimension: null, dimensionValue: null },
-      { snapshotDate: today, metricType: 'TOTAL_PARTNERS',   metricValue: connList.length,                     dimension: null, dimensionValue: null },
-      { snapshotDate: today, metricType: 'TOTAL_COMMISSION', metricValue: totalCommission / 100000,            dimension: null, dimensionValue: null },
+      { snapshotDate: today, metricType: 'TOTAL_LOANS',      metricValue: totalLoans, dimension: null, dimensionValue: null },
+      { snapshotDate: today, metricType: 'APPROVAL_RATE',    metricValue: totalLoans > 0 ? (approved / totalLoans) * 100 : 0, dimension: null, dimensionValue: null },
+      { snapshotDate: today, metricType: 'DISBURSED_AMOUNT', metricValue: totalDisbursed / 10_000_000, dimension: null, dimensionValue: null },
+      { snapshotDate: today, metricType: 'ACTIVE_PARTNERS',  metricValue: activePartners, dimension: null, dimensionValue: null },
+      { snapshotDate: today, metricType: 'TOTAL_PARTNERS',   metricValue: connList.length, dimension: null, dimensionValue: null },
+      { snapshotDate: today, metricType: 'TOTAL_COMMISSION', metricValue: totalCommission / 100_000, dimension: null, dimensionValue: null },
       { snapshotDate: today, metricType: 'REJECTION_RATE',   metricValue: totalLoans > 0 ? (rejected / totalLoans) * 100 : 0, dimension: null, dimensionValue: null },
     ];
 
     try {
       setSyncing(true);
       await apiClient.post('/analytics/snapshots', snapshots);
-      // Refresh summary after push
-      const sumRes = await apiClient.get('/analytics/summary');
-      setSummary(sumRes.data?.data ?? {});
+      const res = await apiClient.get('/analytics/summary');
+      setSummary(res.data?.data ?? {});
     } catch {
-      // analytics service push is best-effort
+      // analytics sync is best-effort
     } finally {
       setSyncing(false);
     }
   }, []);
 
-  // ── Load historical snapshots from analytics-service ──
-  const fetchAnalyticsHistory = useCallback(async (tab: 'week' | 'month' | 'quarter') => {
-    const to = dayjs();
-    const from = tab === 'week' ? to.subtract(7, 'day') : tab === 'month' ? to.subtract(30, 'day') : to.subtract(90, 'day');
+  const fetchTrendSnapshots = useCallback(async (tab: 'week' | 'month' | 'quarter') => {
+    const to   = dayjs();
+    const from = tab === 'week' ? to.subtract(7, 'day')
+               : tab === 'month' ? to.subtract(30, 'day')
+               : to.subtract(90, 'day');
     try {
       const res = await apiClient.get('/analytics/dashboard', {
         params: { from: from.format('YYYY-MM-DD'), to: to.format('YYYY-MM-DD') },
       });
       return (res.data?.data ?? []) as AnalyticsSnapshot[];
     } catch {
-      return [];
+      return [] as AnalyticsSnapshot[];
     }
   }, []);
 
-  // ── Main data load ──
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch summary from analytics service
-      const [sumRes] = await Promise.allSettled([
-        apiClient.get('/analytics/summary'),
-      ]);
-      if (sumRes.status === 'fulfilled') {
-        setSummary(sumRes.value.data?.data ?? {});
-      }
+      // 1. Fetch analytics summary (KPI cards)
+      const sumRes = await apiClient.get('/analytics/summary').catch(() => null);
+      if (sumRes) setSummary(sumRes.data?.data ?? {});
 
-      // 2. Fetch source-of-truth data from other services
+      // 2. Fetch source data from other services
       const [loansRes, connRes, commRes] = await Promise.allSettled([
         apiClient.get('/loans'),
         apiClient.get('/connectors?roles=CONNECTOR'),
         apiClient.get('/commissions/transactions'),
       ]);
+
       const loanList: any[] = loansRes.status === 'fulfilled' ? (loansRes.value.data?.data || loansRes.value.data || []) : [];
-      const connList: any[] = connRes.status === 'fulfilled'  ? (connRes.value.data?.data  || connRes.value.data  || []) : [];
-      const commList: any[] = commRes.status === 'fulfilled'  ? (commRes.value.data?.data  || commRes.value.data  || []) : [];
+      const connList: any[] = connRes.status  === 'fulfilled' ? (connRes.value.data?.data  || connRes.value.data  || []) : [];
+      const commList: any[] = commRes.status  === 'fulfilled' ? (commRes.value.data?.data  || commRes.value.data  || []) : [];
 
-      setLoans(loanList);
       setConnectors(connList);
-      setCommissions(commList);
 
-      // 3. Push today's snapshot to analytics-service
-      await pushToAnalytics(loanList, connList, commList);
+      // 3. Push today's snapshot into analytics-service
+      await syncToAnalytics(loanList, connList, commList);
 
-      // 4. Fetch historical snapshots for chart
-      const snaps = await fetchAnalyticsHistory(activeTab);
-      setSnapshots(snaps);
+      // 4. Fetch historical snapshots for trend chart
+      const snaps = await fetchTrendSnapshots(activeTab);
+      setDisbursementData(buildTrendFromSnapshots(snaps, activeTab));
 
-      // 5. Build charts
-      const hasAnalyticsHistory = snaps.some(s => s.metricType === 'DISBURSED_AMOUNT');
-      setDisbursementData(
-        hasAnalyticsHistory
-          ? buildTrendFromSnapshots(snaps, activeTab)
-          : buildTrendFromLoans(loanList, activeTab)
-      );
-
+      // 5. Rejection breakdown from live loan data
       const rejected = loanList.filter(l => ['REJECTED', 'DECLINED', 'CLOSED'].includes(l.status?.toUpperCase?.()));
-      if (rejected.length) {
+      if (rejected.length > 0) {
         const reasons: Record<string, number> = {};
-        rejected.forEach(l => { const r = l.rejectionReason || l.remarks || 'Other'; reasons[r] = (reasons[r] || 0) + 1; });
-        setRejectionData(Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value]) => ({ name, value })));
+        rejected.forEach(l => {
+          const r = l.rejectionReason || l.remarks || 'Other';
+          reasons[r] = (reasons[r] || 0) + 1;
+        });
+        setRejectionData(
+          Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value]) => ({ name, value }))
+        );
       } else {
         setRejectionData([]);
       }
     } finally {
       setLoading(false);
     }
-  }, [activeTab, pushToAnalytics, fetchAnalyticsHistory]);
+  }, [activeTab, syncToAnalytics, fetchTrendSnapshots]);
 
   useEffect(() => { loadData(); }, []);
 
-  // Re-fetch historical chart when tab changes
   useEffect(() => {
-    fetchAnalyticsHistory(activeTab).then(snaps => {
-      setSnapshots(snaps);
-      const hasAnalyticsHistory = snaps.some(s => s.metricType === 'DISBURSED_AMOUNT');
-      setDisbursementData(
-        hasAnalyticsHistory
-          ? buildTrendFromSnapshots(snaps, activeTab)
-          : buildTrendFromLoans(loans, activeTab)
-      );
-    });
+    if (loading) return;
+    fetchTrendSnapshots(activeTab).then(snaps =>
+      setDisbursementData(buildTrendFromSnapshots(snaps, activeTab))
+    );
   }, [activeTab]);
 
-  // ── KPIs: prefer analytics summary, fall back to computed ──
-  const totalLoans     = summary['TOTAL_LOANS']      ?? loans.length;
-  const approvalRate   = summary['APPROVAL_RATE']    ?? (loans.length > 0 ? (loans.filter(l => ['APPROVED','DISBURSED','ACTIVE'].includes(l.status?.toUpperCase?.())).length / loans.length) * 100 : null);
-  const totalDisbursed = summary['DISBURSED_AMOUNT'] ?? loans.reduce((s, l) => s + (l.loanAmount || l.amount || 0), 0) / 10000000;
-  const activePartners = summary['ACTIVE_PARTNERS']  ?? connectors.filter(c => c.status === 'ACTIVE').length;
-  const totalPartners  = summary['TOTAL_PARTNERS']   ?? connectors.length;
-  const totalCommission = summary['TOTAL_COMMISSION'] ?? commissions.reduce((s, c) => s + (c.connectorCommission || c.totalPayout || 0), 0) / 100000;
+  // KPIs: analytics-service summary is the single source of truth
+  const totalLoans      = summary['TOTAL_LOANS']      ?? 0;
+  const approvalRate    = summary['APPROVAL_RATE']     ?? null;
+  const totalDisbursed  = summary['DISBURSED_AMOUNT']  ?? 0;
+  const activePartners  = summary['ACTIVE_PARTNERS']   ?? 0;
+  const totalPartners   = summary['TOTAL_PARTNERS']    ?? 0;
+  const totalCommission = summary['TOTAL_COMMISSION']  ?? 0;
+  const hasData         = Object.keys(summary).length > 0;
 
   const kpis = [
     {
@@ -292,7 +229,7 @@ const BusinessAnalytics: React.FC = () => {
     {
       label: 'Total Disbursed',
       value: totalDisbursed > 0 ? `₹${totalDisbursed.toFixed(2)} Cr` : '—',
-      delta: totalCommission > 0 ? `₹${totalCommission.toFixed(1)}L commissions` : 'No disbursals',
+      delta: totalCommission > 0 ? `₹${totalCommission.toFixed(1)}L commissions` : 'No disbursals yet',
       up: true,
       desc: 'Cumulative loan disbursement',
       icon: IndianRupee,
@@ -315,7 +252,6 @@ const BusinessAnalytics: React.FC = () => {
 
   const hasDisbursal  = disbursementData.some(d => Number(d.amount) > 0);
   const hasRejections = rejectionData.length > 0;
-  const hasAnalyticsData = Object.keys(summary).length > 0;
 
   return (
     <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -323,17 +259,17 @@ const BusinessAnalytics: React.FC = () => {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div className="page-header" style={{ marginBottom: 0 }}>
-          <h1 className="page-header-title">Business Intelligence Hub</h1>
+          <h1 className="page-header-title">Business Analytics</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-            <span className="page-header-subtitle">Powered by analytics-service · port 8094</span>
+            <span className="page-header-subtitle">Powered by analytics-service</span>
             {syncing && (
               <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, background: '#eef2ff', borderRadius: 100, padding: '2px 10px' }}>
                 Syncing…
               </span>
             )}
-            {hasAnalyticsData && !syncing && (
+            {hasData && !syncing && (
               <span style={{ fontSize: 11, color: '#059669', fontWeight: 700, background: '#ecfdf5', borderRadius: 100, padding: '2px 10px' }}>
-                ✓ Analytics live
+                ✓ Live
               </span>
             )}
           </div>
@@ -361,7 +297,7 @@ const BusinessAnalytics: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* ── KPI Cards ── */}
+          {/* KPI Cards */}
           <Row gutter={[20, 20]}>
             {kpis.map((k, i) => (
               <Col key={i} xs={24} sm={12} xl={6}>
@@ -384,21 +320,19 @@ const BusinessAnalytics: React.FC = () => {
                   <div className="stat-card-label">{k.label}</div>
                   <div style={{ marginTop: 8, fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{k.desc}</div>
                   <div style={{ marginTop: 16, height: 3, background: '#f1f5f9', borderRadius: 100 }}>
-                    <div style={{ height: '100%', width: k.value !== '—' ? '72%' : '0%', background: k.accent, borderRadius: 100, transition: 'width 1s ease', boxShadow: `0 0 8px ${k.accent}60` }} />
+                    <div style={{ height: '100%', width: k.value !== '—' ? '72%' : '0%', background: k.accent, borderRadius: 100, transition: 'width 1s ease' }} />
                   </div>
                 </div>
               </Col>
             ))}
           </Row>
 
-          {/* ── Disbursement Trend (from analytics-service) ── */}
+          {/* Disbursement Trend */}
           <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>Disbursement Volume</div>
-                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
-                  ₹ Crores · {hasAnalyticsData ? 'sourced from analytics-service' : 'computed from loan records'}
-                </div>
+                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>₹ Crores · sourced from analytics-service</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {(['week', 'month', 'quarter'] as const).map(t => (
@@ -428,24 +362,24 @@ const BusinessAnalytics: React.FC = () => {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <EmptyChart message="No disbursements recorded yet — data will appear as loans are approved." />
+                <EmptyChart message="No disbursements recorded yet. Data will appear as loans are approved and synced." />
               )}
             </div>
 
             {/* Summary strip */}
-            <div style={{ marginTop: 16, padding: '14px 20px', background: '#f8fafc', borderRadius: 12, display: 'flex', gap: 32, alignItems: 'center' }}>
+            <div style={{ marginTop: 16, padding: '14px 20px', background: '#f8fafc', borderRadius: 12, display: 'flex', gap: 32, alignItems: 'center', flexWrap: 'wrap' }}>
               {[
-                { label: 'Total Loans',    value: totalLoans > 0 ? String(Math.round(totalLoans)) : '—',                     color: '#0f172a' },
-                { label: 'Approval Rate',  value: approvalRate != null ? `${approvalRate.toFixed(1)}%` : '—',                color: '#059669' },
-                { label: 'Total Volume',   value: totalDisbursed > 0 ? `₹${totalDisbursed.toFixed(2)} Cr` : '—',            color: '#059669' },
-                { label: 'Active Partners',value: activePartners > 0 ? String(Math.round(activePartners)) : '—',             color: '#4f46e5' },
+                { label: 'Total Loans',    value: totalLoans > 0      ? String(Math.round(totalLoans)) : '—',    color: '#0f172a' },
+                { label: 'Approval Rate',  value: approvalRate != null ? `${approvalRate.toFixed(1)}%` : '—',    color: '#059669' },
+                { label: 'Total Volume',   value: totalDisbursed > 0  ? `₹${totalDisbursed.toFixed(2)} Cr` : '—', color: '#059669' },
+                { label: 'Active Partners',value: activePartners > 0  ? String(Math.round(activePartners)) : '—', color: '#4f46e5' },
               ].map(s => (
                 <div key={s.label}>
                   <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{s.label}</div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: s.color }}>{s.value}</div>
                 </div>
               ))}
-              {hasAnalyticsData && (
+              {hasData && (
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, background: '#eef2ff', borderRadius: 10, padding: '6px 14px' }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1' }} />
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#4f46e5' }}>Analytics Service Active</span>
@@ -454,12 +388,12 @@ const BusinessAnalytics: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Rejection Breakdown + Partner Activity ── */}
+          {/* Rejection Breakdown + Partner Activity */}
           <Row gutter={[20, 20]}>
             <Col xs={24} lg={12}>
               <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, height: '100%' }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 4 }}>Rejection Breakdown</div>
-                <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Computed from loan rejection reasons</div>
+                <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Loan rejection reasons · live from loan-service</div>
                 <div style={{ height: 200, minHeight: 200 }}>
                   {hasRejections ? (
                     <ResponsiveContainer width="100%" height="100%">
@@ -496,7 +430,7 @@ const BusinessAnalytics: React.FC = () => {
             <Col xs={24} lg={12}>
               <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, height: '100%' }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 4 }}>Partner Onboarding</div>
-                <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Connector status breakdown · live</div>
+                <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Connector status breakdown · live from connector-service</div>
                 <div style={{ height: 200, minHeight: 200 }}>
                   {connectors.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
@@ -522,9 +456,9 @@ const BusinessAnalytics: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
                   {[
-                    { label: 'Active',  count: Math.round(activePartners),  color: '#10b981' },
+                    { label: 'Active',  count: Math.round(activePartners), color: '#10b981' },
                     { label: 'Pending', count: connectors.filter(c => c.status === 'PENDING_APPROVAL').length, color: '#f59e0b' },
-                    { label: 'Total',   count: Math.round(totalPartners),   color: '#6366f1' },
+                    { label: 'Total',   count: Math.round(totalPartners),  color: '#6366f1' },
                   ].map(s => (
                     <div key={s.label} style={{ flex: 1, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, textAlign: 'center' }}>
                       <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.count}</div>

@@ -35,9 +35,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
-                // WebSocket upgrades — auth handled in-protocol (STOMP header / first JSON frame)
-                .requestMatchers("/ws-messaging/**").permitAll()
-                .requestMatchers("/ws/team-meeting/**").permitAll()
+                // SockJS info/negotiation requests carry no credentials — allow them;
+                // the subsequent STOMP CONNECT frame carries JWT via ChannelInterceptor
+                .requestMatchers("/ws-messaging/info").permitAll()
+                // WebSocket upgrade: token passed as ?token= query param, validated by JwtAuthenticationFilter
+                .requestMatchers("/ws-messaging/**").authenticated()
+                .requestMatchers("/ws/team-meeting/**").authenticated()
                 // WhatsApp webhooks validated by HMAC signature — not JWT
                 .requestMatchers("/webhooks/**").permitAll()
                 .anyRequest().authenticated()

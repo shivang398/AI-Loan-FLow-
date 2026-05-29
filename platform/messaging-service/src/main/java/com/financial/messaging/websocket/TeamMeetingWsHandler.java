@@ -1,8 +1,10 @@
 package com.financial.messaging.websocket;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.financial.common.security.JwtTokenProvider;
 import com.financial.messaging.entity.TeamMeetingMessage;
 import com.financial.messaging.entity.TeamMeetingRoom;
 import com.financial.messaging.repository.TeamMeetingMessageRepository;
@@ -29,14 +31,38 @@ public class TeamMeetingWsHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final TeamMeetingRoomRepository roomRepository;
     private final TeamMeetingMessageRepository messageRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // roomId → set of open sessions in that room
     private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
-    // sessionId → userId
+    // sessionId → authenticated username
     private final Map<String, String> sessionUserMap = new ConcurrentHashMap<>();
 
     @Override
+    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        String query = session.getUri() != null ? session.getUri().getQuery() : null;
+        String token = extractTokenFromQuery(query);
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            session.close(CloseStatus.POLICY_VIOLATION.withReason("Missing or invalid JWT"));
+            return;
+        }
+        sessionUserMap.put(session.getId(), jwtTokenProvider.getUsernameFromJWT(token));
+    }
+
+    private String extractTokenFromQuery(String query) {
+        if (query == null) return null;
+        for (String param : query.split("&")) {
+            if (param.startsWith("token=")) return param.substring(6);
+        }
+        return null;
+    }
+
+    @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        if (!sessionUserMap.containsKey(session.getId())) {
+            session.close(CloseStatus.POLICY_VIOLATION.withReason("Unauthenticated"));
+            return;
+        }
         JsonNode frame = objectMapper.readTree(message.getPayload());
         String type = frame.path("type").asText();
 
@@ -44,18 +70,17 @@ public class TeamMeetingWsHandler extends TextWebSocketHandler {
             case "JOIN_ROOM"    -> handleJoinRoom(session, frame);
             case "LEAVE_ROOM"   -> handleLeaveRoom(session, frame);
             case "SEND_MESSAGE" -> handleSendMessage(session, frame);
-            case "TYPING_START" -> broadcastTyping(frame, "TYPING_START", true);
-            case "TYPING_STOP"  -> broadcastTyping(frame, "TYPING_STOP", false);
-            case "MARK_READ"    -> handleMarkRead(session, frame);
+            case "TYPING_START" -> broadcastTyping(frame, "TYPING_START");
+            case "TYPING_STOP"  -> broadcastTyping(frame, "TYPING_STOP");
+            case "MARK_READ"    -> handleMarkRead(frame);
             default             -> log.debug("Unknown frame type: {}", type);
         }
     }
 
     private void handleJoinRoom(WebSocketSession session, JsonNode frame) {
         String roomId = frame.path("roomId").asText();
-        String userId = frame.path("userId").asText();
-
-        sessionUserMap.put(session.getId(), userId);
+        // Use authenticated identity — do not trust client-supplied userId
+        String userId = sessionUserMap.getOrDefault(session.getId(), frame.path("userId").asText());
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
         // Ensure room row exists in DB
@@ -120,7 +145,7 @@ public class TeamMeetingWsHandler extends TextWebSocketHandler {
         sendTo(session, statusFrame);
     }
 
-    private void broadcastTyping(JsonNode frame, String outType, boolean typing) {
+    private void broadcastTyping(JsonNode frame, String outType) {
         String roomId = frame.path("roomId").asText();
         String senderId = frame.path("userId").asText();
 
@@ -131,7 +156,7 @@ public class TeamMeetingWsHandler extends TextWebSocketHandler {
         broadcast(roomId, out);
     }
 
-    private void handleMarkRead(WebSocketSession session, JsonNode frame) {
+    private void handleMarkRead(JsonNode frame) {
         // Optionally persist read receipts; broadcast status update
         String roomId = frame.path("roomId").asText();
         String messageId = frame.path("messageId").asText();
@@ -156,14 +181,14 @@ public class TeamMeetingWsHandler extends TextWebSocketHandler {
     private void broadcast(String roomId, ObjectNode frame) {
         Set<WebSocketSession> sessions = roomSessions.getOrDefault(roomId, Set.of());
         String text;
-        try { text = objectMapper.writeValueAsString(frame); } catch (Exception e) { return; }
+        try { text = objectMapper.writeValueAsString(frame); } catch (JsonProcessingException e) { return; }
         for (WebSocketSession s : sessions) {
             sendRaw(s, text);
         }
     }
 
     private void sendTo(WebSocketSession session, ObjectNode frame) {
-        try { sendRaw(session, objectMapper.writeValueAsString(frame)); } catch (Exception ignored) {}
+        try { sendRaw(session, objectMapper.writeValueAsString(frame)); } catch (JsonProcessingException ignored) { /* serialization failed — nothing to send */ }
     }
 
     private void sendRaw(WebSocketSession session, String text) {

@@ -38,6 +38,7 @@ public class PayoutSlabController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('PARTNER_MANAGER')")
     public ResponseEntity<Void> deleteSlab(@PathVariable UUID id) {
         payoutSlabService.deleteSlab(id);
         return ResponseEntity.ok().build();
