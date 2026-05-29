@@ -9,8 +9,7 @@ export const useWebSocket = (endpoint: string, topic: string) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const wsUrl = token ? `${endpoint}?token=${encodeURIComponent(token)}` : endpoint;
-    const socket = new SockJS(wsUrl);
+    const socket = new SockJS(endpoint);
     const client = new Client({
       webSocketFactory: () => socket,
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},

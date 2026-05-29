@@ -20,8 +20,6 @@
         <module>eligibility-service</module>
         <module>policy-service</module>
         <module>sm-routing-service</module>
-        <module>rm-tracking-service</module>
-        <module>query-service</module>
         <module>document-service</module>
         <module>notification-service</module>
         <module>commission-service</module>

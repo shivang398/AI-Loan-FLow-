@@ -20,8 +20,6 @@ export default defineConfig({
       '/api/svc-health/eligibility': { target: 'http://127.0.0.1:8085', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/policy':      { target: 'http://127.0.0.1:8086', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/messaging':   { target: 'http://127.0.0.1:8087', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/rm':          { target: 'http://127.0.0.1:8088', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/query':       { target: 'http://127.0.0.1:8089', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/document':    { target: 'http://127.0.0.1:8090', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/commission':  { target: 'http://127.0.0.1:8092', changeOrigin: true, rewrite: () => '/actuator/health' },
       '/api/svc-health/reporting':   { target: 'http://127.0.0.1:8093', changeOrigin: true, rewrite: () => '/actuator/health' },
@@ -76,16 +74,6 @@ export default defineConfig({
         target: 'http://127.0.0.1:8086',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/policies/, '/policies'),
-      },
-      '/api/rm': {
-        target: 'http://127.0.0.1:8088',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/rm/, '/rm'),
-      },
-      '/api/queries': {
-        target: 'http://127.0.0.1:8089',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/queries/, '/queries'),
       },
       '/api/documents': {
         target: 'http://127.0.0.1:8090',

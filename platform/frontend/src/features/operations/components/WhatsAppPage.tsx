@@ -224,7 +224,8 @@ const WhatsAppPage: React.FC = () => {
   useEffect(() => {
     if (!activeConvId) return;
     const wsToken = localStorage.getItem('token') ?? '';
-    const ws = new WebSocket(`ws://${window.location.hostname}:8087/ws-messaging/websocket?token=${encodeURIComponent(wsToken)}`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${wsProtocol}//${window.location.hostname}:8087/ws-messaging/websocket?token=${encodeURIComponent(wsToken)}`);
     wsRef.current = ws;
     ws.onopen = () => {
       setWsConnected(true);

@@ -9,9 +9,8 @@ class WebSocketService {
     if (this.client?.connected) return;
 
     const token = localStorage.getItem('token');
-    const wsUrl = token ? `${url}?token=${encodeURIComponent(token)}` : url;
     this.client = new Client({
-      webSocketFactory: () => new SockJS(wsUrl),
+      webSocketFactory: () => new SockJS(url),
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       debug: () => { /* suppress noise */ },
       reconnectDelay: 5000,

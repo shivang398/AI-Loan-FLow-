@@ -33,7 +33,7 @@ spring:
         secret-key: ${AWS_SECRET_KEY:test}
 
 server:
-  port: ${PORT:8080}
+  port: ${PORT:8087}
 
 app:
   jwt:

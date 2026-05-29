@@ -68,13 +68,4 @@ public class LoanEventNotificationConsumer {
         }
     }
 
-    @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(value = "notification.query.created.queue", durable = "true"),
-            exchange = @Exchange(value = "${app.rabbitmq.exchange:platform.exchange}", type = "topic", durable = "true"),
-            key = "query.created"
-    ))
-    public void handleQueryCreatedEvent(GlobalEvent<?> event) {
-        log.info("Received QUERY_CREATED event, triggering notification: {}", event.getEventId());
-        // Similar idempotent notification logic
-    }
 }

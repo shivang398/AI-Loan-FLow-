@@ -11,4 +11,5 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     Optional<Conversation> findByConnectorIdAndLoanApplicationId(UUID connectorId, UUID loanApplicationId);
     List<Conversation> findByConversationType(ConversationType type);
     List<Conversation> findByConversationTypeOrderByUpdatedAtDesc(ConversationType type);
+    Optional<Conversation> findFirstByCustomerPhoneOrderByCreatedAtDesc(String customerPhone);
 }
