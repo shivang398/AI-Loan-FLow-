@@ -18,6 +18,7 @@ const ROLE_COLORS: Record<string, string> = {
   RM: '#10b981',
   OPERATIONS: '#f59e0b',
   TEAM_LEADER: '#ec4899',
+  PARTNER_MANAGER: '#8b5cf6',
 };
 
 const DEPT_MAP: Record<string, string> = {
@@ -25,9 +26,10 @@ const DEPT_MAP: Record<string, string> = {
   RM: 'Sales & Growth',
   OPERATIONS: 'Credit Ops',
   TEAM_LEADER: 'Sales & Growth',
+  PARTNER_MANAGER: 'Partner Management',
 };
 
-const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER'];
+const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER'];
 
 function connectorToRow(c: any) {
   const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
@@ -36,7 +38,7 @@ function connectorToRow(c: any) {
   return {
     id: c.id,
     userId: c.userId,
-    empId: `EMP-${c.id?.substring(0, 6).toUpperCase() || '???'}`,
+    empId: `RMG-${c.id?.substring(0, 6).toUpperCase() || '???'}`,
     name: fullName,
     email: c.email || `${emailPrefix}@platform.com`,
     role,
@@ -54,6 +56,9 @@ const UserManagement: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [form] = Form.useForm();
   const [staffData, setStaffData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [deptFilter, setDeptFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
 
@@ -73,6 +78,28 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     fetchStaff();
   }, [fetchStaff]);
+
+  // Apply department filter + search whenever data, filter, or search changes
+  useEffect(() => {
+    let result = staffData;
+    if (deptFilter !== 'all') {
+      const deptValue = deptFilter === 'sales' ? 'Sales & Growth'
+        : deptFilter === 'credit' ? 'Credit Ops'
+        : deptFilter === 'partner' ? 'Partner Management'
+        : null;
+      if (deptValue) result = result.filter(s => s.department === deptValue);
+    }
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(s =>
+        s.name.toLowerCase().includes(term) ||
+        s.empId.toLowerCase().includes(term) ||
+        s.department.toLowerCase().includes(term) ||
+        s.email.toLowerCase().includes(term)
+      );
+    }
+    setFilteredData(result);
+  }, [staffData, deptFilter, searchTerm]);
 
   const columnDefs: any[] = [
     {
@@ -120,6 +147,7 @@ const UserManagement: React.FC = () => {
           'RM': { bg: '#f0fdf4', text: '#16a34a' },
           'OPERATIONS': { bg: '#fefce8', text: '#a16207' },
           'TEAM_LEADER': { bg: '#fff1f2', text: '#e11d48' },
+          'PARTNER_MANAGER': { bg: '#f5f3ff', text: '#7c3aed' },
         };
         const style = roleStyles[params.value] || { bg: '#f1f5f9', text: '#475569' };
         return (
@@ -292,7 +320,7 @@ const UserManagement: React.FC = () => {
         <Space size={12}>
           <Button icon={<Download size={16} />} onClick={() => {
             const headers = ['Employee ID', 'Name', 'Email', 'Role', 'Department', 'Status', 'Joining Date'];
-            const rows = staffData.map(s =>
+            const rows = filteredData.map(s =>
               [s.empId, s.name, s.email, s.role, s.department, s.status, s.joinDate]
                 .map(v => `"${String(v ?? '').replace(/"/g, '""')}"`)
                 .join(',')
@@ -302,10 +330,10 @@ const UserManagement: React.FC = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `HR_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `RealMoneyGroups_InternalTeam_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             URL.revokeObjectURL(url);
-          }}>Export HR Report</Button>
+          }}>Download Team Details</Button>
           <Button
             type="primary"
             icon={<UserPlus size={16} />}
@@ -379,12 +407,15 @@ const UserManagement: React.FC = () => {
             placeholder="Search by name, employee ID or department..."
             prefix={<Search size={18} style={{ color: 'var(--text-muted)' }} />}
             style={{ maxWidth: 400, borderRadius: 10, height: 40 }}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
           />
           <Space>
-            <Select defaultValue="all" style={{ width: 180 }}>
+            <Select value={deptFilter} onChange={setDeptFilter} style={{ width: 200 }}>
               <Option value="all">All Departments</Option>
-              <Option value="sales">Sales & Growth</Option>
+              <Option value="sales">Sales &amp; Growth</Option>
               <Option value="credit">Credit Operations</Option>
+              <Option value="partner">Partner Management</Option>
             </Select>
             <Divider type="vertical" />
             <Space.Compact>
@@ -410,7 +441,7 @@ const UserManagement: React.FC = () => {
           <div className="ag-theme-alpine" style={{ height: 500, width: '100%' }}>
             <AgGridReact
               theme="legacy"
-              rowData={staffData}
+              rowData={filteredData}
               columnDefs={columnDefs}
               rowHeight={64}
               headerHeight={48}
@@ -459,7 +490,10 @@ const UserManagement: React.FC = () => {
                   placeholder="Select Role"
                   onChange={(val) => {
                     const deptMap: Record<string, string> = {
-                      RM: 'Sales & Growth', TEAM_LEADER: 'Sales & Growth', OPERATIONS: 'Credit Ops',
+                      RM: 'Sales & Growth',
+                      TEAM_LEADER: 'Sales & Growth',
+                      OPERATIONS: 'Credit Ops',
+                      PARTNER_MANAGER: 'Partner Management',
                     };
                     if (deptMap[val]) form.setFieldValue('department', deptMap[val]);
                   }}
@@ -467,6 +501,7 @@ const UserManagement: React.FC = () => {
                   <Option value="RM">Relationship Manager</Option>
                   <Option value="OPERATIONS">Operations User</Option>
                   <Option value="TEAM_LEADER">Team Leader</Option>
+                  <Option value="PARTNER_MANAGER">Partner Manager</Option>
                 </Select>
               </Form.Item>
             </Col>

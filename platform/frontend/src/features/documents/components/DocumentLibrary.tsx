@@ -2,27 +2,27 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Typography, Space, Button, Input, Modal, Breadcrumb, message } from 'antd';
 import {
   Search, Download, Folder, FileText, FileImage, FileCode,
-  Upload as UploadIcon, ChevronRight, Home, Users, FolderOpen,
+  Upload as UploadIcon, ChevronRight, Home, Users, FolderOpen, Briefcase, Shield,
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
 
 const { Text, Title } = Typography;
 
-// Virtual folder structure (no mock files — only real uploaded files are shown)
+// Virtual folder structure — Loan Applications removed
 const fileSystem: any = {
   '/': {
     type: 'folder',
-    children: ['Internal Employees', 'Partner Network', 'Loan Applications']
+    children: ['Internal Employees', 'Partner Network']
   },
   '/Internal Employees': {
     type: 'folder',
-    children: ['Management', 'Operations Team', 'Sales Team']
+    children: ['Management', 'Operations Team', 'RM Team', 'Team Leader']
   },
-  '/Internal Employees/Management': { type: 'folder', children: [] },
+  '/Internal Employees/Management':      { type: 'folder', children: [] },
   '/Internal Employees/Operations Team': { type: 'folder', children: [] },
-  '/Internal Employees/Sales Team': { type: 'folder', children: [] },
-  '/Partner Network': { type: 'folder', children: [] },
-  '/Loan Applications': { type: 'folder', children: [] },
+  '/Internal Employees/RM Team':         { type: 'folder', children: [] },
+  '/Internal Employees/Team Leader':     { type: 'folder', children: [] },
+  '/Partner Network':                    { type: 'folder', children: [] },
 };
 
 const DocumentLibrary: React.FC = () => {
@@ -178,27 +178,25 @@ const DocumentLibrary: React.FC = () => {
         {/* Left Sidebar */}
         <div style={{ width: 250, background: 'white', borderRadius: 16, border: '1px solid var(--surface-3)', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Text style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 12px', marginBottom: 8 }}>Quick Access</Text>
-          <div 
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${currentPath === '/' ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
-            onClick={() => setCurrentPath('/')}
-          >
-            <Home size={18} />
-            <span className="font-semibold text-sm">Root Directory</span>
-          </div>
-          <div 
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${currentPath.startsWith('/Internal Employees') ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
-            onClick={() => setCurrentPath('/Internal Employees')}
-          >
-            <Users size={18} />
-            <span className="font-semibold text-sm">Internal Employees</span>
-          </div>
-          <div 
-            className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-50 text-slate-700"
-            onClick={() => setCurrentPath('/Partner Network')}
-          >
-            <FolderOpen size={18} />
-            <span className="font-semibold text-sm">Partner Network</span>
-          </div>
+          {[
+            { label: 'All Documents',     path: '/',                             icon: Home },
+            { label: 'Employee Records',  path: '/Internal Employees',           icon: Users },
+            { label: 'Management',        path: '/Internal Employees/Management',icon: Shield },
+            { label: 'Operations Team',   path: '/Internal Employees/Operations Team', icon: Briefcase },
+            { label: 'RM Team',           path: '/Internal Employees/RM Team',   icon: Users },
+            { label: 'Team Leader',       path: '/Internal Employees/Team Leader', icon: Users },
+            { label: 'Partner Network',   path: '/Partner Network',              icon: FolderOpen },
+          ].map(({ label, path, icon: Icon }) => (
+            <div
+              key={path}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${currentPath === path ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
+              style={{ paddingLeft: path.split('/').length > 2 ? 28 : undefined }}
+              onClick={() => setCurrentPath(path)}
+            >
+              <Icon size={path.split('/').length > 2 ? 14 : 18} />
+              <span className={`font-semibold ${path.split('/').length > 2 ? 'text-xs' : 'text-sm'}`}>{label}</span>
+            </div>
+          ))}
         </div>
 
         {/* Main Explorer */}

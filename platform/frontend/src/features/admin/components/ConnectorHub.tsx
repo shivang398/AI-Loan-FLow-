@@ -4,12 +4,12 @@ import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import {
   App, Button, Input, Space, Tag, Avatar, Modal, Form, Select,
   Card, Statistic, Row, Col, Tabs, Table, InputNumber,
-  Badge, Spin, Alert, Typography, Drawer
+  Badge, Spin, Drawer
 } from 'antd';
 import {
-  Search, Plus, Download, Copy,
+  Search, Plus, Download,
   UserCheck, Briefcase, Users,
-  Banknote, TrendingUp, Percent, Save, Edit2, KeyRound,
+  Banknote, TrendingUp, Percent, Save, Edit2,
   Phone, Mail, MapPin, CalendarDays, Award, BarChart2, X
 } from 'lucide-react';
 import {
@@ -21,7 +21,6 @@ import apiClient from '../../../shared/services/apiClient';
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const { Option } = Select;
-const { Text } = Typography;
 
 /* ─── helpers ─── */
 function getInitials(name: string) {
@@ -74,7 +73,6 @@ const ConnectorHub: React.FC = () => {
   const [editingSlab, setEditingSlab] = useState<any>(null);
   const [slabForm] = Form.useForm();
 
-  const [credentialInfo, setCredentialInfo] = useState<{ email: string; password: string } | null>(null);
 
   /* ─── Profile Drawer state ─── */
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -341,11 +339,10 @@ const ConnectorHub: React.FC = () => {
 
   const handleRegister = async (values: any) => {
     setLoading(true);
-    const tempPassword = 'Password@123';
     try {
       const authRes = await apiClient.post('/auth/register', {
         email: values.email,
-        password: tempPassword,
+        password: values.password,
         role: 'CONNECTOR'
       });
       const userId = authRes.data?.data?.userId;
@@ -378,7 +375,7 @@ const ConnectorHub: React.FC = () => {
       setIsModalOpen(false);
       form.resetFields();
       fetchConnectors();
-      setCredentialInfo({ email: values.email, password: tempPassword });
+      message.success(`Channel partner ${values.firstName} ${values.lastName} onboarded successfully!`);
     } catch (err: any) {
       message.error(err.response?.data?.message || err.message || 'Onboarding failed');
     } finally {
@@ -889,10 +886,9 @@ const ConnectorHub: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
-          <Alert
-            message="Temporary password Password@123 will be assigned. The channel partner should change it on first login."
-            type="info" showIcon style={{ marginBottom: 16, borderRadius: 10 }}
-          />
+          <Form.Item name="password" label="Set Login Password" rules={[{ required: true, min: 8, message: 'Minimum 8 characters required' }]}>
+            <Input.Password placeholder="Set a login password for the partner (min 8 chars)" />
+          </Form.Item>
           <Form.Item style={{ textAlign: 'right', marginTop: 8, marginBottom: 0 }}>
             <Space>
               <Button onClick={() => { setIsModalOpen(false); form.resetFields(); }}>Cancel</Button>
@@ -902,41 +898,6 @@ const ConnectorHub: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* Credentials Display Modal */}
-      <Modal
-        title={<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><KeyRound size={20} style={{ color: '#10b981' }} /> Channel Partner Login Credentials</div>}
-        open={!!credentialInfo}
-        onCancel={() => setCredentialInfo(null)}
-        footer={[<Button key="close" type="primary" onClick={() => setCredentialInfo(null)} style={{ background: '#10b981' }}>Done</Button>]}
-        width={480} centered
-      >
-        <div style={{ padding: '16px 0' }}>
-          <Alert message="Partner onboarded successfully! Share these credentials with the channel partner." type="success" showIcon style={{ marginBottom: 20, borderRadius: 10 }} />
-          <div style={{ background: '#f8fafc', borderRadius: 12, padding: 20, border: '1px solid #e2e8f0' }}>
-            <div style={{ marginBottom: 16 }}>
-              <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Login Email</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <Text strong style={{ fontSize: 15 }}>{credentialInfo?.email}</Text>
-                <Button type="text" icon={<Copy size={14} />} size="small"
-                  onClick={() => { navigator.clipboard.writeText(credentialInfo?.email || ''); message.success('Email copied!'); }} />
-              </div>
-            </div>
-            <div>
-              <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Temporary Password</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <Text strong style={{ fontSize: 15, fontFamily: 'monospace', background: '#fffbeb', padding: '2px 8px', borderRadius: 6, border: '1px solid #fde68a' }}>
-                  {credentialInfo?.password}
-                </Text>
-                <Button type="text" icon={<Copy size={14} />} size="small"
-                  onClick={() => { navigator.clipboard.writeText(credentialInfo?.password || ''); message.success('Password copied!'); }} />
-              </div>
-            </div>
-          </div>
-          <Text type="secondary" style={{ fontSize: 12, marginTop: 12, display: 'block' }}>
-            The channel partner can log in at the platform URL using these credentials.
-          </Text>
-        </div>
-      </Modal>
 
       {/* Slab Edit Modal */}
       <Modal
