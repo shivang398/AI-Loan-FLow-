@@ -66,6 +66,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/commissions/, ''),
       },
+      '/api/messaging/team-meeting': {
+        target: 'http://127.0.0.1:8087',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/messaging\/team-meeting/, '/team-meeting'),
+      },
       '/api/messaging': {
         target: 'http://127.0.0.1:8087',
         changeOrigin: true,

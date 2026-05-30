@@ -15,8 +15,40 @@ env:
   ECS_CLUSTER: platform-cluster
 
 jobs:
+  # ── Run tests — must pass before any Docker build proceeds ──────────────────
+  test:
+    name: Test all services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          cache: maven
+
+      - name: Run all tests
+        working-directory: platform
+        run: |
+          mvn verify \
+            -Dmaven.repo.local=~/.m2/repository \
+            -Denforcer.skip=true \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            --batch-mode --no-transfer-progress
+
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: platform/*/target/surefire-reports/
+
   # ── Build & Push backend Java services ──────────────────────────────────────
   build-backend:
+    needs: test
     name: Build ${{ matrix.service }}
     runs-on: ubuntu-latest
     strategy:
@@ -31,8 +63,6 @@ jobs:
           - eligibility-service
           - policy-service
           - sm-routing-service
-          - rm-tracking-service
-          - query-service
           - document-service
           - notification-service
           - commission-service
@@ -74,6 +104,7 @@ jobs:
   # ── Build & Push frontend ────────────────────────────────────────────────────
   build-frontend:
     name: Build frontend
+    needs: test
     runs-on: ubuntu-latest
 
     steps:

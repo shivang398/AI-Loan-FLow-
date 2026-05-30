@@ -9,5 +9,6 @@ import java.util.UUID;
 public interface LeadRepository extends JpaRepository<Lead, UUID> {
     List<Lead> findAllByOrderByCreatedAtDesc();
     List<Lead> findByAssignedToOrderByCreatedAtDesc(String assignedTo);
+    List<Lead> findByAssignedToAndStatusNot(String assignedTo, String status);
     boolean existsByEmailOrMobile(String email, String mobile);
 }

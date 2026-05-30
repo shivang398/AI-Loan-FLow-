@@ -19,7 +19,10 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -65,8 +68,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         String token = authHeader.substring(7);
                         if (tokenProvider.validateToken(token)) {
                             String username = tokenProvider.getUsernameFromJWT(token);
+                            String rolesStr = tokenProvider.getRolesFromJWT(token);
+                            List<SimpleGrantedAuthority> authorities = (rolesStr != null && !rolesStr.isBlank())
+                                    ? Arrays.stream(rolesStr.split(","))
+                                            .map(String::trim).filter(r -> !r.isBlank())
+                                            .map(SimpleGrantedAuthority::new)
+                                            .collect(Collectors.toList())
+                                    : List.of();
                             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                    username, null, List.of());
+                                    username, null, authorities);
                             accessor.setUser(auth);
                         }
                     }

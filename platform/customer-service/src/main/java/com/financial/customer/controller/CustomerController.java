@@ -52,10 +52,31 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success("Lead status updated", updated, UUID.randomUUID().toString()));
     }
 
+    /**
+     * Reassign open leads from an offboarded ops user to remaining active ops team.
+     * Called by admin when offboarding an OPERATIONS employee.
+     */
+    @PostMapping("/leads/reassign")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> reassignLeads(
+            @RequestBody Map<String, String> body) {
+        String fromEmail = body.get("fromEmail");
+        if (fromEmail == null || fromEmail.isBlank()) {
+            throw new RuntimeException("fromEmail is required");
+        }
+        int count = customerService.reassignLeads(fromEmail);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Leads reassigned",
+                Map.of("reassigned", count, "fromEmail", fromEmail),
+                UUID.randomUUID().toString()
+        ));
+    }
+
     private boolean hasAdminAccess(Authentication auth) {
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
-                            || a.equals("TEAM_LEADER") || a.equals("ROLE_TEAM_LEADER"));
+                            || a.equals("OPERATIONS") || a.equals("ROLE_OPERATIONS")
+                            || a.equals("TEAM_LEADER") || a.equals("ROLE_TEAM_LEADER")
+                            || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER"));
     }
 }

@@ -34,7 +34,7 @@ app:
   rabbitmq:
     exchange: platform.exchange
   ops:
-    team-emails: ${OPS_TEAM_EMAILS:nanu@platform.com,tiwari@platform.com}
+    team-emails: ${OPS_TEAM_EMAILS:manas.pareek@realmoneygroups.in}
 
 management:
   health:

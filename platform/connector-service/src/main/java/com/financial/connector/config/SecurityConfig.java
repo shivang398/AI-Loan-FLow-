@@ -35,6 +35,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers(HttpMethod.GET, "/connectors/internal/**").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
                 // CONNECTOR can read their own profile
                 .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN")

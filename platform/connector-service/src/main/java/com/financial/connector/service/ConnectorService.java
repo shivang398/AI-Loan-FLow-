@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -112,6 +113,14 @@ public class ConnectorService {
     public Connector getMe(String email) {
         return connectorRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Connector not found for email: " + email));
+    }
+
+    /** Returns emails of all ACTIVE OPERATIONS connectors — used by customer-service for lead assignment. */
+    public List<String> getActiveOpsEmails() {
+        return connectorRepository.findAllByRoleAndStatus("OPERATIONS", "ACTIVE").stream()
+                .map(Connector::getEmail)
+                .filter(e -> e != null && !e.isBlank())
+                .collect(Collectors.toList());
     }
 
     /** Returns the manager chain for a given connector (who they report to). */

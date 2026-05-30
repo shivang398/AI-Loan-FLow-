@@ -73,6 +73,16 @@ public class ConnectorController {
     }
 
     /**
+     * Internal service-to-service endpoint — returns emails of ACTIVE OPERATIONS users.
+     * No auth required; only accessible within the internal network.
+     */
+    @GetMapping("/internal/active-ops")
+    public ResponseEntity<ApiResponse<List<String>>> getActiveOpsEmails() {
+        List<String> emails = connectorService.getActiveOpsEmails();
+        return ResponseEntity.ok(ApiResponse.success("Active ops emails", emails, UUID.randomUUID().toString()));
+    }
+
+    /**
      * Returns the manager chain for a connector — who they report to.
      * e.g. Channel Partner → Team Leader, Team Leader → RM
      */

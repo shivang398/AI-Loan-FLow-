@@ -1,49 +1,109 @@
-import React, { useState } from 'react';
-import { 
-  Layout, 
-  Input, 
-  List, 
-  Avatar, 
-  Typography, 
-  Badge, 
-  Divider, 
-  Card, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Layout,
+  Input,
+  List,
+  Avatar,
+  Typography,
+  Badge,
+  Divider,
+  Card,
   Button,
   Tag,
   Tabs,
   Modal,
   notification,
-  Select
+  Select,
+  Spin
 } from 'antd';
-import { 
+import {
   Search,
   Users,
-  MessageCircle, 
+  MessageCircle,
   MessageSquareShare,
   Smartphone,
   Info,
   Clock
 } from 'lucide-react';
 import MessagingPanel from '../../operations/components/MessagingPanel';
+import apiClient from '../../../shared/services/apiClient';
 
 const { Sider, Content } = Layout;
 const { Text, Title } = Typography;
 
+interface ChatItem {
+  id: string;
+  name: string;
+  lastMsg: string;
+  time: string;
+  unread: number;
+  type: string;
+  phone?: string;
+}
+
 const TeamCommunicationCenter: React.FC = () => {
   const [activeTab, setActiveTab] = useState('external');
   const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [activeChatName, setActiveChatName] = useState('');
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('APPROVED');
+  const [externalChats, setExternalChats] = useState<ChatItem[]>([]);
+  const [internalChats, setInternalChats] = useState<ChatItem[]>([]);
+  const [loadingChats, setLoadingChats] = useState(false);
 
-  const externalChats = [
-    { id: 'ext-1', name: 'Arjun Mehta', lastMsg: 'Salary slip uploaded', time: '10:30 AM', unread: 2, type: 'CONNECTOR', phone: '+91 98765 43210' },
-    { id: 'ext-2', name: 'Saira Bano', lastMsg: 'Docs verified', time: 'Yesterday', unread: 0, type: 'CUSTOMER', phone: '+91 98765 43211' },
-  ];
+  const fetchConversations = useCallback(async () => {
+    setLoadingChats(true);
+    try {
+      // Fetch WhatsApp (external) conversations
+      const extRes = await apiClient.get('/messaging/whatsapp/conversations');
+      const extList: any[] = extRes.data?.data ?? [];
+      setExternalChats(extList.map((c: any) => ({
+        id: c.id,
+        name: c.customerName || 'Unknown Customer',
+        lastMsg: 'WhatsApp conversation',
+        time: c.updatedAt ? new Date(c.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—',
+        unread: 0,
+        type: 'CUSTOMER',
+        phone: c.customerPhone,
+      })));
+    } catch {
+      setExternalChats([]);
+    }
 
-  const internalChats = [
-    { id: 'int-1', name: 'Operations Team (Main)', lastMsg: 'Rahul: Case APP-99218 ready', time: '5m ago', unread: 5, type: 'TEAM' },
-    { id: 'int-2', name: 'RM - Sunil Gavaskar', lastMsg: 'Check eligibility for new lead', time: '1h ago', unread: 0, type: 'RM' },
-  ];
+    try {
+      // Fetch internal team conversations
+      const intRes = await apiClient.get('/messaging/conversations', { params: { type: 'INTERNAL_RM_OPS' } });
+      const intList: any[] = intRes.data?.data ?? [];
+
+      if (intList.length === 0) {
+        // Create a default internal ops channel if none exists
+        const created = await apiClient.post('/messaging/conversations', {
+          connectorId: '00000000-0000-0000-0000-000000000001',
+          type: 'INTERNAL_RM_OPS',
+        });
+        const conv = created.data?.data;
+        if (conv) {
+          setInternalChats([{ id: conv.id, name: 'Operations Team', lastMsg: 'Internal channel', time: 'Now', unread: 0, type: 'TEAM' }]);
+        }
+      } else {
+        setInternalChats(intList.map((c: any) => ({
+          id: c.id,
+          name: 'Operations Team',
+          lastMsg: 'Internal channel',
+          time: c.updatedAt ? new Date(c.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—',
+          unread: 0,
+          type: 'TEAM',
+        })));
+      }
+    } catch {
+      setInternalChats([]);
+    }
+    setLoadingChats(false);
+  }, []);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   const handleSendStatus = () => {
     notification.success({
@@ -99,12 +159,15 @@ const TeamCommunicationCenter: React.FC = () => {
         </div>
         
         <div className="flex-1 overflow-y-auto px-4 custom-scrollbar">
+          {loadingChats ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spin /></div>
+          ) : (
           <List
             itemLayout="horizontal"
             dataSource={activeTab === 'external' ? externalChats : internalChats}
             renderItem={(item) => (
-              <div 
-                onClick={() => setActiveChat(item.id)}
+              <div
+                onClick={() => { setActiveChat(item.id); setActiveChatName(item.name); }}
                 className={`group p-4 rounded-[1.5rem] cursor-pointer transition-all duration-300 mb-2 relative overflow-hidden ${
                   activeChat === item.id 
                     ? 'bg-blue-600 shadow-lg shadow-blue-200' 
@@ -154,6 +217,7 @@ const TeamCommunicationCenter: React.FC = () => {
               </div>
             )}
           />
+          )}
         </div>
       </Sider>
 
@@ -161,7 +225,7 @@ const TeamCommunicationCenter: React.FC = () => {
       <Content className="flex flex-col relative bg-slate-50/20">
         {activeChat ? (
           <div className="h-full flex flex-col animate-in slide-in-from-right-4 duration-500">
-             <MessagingPanel conversationId={activeChat} />
+             <MessagingPanel conversationId={activeChat} contactName={activeChatName} />
           </div>
         ) : (
           <div className="h-full flex flex-col justify-center items-center p-12 text-center">
@@ -182,18 +246,18 @@ const TeamCommunicationCenter: React.FC = () => {
           <div className="text-center mb-10">
             <div className="relative inline-block mb-6">
                 <Avatar size={100} className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-4xl shadow-xl shadow-blue-100 border-4 border-white">
-                  {activeChat.startsWith('ext') ? 'AM' : 'OP'}
+                  {activeChatName[0] || '?'}
                 </Avatar>
                 <div className="absolute bottom-1 right-1 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full shadow-sm"></div>
             </div>
             <Title level={4} className="m-0 font-black text-slate-800 text-xl tracking-tight">
-              {activeChat.startsWith('ext') ? 'Arjun Mehta' : 'Ops Team Main'}
+              {activeChatName}
             </Title>
             <div className="flex justify-center gap-2 mt-3">
               <Tag color="blue" className="rounded-full border-none font-bold px-4 py-0.5 text-[10px] uppercase tracking-wider shadow-sm">
-                {activeChat.startsWith('ext') ? 'CONNECTOR' : 'INTERNAL'}
+                {activeTab === 'external' ? 'CONNECTOR' : 'INTERNAL'}
               </Tag>
-              {activeChat.startsWith('ext') && (
+              {activeTab === 'external' && (
                 <Tag color="emerald" className="rounded-full border-none font-bold px-4 py-0.5 text-[10px] uppercase tracking-wider shadow-sm flex items-center gap-1">
                   <Smartphone size={10} /> WHATSAPP
                 </Tag>
@@ -204,7 +268,7 @@ const TeamCommunicationCenter: React.FC = () => {
           <Divider className="my-8 opacity-50" />
 
           <div className="space-y-8">
-            {activeChat.startsWith('ext') ? (
+            {activeTab === 'external' ? (
               <>
                 <section>
                   <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-4">Contact Info</Text>
@@ -215,7 +279,9 @@ const TeamCommunicationCenter: React.FC = () => {
                       </div>
                       <div>
                         <Text className="text-slate-400 text-[10px] font-bold block">WHATSAPP NUMBER</Text>
-                        <Text className="text-slate-800 font-black">+91 98765 43210</Text>
+                        <Text className="text-slate-800 font-black">
+                          {externalChats.find(c => c.id === activeChat)?.phone || '—'}
+                        </Text>
                       </div>
                     </div>
                   </Card>

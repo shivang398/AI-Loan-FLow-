@@ -190,6 +190,15 @@ const UserManagement: React.FC = () => {
             if (params.data.userId) {
               await apiClient.put(`/auth/users/${params.data.userId}/status`, { status: newStatus });
             }
+            // When offboarding an OPERATIONS user, redistribute their open leads
+            if (newStatus === 'INACTIVE' && params.data.role === 'OPERATIONS' && params.data.email) {
+              apiClient.post('/customers/leads/reassign', { fromEmail: params.data.email })
+                .then(res => {
+                  const count = res.data?.data?.reassigned ?? 0;
+                  if (count > 0) message.info(`${count} open lead(s) reassigned to active ops team.`);
+                })
+                .catch(() => {}); // non-blocking
+            }
             message.success(`Employee status updated to ${newStatus}`);
             fetchStaff();
           } catch (err: any) {

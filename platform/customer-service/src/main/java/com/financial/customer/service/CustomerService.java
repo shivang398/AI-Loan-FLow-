@@ -9,24 +9,37 @@ import com.financial.customer.repository.CustomerKycRepository;
 import com.financial.customer.repository.CustomerRepository;
 import com.financial.customer.repository.LeadRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerKycRepository customerKycRepository;
     private final LeadRepository leadRepository;
     private final CustomerEventPublisher eventPublisher;
+    private final RestTemplate restTemplate;
 
-    @Value("#{'${app.ops.team-emails}'.split(',')}")
-    private List<String> opsTeamEmails;
+    @Value("${app.connector.service-url:http://localhost:8082}")
+    private String connectorServiceUrl;
+
+    /** Fallback emails used if the connector service is unreachable */
+    @Value("${app.ops.team-emails:unassigned}")
+    private String fallbackOpsEmails;
 
     @Transactional
     public Customer createCustomer(CustomerRequests.CreateCustomerRequest request) {
@@ -141,12 +154,67 @@ public class CustomerService {
         return leadRepository.save(lead);
     }
 
+    /**
+     * Fetches active OPERATIONS connectors from connector-service at assignment time.
+     * Uses the internal (no-auth) endpoint so this works without a service JWT.
+     * Falls back to the configured fallback email list if the service is unreachable.
+     */
+    private List<String> getActiveOpsEmails() {
+        try {
+            String url = connectorServiceUrl + "/connectors/internal/active-ops";
+            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+                    url, HttpMethod.GET, null,
+                    new ParameterizedTypeReference<>() {}
+            );
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                Object data = resp.getBody().get("data");
+                if (data instanceof List<?> list && !list.isEmpty()) {
+                    List<String> emails = list.stream()
+                            .filter(item -> item instanceof String)
+                            .map(item -> (String) item)
+                            .filter(e -> !e.isBlank())
+                            .collect(Collectors.toList());
+                    if (!emails.isEmpty()) return emails;
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Could not reach connector-service for ops lookup: {}", ex.getMessage());
+        }
+        // Fallback to statically configured emails
+        List<String> fallback = java.util.Arrays.asList(fallbackOpsEmails.split(","));
+        return fallback.stream().map(String::trim).filter(s -> !s.isBlank() && !s.equals("unassigned")).collect(Collectors.toList());
+    }
+
     private synchronized String assignRoundRobin() {
-        if (opsTeamEmails == null || opsTeamEmails.isEmpty()) {
+        List<String> opsEmails = getActiveOpsEmails();
+        if (opsEmails.isEmpty()) {
             return "unassigned";
         }
         long totalLeads = leadRepository.count();
-        int idx = (int) (totalLeads % opsTeamEmails.size());
-        return opsTeamEmails.get(idx);
+        int idx = (int) (totalLeads % opsEmails.size());
+        return opsEmails.get(idx);
+    }
+
+    /**
+     * Reassigns all leads currently assigned to {@code fromEmail} evenly
+     * across the remaining active ops team. Called when an ops user is offboarded.
+     */
+    @Transactional
+    public int reassignLeads(String fromEmail) {
+        List<Lead> affected = leadRepository.findByAssignedToAndStatusNot(fromEmail, "RESOLVED");
+        if (affected.isEmpty()) return 0;
+        List<String> pool = getActiveOpsEmails().stream()
+                .filter(e -> !e.equalsIgnoreCase(fromEmail))
+                .collect(Collectors.toList());
+        if (pool.isEmpty()) {
+            affected.forEach(l -> l.setAssignedTo("unassigned"));
+        } else {
+            for (int i = 0; i < affected.size(); i++) {
+                affected.get(i).setAssignedTo(pool.get(i % pool.size()));
+            }
+        }
+        leadRepository.saveAll(affected);
+        log.info("Reassigned {} lead(s) from {} to pool {}", affected.size(), fromEmail, pool);
+        return affected.size();
     }
 }

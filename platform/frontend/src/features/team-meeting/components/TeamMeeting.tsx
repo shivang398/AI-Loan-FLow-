@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { RootState } from '../../../store';
 import {
-  setActiveRoom, sendMessage, getRoomsForRole, setRooms, buildParticipant,
+  setActiveRoom, sendMessage, receiveMessage, getRoomsForRole, setRooms, buildParticipant,
 } from '../../../store/slices/teamMeetingSlice';
 import type { TeamRoom, TeamMessage, UserRole } from '../../../store/slices/teamMeetingSlice';
 import { useTeamMeetingWS } from '../../../hooks/useTeamMeetingWS';
@@ -209,7 +209,7 @@ const TeamMeeting: React.FC = () => {
   const { rooms, activeRoomId, messagesByRoom, typingByRoom, wsStatus } =
     useSelector((state: RootState) => state.teamMeeting);
 
-  const { sendChatMessage, sendTypingStart, sendTypingStop, sendMarkRead } = useTeamMeetingWS();
+  const { sendChatMessage, sendTypingStart, sendTypingStop, sendMarkRead, joinRoom } = useTeamMeetingWS();
 
   const [inputText,    setInputText]    = useState('');
   const [searchQuery,  setSearchQuery]  = useState('');
@@ -273,8 +273,32 @@ const TeamMeeting: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isTyping, activeRoomId]);
 
+  // Join room on WS + load message history whenever active room changes
   useEffect(() => {
-    if (activeRoomId && messages.length) {
+    if (!activeRoomId) return;
+    joinRoom(activeRoomId);
+    // Load persisted messages from server
+    apiClient.get(`/messaging/team-meeting/rooms/${encodeURIComponent(activeRoomId)}/messages`)
+      .then(res => {
+        const serverMsgs: any[] = res.data?.data || [];
+        serverMsgs.forEach(m => {
+          dispatch(receiveMessage({
+            id:             m.id,
+            roomId:         m.roomKey,
+            senderId:       m.senderId,
+            senderName:     m.senderName,
+            senderRole:     m.senderRole as any,
+            senderInitials: m.senderInitials || '',
+            body:           m.body,
+            timestamp:      m.createdAt || new Date().toISOString(),
+            status:         (m.status || 'DELIVERED') as any,
+            type:           (m.messageType || 'TEXT') as any,
+          }));
+        });
+      })
+      .catch(() => { /* history fetch failed — local messages still shown */ });
+
+    if (messages.length) {
       sendMarkRead(activeRoomId, messages[messages.length - 1].id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
