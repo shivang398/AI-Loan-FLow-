@@ -2,6 +2,9 @@ package com.financial.analytics.repository;
 
 import com.financial.analytics.entity.AnalyticsSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -18,5 +21,13 @@ public interface AnalyticsSnapshotRepository extends JpaRepository<AnalyticsSnap
 
     Optional<AnalyticsSnapshot> findTopByMetricTypeAndDimensionIsNullOrderBySnapshotDateDesc(String metricType);
 
-    void deleteBySnapshotDateAndMetricTypeAndDimension(LocalDate snapshotDate, String metricType, String dimension);
+    // Direct JPQL DELETE to avoid entity-lifecycle tracking causing OptimisticLockingFailureException
+    // on concurrent calls (e.g. React strict-mode double-effect fire).
+    @Modifying
+    @Query("DELETE FROM AnalyticsSnapshot a WHERE a.snapshotDate = :date AND a.metricType = :metricType AND (:dimension IS NULL AND a.dimension IS NULL OR a.dimension = :dimension)")
+    void deleteBySnapshotDateAndMetricTypeAndDimension(
+        @Param("date") LocalDate date,
+        @Param("metricType") String metricType,
+        @Param("dimension") String dimension
+    );
 }
