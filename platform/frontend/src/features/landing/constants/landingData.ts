@@ -151,12 +151,12 @@ export const FAQ_ITEMS = [
   {
     key: '1',
     label: 'What is Real Money?',
-    children: 'Real Money is a NBFC-registered Corporate Direct Selling Agent (DSA) headquartered in Jaipur, Rajasthan. We specialize in Personal Loans and also offer Education Loans through our Saral Vidya brand (exclusively via Poonawala Fincorp) and Business Loans through our Real Finserv partner. We act as expert advisors between borrowers and lenders, ensuring you get the best loan at the most competitive interest rate.',
+    children: 'Real Money is a Corporate Direct Selling Agent (DSA) headquartered in Jaipur, Rajasthan, with over 22 years of experience in the lending industry. We are empanelled with leading banks and NBFCs across India — including HDFC Bank, ICICI Bank, Axis Bank, Kotak Mahindra Bank, Bajaj Finance, Tata Capital, Piramal Finance, Poonawala Fincorp, and 40+ other lenders. We specialize in Personal Loans and help borrowers get access to the best rates and fastest approvals by leveraging our deep relationships with these lending institutions.',
   },
   {
     key: '2',
     label: 'Is Real Money a registered DSA?',
-    children: 'Yes. Real Money (CIN: U67190RJ2024PTC000000) is a legally incorporated Private Limited Company registered under the Companies Act, 2013. We operate as a Corporate DSA (Direct Selling Agent) authorized by our lender partners. All our operations are conducted in compliance with applicable RBI guidelines and regulations.',
+    children: 'Yes. Real Money is a legally incorporated Private Limited Company registered under the Companies Act, 2013. We operate as a Corporate DSA (Direct Selling Agent) authorized by our lender partners — comprising major banks and NBFCs regulated by the Reserve Bank of India. All our operations are conducted in compliance with applicable RBI guidelines and the Fair Practice Code.',
   },
   {
     key: '3',
@@ -186,15 +186,14 @@ export const FAQ_ITEMS = [
   {
     key: '8',
     label: 'How is my personal & financial data protected?',
-    children: 'We take data privacy seriously. Your personal and financial data is encrypted end-to-end and stored on secure servers. We share your information only with the specific lender you explicitly consent to apply with. You can request deletion of your data at any time by writing to contact@realmoneyfinance.in.',
+    children: 'We take data privacy seriously. Your personal and financial data is encrypted end-to-end and stored on secure servers. We share your information only with the specific lender you explicitly consent to apply with. You can request deletion of your data at any time by writing to contact@realmoneygroups.in.',
   },
 ];
 
 export const STATS = [
-  { label: 'Personal Loans Processed', value: 0, suffix: '+', prefix: '' },
-  { label: 'Disbursement Rate', value: 94, suffix: '%', prefix: '' },
+  { label: 'Years in the Industry', value: 22, suffix: '+', prefix: '' },
+  { label: 'Monthly Business Volume', value: 10, suffix: ' Cr+', prefix: '₹' },
+  { label: 'Personal Loans Disbursed', value: 7500, suffix: '+', prefix: '' },
   { label: 'Customer Rating', value: 4.8, suffix: '/5', prefix: '' },
-  { label: 'Avg Disbursal Time', value: 48, suffix: ' hrs', prefix: '' },
-  { label: 'Cities Served', value: 15, suffix: '+', prefix: '' },
   { label: 'Advisory Fee', value: 0, suffix: '', prefix: '₹' },
 ];

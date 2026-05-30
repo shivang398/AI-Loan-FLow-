@@ -1,5 +1,5 @@
 import React from 'react';
-import { IndianRupee, Linkedin, Twitter, Facebook, Instagram, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { IndianRupee, Linkedin, Twitter, Facebook, Instagram, Youtube, Mail, Phone, MapPin, Shield, Award, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from 'antd';
 import '../styles/landing.css';
@@ -7,28 +7,38 @@ import '../styles/landing.css';
 const scrollTo = (id: string) => { const el = document.querySelector(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); };
 
 const FooterLink: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
-  <button onClick={onClick} style={{ display: 'block', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#64748B', padding: '3px 0', textAlign: 'left', fontFamily: 'Inter, sans-serif', transition: 'color .15s' }}
-    onMouseEnter={e => (e.currentTarget.style.color = '#FFFFFF')}
-    onMouseLeave={e => (e.currentTarget.style.color = '#64748B')}>
+  <button
+    onClick={onClick}
+    style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13.5, color: '#94A3B8', padding: '4px 0', textAlign: 'left', fontFamily: 'Inter, sans-serif', transition: 'color .15s' }}
+    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#D4AF37'; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#94A3B8'; }}
+  >
+    <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#D4AF3760', flexShrink: 0 }} />
     {label}
   </button>
 );
 
 const LEGAL_CONTENT: Record<string, string> = {
-  'Privacy Policy': 'Real Money respects your privacy. We collect only necessary information to process your loan application. Data is shared only with the specific lender partner you explicitly consent to apply with. You may request deletion of your data at any time by writing to contact@realmoneyfinance.in.',
+  'Privacy Policy': 'Real Money respects your privacy. We collect only necessary information to process your loan application. Data is shared only with the specific lender partner you explicitly consent to apply with. You may request deletion of your data at any time by writing to contact@realmoneygroups.in.',
   'Terms & Conditions': 'By using our services, you agree that Real Money acts solely as a Corporate DSA. We do not guarantee loan approvals. All final decisions rest with the respective lender. Misrepresentation of information is grounds for rejection.',
-  'RBI Disclosure': 'Real Money is registered as a Corporate Direct Selling Agent (DSA). We are not a bank or NBFC and do not accept deposits or lend money directly. All lending is done by our exclusive partner lenders regulated by the Reserve Bank of India.',
-  'Grievance Redressal': 'For any grievances, please write to grievance@realmoneyfinance.in or call +91 98765 43210. We aim to resolve all complaints within 7 working days. Unresolved complaints may be escalated to the Banking Ombudsman.',
+  'RBI Disclosure': 'Real Money is registered as a Corporate Direct Selling Agent (DSA). We are not a bank or NBFC and do not accept deposits or lend money directly. All lending is done by our exclusive partner lenders — banks and NBFCs regulated by the Reserve Bank of India.',
+  'Grievance Redressal': 'For any grievances, please write to grievance@realmoneygroups.in or call +91 98765 43210. We aim to resolve all complaints within 7 working days. Unresolved complaints may be escalated to the Banking Ombudsman.',
   'Fair Practice Code': 'We follow a transparent, customer-first approach. No hidden charges. Interest rates are disclosed upfront. We do not engage in coercive recovery practices. All communications are in clear, simple language.',
   'Cookie Policy': 'Our website uses cookies to improve your experience. Essential cookies are required for the site to function. Analytics cookies help us understand usage patterns. You may disable non-essential cookies through your browser settings.',
 };
 
 const SOCIAL_LINKS = [
-  { Icon: Linkedin,  href: 'https://linkedin.com/company/realmoney' },
-  { Icon: Twitter,   href: 'https://twitter.com/realmoneyfinance' },
-  { Icon: Facebook,  href: 'https://facebook.com/realmoney' },
-  { Icon: Instagram, href: 'https://instagram.com/realmoney' },
-  { Icon: Youtube,   href: 'https://youtube.com/@realmoney' },
+  { Icon: Linkedin,  href: 'https://linkedin.com/company/realmoney',    label: 'LinkedIn' },
+  { Icon: Twitter,   href: 'https://twitter.com/realmoneygroups',       label: 'Twitter' },
+  { Icon: Facebook,  href: 'https://facebook.com/realmoneygroups',      label: 'Facebook' },
+  { Icon: Instagram, href: 'https://instagram.com/realmoneygroups',     label: 'Instagram' },
+  { Icon: Youtube,   href: 'https://youtube.com/@realmoneygroups',      label: 'YouTube' },
+];
+
+const TRUST_BADGES = [
+  { icon: Shield, label: '22+ Years', sub: 'Trusted Since 2002' },
+  { icon: Award,  label: '₹10 Cr+',  sub: 'Monthly Business' },
+  { icon: Users,  label: '50+ Banks', sub: '& NBFCs Empanelled' },
 ];
 
 const Footer: React.FC = () => {
@@ -45,88 +55,136 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer id="footer" style={{ background: '#040D1E', color: '#64748B' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px 44px' }}>
+    <footer id="footer" style={{ background: 'linear-gradient(180deg, #040D1E 0%, #020812 100%)', color: '#64748B', position: 'relative', overflow: 'hidden' }}>
+
+      {/* Decorative glows */}
+      <div style={{ position: 'absolute', top: 0, left: '15%', width: 500, height: 400, background: 'radial-gradient(ellipse, rgba(212,175,55,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 80, right: '10%', width: 400, height: 300, background: 'radial-gradient(ellipse, rgba(59,130,246,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* Trust badges strip */}
+      <div style={{ borderBottom: '1px solid rgba(212,175,55,0.12)', background: 'rgba(212,175,55,0.04)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 24px', display: 'flex', justifyContent: 'center', gap: 0, flexWrap: 'wrap' }}>
+          {TRUST_BADGES.map(({ icon: Icon, label, sub }, i) => (
+            <React.Fragment key={label}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 40px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={18} color="#D4AF37" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.1, fontFamily: '"Plus Jakarta Sans",sans-serif' }}>{label}</div>
+                  <div style={{ fontSize: 11, color: '#64748B', fontWeight: 500, marginTop: 2 }}>{sub}</div>
+                </div>
+              </div>
+              {i < TRUST_BADGES.length - 1 && (
+                <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', alignSelf: 'stretch', margin: '8px 0' }} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px 44px', position: 'relative' }}>
         <div className="footer-grid">
-          {/* Company */}
+
+          {/* ── Company Column ── */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, #0A1F44, #1a3a6e)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(212,175,55,.15)' }}>
-                <IndianRupee size={20} color="#D4AF37" strokeWidth={2.5} />
+            {/* Brand */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#D4AF37,#B8960C)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 20px rgba(212,175,55,0.35)' }}>
+                <IndianRupee size={22} color="#0A1F44" strokeWidth={2.8} />
               </div>
               <div>
-                <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 16, color: '#FFFFFF', letterSpacing: '-0.02em' }}>Real Money</div>
-                <div style={{ fontSize: 10, color: '#D4AF37', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Personal Loan Advisory</div>
+                <div style={{ fontFamily: '"Plus Jakarta Sans",sans-serif', fontWeight: 900, fontSize: 18, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1 }}>Real Money</div>
+                <div style={{ fontSize: 10, color: '#D4AF37', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>Personal Loan Advisory</div>
               </div>
             </div>
-            <p style={{ fontSize: 12, lineHeight: 1.85, margin: '0 0 18px', color: '#475569' }}>
-              CIN: U67190RJ2024PTC000000<br />
-              Corporate DSA. Personal loan specialists, Jaipur.
+
+            <p style={{ fontSize: 13, lineHeight: 1.9, margin: '0 0 20px', color: '#64748B' }}>
+              Corporate DSA — Personal loan specialists, Jaipur.<br />
+              Empanelled with 50+ banks &amp; NBFCs across India.
             </p>
 
-            {/* Partner brands mini */}
-            <div style={{ background: 'rgba(255,255,255,.03)', borderRadius: 12, padding: '12px 14px', marginBottom: 18, border: '1px solid rgba(255,255,255,.06)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Our Brands</div>
-              <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.7 }}>
-                <span style={{ color: '#60A5FA', fontWeight: 600 }}>Saral Vidya</span> · Education Loans via Poonawala Fincorp<br />
-                <span style={{ color: '#D4AF37', fontWeight: 600 }}>Real Finserv</span> · Business Loans
+            {/* Partner brands */}
+            <div style={{ background: 'linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.02))', borderRadius: 14, padding: '14px 16px', marginBottom: 22, border: '1px solid rgba(255,255,255,.07)', backdropFilter: 'blur(4px)' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Our Brands</div>
+              <div style={{ fontSize: 13, color: '#94A3B8', lineHeight: 2 }}>
+                <span style={{ color: '#60A5FA', fontWeight: 700, textShadow: '0 0 12px rgba(96,165,250,0.3)' }}>Saral Vidya</span>
+                <span style={{ color: '#475569' }}> · Education Loans via Poonawala Fincorp</span>
+                <br />
+                <span style={{ color: '#D4AF37', fontWeight: 700, textShadow: '0 0 12px rgba(212,175,55,0.3)' }}>Real Finserv</span>
+                <span style={{ color: '#475569' }}> · Business Loans</span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Contact */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
                 { Icon: MapPin, text: 'Jaipur, Rajasthan, India' },
-                { Icon: Mail,   text: 'contact@realmoneyfinance.in', href: 'mailto:contact@realmoneyfinance.in' },
+                { Icon: Mail,   text: 'contact@realmoneygroups.in', href: 'mailto:contact@realmoneygroups.in' },
                 { Icon: Phone,  text: '+91 98765 43210', href: 'tel:+919876543210' },
               ].map(({ Icon, text, href }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <Icon size={13} color="#D4AF37" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={13} color="#D4AF37" />
+                  </div>
                   {href ? (
-                    <a href={href} style={{ fontSize: 12, color: '#64748B', textDecoration: 'none', transition: 'color .15s' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                    <a href={href} style={{ fontSize: 13, color: '#64748B', textDecoration: 'none', transition: 'color .15s' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
                       onMouseLeave={e => (e.currentTarget.style.color = '#64748B')}>{text}</a>
                   ) : (
-                    <span style={{ fontSize: 12 }}>{text}</span>
+                    <span style={{ fontSize: 13, color: '#64748B' }}>{text}</span>
                   )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Loan Products */}
+          {/* ── Loan Products ── */}
           <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, color: '#FFFFFF', margin: '0 0 18px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Loan Products</h4>
+            <h4 style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37', margin: '0 0 18px', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 16, height: 2, background: 'linear-gradient(90deg,#D4AF37,transparent)', borderRadius: 2 }} />
+              Loan Products
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {['Personal Loan', 'Education Loan (Saral Vidya)', 'Business Loan (Real Finserv)'].map(p => (
                 <FooterLink key={p} label={p} onClick={() => scrollTo('#loan-products')} />
               ))}
             </div>
 
-            <h4 style={{ fontSize: 12, fontWeight: 700, color: '#FFFFFF', margin: '28px 0 18px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Our Brands</h4>
+            <h4 style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37', margin: '30px 0 18px', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 16, height: 2, background: 'linear-gradient(90deg,#D4AF37,transparent)', borderRadius: 2 }} />
+              Our Brands
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <FooterLink label="Saral Vidya (saralvidya.in)" onClick={() => window.open('https://saralvidya.in', '_blank')} />
               <FooterLink label="Real Finserv" onClick={() => scrollTo('#partners')} />
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* ── Quick Links ── */}
           <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, color: '#FFFFFF', margin: '0 0 18px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Quick Links</h4>
+            <h4 style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37', margin: '0 0 18px', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 16, height: 2, background: 'linear-gradient(90deg,#D4AF37,transparent)', borderRadius: 2 }} />
+              Quick Links
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {[
-                { l: 'About Us',               a: () => scrollTo('#why-us') },
-                { l: 'How It Works',           a: () => scrollTo('#how-it-works') },
-                { l: 'Our Partner Brands',     a: () => scrollTo('#partners') },
+                { l: 'About Us',                a: () => scrollTo('#why-us') },
+                { l: 'How It Works',            a: () => scrollTo('#how-it-works') },
+                { l: 'Our Partner Brands',      a: () => scrollTo('#partners') },
                 { l: 'Channel Partner Program', a: () => navigate('/partners/register') },
-                { l: 'Customer Stories',       a: () => scrollTo('#testimonials') },
-                { l: 'Contact Us',             a: () => scrollTo('#footer') },
+                { l: 'Customer Stories',        a: () => scrollTo('#testimonials') },
+                { l: 'Contact Us',              a: () => scrollTo('#footer') },
               ].map(({ l, a }) => <FooterLink key={l} label={l} onClick={a} />)}
             </div>
           </div>
 
-          {/* Legal */}
+          {/* ── Legal ── */}
           <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, color: '#FFFFFF', margin: '0 0 18px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Legal</h4>
+            <h4 style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37', margin: '0 0 18px', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 16, height: 2, background: 'linear-gradient(90deg,#D4AF37,transparent)', borderRadius: 2 }} />
+              Legal
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {['Privacy Policy', 'Terms & Conditions', 'RBI Disclosure', 'Grievance Redressal', 'Fair Practice Code', 'Cookie Policy'].map(l => (
                 <FooterLink key={l} label={l} onClick={() => showLegal(l)} />
@@ -135,26 +193,29 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Social + copyright */}
-        <div style={{ marginTop: 56, paddingTop: 28, borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
+        {/* ── Divider ── */}
+        <div style={{ margin: '48px 0 28px', height: 1, background: 'linear-gradient(90deg,transparent,rgba(212,175,55,0.2),rgba(255,255,255,0.06),transparent)' }} />
+
+        {/* ── Social + copyright ── */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
           <div style={{ display: 'flex', gap: 10 }}>
-            {SOCIAL_LINKS.map(({ Icon, href }, i) => (
-              <a key={i} href={href} target="_blank" rel="noopener noreferrer"
-                style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', textDecoration: 'none', transition: 'background .2s, color .2s, border-color .2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#D4AF37'; (e.currentTarget as HTMLElement).style.color = '#0A1F44'; (e.currentTarget as HTMLElement).style.borderColor = '#D4AF37'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.05)'; (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,.07)'; }}>
-                <Icon size={14} />
+            {SOCIAL_LINKS.map(({ Icon, href, label }, i) => (
+              <a key={i} href={href} target="_blank" rel="noopener noreferrer" title={label}
+                style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', textDecoration: 'none', transition: 'all .2s' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'linear-gradient(135deg,#D4AF37,#B8960C)'; el.style.color = '#0A1F44'; el.style.borderColor = 'transparent'; el.style.boxShadow = '0 4px 14px rgba(212,175,55,0.35)'; el.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,.05)'; el.style.color = '#64748B'; el.style.borderColor = 'rgba(255,255,255,.09)'; el.style.boxShadow = 'none'; el.style.transform = 'none'; }}>
+                <Icon size={15} />
               </a>
             ))}
           </div>
-          <div style={{ fontSize: 12, color: '#334155', textAlign: 'center' }}>
-            © 2026 Real Money. All Rights Reserved.
+          <div style={{ fontSize: 12.5, color: '#334155', textAlign: 'center' }}>
+            © 2026 <span style={{ color: '#D4AF37', fontWeight: 700 }}>Real Money</span>. All Rights Reserved.
           </div>
         </div>
 
-        {/* Disclaimer */}
-        <div style={{ marginTop: 24, background: 'rgba(255,255,255,.02)', borderRadius: 12, padding: '16px 20px', fontSize: 11, lineHeight: 1.85, color: '#334155', border: '1px solid rgba(255,255,255,.04)' }}>
-          <strong style={{ color: '#475569' }}>Disclaimer:</strong> Real Money is a Corporate DSA and is NOT a bank, NBFC, or financial institution. We do not lend money or guarantee loan approvals. All loan products are offered by our exclusive lender partners subject to their eligibility criteria. Interest rates are indicative and subject to change. Loan approval is at the sole discretion of the respective lender.
+        {/* ── Disclaimer ── */}
+        <div style={{ marginTop: 24, background: 'linear-gradient(135deg,rgba(212,175,55,0.04),rgba(255,255,255,0.02))', borderRadius: 14, padding: '16px 20px', fontSize: 11.5, lineHeight: 1.85, color: '#334155', border: '1px solid rgba(212,175,55,0.1)' }}>
+          <strong style={{ color: '#475569' }}>Disclaimer:</strong> Real Money is a Corporate DSA and is NOT a bank, NBFC, or financial institution. We do not lend money or guarantee loan approvals. All loan products are offered by our exclusive lender partners — banks and NBFCs regulated by the Reserve Bank of India — subject to their eligibility criteria. Interest rates are indicative and subject to change. Loan approval is at the sole discretion of the respective lender.
         </div>
       </div>
     </footer>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { INDIA_STATES, getDistricts, getCities } from '../constants/indiaLocations';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface FormData {
@@ -17,6 +18,7 @@ interface FormData {
   dob: string;
   mobile: string;
   alternateContact: string;
+  whatsappSameAsMobile: boolean;
   whatsappNo: string;
   email: string;
   officialEmail: string;
@@ -29,6 +31,7 @@ interface FormData {
   currentState: string;
   currentDistrict: string;
   currentCity: string;
+  currentCityCustom: string;
   currentPincode: string;
   residenceType: string;
   sameAsPermanent: boolean;
@@ -37,6 +40,7 @@ interface FormData {
   permanentState: string;
   permanentDistrict: string;
   permanentCity: string;
+  permanentCityCustom: string;
   permanentPincode: string;
 
   // Step 4 – Employment
@@ -47,24 +51,31 @@ interface FormData {
   officeState: string;
   officeDistrict: string;
   officeCity: string;
+  officeCityCustom: string;
   officePincode: string;
-  existingEmi: string;
   hasPriorPersonalLoan: string;
+  existingEmi: string;
 }
 
 const INITIAL: FormData = {
   loanAmount: '', loanType: 'personal', profession: '', netMonthlySalary: '',
   firstName: '', lastName: '', gender: '', maritalStatus: '', dob: '',
-  mobile: '', alternateContact: '', whatsappNo: '', email: '', officialEmail: '',
+  mobile: '', alternateContact: '',
+  whatsappSameAsMobile: false, whatsappNo: '',
+  email: '', officialEmail: '',
   panNumber: '', aadhaarNumber: '',
-  currentAddressLine1: '', currentAddressLine2: '', currentState: '',
-  currentDistrict: '', currentCity: '', currentPincode: '', residenceType: '',
+  currentAddressLine1: '', currentAddressLine2: '',
+  currentState: '', currentDistrict: '', currentCity: '', currentCityCustom: '',
+  currentPincode: '', residenceType: '',
   sameAsPermanent: false,
-  permanentAddressLine1: '', permanentAddressLine2: '', permanentState: '',
-  permanentDistrict: '', permanentCity: '', permanentPincode: '',
+  permanentAddressLine1: '', permanentAddressLine2: '',
+  permanentState: '', permanentDistrict: '', permanentCity: '', permanentCityCustom: '',
+  permanentPincode: '',
   jobType: '', designation: '', modeOfSalary: '',
-  officeAddress: '', officeState: '', officeDistrict: '', officeCity: '', officePincode: '',
-  existingEmi: '', hasPriorPersonalLoan: '',
+  officeAddress: '',
+  officeState: '', officeDistrict: '', officeCity: '', officeCityCustom: '',
+  officePincode: '',
+  hasPriorPersonalLoan: '', existingEmi: '',
 };
 
 // ── Styles ─────────────────────────────────────────────────────────────────
@@ -89,18 +100,18 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 );
 
 const Input = ({
-  placeholder, value, onChange, type = 'text',
-}: { placeholder: string; value: string; onChange: (v: string) => void; type?: string }) => (
+  placeholder, value, onChange, type = 'text', disabled = false,
+}: { placeholder: string; value: string; onChange: (v: string) => void; type?: string; disabled?: boolean }) => (
   <input
-    type={type} value={value} placeholder={placeholder}
+    type={type} value={value} placeholder={placeholder} disabled={disabled}
     onChange={e => onChange(e.target.value)}
-    style={inp}
-    onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+    style={{ ...inp, ...(disabled ? { background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed' } : {}) }}
+    onFocus={e => { if (!disabled) e.currentTarget.style.borderColor = '#D4AF37'; }}
     onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
   />
 );
 
-const Select = ({ value, onChange, options }: {
+const Sel = ({ value, onChange, options }: {
   value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
 }) => (
   <select value={value} onChange={e => onChange(e.target.value)} style={sel}
@@ -110,6 +121,74 @@ const Select = ({ value, onChange, options }: {
     {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
   </select>
 );
+
+// ── Location Picker: cascading State → District → City (with "Others" text input) ──
+const LocationPicker: React.FC<{
+  stateVal: string; districtVal: string; cityVal: string; cityCustomVal: string;
+  onState: (v: string) => void; onDistrict: (v: string) => void;
+  onCity: (v: string) => void; onCityCustom: (v: string) => void;
+}> = ({ stateVal, districtVal, cityVal, cityCustomVal, onState, onDistrict, onCity, onCityCustom }) => {
+  const districts = getDistricts(stateVal);
+  const cities = getCities(stateVal, districtVal);
+
+  const handleStateChange = (v: string) => {
+    onState(v);
+    onDistrict('');
+    onCity('');
+    onCityCustom('');
+  };
+  const handleDistrictChange = (v: string) => {
+    onDistrict(v);
+    onCity('');
+    onCityCustom('');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <F label="State *">
+          <select value={stateVal} onChange={e => handleStateChange(e.target.value)} style={sel}
+            onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+            onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+            <option value="">— Select State —</option>
+            {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </F>
+        <F label="District">
+          <select value={districtVal} onChange={e => handleDistrictChange(e.target.value)} style={sel}
+            disabled={!stateVal}
+            onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+            onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+            <option value="">— Select District —</option>
+            {districts.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </F>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: cityVal === 'Others' ? '1fr 1fr' : '1fr', gap: 12 }}>
+        <F label="City *">
+          <select value={cityVal} onChange={e => onCity(e.target.value)} style={sel}
+            disabled={!districtVal}
+            onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+            onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+            <option value="">— Select City —</option>
+            {cities.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </F>
+        {cityVal === 'Others' && (
+          <F label="Specify City *">
+            <input
+              type="text" value={cityCustomVal} placeholder="Enter your city name"
+              onChange={e => onCityCustom(e.target.value)}
+              style={inp}
+              onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+              onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+            />
+          </F>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // ── Steps config ───────────────────────────────────────────────────────────
 const STEPS = [
@@ -141,6 +220,7 @@ const validateStep = (step: number, f: FormData): string => {
     if (!f.currentAddressLine1.trim()) return 'Current address is required.';
     if (!f.currentState.trim()) return 'State is required.';
     if (!f.currentCity.trim()) return 'City is required.';
+    if (f.currentCity === 'Others' && !f.currentCityCustom.trim()) return 'Please specify your city name.';
     if (!/^[0-9]{6}$/.test(f.currentPincode)) return 'Valid 6-digit pincode required.';
   }
   if (step === 3) {
@@ -148,6 +228,10 @@ const validateStep = (step: number, f: FormData): string => {
     if (!f.designation.trim()) return 'Designation is required.';
     if (!f.modeOfSalary) return 'Select salary mode.';
     if (!f.officeCity.trim()) return 'Office city is required.';
+    if (f.officeCity === 'Others' && !f.officeCityCustom.trim()) return 'Please specify your office city name.';
+    if (!f.hasPriorPersonalLoan) return 'Please indicate if you have any running loans/EMIs.';
+    if (f.hasPriorPersonalLoan === 'YES' && (!f.existingEmi || isNaN(Number(f.existingEmi))))
+      return 'Please enter your existing monthly EMI amount.';
   }
   return '';
 };
@@ -178,13 +262,16 @@ const CustomerRegistrationSection: React.FC = () => {
     setError('');
     setLoading(true);
     try {
+      const resolveCity = (city: string, custom: string) =>
+        city === 'Others' ? custom : city;
+
       const permanent = form.sameAsPermanent
         ? {
             permanentAddressLine1: form.currentAddressLine1,
             permanentAddressLine2: form.currentAddressLine2,
             permanentState: form.currentState,
             permanentDistrict: form.currentDistrict,
-            permanentCity: form.currentCity,
+            permanentCity: resolveCity(form.currentCity, form.currentCityCustom),
             permanentPincode: form.currentPincode,
           }
         : {
@@ -192,7 +279,7 @@ const CustomerRegistrationSection: React.FC = () => {
             permanentAddressLine2: form.permanentAddressLine2,
             permanentState: form.permanentState,
             permanentDistrict: form.permanentDistrict,
-            permanentCity: form.permanentCity,
+            permanentCity: resolveCity(form.permanentCity, form.permanentCityCustom),
             permanentPincode: form.permanentPincode,
           };
 
@@ -211,13 +298,13 @@ const CustomerRegistrationSection: React.FC = () => {
         maritalStatus: form.maritalStatus || undefined,
         dob: form.dob,
         alternateContact: form.alternateContact || undefined,
-        whatsappNo: form.whatsappNo || undefined,
+        whatsappNo: form.whatsappSameAsMobile ? form.mobile : (form.whatsappNo || undefined),
         officialEmail: form.officialEmail || undefined,
         currentAddressLine1: form.currentAddressLine1,
         currentAddressLine2: form.currentAddressLine2 || undefined,
         currentState: form.currentState,
         currentDistrict: form.currentDistrict || undefined,
-        currentCity: form.currentCity,
+        currentCity: resolveCity(form.currentCity, form.currentCityCustom),
         currentPincode: form.currentPincode,
         residenceType: form.residenceType || undefined,
         ...permanent,
@@ -227,9 +314,9 @@ const CustomerRegistrationSection: React.FC = () => {
         officeAddress: form.officeAddress || undefined,
         officeState: form.officeState || undefined,
         officeDistrict: form.officeDistrict || undefined,
-        officeCity: form.officeCity,
+        officeCity: resolveCity(form.officeCity, form.officeCityCustom),
         officePincode: form.officePincode || undefined,
-        existingEmi: form.existingEmi ? Number(form.existingEmi) : 0,
+        existingEmi: form.hasPriorPersonalLoan === 'YES' ? Number(form.existingEmi) : 0,
         hasPriorPersonalLoan: form.hasPriorPersonalLoan === 'YES',
       });
       setSuccess(true);
@@ -255,7 +342,7 @@ const CustomerRegistrationSection: React.FC = () => {
             <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Apply Now · Free</span>
           </div>
           <h2 style={{ fontSize: 'clamp(1.75rem,4vw,2.4rem)', fontWeight: 900, color: '#0A1F44', margin: '0 0 12px', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-            Apply for Your Loan
+            Apply for Your Personal Loan
           </h2>
           <p style={{ fontSize: 15, color: '#64748b', maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>
             Complete the 4-step form below. Our advisor will contact you within 24 hours.
@@ -270,7 +357,7 @@ const CustomerRegistrationSection: React.FC = () => {
               <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#dcfce7', border: '2px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 32 }}>✓</div>
               <h3 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: '0 0 10px' }}>Application Submitted!</h3>
               <p style={{ fontSize: 15, color: '#64748b', margin: '0 0 28px', lineHeight: 1.6, maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
-                Thank you! Your loan application is in our queue. A Real Money advisor will call you within 24 hours.
+                Thank you! Your personal loan application is in our queue. A Real Money advisor will call you within 24 hours.
               </p>
               <button onClick={() => { setSuccess(false); setForm(INITIAL); setStep(0); }}
                 style={{ padding: '12px 32px', borderRadius: 14, border: '1.5px solid #0A1F44', background: 'transparent', fontSize: 14, fontWeight: 700, color: '#0A1F44', cursor: 'pointer' }}>
@@ -324,18 +411,26 @@ const CustomerRegistrationSection: React.FC = () => {
                         <Input placeholder="e.g. 500000" value={form.loanAmount} onChange={set('loanAmount')} />
                       </F>
                       <F label="Loan Type">
-                        <Select value={form.loanType} onChange={set('loanType')} options={[
-                          { value: 'personal', label: 'Personal Loan' },
-                          { value: 'business', label: 'Business Loan' },
-                          { value: 'home', label: 'Home Loan' },
-                          { value: 'education', label: 'Education Loan' },
-                          { value: 'lap', label: 'Loan Against Property' },
-                        ]} />
+                        {/* Personal Loan only */}
+                        <div style={{
+                          ...inp, display: 'flex', alignItems: 'center', gap: 10,
+                          background: '#f0fdf4', borderColor: '#86efac', cursor: 'default',
+                        }}>
+                          <span style={{
+                            width: 8, height: 8, borderRadius: '50%', background: '#16a34a', flexShrink: 0,
+                            boxShadow: '0 0 0 2px #bbf7d0',
+                          }} />
+                          <span style={{ fontWeight: 700, color: '#15803d', fontSize: 13 }}>Personal Loan</span>
+                          <span style={{
+                            marginLeft: 'auto', fontSize: 10, fontWeight: 700, background: '#dcfce7',
+                            color: '#16a34a', borderRadius: 100, padding: '2px 8px', letterSpacing: '0.05em',
+                          }}>OUR CORE PRODUCT</span>
+                        </div>
                       </F>
                     </div>
                     <div style={grid2}>
                       <F label="Current Profession">
-                        <Select value={form.profession} onChange={set('profession')} options={[
+                        <Sel value={form.profession} onChange={set('profession')} options={[
                           { value: 'SALARIED', label: 'Salaried' },
                           { value: 'SELF_EMPLOYED', label: 'Self-Employed' },
                         ]} />
@@ -360,14 +455,14 @@ const CustomerRegistrationSection: React.FC = () => {
                     </div>
                     <div style={grid3}>
                       <F label="Gender">
-                        <Select value={form.gender} onChange={set('gender')} options={[
+                        <Sel value={form.gender} onChange={set('gender')} options={[
                           { value: 'MALE', label: 'Male' },
                           { value: 'FEMALE', label: 'Female' },
                           { value: 'OTHER', label: 'Other' },
                         ]} />
                       </F>
                       <F label="Marital Status">
-                        <Select value={form.maritalStatus} onChange={set('maritalStatus')} options={[
+                        <Sel value={form.maritalStatus} onChange={set('maritalStatus')} options={[
                           { value: 'SINGLE', label: 'Single' },
                           { value: 'MARRIED', label: 'Married' },
                           { value: 'DIVORCED', label: 'Divorced' },
@@ -382,24 +477,66 @@ const CustomerRegistrationSection: React.FC = () => {
                     </div>
                     <div style={grid2}>
                       <F label="Mobile No.">
-                        <Input placeholder="9876543210" value={form.mobile} onChange={set('mobile')} type="tel" />
+                        <Input placeholder="9876543210" value={form.mobile} onChange={v => {
+                          set('mobile')(v);
+                          // keep whatsapp in sync if "same" is checked
+                          if (form.whatsappSameAsMobile) set('whatsappNo')(v);
+                        }} type="tel" />
                       </F>
                       <F label="Alternate Contact">
                         <Input placeholder="Optional" value={form.alternateContact} onChange={set('alternateContact')} type="tel" />
                       </F>
                     </div>
+
+                    {/* WhatsApp — same-as-mobile toggle */}
+                    <F label="WhatsApp No.">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <label style={{
+                          display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+                          fontSize: 13, fontWeight: 600, color: '#334155',
+                          padding: '9px 12px', borderRadius: 10,
+                          background: form.whatsappSameAsMobile ? '#f0fdf4' : '#f8fafc',
+                          border: `1.5px solid ${form.whatsappSameAsMobile ? '#86efac' : '#e2e8f0'}`,
+                          transition: 'all 200ms',
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={form.whatsappSameAsMobile}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              setForm(f => ({
+                                ...f,
+                                whatsappSameAsMobile: checked,
+                                whatsappNo: checked ? f.mobile : '',
+                              }));
+                            }}
+                            style={{ width: 16, height: 16, accentColor: '#16a34a', cursor: 'pointer' }}
+                          />
+                          {form.whatsappSameAsMobile
+                            ? <><span style={{ color: '#15803d', fontWeight: 700 }}>✓ Same as mobile number</span><span style={{ fontSize: 11, color: '#86efac', marginLeft: 4 }}>{form.mobile || '—'}</span></>
+                            : <span>My WhatsApp number is the same as my mobile</span>
+                          }
+                        </label>
+                        {!form.whatsappSameAsMobile && (
+                          <Input
+                            placeholder="Enter WhatsApp number"
+                            value={form.whatsappNo}
+                            onChange={set('whatsappNo')}
+                            type="tel"
+                          />
+                        )}
+                      </div>
+                    </F>
+
                     <div style={grid2}>
-                      <F label="WhatsApp No.">
-                        <Input placeholder="If different from mobile" value={form.whatsappNo} onChange={set('whatsappNo')} type="tel" />
-                      </F>
                       <F label="Email Address">
                         <Input placeholder="rahul@gmail.com" value={form.email} onChange={set('email')} type="email" />
                       </F>
-                    </div>
-                    <div style={grid3}>
                       <F label="Official Email">
                         <Input placeholder="rahul@company.com" value={form.officialEmail} onChange={set('officialEmail')} type="email" />
                       </F>
+                    </div>
+                    <div style={grid2}>
                       <F label="PAN Number">
                         <Input placeholder="ABCDE1234F" value={form.panNumber} onChange={v => set('panNumber')(v.toUpperCase())} />
                       </F>
@@ -424,23 +561,22 @@ const CustomerRegistrationSection: React.FC = () => {
                         <F label="Address Line 2">
                           <Input placeholder="Landmark, Area (optional)" value={form.currentAddressLine2} onChange={set('currentAddressLine2')} />
                         </F>
-                        <div style={grid3}>
-                          <F label="State">
-                            <Input placeholder="Maharashtra" value={form.currentState} onChange={set('currentState')} />
-                          </F>
-                          <F label="District">
-                            <Input placeholder="Pune" value={form.currentDistrict} onChange={set('currentDistrict')} />
-                          </F>
-                          <F label="City">
-                            <Input placeholder="Pune" value={form.currentCity} onChange={set('currentCity')} />
-                          </F>
-                        </div>
+                        <LocationPicker
+                          stateVal={form.currentState}
+                          districtVal={form.currentDistrict}
+                          cityVal={form.currentCity}
+                          cityCustomVal={form.currentCityCustom}
+                          onState={v => setForm(f => ({ ...f, currentState: v, currentDistrict: '', currentCity: '', currentCityCustom: '' }))}
+                          onDistrict={v => setForm(f => ({ ...f, currentDistrict: v, currentCity: '', currentCityCustom: '' }))}
+                          onCity={set('currentCity')}
+                          onCityCustom={set('currentCityCustom')}
+                        />
                         <div style={grid2}>
                           <F label="Pincode">
                             <Input placeholder="411001" value={form.currentPincode} onChange={set('currentPincode')} />
                           </F>
                           <F label="Residence Type">
-                            <Select value={form.residenceType} onChange={set('residenceType')} options={[
+                            <Sel value={form.residenceType} onChange={set('residenceType')} options={[
                               { value: 'OWNED', label: 'Owned' },
                               { value: 'RENTED', label: 'Rented' },
                               { value: 'COMPANY_PROVIDED', label: 'Company Provided' },
@@ -470,17 +606,16 @@ const CustomerRegistrationSection: React.FC = () => {
                           <F label="Address Line 2">
                             <Input placeholder="Landmark, Area (optional)" value={form.permanentAddressLine2} onChange={set('permanentAddressLine2')} />
                           </F>
-                          <div style={grid3}>
-                            <F label="State">
-                              <Input placeholder="Maharashtra" value={form.permanentState} onChange={set('permanentState')} />
-                            </F>
-                            <F label="District">
-                              <Input placeholder="Nagpur" value={form.permanentDistrict} onChange={set('permanentDistrict')} />
-                            </F>
-                            <F label="City">
-                              <Input placeholder="Nagpur" value={form.permanentCity} onChange={set('permanentCity')} />
-                            </F>
-                          </div>
+                          <LocationPicker
+                            stateVal={form.permanentState}
+                            districtVal={form.permanentDistrict}
+                            cityVal={form.permanentCity}
+                            cityCustomVal={form.permanentCityCustom}
+                            onState={v => setForm(f => ({ ...f, permanentState: v, permanentDistrict: '', permanentCity: '', permanentCityCustom: '' }))}
+                            onDistrict={v => setForm(f => ({ ...f, permanentDistrict: v, permanentCity: '', permanentCityCustom: '' }))}
+                            onCity={set('permanentCity')}
+                            onCityCustom={set('permanentCityCustom')}
+                          />
                           <F label="Pincode">
                             <Input placeholder="440001" value={form.permanentPincode} onChange={set('permanentPincode')} />
                           </F>
@@ -495,7 +630,7 @@ const CustomerRegistrationSection: React.FC = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={grid3}>
                       <F label="Job Type">
-                        <Select value={form.jobType} onChange={set('jobType')} options={[
+                        <Sel value={form.jobType} onChange={set('jobType')} options={[
                           { value: 'FULL_TIME', label: 'Full-Time' },
                           { value: 'PART_TIME', label: 'Part-Time' },
                           { value: 'CONTRACT', label: 'Contract' },
@@ -507,7 +642,7 @@ const CustomerRegistrationSection: React.FC = () => {
                         <Input placeholder="Software Engineer" value={form.designation} onChange={set('designation')} />
                       </F>
                       <F label="Mode of Salary">
-                        <Select value={form.modeOfSalary} onChange={set('modeOfSalary')} options={[
+                        <Sel value={form.modeOfSalary} onChange={set('modeOfSalary')} options={[
                           { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
                           { value: 'CASH', label: 'Cash' },
                           { value: 'CHEQUE', label: 'Cheque' },
@@ -517,30 +652,45 @@ const CustomerRegistrationSection: React.FC = () => {
                     <F label="Office Address">
                       <Input placeholder="Building, Street, Area" value={form.officeAddress} onChange={set('officeAddress')} />
                     </F>
-                    <div style={grid3}>
-                      <F label="State">
-                        <Input placeholder="Maharashtra" value={form.officeState} onChange={set('officeState')} />
-                      </F>
-                      <F label="District">
-                        <Input placeholder="Pune" value={form.officeDistrict} onChange={set('officeDistrict')} />
-                      </F>
-                      <F label="City">
-                        <Input placeholder="Pune" value={form.officeCity} onChange={set('officeCity')} />
-                      </F>
-                    </div>
-                    <div style={grid3}>
-                      <F label="Office Pincode">
-                        <Input placeholder="411001" value={form.officePincode} onChange={set('officePincode')} />
-                      </F>
-                      <F label="Existing Monthly EMI (₹)">
-                        <Input placeholder="0" value={form.existingEmi} onChange={set('existingEmi')} />
-                      </F>
-                      <F label="Prior Personal Loan?">
-                        <Select value={form.hasPriorPersonalLoan} onChange={set('hasPriorPersonalLoan')} options={[
-                          { value: 'YES', label: 'Yes' },
-                          { value: 'NO', label: 'No' },
+                    <LocationPicker
+                      stateVal={form.officeState}
+                      districtVal={form.officeDistrict}
+                      cityVal={form.officeCity}
+                      cityCustomVal={form.officeCityCustom}
+                      onState={v => setForm(f => ({ ...f, officeState: v, officeDistrict: '', officeCity: '', officeCityCustom: '' }))}
+                      onDistrict={v => setForm(f => ({ ...f, officeDistrict: v, officeCity: '', officeCityCustom: '' }))}
+                      onCity={set('officeCity')}
+                      onCityCustom={set('officeCityCustom')}
+                    />
+                    <F label="Office Pincode">
+                      <Input placeholder="411001" value={form.officePincode} onChange={set('officePincode')} />
+                    </F>
+
+                    {/* Prior Loan / EMI section */}
+                    <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#0A1F44', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Existing Loan / EMI Details
+                      </p>
+                      <F label="Do you have any existing running loans or EMIs?">
+                        <Sel value={form.hasPriorPersonalLoan} onChange={set('hasPriorPersonalLoan')} options={[
+                          { value: 'YES', label: 'Yes — I have running EMI(s)' },
+                          { value: 'NO', label: 'No — I have no running EMIs' },
                         ]} />
                       </F>
+                      {form.hasPriorPersonalLoan === 'YES' && (
+                        <F label="Total Existing Monthly EMI (₹)">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <Input
+                              placeholder="e.g. 15000"
+                              value={form.existingEmi}
+                              onChange={set('existingEmi')}
+                            />
+                            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+                              Enter the total combined EMI you pay each month across all existing loans.
+                            </span>
+                          </div>
+                        </F>
+                      )}
                     </div>
                   </div>
                 )}
