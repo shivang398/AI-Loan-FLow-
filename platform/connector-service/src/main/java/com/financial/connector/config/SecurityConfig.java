@@ -40,7 +40,7 @@ public class SecurityConfig {
                 // CONNECTOR can read their own profile
                 .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN")
                 // ADMIN and PARTNER_MANAGER own all partner management operations
-                .requestMatchers(HttpMethod.GET,  "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER")
+                .requestMatchers(HttpMethod.GET,  "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER", "OPERATIONS")
                 .requestMatchers(HttpMethod.POST, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT,  "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")

@@ -240,17 +240,18 @@ const TeamMeeting: React.FC = () => {
     setLoadingRooms(true);
     apiClient.get('/connectors').then(res => {
       const members: any[] = res.data?.data || res.data || [];
-      const myUserId = user.id || `u-${user.email}`;
-      const myName = user.email?.split('@')[0] || 'Me';
-      const myParticipant = buildParticipant(myUserId, myName, myRole);
+      const myEmail = user.email!;
+      const myName  = myEmail.split('@')[0] || 'Me';
+      const myParticipant = buildParticipant(myEmail, myName, myRole);
 
       const builtRooms: TeamRoom[] = members
-        .filter(m => m.id !== user.id)
+        .filter(m => m.email && m.email !== myEmail)
         .map(m => {
           const memberRole = ROLE_MAP[m.role] ?? 'CONNECTOR';
           const fullName = `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email || 'Team Member';
-          const peerParticipant = buildParticipant(m.id, fullName, memberRole);
-          const roomId = `room-${[myUserId, m.id].sort().join('-')}`;
+          const peerParticipant = buildParticipant(m.email, fullName, memberRole);
+          // Use sorted emails so both sides always derive the same room key
+          const roomId = `room-dm-${[myEmail, m.email].sort().join('--')}`;
           return {
             id: roomId,
             participantA: myParticipant,

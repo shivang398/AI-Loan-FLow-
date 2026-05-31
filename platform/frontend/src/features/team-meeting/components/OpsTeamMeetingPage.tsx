@@ -10,7 +10,7 @@ import {
 import apiClient from '../../../shared/services/apiClient';
 import { RootState } from '../../../store';
 import {
-  setActiveRoom, sendMessage, getRoomsForRole,
+  setActiveRoom, sendMessage, receiveMessage, getRoomsForRole, setRooms, buildParticipant,
 } from '../../../store/slices/teamMeetingSlice';
 import type { TeamRoom, TeamMessage, WSConnectionStatus, UserRole } from '../../../store/slices/teamMeetingSlice';
 import { useTeamMeetingWS } from '../../../hooks/useTeamMeetingWS';
@@ -524,7 +524,7 @@ const TeamMeetingTab: React.FC = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { rooms, activeRoomId, messagesByRoom, typingByRoom } = useSelector((state: RootState) => state.teamMeeting);
-  const { sendChatMessage, sendTypingStart, sendTypingStop, sendMarkRead } = useTeamMeetingWS();
+  const { sendChatMessage, sendTypingStart, sendTypingStop, sendMarkRead, joinRoom } = useTeamMeetingWS();
 
   const [inputText,   setInputText]   = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -546,6 +546,63 @@ const TeamMeetingTab: React.FC = () => {
     const p = r.participantA.role === myRole ? r.participantB : r.participantA;
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  // Fetch all staff and build DM rooms using the same email-keyed formula as TeamMeeting (admin)
+  useEffect(() => {
+    if (!user?.email) return;
+    const myEmail = user.email;
+    const myRole_ = (user.role ?? 'OPERATIONS') as UserRole;
+    apiClient.get('/connectors').then(res => {
+      const members: any[] = res.data?.data || res.data || [];
+      const myParticipant = buildParticipant(myEmail, myEmail.split('@')[0], myRole_);
+      const builtRooms: TeamRoom[] = members
+        .filter((m: any) => m.email && m.email !== myEmail)
+        .map((m: any) => {
+          const memberRole = (m.role ?? 'CONNECTOR') as UserRole;
+          const fullName = `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email || 'Team Member';
+          const peerParticipant = buildParticipant(m.email, fullName, memberRole);
+          const roomId = `room-dm-${[myEmail, m.email].sort().join('--')}`;
+          return {
+            id: roomId,
+            participantA: myParticipant,
+            participantB: peerParticipant,
+            lastMessage: '',
+            lastMessageTime: new Date().toISOString(),
+            unreadCount: 0,
+            isOnline: m.status === 'ACTIVE',
+            status: 'ACTIVE' as const,
+          };
+        });
+      dispatch(setRooms(builtRooms));
+    }).catch(() => dispatch(setRooms([])));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
+
+  // Load persisted message history whenever active room changes + join WS room
+  useEffect(() => {
+    if (!activeRoomId) return;
+    joinRoom(activeRoomId);
+    apiClient.get(`/messaging/team-meeting/rooms/${encodeURIComponent(activeRoomId)}/messages`)
+      .then(res => {
+        const serverMsgs: any[] = res.data?.data || [];
+        serverMsgs.forEach((m: any) => {
+          dispatch(receiveMessage({
+            id:             m.id,
+            roomId:         m.roomKey,
+            senderId:       m.senderId,
+            senderName:     m.senderName,
+            senderRole:     (m.senderRole ?? 'OPERATIONS') as UserRole,
+            senderInitials: m.senderInitials || '',
+            body:           m.body,
+            timestamp:      m.createdAt || new Date().toISOString(),
+            status:         (m.status || 'DELIVERED') as TeamMessage['status'],
+            type:           (m.messageType || 'TEXT') as TeamMessage['type'],
+          }));
+        });
+      })
+      .catch(() => { /* history unavailable — local messages still shown */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRoomId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

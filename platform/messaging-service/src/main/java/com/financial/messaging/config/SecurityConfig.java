@@ -39,7 +39,9 @@ public class SecurityConfig {
                 // browsers cannot send Authorization headers during these requests.
                 // Authentication is enforced by the STOMP ChannelInterceptor in WebSocketConfig.
                 .requestMatchers("/ws-messaging/**").permitAll()
-                .requestMatchers("/ws/team-meeting/**").authenticated()
+                // Token validated inside TeamMeetingWsHandler.afterConnectionEstablished;
+                // permitAll here because Vite proxy strips ?token= before HTTP auth runs
+                .requestMatchers("/ws/team-meeting/**").permitAll()
                 // WhatsApp webhooks validated by HMAC signature — not JWT
                 .requestMatchers("/webhooks/**").permitAll()
                 .anyRequest().authenticated()
