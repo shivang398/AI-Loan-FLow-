@@ -156,4 +156,7 @@ public class Lead {
 
     @Column(name = "has_prior_personal_loan")
     private Boolean hasPriorPersonalLoan;
+
+    @Column(name = "ops_notes", columnDefinition = "TEXT")
+    private String opsNotes;
 }

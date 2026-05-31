@@ -78,6 +78,7 @@ interface Lead {
   officePincode?: string;
   existingEmi?: number;
   hasPriorPersonalLoan?: boolean;
+  opsNotes?: string;
 }
 
 // ─────────────────────────────────────────────
@@ -114,7 +115,7 @@ const LeadsQueueTable: React.FC<{
   onViewDetail: (lead: Lead) => void;
 }> = ({ leads, loading, onRefresh, onViewDetail }) => {
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'ALL' | 'NEW' | 'IN_REVIEW' | 'RESOLVED'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'NEW' | 'IN_REVIEW' | 'QUERY_RAISED' | 'RESOLVED'>('ALL');
 
   const filtered = leads.filter(l => {
     const term = search.toLowerCase();
@@ -224,10 +225,11 @@ const LeadsQueueTable: React.FC<{
   ];
 
   const tabs = [
-    { key: 'ALL',       label: 'All Leads', count: leads.length },
-    { key: 'NEW',       label: 'New',       count: leads.filter(l => l.status === 'NEW').length },
-    { key: 'IN_REVIEW', label: 'In Review', count: leads.filter(l => l.status === 'IN_REVIEW').length },
-    { key: 'RESOLVED',  label: 'Resolved',  count: leads.filter(l => l.status === 'RESOLVED').length },
+    { key: 'ALL',          label: 'All Leads',    count: leads.length },
+    { key: 'NEW',          label: 'New',          count: leads.filter(l => l.status === 'NEW').length },
+    { key: 'IN_REVIEW',    label: 'In Review',    count: leads.filter(l => l.status === 'IN_REVIEW').length },
+    { key: 'QUERY_RAISED', label: 'Query Raised', count: leads.filter(l => l.status === 'QUERY_RAISED').length },
+    { key: 'RESOLVED',     label: 'Resolved',     count: leads.filter(l => l.status === 'RESOLVED').length },
   ];
 
   return (
@@ -299,6 +301,13 @@ const OperationsDashboard: React.FC = () => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  // Document status for the open lead
+  const [leadDocs, setLeadDocs] = useState<Record<string, boolean>>({});
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  // Ops notes
+  const [notesValue, setNotesValue] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const fetchLeads = async () => {
     setLoadingLeads(true);
@@ -322,9 +331,43 @@ const OperationsDashboard: React.FC = () => {
   const newCount = leads.filter(l => l.status === 'NEW').length;
   const uniqueOps = [...new Set(leads.map(l => l.assignedTo).filter(Boolean))].length;
 
-  const handleViewDetail = (lead: Lead) => {
+  const handleViewDetail = async (lead: Lead) => {
     setDrawerLead(lead);
     setIsDrawerOpen(true);
+    setNotesValue(lead.opsNotes || '');
+    setNotesSaved(false);
+    // Fetch uploaded documents for this customer
+    if (lead.customerId) {
+      setLoadingDocs(true);
+      try {
+        const res = await api.get(`/documents/by-customer/${lead.customerId}`);
+        const docs: any[] = res.data?.data ?? [];
+        const map: Record<string, boolean> = {};
+        docs.forEach((d: any) => { if (d.documentType) map[d.documentType] = true; });
+        setLeadDocs(map);
+      } catch {
+        setLeadDocs({});
+      } finally {
+        setLoadingDocs(false);
+      }
+    } else {
+      setLeadDocs({});
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!drawerLead) return;
+    setNotesSaving(true);
+    try {
+      await api.put(`/customers/leads/${drawerLead.id}/notes`, { notes: notesValue });
+      setLeads(prev => prev.map(l => l.id === drawerLead.id ? { ...l, opsNotes: notesValue } : l));
+      setDrawerLead(prev => prev ? { ...prev, opsNotes: notesValue } : null);
+      setNotesSaved(true);
+    } catch {
+      // silently fail; user can retry
+    } finally {
+      setNotesSaving(false);
+    }
   };
 
   const updateStatus = async (newStatus: string, successMsg: string) => {
@@ -545,20 +588,86 @@ const OperationsDashboard: React.FC = () => {
                 </div>
               </Card>
 
-              {/* KYC */}
+              {/* KYC Documents */}
               <Card size="small" style={{ borderRadius: 12, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
                 <Title level={5} style={{ fontWeight: 900, marginBottom: 12, color: '#1e293b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <CheckCircle2 size={13} color="#10b981" /> KYC Status
+                  <CheckCircle2 size={13} color="#10b981" /> KYC Documents
                 </Title>
-                <Timeline items={[
-                  { color: 'green',  children: <Text style={{ fontWeight: 700, color: '#1e293b', fontSize: 12 }}>PAN Submitted — {drawerLead.panNumber}</Text> },
-                  { color: 'orange', children: <Text style={{ fontWeight: 700, color: '#1e293b', fontSize: 12 }}>PAN Verification Pending</Text> },
-                  { color: 'gray',   children: <Text style={{ fontWeight: 600, color: '#94a3b8', fontSize: 12 }}>Aadhaar e-KYC</Text> },
-                  { color: 'gray',   children: <Text style={{ fontWeight: 600, color: '#94a3b8', fontSize: 12 }}>Credit Bureau Check</Text> },
-                ]} />
+                {loadingDocs ? (
+                  <Spin size="small" />
+                ) : (
+                  <Timeline items={[
+                    {
+                      color: leadDocs['PAN_CARD'] ? 'green' : 'gray',
+                      children: (
+                        <Text style={{ fontWeight: leadDocs['PAN_CARD'] ? 700 : 600, color: leadDocs['PAN_CARD'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
+                          PAN Card — {leadDocs['PAN_CARD'] ? '✓ Submitted' : 'Not uploaded'}
+                        </Text>
+                      ),
+                    },
+                    {
+                      color: leadDocs['AADHAAR_CARD'] ? 'green' : 'gray',
+                      children: (
+                        <Text style={{ fontWeight: leadDocs['AADHAAR_CARD'] ? 700 : 600, color: leadDocs['AADHAAR_CARD'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
+                          Aadhaar Card — {leadDocs['AADHAAR_CARD'] ? '✓ Submitted' : 'Not uploaded'}
+                        </Text>
+                      ),
+                    },
+                    {
+                      color: leadDocs['BANK_STATEMENT'] ? 'green' : 'gray',
+                      children: (
+                        <Text style={{ fontWeight: leadDocs['BANK_STATEMENT'] ? 700 : 600, color: leadDocs['BANK_STATEMENT'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
+                          Bank Statement (6 months) — {leadDocs['BANK_STATEMENT'] ? '✓ Submitted' : 'Not uploaded'}
+                        </Text>
+                      ),
+                    },
+                    {
+                      color: leadDocs['SALARY_SLIP'] ? 'green' : 'gray',
+                      children: (
+                        <Text style={{ fontWeight: leadDocs['SALARY_SLIP'] ? 700 : 600, color: leadDocs['SALARY_SLIP'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
+                          Salary Slips (3 months) — {leadDocs['SALARY_SLIP'] ? '✓ Submitted' : 'Not uploaded'}
+                        </Text>
+                      ),
+                    },
+                  ]} />
+                )}
+              </Card>
+
+              {/* Ops Notes */}
+              <Card size="small" style={{ borderRadius: 12, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                <Title level={5} style={{ fontWeight: 900, marginBottom: 10, color: '#1e293b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ClipboardCheck size={13} color="#4f46e5" /> Ops Notes
+                </Title>
+                <textarea
+                  value={notesValue}
+                  onChange={e => { setNotesValue(e.target.value); setNotesSaved(false); }}
+                  placeholder="Add internal notes about this lead — document requests, call logs, issues, next steps…"
+                  style={{
+                    width: '100%', minHeight: 100, padding: '10px 12px', borderRadius: 10,
+                    border: '1.5px solid #e2e8f0', fontSize: 12, fontWeight: 500, color: '#334155',
+                    fontFamily: 'Inter, sans-serif', resize: 'vertical', outline: 'none',
+                    background: '#f8fafc', boxSizing: 'border-box', lineHeight: 1.6,
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, gap: 8, alignItems: 'center' }}>
+                  {notesSaved && (
+                    <Text style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>✓ Saved</Text>
+                  )}
+                  <Button
+                    size="small"
+                    loading={notesSaving}
+                    onClick={handleSaveNotes}
+                    style={{ borderRadius: 8, fontWeight: 700, fontSize: 11, background: '#4f46e5', color: '#fff', border: 'none' }}
+                  >
+                    Save Notes
+                  </Button>
+                </div>
               </Card>
             </div>
             <div style={{ background: '#fff', padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12 }}>
+              {/* Raise Query — visible on all non-terminal, non-query statuses */}
               {drawerLead?.status !== 'QUERY_RAISED' && drawerLead?.status !== 'RESOLVED' && (
                 <Button
                   loading={actionLoading}
@@ -568,6 +677,17 @@ const OperationsDashboard: React.FC = () => {
                   Raise Query
                 </Button>
               )}
+              {/* Resume Review — lets ops reopen a query-raised lead */}
+              {drawerLead?.status === 'QUERY_RAISED' && (
+                <Button
+                  loading={actionLoading}
+                  onClick={() => updateStatus('IN_REVIEW', 'Query resolved — lead back in review')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #93c5fd', color: '#1d4ed8', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                >
+                  Resume Review
+                </Button>
+              )}
+              {/* Move to Review — NEW leads only */}
               {drawerLead?.status === 'NEW' && (
                 <Button
                   type="primary"
@@ -578,6 +698,7 @@ const OperationsDashboard: React.FC = () => {
                   Move to Review
                 </Button>
               )}
+              {/* Mark Resolved — IN_REVIEW leads only */}
               {drawerLead?.status === 'IN_REVIEW' && (
                 <Button
                   type="primary"

@@ -93,6 +93,44 @@ public class DocumentService {
         return documentRepository.findByFolderPathAndUploadedBy(sanitized, requesterId);
     }
 
+    /** Public upload — used by unauthenticated landing-page customers. ownerId is the customerId. */
+    @Transactional
+    public Document uploadPublicDocument(UUID customerId, String documentType,
+                                         MultipartFile file) throws IOException {
+        String mimeType = file.getContentType();
+        if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
+            throw new RuntimeException("Invalid file type. Allowed: PDF, JPEG, PNG");
+        }
+        byte[] header = file.getBytes();
+        if (!hasValidMagicBytes(header, mimeType)) {
+            throw new RuntimeException("File content does not match declared type");
+        }
+        String folderPath = "/customers/" + customerId + "/kyc";
+        String s3Key = "customers/" + customerId + "/kyc/" + documentType + "/" + UUID.randomUUID();
+        s3Client.putObject(
+                PutObjectRequest.builder().bucket(bucket).key(s3Key).contentType(mimeType).build(),
+                RequestBody.fromBytes(header)
+        );
+        Document document = Document.builder()
+                .ownerId(customerId)
+                .uploadedBy(customerId)
+                .documentType(documentType)
+                .s3Key(s3Key)
+                .fileName(sanitizeFileName(file.getOriginalFilename()))
+                .folderPath(folderPath)
+                .mimeType(mimeType)
+                .fileSizeBytes(file.getSize())
+                .status("UPLOADED")
+                .build();
+        return documentRepository.save(document);
+    }
+
+    /** Fetch all KYC documents for a customer — used by ops dashboard. */
+    @Transactional(readOnly = true)
+    public List<Document> getDocumentsByCustomerId(UUID customerId) {
+        return documentRepository.findByOwnerId(customerId);
+    }
+
     @Transactional(readOnly = true)
     public String generatePresignedUrl(UUID documentId, UUID requesterId) {
         Document doc = documentRepository.findById(documentId)

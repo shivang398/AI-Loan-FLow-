@@ -52,6 +52,16 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success("Lead status updated", updated, UUID.randomUUID().toString()));
     }
 
+    @PutMapping("/leads/{id}/notes")
+    public ResponseEntity<ApiResponse<Lead>> updateLeadNotes(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body) {
+        String notes = body.get("notes");
+        if (notes == null) throw new RuntimeException("notes field is required");
+        Lead updated = customerService.updateLeadNotes(id, notes);
+        return ResponseEntity.ok(ApiResponse.success("Notes saved", updated, UUID.randomUUID().toString()));
+    }
+
     /**
      * Reassign open leads from an offboarded ops user to remaining active ops team.
      * Called by admin when offboarding an OPERATIONS employee.

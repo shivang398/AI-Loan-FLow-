@@ -195,6 +195,14 @@ public class CustomerService {
         return opsEmails.get(idx);
     }
 
+    @Transactional
+    public Lead updateLeadNotes(UUID leadId, String notes) {
+        Lead lead = leadRepository.findById(leadId)
+                .orElseThrow(() -> new RuntimeException("Lead not found"));
+        lead.setOpsNotes(notes);
+        return leadRepository.save(lead);
+    }
+
     /**
      * Reassigns all leads currently assigned to {@code fromEmail} evenly
      * across the remaining active ops team. Called when an ops user is offboarded.

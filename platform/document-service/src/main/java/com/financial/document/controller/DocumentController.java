@@ -49,6 +49,24 @@ public class DocumentController {
         return ResponseEntity.ok(ApiResponse.success("Pre-signed URL generated", url, UUID.randomUUID().toString()));
     }
 
+    /** Public upload — called by unauthenticated landing-page customers after form submission. */
+    @PostMapping("/public/upload")
+    public ResponseEntity<ApiResponse<Document>> publicUpload(
+            @RequestParam UUID customerId,
+            @RequestParam String documentType,
+            @RequestParam MultipartFile file) throws IOException {
+        Document doc = documentService.uploadPublicDocument(customerId, documentType, file);
+        return ResponseEntity.ok(ApiResponse.success("Document uploaded", doc, UUID.randomUUID().toString()));
+    }
+
+    /** Returns all KYC documents for a customer — called by authenticated ops users. */
+    @GetMapping("/by-customer/{customerId}")
+    public ResponseEntity<ApiResponse<java.util.List<Document>>> getByCustomer(
+            @PathVariable UUID customerId) {
+        java.util.List<Document> docs = documentService.getDocumentsByCustomerId(customerId);
+        return ResponseEntity.ok(ApiResponse.success("Documents fetched", docs, UUID.randomUUID().toString()));
+    }
+
     private UUID resolveUserId(Authentication auth) {
         if (auth == null || auth.getName() == null) {
             throw new org.springframework.security.access.AccessDeniedException("Not authenticated");

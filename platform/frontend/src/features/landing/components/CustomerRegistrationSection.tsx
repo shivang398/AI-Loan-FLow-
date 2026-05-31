@@ -196,6 +196,15 @@ const STEPS = [
   { title: 'Personal',    subtitle: 'Your details' },
   { title: 'Address',     subtitle: 'Where you live' },
   { title: 'Employment',  subtitle: 'Work & finances' },
+  { title: 'Documents',   subtitle: 'KYC & proofs' },
+];
+
+// ── Document types required ─────────────────────────────────────────────────
+const DOC_TYPES = [
+  { key: 'AADHAAR_CARD',    label: 'Aadhaar Card',           hint: 'Front & back, clear scan/photo',   required: true },
+  { key: 'PAN_CARD',        label: 'PAN Card',               hint: 'Original PAN card image/scan',      required: true },
+  { key: 'BANK_STATEMENT',  label: 'Bank Statement (6 months)', hint: 'Last 6 months, all pages',       required: true },
+  { key: 'SALARY_SLIP',     label: 'Salary Slips (3 months)', hint: 'Last 3 months payslips',           required: true },
 ];
 
 // ── Validation ─────────────────────────────────────────────────────────────
@@ -243,6 +252,11 @@ const CustomerRegistrationSection: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  // After customer creation, hold the customerId for document upload
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  // Track per-doc upload state: key → 'idle' | 'uploading' | 'done' | 'error'
+  const [docState, setDocState] = useState<Record<string, 'idle' | 'uploading' | 'done' | 'error'>>({});
+  const [docFiles, setDocFiles] = useState<Record<string, File | null>>({});
 
   const set = (key: keyof FormData) => (v: string | boolean) =>
     setForm(f => ({ ...f, [key]: v }));
@@ -283,7 +297,7 @@ const CustomerRegistrationSection: React.FC = () => {
             permanentPincode: form.permanentPincode,
           };
 
-      await axios.post('/api/customers', {
+      const res = await axios.post('/api/customers', {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
@@ -319,7 +333,10 @@ const CustomerRegistrationSection: React.FC = () => {
         existingEmi: form.hasPriorPersonalLoan === 'YES' ? Number(form.existingEmi) : 0,
         hasPriorPersonalLoan: form.hasPriorPersonalLoan === 'YES',
       });
-      setSuccess(true);
+      // Store customerId and advance to document upload step
+      const cid = res.data?.data?.id;
+      setCustomerId(cid || null);
+      setStep(4);
     } catch (ex: any) {
       const msg = ex?.response?.data?.message || ex?.response?.data?.error || 'Submission failed. Please try again.';
       setError(msg);
@@ -327,6 +344,31 @@ const CustomerRegistrationSection: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleDocFileChange = (docKey: string, file: File | null) => {
+    setDocFiles(prev => ({ ...prev, [docKey]: file }));
+    if (file) setDocState(prev => ({ ...prev, [docKey]: 'idle' }));
+  };
+
+  const handleDocUpload = async (docKey: string) => {
+    const file = docFiles[docKey];
+    if (!file || !customerId) return;
+    setDocState(prev => ({ ...prev, [docKey]: 'uploading' }));
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('customerId', customerId);
+      fd.append('documentType', docKey);
+      await axios.post('/api/documents/public/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setDocState(prev => ({ ...prev, [docKey]: 'done' }));
+    } catch {
+      setDocState(prev => ({ ...prev, [docKey]: 'error' }));
+    }
+  };
+
+  const allRequiredUploaded = DOC_TYPES.filter(d => d.required).every(d => docState[d.key] === 'done');
 
   const grid2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 };
   const grid3: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 };
@@ -345,7 +387,7 @@ const CustomerRegistrationSection: React.FC = () => {
             Apply for Your Personal Loan
           </h2>
           <p style={{ fontSize: 15, color: '#64748b', maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>
-            Complete the 4-step form below. Our advisor will contact you within 24 hours.
+            Complete the 5-step form below. Our advisor will contact you within 24 hours.
           </p>
         </div>
 
@@ -694,33 +736,96 @@ const CustomerRegistrationSection: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* ── Step 4: Documents ── */}
+                {step === 4 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 18 }}>✓</span>
+                      <div>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#15803d' }}>Application submitted successfully!</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#166534' }}>Now upload your KYC documents to speed up processing. You can also do this later.</p>
+                      </div>
+                    </div>
+                    {DOC_TYPES.map(doc => {
+                      const state = docState[doc.key] || 'idle';
+                      const file = docFiles[doc.key];
+                      const isDone = state === 'done';
+                      const isUploading = state === 'uploading';
+                      const isError = state === 'error';
+                      return (
+                        <div key={doc.key} style={{
+                          border: `1.5px solid ${isDone ? '#86efac' : isError ? '#fca5a5' : '#e2e8f0'}`,
+                          borderRadius: 14, padding: '14px 16px',
+                          background: isDone ? '#f0fdf4' : isError ? '#fef2f2' : '#f8fafc',
+                          display: 'flex', alignItems: 'center', gap: 14, transition: 'all 200ms',
+                        }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: isDone ? '#dcfce7' : isError ? '#fee2e2' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                            {isDone ? '✓' : isError ? '✗' : isUploading ? '⏳' : '📄'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isDone ? '#15803d' : '#0f172a' }}>
+                              {doc.label} <span style={{ color: '#ef4444' }}>*</span>
+                            </p>
+                            <p style={{ margin: '2px 0 0', fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+                              {isDone ? 'Uploaded successfully' : isError ? 'Upload failed — try again' : doc.hint}
+                            </p>
+                            {file && !isDone && (
+                              <p style={{ margin: '2px 0 0', fontSize: 11, color: '#475569', fontWeight: 600 }}>
+                                {file.name} ({(file.size / 1024).toFixed(0)} KB)
+                              </p>
+                            )}
+                          </div>
+                          {!isDone && (
+                            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                              <label style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                {file ? 'Change' : 'Choose File'}
+                                <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
+                                  onChange={e => handleDocFileChange(doc.key, e.target.files?.[0] ?? null)} />
+                              </label>
+                              {file && (
+                                <button onClick={() => handleDocUpload(doc.key)} disabled={isUploading}
+                                  style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: isUploading ? '#94a3b8' : 'linear-gradient(135deg,#0A1F44,#1e3a6e)', color: '#fff', fontSize: 12, fontWeight: 800, cursor: isUploading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
+                                  {isUploading ? 'Uploading…' : 'Upload'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', margin: '4px 0 0' }}>
+                      Accepted formats: PDF, JPG, PNG · Max 10 MB per file
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Navigation */}
               <div style={{ padding: '16px 32px 24px', display: 'flex', gap: 12, justifyContent: 'space-between', borderTop: '1px solid #f8fafc' }}>
                 <button
                   onClick={back}
-                  disabled={step === 0}
+                  disabled={step === 0 || step === 4}
                   style={{
                     padding: '12px 28px', borderRadius: 12, border: '1.5px solid #e2e8f0',
-                    background: step === 0 ? '#f8fafc' : '#fff', fontSize: 14, fontWeight: 700,
-                    color: step === 0 ? '#cbd5e1' : '#475569', cursor: step === 0 ? 'default' : 'pointer',
+                    background: (step === 0 || step === 4) ? '#f8fafc' : '#fff', fontSize: 14, fontWeight: 700,
+                    color: (step === 0 || step === 4) ? '#cbd5e1' : '#475569',
+                    cursor: (step === 0 || step === 4) ? 'default' : 'pointer',
                   }}
                 >
                   ← Back
                 </button>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>Step {step + 1} of {STEPS.length}</span>
-                  {step < STEPS.length - 1 ? (
+                  {step < 3 && (
                     <button onClick={next} style={{
                       padding: '12px 32px', borderRadius: 12, border: 'none',
                       background: 'linear-gradient(135deg,#0A1F44,#1e3a6e)', color: '#fff',
                       fontSize: 14, fontWeight: 800, cursor: 'pointer',
                       boxShadow: '0 6px 20px rgba(10,31,68,0.22)',
-                    }}>
-                      Continue →
-                    </button>
-                  ) : (
+                    }}>Continue →</button>
+                  )}
+                  {step === 3 && (
                     <button onClick={handleSubmit} disabled={loading} style={{
                       padding: '12px 32px', borderRadius: 12, border: 'none',
                       background: loading ? '#94a3b8' : 'linear-gradient(135deg,#D4AF37,#B8960C)',
@@ -729,6 +834,16 @@ const CustomerRegistrationSection: React.FC = () => {
                       boxShadow: loading ? 'none' : '0 6px 20px rgba(212,175,55,0.35)',
                     }}>
                       {loading ? 'Submitting…' : 'Submit Application ✓'}
+                    </button>
+                  )}
+                  {step === 4 && (
+                    <button onClick={() => setSuccess(true)} style={{
+                      padding: '12px 32px', borderRadius: 12, border: 'none',
+                      background: allRequiredUploaded ? 'linear-gradient(135deg,#059669,#047857)' : 'linear-gradient(135deg,#64748b,#475569)',
+                      color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer',
+                      boxShadow: allRequiredUploaded ? '0 6px 20px rgba(5,150,105,0.3)' : 'none',
+                    }}>
+                      {allRequiredUploaded ? 'Done ✓' : 'Skip for Now →'}
                     </button>
                   )}
                 </div>
