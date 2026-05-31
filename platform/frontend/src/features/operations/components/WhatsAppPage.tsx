@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Modal, Input, Form, Spin, Tooltip, notification,
+  Modal, Input, Form, Spin, Tooltip, App,
 } from 'antd';
 import {
   Search, Send, Plus, Phone, MoreVertical, Check, CheckCheck,
@@ -163,6 +163,7 @@ const MsgBubble: React.FC<{ msg: Message }> = ({ msg }) => {
 
 /* ─── Main page ──────────────────────────────────────────────────── */
 const WhatsAppPage: React.FC = () => {
+  const { notification } = App.useApp();
   const [conversations,  setConversations]  = useState<Conversation[]>([]);
   const [messages,       setMessages]       = useState<Message[]>([]);
   const [activeConvId,   setActiveConvId]   = useState<string | null>(null);

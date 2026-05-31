@@ -15,11 +15,16 @@ function getAuthToken(): string | null {
   );
 }
 
+// Max consecutive connection attempts before giving up and staying in simulation mode
+const MAX_RETRIES = 3;
+
 export function useTeamMeetingWS() {
-  const dispatch  = useDispatch();
-  const { user }  = useSelector((state: RootState) => state.auth);
-  const wsRef     = useRef<WebSocket | null>(null);
-  const joinedRef = useRef<Set<string>>(new Set());
+  const dispatch    = useDispatch();
+  const { user }    = useSelector((state: RootState) => state.auth);
+  const wsRef       = useRef<WebSocket | null>(null);
+  const joinedRef   = useRef<Set<string>>(new Set());
+  const retriesRef  = useRef(0);
+  const gaveUpRef   = useRef(false);
 
   const setStatus = useCallback((s: WSConnectionStatus) => {
     dispatch(setWSStatus(s));
@@ -71,6 +76,8 @@ export function useTeamMeetingWS() {
 
   // ─── Connect ──────────────────────────────────────────────────────────
   const connect = useCallback(() => {
+    // Already gave up or no token → stay in simulation mode, don't spam
+    if (gaveUpRef.current) return;
     const token = getAuthToken();
     if (!token) { setStatus('SIMULATED'); return; }
 
@@ -83,8 +90,8 @@ export function useTeamMeetingWS() {
     setStatus('CONNECTING');
 
     ws.onopen = () => {
+      retriesRef.current = 0; // reset on successful connection
       setStatus('CONNECTED');
-      // Re-join any rooms already tracked
       joinedRef.current.forEach(roomId => {
         ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomId, userId: user?.id ?? '' }));
       });
@@ -95,9 +102,15 @@ export function useTeamMeetingWS() {
     ws.onerror = () => setStatus('RECONNECTING');
 
     ws.onclose = () => {
-      setStatus('DISCONNECTED');
       wsRef.current = null;
-      // Reconnect after 3s
+      retriesRef.current += 1;
+      if (retriesRef.current >= MAX_RETRIES) {
+        // Backend WS not available — fall back to simulation, stop retrying
+        gaveUpRef.current = true;
+        setStatus('SIMULATED');
+        return;
+      }
+      setStatus('DISCONNECTED');
       setTimeout(connect, 3000);
     };
   }, [user?.id, setStatus, handleFrame]); // eslint-disable-line react-hooks/exhaustive-deps

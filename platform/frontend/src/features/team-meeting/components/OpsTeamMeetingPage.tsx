@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Tooltip, notification, Select, Modal, Input, Form } from 'antd';
+import { Tooltip, App, Select, Modal, Input, Form } from 'antd';
 import {
   Send, Search, Phone, Video, MoreVertical,
   Paperclip, Smile, Check, CheckCheck,
@@ -181,6 +181,7 @@ const WaTick: React.FC<{ status: string }> = ({ status }) => {
 };
 
 const WhatsAppTab: React.FC = () => {
+  const { notification } = App.useApp();
   const [conversations, setConversations] = useState<WAConversation[]>([]);
   const [activeId,      setActiveId]      = useState<string | null>(null);
   const [messages,      setMessages]      = useState<WAMsg[]>([]);

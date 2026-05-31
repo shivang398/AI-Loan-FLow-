@@ -12,7 +12,7 @@ import {
   Tag,
   Tabs,
   Modal,
-  notification,
+  App,
   Select,
   Spin
 } from 'antd';
@@ -42,6 +42,7 @@ interface ChatItem {
 }
 
 const TeamCommunicationCenter: React.FC = () => {
+  const { notification } = App.useApp();
   const [activeTab, setActiveTab] = useState('external');
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [activeChatName, setActiveChatName] = useState('');

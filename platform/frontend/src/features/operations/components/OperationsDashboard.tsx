@@ -6,7 +6,7 @@ import {
   Drawer,
   Timeline,
   Input,
-  notification,
+  App,
   Avatar,
   Table,
   Card,
@@ -125,11 +125,11 @@ const LeadsQueueTable: React.FC<{
   });
 
   const statusConfig: Record<string, { color: string; bg: string; label: string }> = {
-    NEW:          { color: '#7c3aed', bg: '#f5f3ff', label: 'New Lead' },
-    IN_REVIEW:    { color: '#1d4ed8', bg: '#eff6ff', label: 'In Review' },
-    DOCS_PENDING: { color: '#c2410c', bg: '#fff7ed', label: 'Docs Pending' },
-    QUERY_RAISED: { color: '#b91c1c', bg: '#fef2f2', label: 'Query Raised' },
-    RESOLVED:     { color: '#059669', bg: '#ecfdf5', label: 'Resolved' },
+    NEW:          { color: '#7c3aed', bg: '#f5f3ff', label: 'New Application' },
+    IN_REVIEW:    { color: '#1d4ed8', bg: '#eff6ff', label: 'Being Checked' },
+    DOCS_PENDING: { color: '#c2410c', bg: '#fff7ed', label: 'Papers Pending' },
+    QUERY_RAISED: { color: '#b91c1c', bg: '#fef2f2', label: 'Info Needed' },
+    RESOLVED:     { color: '#059669', bg: '#ecfdf5', label: 'Done' },
   };
 
   const columns = [
@@ -225,11 +225,11 @@ const LeadsQueueTable: React.FC<{
   ];
 
   const tabs = [
-    { key: 'ALL',          label: 'All Leads',    count: leads.length },
+    { key: 'ALL',          label: 'All',          count: leads.length },
     { key: 'NEW',          label: 'New',          count: leads.filter(l => l.status === 'NEW').length },
-    { key: 'IN_REVIEW',    label: 'In Review',    count: leads.filter(l => l.status === 'IN_REVIEW').length },
-    { key: 'QUERY_RAISED', label: 'Query Raised', count: leads.filter(l => l.status === 'QUERY_RAISED').length },
-    { key: 'RESOLVED',     label: 'Resolved',     count: leads.filter(l => l.status === 'RESOLVED').length },
+    { key: 'IN_REVIEW',    label: 'Being Checked', count: leads.filter(l => l.status === 'IN_REVIEW').length },
+    { key: 'QUERY_RAISED', label: 'Info Needed',  count: leads.filter(l => l.status === 'QUERY_RAISED').length },
+    { key: 'RESOLVED',     label: 'Done',         count: leads.filter(l => l.status === 'RESOLVED').length },
   ];
 
   return (
@@ -296,6 +296,7 @@ const LeadsQueueTable: React.FC<{
 // Main Operations Dashboard
 // ─────────────────────────────────────────────
 const OperationsDashboard: React.FC = () => {
+  const { notification } = App.useApp();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
@@ -667,46 +668,46 @@ const OperationsDashboard: React.FC = () => {
               </Card>
             </div>
             <div style={{ background: '#fff', padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12 }}>
-              {/* Raise Query — visible on all non-terminal, non-query statuses */}
+              {/* Ask for Info — something is missing or unclear, shown on all active leads */}
               {drawerLead?.status !== 'QUERY_RAISED' && drawerLead?.status !== 'RESOLVED' && (
                 <Button
                   loading={actionLoading}
-                  onClick={() => updateStatus('QUERY_RAISED', 'Query raised on this lead')}
-                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #fca5a5', color: '#dc2626', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                  onClick={() => updateStatus('QUERY_RAISED', 'Asked customer for more information')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #fca5a5', color: '#dc2626', fontSize: 13, letterSpacing: '0.02em' }}
                 >
-                  Raise Query
+                  Ask for Info
                 </Button>
               )}
-              {/* Resume Review — lets ops reopen a query-raised lead */}
+              {/* Continue Checking — info received, pick back up after a query */}
               {drawerLead?.status === 'QUERY_RAISED' && (
                 <Button
                   loading={actionLoading}
-                  onClick={() => updateStatus('IN_REVIEW', 'Query resolved — lead back in review')}
-                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #93c5fd', color: '#1d4ed8', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                  onClick={() => updateStatus('IN_REVIEW', 'Info received — continuing review')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #93c5fd', color: '#1d4ed8', fontSize: 13, letterSpacing: '0.02em' }}
                 >
-                  Resume Review
+                  Continue Checking
                 </Button>
               )}
-              {/* Move to Review — NEW leads only */}
+              {/* Start Checking — begin work on a fresh application */}
               {drawerLead?.status === 'NEW' && (
                 <Button
                   type="primary"
                   loading={actionLoading}
-                  onClick={() => updateStatus('IN_REVIEW', 'Lead moved to In Review')}
-                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#059669', border: 'none', boxShadow: '0 4px 14px rgba(5,150,105,0.25)', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                  onClick={() => updateStatus('IN_REVIEW', 'Started checking the application')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#059669', border: 'none', boxShadow: '0 4px 14px rgba(5,150,105,0.25)', fontSize: 13, letterSpacing: '0.02em' }}
                 >
-                  Move to Review
+                  Start Checking
                 </Button>
               )}
-              {/* Mark Resolved — IN_REVIEW leads only */}
+              {/* Mark as Done — close the case once everything is verified */}
               {drawerLead?.status === 'IN_REVIEW' && (
                 <Button
                   type="primary"
                   loading={actionLoading}
-                  onClick={() => updateStatus('RESOLVED', 'Lead marked as Resolved')}
-                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#4f46e5', border: 'none', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
+                  onClick={() => updateStatus('RESOLVED', 'Application verified and closed')}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, background: '#4f46e5', border: 'none', fontSize: 13, letterSpacing: '0.02em' }}
                 >
-                  Mark Resolved
+                  Mark as Done
                 </Button>
               )}
             </div>

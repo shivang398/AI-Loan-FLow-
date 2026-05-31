@@ -25,6 +25,7 @@ const DashboardLayout: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [notifServiceDown, setNotifServiceDown] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,11 +48,15 @@ const DashboardLayout: React.FC = () => {
   }, [location.pathname]);
 
   const fetchUnreadCount = useCallback(async () => {
+    if (notifServiceDown) return;
     try {
       const res = await api.get('/notifications/unread-count');
       setUnreadCount(res.data?.data?.count ?? 0);
-    } catch { /* silently ignore */ }
-  }, []);
+    } catch (err: any) {
+      // Stop polling if the service itself is broken (5xx), not just a network hiccup
+      if (err?.response?.status >= 500) setNotifServiceDown(true);
+    }
+  }, [notifServiceDown]);
 
   useEffect(() => {
     fetchUnreadCount();
