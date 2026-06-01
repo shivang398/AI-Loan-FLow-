@@ -24,9 +24,26 @@ import ReportingDashboard from './features/reporting/components/ReportingDashboa
 import ConnectorHub from './features/admin/components/ConnectorHub';
 import PayoutTracker from './features/admin/components/PayoutTracker';
 import PoliciesPage from './features/policies/components/PoliciesPage';
+import { useSelector } from 'react-redux';
+import { RootState } from './store';
 import './index.css';
 
 const queryClient = new QueryClient();
+
+// Smart 404 — authenticated users go to their role home, others go to login
+const SmartRedirect: React.FC = () => {
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  if (!isAuthenticated || !user) return <Navigate to="/login" replace />;
+  const roleHome: Record<string, string> = {
+    ADMIN:           '/dashboard',
+    RM:              '/rm/dashboard',
+    TEAM_LEADER:     '/tl/dashboard',
+    OPERATIONS:      '/ops/dashboard',
+    CONNECTOR:       '/connector/dashboard',
+    PARTNER_MANAGER: '/pm/partners',
+  };
+  return <Navigate to={roleHome[user.role] ?? '/dashboard'} replace />;
+};
 
 const App: React.FC = () => {
   return (
@@ -57,7 +74,6 @@ const App: React.FC = () => {
               {/* Partner Manager Routes — full ownership of partner lifecycle */}
               <Route element={<ProtectedRoute allowedRoles={['PARTNER_MANAGER']} />}>
                 <Route path="/pm/partners"     element={<ConnectorHub />} />
-                <Route path="/pm/onboarding"   element={<ConnectorHub />} />
                 <Route path="/pm/payouts"      element={<PayoutTracker />} />
                 <Route path="/pm/commissions"  element={<CommissionDashboard />} />
                 <Route path="/pm/policies"     element={<PoliciesPage />} />
@@ -108,7 +124,7 @@ const App: React.FC = () => {
           {/* Fallback to dashboard for authenticated users */}
           <Route path="/app" element={<Navigate to="/dashboard" replace />} />
           <Route path="/unauthorized" element={<div>Unauthorized Access</div>} />
-          <Route path="*" element={<div>404 Not Found</div>} />
+          <Route path="*" element={<SmartRedirect />} />
         </Routes>
       </BrowserRouter>
       </AntApp>

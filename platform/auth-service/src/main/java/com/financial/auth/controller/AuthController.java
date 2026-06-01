@@ -28,7 +28,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Map<String, String>>> register(@Valid @RequestBody AuthRequests.RegisterRequest request) {
         Map<String, String> result = authService.registerUser(request);
@@ -93,7 +93,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("OK", "Current User Info", UUID.randomUUID().toString()));
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
     @GetMapping("/users/lookup")
     public ResponseEntity<ApiResponse<Map<String, String>>> lookupUser(
             @RequestParam String email) {

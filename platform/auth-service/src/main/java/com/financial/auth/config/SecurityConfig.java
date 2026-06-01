@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login", "/auth/refresh", "/auth/register/partner").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                .requestMatchers("/auth/register").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                .requestMatchers("/auth/register").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "PARTNER_MANAGER", "ROLE_PARTNER_MANAGER")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
