@@ -77,6 +77,17 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- Spring Boot 4.x splits Flyway auto-config into spring-boot-starter-flyway;
+             flyway-core alone is not enough to activate it -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <!-- Flyway 11.x requires this for PostgreSQL support — not bundled in flyway-core -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -145,7 +156,7 @@
                                     <version>[25,)</version>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
-                                    <version>3.9.0</version>
+                                    <version>[3.9.0,4.0.0)</version>
                                 </requireMavenVersion>
                             </rules>
                         </configuration>

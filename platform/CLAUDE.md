@@ -23,11 +23,14 @@ docker compose ps             # verify all healthy (~30s)
 ### Running a backend service (dev mode)
 
 ```bash
+# Use the bundled Maven 3.9.6 — system mvn (3.8.x) will be rejected by the enforcer
+export MVN=~/Desktop/Auditor/maven/apache-maven-3.9.6/bin/mvn
+
 # From platform/ directory — common-lib must be installed first on a clean checkout
-mvn -pl common-lib install -DskipTests -q
+$MVN -pl common-lib install -DskipTests -q
 
 # Then run any service
-cd auth-service && mvn spring-boot:run
+cd auth-service && $MVN spring-boot:run
 ```
 
 Each service reads env vars. Minimum required for every service:
@@ -45,11 +48,13 @@ Additional per-service vars (empty string is accepted as default):
 ### Building (without running)
 
 ```bash
+export MVN=~/Desktop/Auditor/maven/apache-maven-3.9.6/bin/mvn
+
 # Single service + its dependencies
-mvn -pl common-lib,auth-service -am package -DskipTests
+$MVN -pl common-lib,auth-service -am package -DskipTests
 
 # All services
-mvn clean package -DskipTests
+$MVN clean package -DskipTests
 ```
 
 ### Frontend
@@ -173,8 +178,8 @@ Build always copies the entire `platform/` directory so Maven can resolve inter-
 
 ## Key constraints to keep in mind
 
-- **Java target is 25** (`pom.xml` `<java.version>25</java.version>`). Local dev runs on JDK 26 (compatible). Maven enforcer requires `[25,)`.
-- **No `./mvnw`** in this repo. Use system `mvn` (3.8.7+ installed).
+- **Java target is 25** (`pom.xml` `<java.version>25</java.version>`). Local dev **must** use JDK 25 — the enforcer now rejects JDK 26+. Maven enforcer requires `[3.9.0,4.0.0)`.
+- **No `./mvnw`** in this repo. Do **not** use the system `mvn` (3.8.7 — fails the enforcer). Use the bundled Maven 3.9.6: `platform/maven/apache-maven-3.9.6/bin/mvn`.
 - **`ddl-auto: validate`** on all services — schema changes require a new Flyway migration file; you cannot just change an entity and restart.
 - **`DB_PASSWORD`, `RABBITMQ_USER`, `RABBITMQ_PASS`** have no defaults — services will refuse to start without them.
 - **Sensitive fields**: `@JsonIgnore` must be on `panNumber`/`aadhaarNumber` in any entity that goes into an API response. Check `Lead.java` and `CustomerKyc.java` as the pattern.

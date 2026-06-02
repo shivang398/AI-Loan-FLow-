@@ -36,12 +36,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
-                // CONNECTORs can read their own transactions and slabs
+                // CONNECTORs can read their own transactions, slabs, and individual records
                 .requestMatchers(HttpMethod.GET, "/transactions/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/transactions/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/slabs/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
-                // ADMIN has full read/write access; PARTNER_MANAGER owns commission/payout management
-                .requestMatchers(HttpMethod.GET, "/transactions/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/slabs/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/slabs/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
                 .anyRequest().hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

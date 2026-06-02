@@ -31,158 +31,392 @@ import apiClient from '../../../shared/services/apiClient';
 
 const { Title, Text } = Typography;
 
+// ── CIBIL score band config ───────────────────────────────────────────────────
+
+const SCORE_BANDS: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
+  EXCELLENT: { label: 'Excellent', color: '#15803d', bg: '#f0fdf4', border: '#86efac', desc: 'Highly likely to be approved. Best interest rates available.' },
+  GOOD:      { label: 'Good',      color: '#4d8f4a', bg: '#f0fdf4', border: '#a3e635', desc: 'Strong profile. Approval likely with standard terms.' },
+  FAIR:      { label: 'Fair',      color: '#b45309', bg: '#fffbeb', border: '#fcd34d', desc: 'Moderate risk. May face conditional approval.' },
+  POOR:      { label: 'Poor',      color: '#c2410c', bg: '#fff7ed', border: '#fdba74', desc: 'High risk. Approval uncertain. Higher interest rates.' },
+  VERY_POOR: { label: 'Very Poor', color: '#991b1b', bg: '#fff1f2', border: '#fca5a5', desc: 'Unlikely to be approved. Significant credit issues.' },
+};
+
+const scoreColor = (score: number) => {
+  if (score >= 750) return '#15803d';
+  if (score >= 700) return '#4d8f4a';
+  if (score >= 650) return '#b45309';
+  if (score >= 550) return '#c2410c';
+  return '#991b1b';
+};
+
+// ── Mini score gauge ──────────────────────────────────────────────────────────
+
+const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
+  const CIRCUM = Math.PI * 90;
+  const clipped = Math.min(Math.max(score - 300, 0), 600); // range 300–900
+  const pct = clipped / 600;
+  const offset = CIRCUM * (1 - pct);
+  const color = scoreColor(score);
+
+  return (
+    <svg viewBox="0 0 220 120" width={220} height={120} style={{ overflow: 'visible' }}>
+      <path d="M 20,110 A 90,90 0 0,1 200,110" stroke="#e2e8f0" strokeWidth={18} fill="none" strokeLinecap="round" />
+      <path
+        d="M 20,110 A 90,90 0 0,1 200,110"
+        stroke={color}
+        strokeWidth={18}
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray={CIRCUM}
+        strokeDashoffset={offset}
+        style={{ transition: 'stroke-dashoffset 1s ease, stroke 0.4s ease' }}
+      />
+      <text x="110" y="98" textAnchor="middle" fontSize="36" fontWeight="900" fill={color}
+        style={{ fontFamily: "'Segoe UI', sans-serif" }}>{score}</text>
+      <text x="110" y="116" textAnchor="middle" fontSize="9" fill="#64748b" fontWeight="700"
+        style={{ fontFamily: "'Segoe UI', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        CIBIL Score  ·  Range 300–900
+      </text>
+    </svg>
+  );
+};
+
+// ── Main CIBIL check page ─────────────────────────────────────────────────────
+
 export const CibilCheckPage: React.FC = () => {
-  const [cibilLoading, setCibilLoading] = useState(false);
-  const [cibilResult, setCibilResult] = useState<any>(null);
+  const [loading, setCibilLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [summary, setSummary] = useState<any>(null);
+  const [lastValues, setLastValues] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCibilCheck = async (values: any) => {
     setCibilLoading(true);
-    setCibilResult(null);
+    setSummary(null);
+    setError(null);
+    setLastValues(values);
+    const payload = {
+      mobileNumber: values.mobileNumber,
+      name: values.name,
+      panNumber: values.panNumber,
+      consent: values.consent,
+    };
     try {
-      const response = await apiClient.post(
-        '/eligibility/cibil/report',
-        {
-          mobileNumber: values.mobileNumber,
-          name: values.name,
-          panNumber: values.panNumber,
-          consent: values.consent
-        },
-        { responseType: 'blob' }
-      );
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `CIBIL_Report_${values.panNumber}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-
-      setCibilResult({ success: true, message: 'PDF generated and downloaded successfully.' });
-    } catch (error: any) {
-      let msg = 'Failed to fetch and generate CIBIL PDF report';
-      if (error?.response?.data instanceof Blob) {
-        try {
-          const text = await error.response.data.text();
-          const parsed = JSON.parse(text);
-          msg = parsed.message || parsed.error || msg;
-        } catch {}
-      }
-      setCibilResult({ success: false, error: msg });
+      const res = await apiClient.post('/eligibility/cibil/check', payload);
+      setSummary(res.data?.data || res.data);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to fetch CIBIL data. Please try again.';
+      setError(msg);
     } finally {
       setCibilLoading(false);
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!lastValues) return;
+    setPdfLoading(true);
+    try {
+      const response = await apiClient.post(
+        '/eligibility/cibil/report',
+        {
+          mobileNumber: lastValues.mobileNumber,
+          name: lastValues.name,
+          panNumber: lastValues.panNumber,
+          consent: lastValues.consent,
+        },
+        { responseType: 'blob' }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CIBIL_Report_${lastValues.panNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('PDF download failed. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const band = summary ? (SCORE_BANDS[summary.scoreBand] || SCORE_BANDS['FAIR']) : null;
+
   return (
-    <div className="max-w-4xl mx-auto py-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      {/* Tool Header */}
-      <div className="mb-12 flex items-center justify-between">
+    <div className="max-w-5xl mx-auto py-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      {/* Header */}
+      <div className="mb-10 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-3">
-             <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shadow-sm border border-rose-100">
-                <ShieldCheck size={28} />
-             </div>
-             <Text className="text-slate-400 text-xs font-black uppercase tracking-[0.25em]">Credit Intelligence</Text>
+            <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shadow-sm border border-rose-100">
+              <ShieldCheck size={28} />
+            </div>
+            <Text className="text-slate-400 text-xs font-black uppercase tracking-[0.25em]">Credit Intelligence</Text>
           </div>
           <Title level={1} className="m-0 font-black tracking-tighter text-slate-800">CIBIL Soft Pull</Title>
           <Text className="text-slate-500 font-medium text-lg">Zero-impact institutional credit check via secure API</Text>
         </div>
         <div className="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-           <Zap size={18} className="text-amber-500 fill-amber-500" />
-           <Text className="font-black text-slate-800 text-sm">INSTANT REPORT</Text>
+          <Zap size={18} className="text-amber-500 fill-amber-500" />
+          <Text className="font-black text-slate-800 text-sm">INSTANT REPORT</Text>
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100 p-8">
-        {!cibilResult ? (
+      {/* Input form */}
+      {!summary && (
+        <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100 p-8">
           <Form layout="vertical" onFinish={handleCibilCheck} className="custom-form-premium">
             <Row gutter={24}>
-               <Col span={12}>
-                  <Form.Item name="name" label="Legal Full Name (As per PAN)" rules={[{ required: true, message: 'Please enter legal name' }]}>
-                    <Input size="large" placeholder="Rahul Sunil Sharma" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
-                  </Form.Item>
-               </Col>
-               <Col span={12}>
-                  <Form.Item name="panNumber" label="Permanent Account Number (PAN)" rules={[{ required: true, message: 'Please enter PAN' }]}>
-                    <Input size="large" placeholder="ABCDE1234F" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-black tracking-widest uppercase" />
-                  </Form.Item>
-               </Col>
+              <Col span={12}>
+                <Form.Item name="name" label="Legal Full Name (As per PAN)" rules={[{ required: true, message: 'Please enter legal name' }]}>
+                  <Input size="large" placeholder="Rahul Sunil Sharma" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="panNumber" label="Permanent Account Number (PAN)" rules={[{ required: true, message: 'Please enter PAN' }]}>
+                  <Input size="large" placeholder="ABCDE1234F" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-black tracking-widest uppercase" />
+                </Form.Item>
+              </Col>
             </Row>
 
             <Form.Item name="mobileNumber" label="Mobile Number (Linked to PAN/Aadhaar)" rules={[{ required: true, message: 'Please enter mobile number' }]}>
               <Input size="large" placeholder="+91 98765 43210" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
             </Form.Item>
 
-            <Alert 
+            <Alert
               className="rounded-2xl border-none bg-blue-50/50 mb-8 p-4"
               message={
                 <div className="flex items-center gap-3">
-                   <Lock size={16} className="text-blue-600" />
-                   <Text className="text-blue-800 text-xs font-bold">Encrypted End-to-End. No impact on customer credit score.</Text>
+                  <Lock size={16} className="text-blue-600" />
+                  <Text className="text-blue-800 text-xs font-bold">Encrypted End-to-End. No impact on customer credit score.</Text>
                 </div>
               }
             />
 
             <Form.Item name="consent" valuePropName="checked" rules={[{ validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('Consent is mandatory to proceed')) }]}>
               <Checkbox className="text-slate-400 font-bold text-xs leading-relaxed">
-                 I hereby confirm that I have obtained explicit consent from the customer to pull their credit information as per RBI and CIC regulatory guidelines.
+                I hereby confirm that I have obtained explicit consent from the customer to pull their credit information as per RBI and CIC regulatory guidelines.
               </Checkbox>
             </Form.Item>
 
             <Divider className="my-8 opacity-50" />
 
+            {error && <Alert type="error" message={error} className="rounded-2xl mb-6" showIcon />}
+
             <Form.Item className="m-0 text-right">
-              <Button 
-                type="primary" 
-                size="large" 
-                htmlType="submit" 
-                loading={cibilLoading}
+              <Button
+                type="primary"
+                size="large"
+                htmlType="submit"
+                loading={loading}
                 className="h-16 px-12 rounded-2xl bg-rose-600 border-none font-black shadow-xl shadow-rose-100 flex items-center gap-3 ml-auto hover:bg-rose-500"
               >
-                GENERATE CIBIL REPORT <ArrowRight size={18} />
+                CHECK CIBIL SCORE <ArrowRight size={18} />
               </Button>
             </Form.Item>
           </Form>
-        ) : (
-          <div className="py-12">
-            {cibilResult.success ? (
-              <Result
-                status="success"
-                title={<Title level={2} className="font-black m-0">Report Generated</Title>}
-                subTitle={<Text className="text-slate-500 font-medium">The PDF report has been downloaded to your device via secure channel.</Text>}
-                extra={[
-                  <Button 
-                    key="close" 
-                    size="large" 
-                    type="primary" 
-                    onClick={() => setCibilResult(null)}
-                    className="h-14 px-8 rounded-2xl bg-slate-900 border-none font-black shadow-xl shadow-slate-200"
-                  >
-                    Run Another Check
-                  </Button>
-                ]}
-              />
-            ) : (
-              <Result
-                status="error"
-                title={<Title level={2} className="font-black m-0">Integration Error</Title>}
-                subTitle={<Text className="text-slate-500 font-medium">{cibilResult.error}</Text>}
-                extra={[
-                  <Button 
-                    key="retry" 
-                    size="large" 
-                    onClick={() => setCibilResult(null)}
-                    className="h-14 px-8 rounded-2xl bg-rose-600 border-none text-white font-black"
-                  >
-                    Try Again
-                  </Button>
-                ]}
-              />
-            )}
+        </Card>
+      )}
+
+      {/* Results dashboard */}
+      {summary && band && (
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+          {/* Demo mode warning */}
+          {summary.demoMode && (
+            <Alert
+              type="warning"
+              showIcon
+              message="Demo Mode — CIBIL API credentials not configured. All data shown below is illustrative only."
+              className="rounded-2xl"
+            />
+          )}
+
+          {/* Score hero card */}
+          <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100" bodyStyle={{ padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'stretch' }}>
+              {/* Left: gauge */}
+              <div style={{
+                flex: '0 0 260px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center', padding: '36px 24px',
+                background: band.bg, borderRadius: '2.5rem 0 0 2.5rem',
+                borderRight: `2px solid ${band.border}`,
+              }}>
+                <ScoreGauge score={summary.cibilScore} />
+                <div style={{
+                  marginTop: 10, padding: '6px 18px', borderRadius: 999,
+                  background: band.color, color: '#fff', fontWeight: 800, fontSize: 13, letterSpacing: '0.06em',
+                }}>
+                  {band.label.toUpperCase()}
+                </div>
+                <Text style={{ fontSize: 11, color: '#64748b', textAlign: 'center', marginTop: 8, maxWidth: 200 }}>
+                  {band.desc}
+                </Text>
+              </div>
+
+              {/* Right: details */}
+              <div style={{ flex: 1, padding: '32px 36px' }}>
+                <div style={{ marginBottom: 20 }}>
+                  <Text style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Customer Profile</Text>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', marginTop: 4 }}>{summary.fullName}</div>
+                  <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+                    Score Date: {summary.scoreDate} · Report ID: {summary.reportId}
+                  </div>
+                </div>
+
+                {/* Personal info grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px 24px', marginBottom: 24 }}>
+                  {[
+                    { label: 'Date of Birth', value: summary.dob },
+                    { label: 'Gender', value: summary.gender },
+                    { label: 'Occupation', value: summary.occupationType },
+                    { label: 'Net Income', value: summary.income },
+                    { label: 'Enquiries (24m)', value: `${summary.enquiryCount}` },
+                    { label: 'Address', value: summary.address },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#334155', marginTop: 2 }}>{value || '—'}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Account summary chips */}
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'Total Accounts', value: summary.totalAccounts, color: '#6366f1', bg: '#ede9fe' },
+                    { label: 'Active', value: summary.activeAccounts, color: '#0891b2', bg: '#ecfeff' },
+                    { label: 'Closed', value: summary.closedAccounts, color: '#64748b', bg: '#f1f5f9' },
+                    { label: 'Overdue', value: summary.overdueAccounts, color: '#dc2626', bg: '#fee2e2' },
+                  ].map(({ label, value, color, bg }) => (
+                    <div key={label} style={{ padding: '8px 16px', borderRadius: 12, background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80 }}>
+                      <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Financial summary */}
+          <Row gutter={12}>
+            <Col span={12}>
+              <Card className="rounded-[1.5rem] border border-slate-100 shadow-sm" bodyStyle={{ padding: '20px 24px' }}>
+                <Text style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Outstanding Balance</Text>
+                <div style={{ fontSize: 26, fontWeight: 900, color: '#0f172a', marginTop: 6 }}>
+                  ₹{Number(summary.totalBalance).toLocaleString('en-IN')}
+                </div>
+                <Text style={{ fontSize: 12, color: '#94a3b8' }}>Across all active credit accounts</Text>
+              </Card>
+            </Col>
+            <Col span={12}>
+              <Card className="rounded-[1.5rem] border border-slate-100 shadow-sm" bodyStyle={{ padding: '20px 24px' }}>
+                <Text style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Overdue Amount</Text>
+                <div style={{ fontSize: 26, fontWeight: 900, color: summary.totalOverdue > 0 ? '#dc2626' : '#15803d', marginTop: 6 }}>
+                  {summary.totalOverdue > 0 ? `₹${Number(summary.totalOverdue).toLocaleString('en-IN')}` : 'NIL'}
+                </div>
+                <Text style={{ fontSize: 12, color: '#94a3b8' }}>{summary.totalOverdue > 0 ? 'Payment(s) overdue — requires attention' : 'No overdue payments'}</Text>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Accounts table */}
+          {summary.accounts?.length > 0 && (
+            <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 24 }}>
+              <Text style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>
+                Credit Account Details
+              </Text>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: '#0f172a' }}>
+                      {['Lender', 'Type', 'Account No.', 'Opened', 'Balance', 'Overdue', 'Status'].map(h => (
+                        <th key={h} style={{ color: '#fff', padding: '10px 12px', textAlign: 'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.accounts.map((acct: any, i: number) => {
+                      const isOverdue = acct.amountOverdue > 0;
+                      return (
+                        <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1e293b' }}>{acct.memberName}</td>
+                          <td style={{ padding: '10px 12px', color: '#475569' }}>{acct.accountType}</td>
+                          <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#64748b' }}>{acct.accountNumber}</td>
+                          <td style={{ padding: '10px 12px', color: '#64748b' }}>{acct.dateOpened || '—'}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>₹{Number(acct.currentBalance).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: isOverdue ? '#dc2626' : '#15803d' }}>
+                            {isOverdue ? `₹${Number(acct.amountOverdue).toLocaleString('en-IN')}` : 'NIL'}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span style={{
+                              padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                              background: isOverdue ? '#fee2e2' : acct.dateClosed ? '#f1f5f9' : '#dcfce7',
+                              color: isOverdue ? '#dc2626' : acct.dateClosed ? '#64748b' : '#15803d',
+                            }}>
+                              {isOverdue ? 'OVERDUE' : acct.dateClosed ? 'CLOSED' : 'ACTIVE'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* Score range reference */}
+          <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 24 }}>
+            <Text style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 14 }}>
+              Score Range Reference
+            </Text>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { range: '750–900', label: 'Excellent', color: '#15803d', bg: '#f0fdf4' },
+                { range: '700–749', label: 'Good',      color: '#4d8f4a', bg: '#f7fef5' },
+                { range: '650–699', label: 'Fair',      color: '#b45309', bg: '#fffbeb' },
+                { range: '550–649', label: 'Poor',      color: '#c2410c', bg: '#fff7ed' },
+                { range: '300–549', label: 'Very Poor', color: '#991b1b', bg: '#fff1f2' },
+              ].map(({ range, label, color, bg }) => {
+                const isActive = SCORE_BANDS[summary.scoreBand]?.label === label;
+                return (
+                  <div key={range} style={{
+                    padding: '8px 16px', borderRadius: 12, background: isActive ? color : bg,
+                    border: isActive ? `2px solid ${color}` : '2px solid transparent',
+                    flex: 1, minWidth: 100, textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: isActive ? '#fff' : color }}>{range}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#fff' : color, opacity: 0.85 }}>{label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button
+              type="primary"
+              size="large"
+              loading={pdfLoading}
+              onClick={handleDownloadPdf}
+              style={{ height: 56, borderRadius: 16, background: '#0f172a', border: 'none', fontWeight: 800, fontSize: 14, paddingLeft: 32, paddingRight: 32, display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              {!pdfLoading && <Download size={18} />} Download Full PDF Report
+            </Button>
+            <Button
+              size="large"
+              onClick={() => { setSummary(null); setLastValues(null); setError(null); }}
+              style={{ height: 56, borderRadius: 16, border: '2px solid #e2e8f0', fontWeight: 700, fontSize: 14, paddingLeft: 28, paddingRight: 28 }}
+            >
+              Run Another Check
+            </Button>
           </div>
-        )}
-      </Card>
+        </div>
+      )}
     </div>
   );
 };

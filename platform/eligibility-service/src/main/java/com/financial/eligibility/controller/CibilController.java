@@ -1,7 +1,9 @@
 package com.financial.eligibility.controller;
 
 import com.financial.eligibility.dto.CibilRequestDto;
+import com.financial.eligibility.dto.CibilSummaryDto;
 import com.financial.eligibility.service.CibilService;
+import com.financial.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +24,19 @@ import java.util.Map;
 public class CibilController {
 
     private final CibilService cibilService;
+
+    @PostMapping("/check")
+    public ResponseEntity<?> getCibilSummary(@RequestBody CibilRequestDto requestDto) {
+        try {
+            CibilSummaryDto summary = cibilService.getCibilSummary(requestDto);
+            return ResponseEntity.ok(ApiResponse.success("CIBIL summary retrieved", summary, null));
+        } catch (Exception e) {
+            log.error("CIBIL check failed for PAN {}: {}", requestDto.getPanNumber(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("message", e.getMessage()));
+        }
+    }
 
     @PostMapping("/report")
     public ResponseEntity<?> generateCibilReport(@RequestBody CibilRequestDto requestDto) {

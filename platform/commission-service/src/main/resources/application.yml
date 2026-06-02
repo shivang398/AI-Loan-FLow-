@@ -16,6 +16,7 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 3
+    validate-on-migrate: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}

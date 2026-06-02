@@ -3,6 +3,7 @@ package com.financial.eligibility.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.eligibility.dto.CibilRequestDto;
+import com.financial.eligibility.dto.CibilSummaryDto;
 import java.awt.Color;
 import com.lowagie.text.Chunk;
 import com.lowagie.text.Document;
@@ -75,7 +76,7 @@ public class CibilService {
     private Font reg(float sz, Color c)   { return FontFactory.getFont(FontFactory.HELVETICA,        sz, c); }
     private Font italic(float sz, Color c){ return FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, sz, c); }
 
-    // ── Public entry point ────────────────────────────────────────────────────
+    // ── Public entry points ───────────────────────────────────────────────────
 
     public byte[] generateCibilReportPdf(CibilRequestDto dto) {
         boolean hasCredentials = !isBlank(clientId) && !isBlank(apiKey) && !isBlank(workflowId);
@@ -87,6 +88,67 @@ public class CibilService {
             log.warn("CIBIL API credentials not configured — generating demo report for PAN={}", dto.getPanNumber());
         }
         return buildBankStandardPdf(dto, apiResponse);
+    }
+
+    public CibilSummaryDto getCibilSummary(CibilRequestDto dto) {
+        boolean hasCredentials = !isBlank(clientId) && !isBlank(apiKey) && !isBlank(workflowId);
+
+        JsonNode apiResponse = null;
+        if (hasCredentials) {
+            apiResponse = callTenacioApi(dto);
+        } else {
+            log.warn("CIBIL API credentials not configured — returning demo summary for PAN={}", dto.getPanNumber());
+        }
+
+        boolean demoMode = (apiResponse == null);
+        CibilData data = demoMode ? buildDemoData(dto) : parseApiResponse(dto, apiResponse);
+        return toSummaryDto(data, demoMode);
+    }
+
+    private CibilSummaryDto toSummaryDto(CibilData data, boolean demoMode) {
+        CibilSummaryDto dto = new CibilSummaryDto();
+        dto.setReportId(data.reportId);
+        dto.setCibilScore(data.cibilScore);
+        dto.setScoreBand(scoreBandLabel(data.cibilScore));
+        dto.setScoreDate(data.scoreDate);
+        dto.setFullName(data.fullName);
+        dto.setDob(data.dob);
+        dto.setGender(data.gender);
+        dto.setAddress(data.address);
+        dto.setOccupationType(data.occupationType);
+        dto.setIncome(data.income);
+        dto.setTotalAccounts(data.accounts.size());
+        dto.setActiveAccounts(data.activeAccounts);
+        dto.setClosedAccounts(data.closedAccounts);
+        dto.setOverdueAccounts(data.overdueAccounts);
+        dto.setTotalBalance(data.totalBalance);
+        dto.setTotalOverdue(data.totalOverdue);
+        dto.setEnquiryCount(data.enquiries.size());
+        dto.setDemoMode(demoMode);
+
+        List<CibilSummaryDto.AccountSummary> accountSummaries = new ArrayList<>();
+        for (AccountDetail acct : data.accounts) {
+            CibilSummaryDto.AccountSummary s = new CibilSummaryDto.AccountSummary();
+            s.setMemberName(acct.memberName);
+            s.setAccountType(acct.accountType);
+            s.setAccountNumber(acct.accountNumber);
+            s.setCurrentBalance(acct.currentBalance);
+            s.setAmountOverdue(acct.amountOverdue);
+            s.setAccountStatus(acct.accountStatus);
+            s.setDateOpened(acct.dateOpened);
+            s.setDateClosed(acct.dateClosed);
+            accountSummaries.add(s);
+        }
+        dto.setAccounts(accountSummaries);
+        return dto;
+    }
+
+    private String scoreBandLabel(int score) {
+        if (score >= 750) return "EXCELLENT";
+        if (score >= 700) return "GOOD";
+        if (score >= 650) return "FAIR";
+        if (score >= 550) return "POOR";
+        return "VERY_POOR";
     }
 
     // ── Tenacio API call ──────────────────────────────────────────────────────
@@ -125,8 +187,13 @@ public class CibilService {
     private String extractErrorMessage(String body) {
         try {
             JsonNode node = objectMapper.readTree(body);
-            if (node.has("message")) return node.get("message").asText();
-            if (node.has("error"))   return node.get("error").asText();
+            if (node.has("message") && node.get("message").isTextual()) return node.get("message").asText();
+            // Tenacio format: {"error": {"message": "..."}}
+            JsonNode errorNode = node.get("error");
+            if (errorNode != null) {
+                if (errorNode.isTextual())                  return errorNode.asText();
+                if (errorNode.has("message"))               return errorNode.get("message").asText();
+            }
         } catch (Exception ignored) {}
         return body != null && !body.isBlank() ? body : "Unknown API error";
     }
