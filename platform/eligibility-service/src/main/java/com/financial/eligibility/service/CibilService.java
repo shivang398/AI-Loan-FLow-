@@ -185,6 +185,13 @@ public class CibilService {
                 String msg = root.path("serviceError").path("message").asText("");
                 if (msg.isBlank()) msg = root.path("message").asText("CIBIL lookup failed");
                 log.error("Tenacio business error for PAN={}: {}", dto.getPanNumber(), msg);
+                // Make "No Data Found" actionable for the connector
+                if ("No Data Found".equalsIgnoreCase(msg)) {
+                    throw new RuntimeException(
+                        "No CIBIL record found for this PAN + mobile combination. " +
+                        "Please verify: (1) PAN is correct, (2) Mobile number is the one " +
+                        "the customer used when applying for their first loan or credit card.");
+                }
                 throw new RuntimeException(msg);
             }
 
@@ -926,13 +933,31 @@ public class CibilService {
 
     private String accountTypeLabel(String symbol) {
         return switch (symbol) {
-            case "01" -> "Credit Card";
+            case "01" -> "Auto Loan";
             case "02" -> "Home Loan";
-            case "03" -> "Auto Loan";
+            case "03" -> "Property Loan";
+            case "04" -> "Business Loan";
             case "05" -> "Personal Loan";
             case "06" -> "Consumer Loan";
-            case "07" -> "Gold Loan";
-            default   -> "Loan";
+            case "07" -> "Personal Loan (CC)";
+            case "08" -> "Home Loan";
+            case "09" -> "OD / Overdraft";
+            case "10" -> "Credit Card";
+            case "11" -> "Home Loan";
+            case "12" -> "Property Loan";
+            case "13" -> "Business Loan";
+            case "31" -> "Consumer Loan";
+            case "32" -> "Gold Loan";
+            case "33" -> "Loan Against Securities";
+            case "35" -> "Kisan Credit Card";
+            case "37" -> "Two-Wheeler Loan";
+            case "38" -> "Commercial Vehicle Loan";
+            case "39" -> "Construction Equipment Loan";
+            case "43" -> "Pradhan Mantri Loan";
+            case "51" -> "Business Credit Card";
+            case "52" -> "Fleet Card";
+            case "61" -> "Business Loan";
+            default   -> "Loan (" + symbol + ")";
         };
     }
 
@@ -959,7 +984,10 @@ public class CibilService {
 
     private long parseLongSafe(String s) {
         if (s == null || s.isBlank()) return 0;
-        try { return (long) Double.parseDouble(s.trim()); }
+        try {
+            long v = (long) Double.parseDouble(s.trim());
+            return v < 0 ? 0 : v; // CIBIL uses -1 for "not reported" — treat as 0
+        }
         catch (Exception e) { return 0; }
     }
 
