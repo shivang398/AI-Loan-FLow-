@@ -6,6 +6,7 @@ import com.financial.eligibility.service.CibilService;
 import com.financial.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,10 +33,17 @@ public class CibilController {
             return ResponseEntity.ok(ApiResponse.success("CIBIL summary retrieved", summary, null));
         } catch (Exception e) {
             log.error("CIBIL check failed for PAN {}: {}", requestDto.getPanNumber(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+            // 422 for bureau lookup failures (wrong PAN/mobile, no data) vs 502 for infra errors
+            HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY;
+            return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("message", e.getMessage()));
+                .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "CIBIL lookup failed"));
         }
+    }
+
+    private boolean isInfraError(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+        return msg.contains("unable to reach") || msg.contains("connection") || msg.contains("timeout");
     }
 
     @PostMapping("/report")
@@ -45,17 +53,19 @@ public class CibilController {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment",
-                "CIBIL_Report_" + requestDto.getPanNumber() + ".pdf");
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("CIBIL_Report_" + requestDto.getPanNumber() + ".pdf")
+                .build());
+            headers.setCacheControl("no-cache");
 
             return ResponseEntity.ok().headers(headers).body(pdfBytes);
 
         } catch (Exception e) {
             log.error("CIBIL report generation failed for PAN {}: {}", requestDto.getPanNumber(), e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+            HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY;
+            return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("message", e.getMessage()));
+                .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "PDF generation failed"));
         }
     }
 }

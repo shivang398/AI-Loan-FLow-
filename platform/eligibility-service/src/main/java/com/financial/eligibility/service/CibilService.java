@@ -144,10 +144,11 @@ public class CibilService {
     }
 
     private String scoreBandLabel(int score) {
-        if (score >= 750) return "EXCELLENT";
-        if (score >= 700) return "GOOD";
-        if (score >= 650) return "FAIR";
-        if (score >= 550) return "POOR";
+        if (score <= 5)    return "NO_HISTORY"; // CIBIL NH (No History) code
+        if (score >= 750)  return "EXCELLENT";
+        if (score >= 700)  return "GOOD";
+        if (score >= 650)  return "FAIR";
+        if (score >= 550)  return "POOR";
         return "VERY_POOR";
     }
 
@@ -174,10 +175,25 @@ public class CibilService {
             ResponseEntity<String> response = restTemplate.postForEntity(
                 apiUrl, new HttpEntity<>(payload, headers), String.class);
             log.info("Tenacio CIBIL API — status={}", response.getStatusCode());
-            return objectMapper.readTree(response.getBody());
+            log.info("Tenacio RAW RESPONSE: {}", response.getBody());
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+
+            // Tenacio returns HTTP 200 for business errors — detect and throw
+            String apiStatus = root.path("status").asText("");
+            if ("error".equalsIgnoreCase(apiStatus)) {
+                String msg = root.path("serviceError").path("message").asText("");
+                if (msg.isBlank()) msg = root.path("message").asText("CIBIL lookup failed");
+                log.error("Tenacio business error for PAN={}: {}", dto.getPanNumber(), msg);
+                throw new RuntimeException(msg);
+            }
+
+            return root;
         } catch (HttpStatusCodeException e) {
             log.error("Tenacio error: {} — {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException(extractErrorMessage(e.getResponseBodyAsString()));
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to reach Tenacio CIBIL API", e);
             throw new RuntimeException("Unable to reach CIBIL service. Please try again later.");
@@ -785,36 +801,92 @@ public class CibilService {
 
     private CibilData parseApiResponse(CibilRequestDto dto, JsonNode api) {
         CibilData d = new CibilData();
-        d.reportId   = safeText(api, "requestId", "RMAP-" + System.currentTimeMillis() % 100000);
-        d.fullName   = dto.getName().toUpperCase();
-        d.cibilScore = safeInt(api, "data/score", safeInt(api, "score", 0));
-        d.scoreDate  = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        d.reportId  = safeText(api, "requestId", "RMAP-" + System.currentTimeMillis() % 100000);
+        d.fullName  = dto.getName().toUpperCase();
+        d.scoreDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
 
-        // Try to navigate into CCR structure (Tenacio wraps CIBIL's CCRResponse)
-        JsonNode cir = navigate(api, "data/report/CCRResponse/CIRReportDataLst/0/CIRReportData");
-        if (cir == null) cir = navigate(api, "data");
+        // Actual Tenacio/JadeMacaw response structure:
+        // data.cibilData.GetCustomerAssetsResponse.GetCustomerAssetsSuccess.Asset.TrueLinkCreditReport
+        JsonNode report = navigate(api,
+            "data/cibilData/GetCustomerAssetsResponse/GetCustomerAssetsSuccess/Asset/TrueLinkCreditReport");
 
-        JsonNode personal = navigate(cir, "IDAndContactInfo/PersonalInfo");
-        d.dob            = safeText(personal, "DOB/BirthDate", "—");
-        d.gender         = genderLabel(safeText(personal, "Gender", ""));
-        d.email          = safeText(navigate(cir, "IDAndContactInfo"), "EmailAddressInfo/0/EmailAddress", "—");
-        d.address        = buildAddress(navigate(cir, "IDAndContactInfo/AddressInfo/0"));
-        d.occupationType = safeText(navigate(cir, "IDAndContactInfo/PersonalInfo"), "OccupationCode", "—");
-        d.income         = safeText(navigate(cir, "IDAndContactInfo/PersonalInfo"), "TotalIncome", "—");
+        JsonNode borrower = navigate(report, "Borrower");
 
-        // Score
-        JsonNode scoreNode = navigate(cir, "ScoreDetails/0");
-        if (scoreNode != null && d.cibilScore == 0) {
-            d.cibilScore = safeInt(scoreNode, "BureauScore", 0);
+        // ── Score ─────────────────────────────────────────────────────────────
+        // riskScore is a STRING like "722" or "00722"
+        String riskScoreRaw = safeText(navigate(borrower, "CreditScore"), "riskScore", "0");
+        try { d.cibilScore = Integer.parseInt(riskScoreRaw.trim()); } catch (Exception ignored) {}
+
+        log.info("Parsed cibilScore={} (raw='{}') from Tenacio response (reportId={})",
+            d.cibilScore, riskScoreRaw, d.reportId);
+
+        // ── Personal info ─────────────────────────────────────────────────────
+        JsonNode birth  = navigate(borrower, "Birth/BirthDate");
+        if (birth != null) {
+            String day   = safeText(birth, "day",   "01");
+            String month = safeText(birth, "month", "01");
+            String year  = safeText(birth, "year",  "");
+            if (!year.isEmpty()) d.dob = String.format("%02d-%02d-%s",
+                Integer.parseInt(day), Integer.parseInt(month), year);
         }
 
-        // Accounts
+        d.gender = genderLabel(safeText(borrower, "Gender", ""));
+
+        JsonNode employer = navigate(borrower, "Employer");
+        d.occupationType = safeText(navigate(employer, "OccupationCode"), "description", "—");
+        String incomeRaw = safeText(employer, "income", "");
+        if (!incomeRaw.isEmpty()) {
+            try {
+                long income = (long) Double.parseDouble(incomeRaw);
+                d.income = "₹" + String.format("%,d", income) + " per month";
+            } catch (Exception ignored) { d.income = incomeRaw; }
+        }
+
+        JsonNode emailArr = navigate(borrower, "EmailAddress");
+        if (emailArr != null && emailArr.isArray() && emailArr.size() > 0) {
+            d.email = safeText(emailArr.get(0), "Email", "—");
+        }
+
+        JsonNode addrArr = navigate(borrower, "BorrowerAddress");
+        if (addrArr != null && addrArr.isArray() && addrArr.size() > 0) {
+            JsonNode addr = navigate(addrArr.get(0), "CreditAddress");
+            d.address = buildTrueLinkAddress(addr);
+        }
+
+        // ── Accounts (TradeLinePartition) ──────────────────────────────────────
         d.accounts = new ArrayList<>();
-        JsonNode accts = navigate(cir, "RetailAccountDetails");
-        if (accts == null) accts = navigate(api, "data/accounts");
-        if (accts != null && accts.isArray()) {
-            for (JsonNode a : accts) {
-                d.accounts.add(parseAccount(a));
+        JsonNode tradelines = navigate(report, "TradeLinePartition");
+        if (tradelines != null && tradelines.isArray()) {
+            for (JsonNode tl : tradelines) {
+                JsonNode tl2 = navigate(tl, "Tradeline");
+                if (tl2 == null) continue;
+                AccountDetail acct = new AccountDetail();
+                acct.memberName       = safeText(tl2, "creditorName", "Unknown");
+                acct.accountType      = accountTypeLabel(safeText(tl, "accountTypeSymbol", ""));
+                acct.accountNumber    = maskAccount(safeText(tl2, "accountNumber", "****"));
+                acct.ownership        = ownershipLabel(safeText(
+                    navigate(tl2, "AccountDesignator"), "symbol", ""));
+                acct.dateOpened       = formatTrueLinkDate(safeText(tl2, "dateOpened", ""));
+                acct.dateClosed       = formatTrueLinkDate(safeText(tl2, "dateClosed", ""));
+                acct.sanctionedAmount = parseLongSafe(safeText(tl2, "highBalance", "0"));
+                acct.currentBalance   = parseLongSafe(safeText(tl2, "currentBalance", "0"));
+                acct.amountOverdue    = parseLongSafe(
+                    safeText(navigate(tl2, "GrantedTrade"), "amountPastDue", "0"));
+                acct.accountStatus    = acct.amountOverdue > 0 ? "OVERDUE" : "STANDARD";
+                acct.lastPaymentDate  = formatTrueLinkDate(
+                    safeText(navigate(tl2, "GrantedTrade"), "dateLastPayment", ""));
+                acct.paymentFrequency = "Monthly";
+
+                JsonNode hist = navigate(tl2, "GrantedTrade/PayStatusHistory/MonthlyPayStatus");
+                acct.paymentHistory = new ArrayList<>();
+                if (hist != null && hist.isArray()) {
+                    for (JsonNode h : hist) {
+                        String s = safeText(h, "status", "0");
+                        acct.paymentHistory.add("0".equals(s) ? "STD" : "SMA");
+                        if (acct.paymentHistory.size() >= 24) break;
+                    }
+                }
+                d.accounts.add(acct);
             }
         }
 
@@ -824,23 +896,81 @@ public class CibilService {
         d.totalBalance    = d.accounts.stream().mapToLong(a -> a.currentBalance).sum();
         d.totalOverdue    = d.accounts.stream().mapToLong(a -> a.amountOverdue).sum();
 
-        // Enquiries
+        // ── Enquiries (InquiryPartition) ──────────────────────────────────────
         d.enquiries = new ArrayList<>();
-        JsonNode enqs = navigate(cir, "InquiryResponseDetails");
-        if (enqs == null) enqs = navigate(api, "data/enquiries");
-        if (enqs != null && enqs.isArray()) {
-            for (JsonNode e : enqs) {
+        JsonNode inquiries = navigate(report, "InquiryPartition");
+        if (inquiries != null && inquiries.isArray()) {
+            for (JsonNode iq : inquiries) {
+                JsonNode inq = navigate(iq, "Inquiry");
+                if (inq == null) continue;
                 EnquiryRecord er = new EnquiryRecord();
-                er.date        = safeText(e, "InquiryDate", "—");
-                er.memberName  = safeText(e, "InquiryMember", "—");
-                er.purpose     = safeText(e, "InquiryPurpose", "—");
-                er.amount      = "₹" + formatAmount(safeInt(e, "InquiryAmount", 0));
-                er.productType = safeText(e, "LoanType", safeText(e, "productType", "—"));
+                er.date        = formatTrueLinkDate(safeText(inq, "inquiryDate", "—"));
+                er.memberName  = safeText(inq, "subscriberName", "—");
+                er.purpose     = "Personal Loan";
+                er.amount      = "₹" + formatAmount(parseLongSafe(safeText(inq, "amount", "0")));
+                er.productType = "Personal Loan";
                 d.enquiries.add(er);
             }
         }
 
         return d;
+    }
+
+    private String buildTrueLinkAddress(JsonNode addr) {
+        if (addr == null) return "—";
+        String street = safeText(addr, "StreetAddress", "");
+        String pin    = safeText(addr, "PostalCode", "");
+        if (street.isBlank()) return "—";
+        return street.trim() + (pin.isBlank() ? "" : " — " + pin);
+    }
+
+    private String accountTypeLabel(String symbol) {
+        return switch (symbol) {
+            case "01" -> "Credit Card";
+            case "02" -> "Home Loan";
+            case "03" -> "Auto Loan";
+            case "05" -> "Personal Loan";
+            case "06" -> "Consumer Loan";
+            case "07" -> "Gold Loan";
+            default   -> "Loan";
+        };
+    }
+
+    private String ownershipLabel(String symbol) {
+        return switch (symbol) {
+            case "1" -> "Individual";
+            case "2" -> "Joint";
+            case "3" -> "Guarantor";
+            case "4" -> "Co-Applicant";
+            default  -> "Self";
+        };
+    }
+
+    private String formatTrueLinkDate(String raw) {
+        if (raw == null || raw.isBlank()) return "";
+        // Format: "2023-11-04+05:30" → "04-11-2023"
+        try {
+            String date = raw.contains("+") ? raw.substring(0, raw.indexOf('+')) : raw;
+            String[] parts = date.split("-");
+            if (parts.length >= 3) return parts[2] + "-" + parts[1] + "-" + parts[0];
+        } catch (Exception ignored) {}
+        return raw;
+    }
+
+    private long parseLongSafe(String s) {
+        if (s == null || s.isBlank()) return 0;
+        try { return (long) Double.parseDouble(s.trim()); }
+        catch (Exception e) { return 0; }
+    }
+
+    private JsonNode firstNonNull(JsonNode... nodes) {
+        for (JsonNode n : nodes) if (n != null && !n.isNull() && !n.isMissingNode()) return n;
+        return null;
+    }
+
+    private int firstNonZeroInt(int... values) {
+        for (int v : values) if (v != 0) return v;
+        return 0;
     }
 
     private AccountDetail parseAccount(JsonNode a) {

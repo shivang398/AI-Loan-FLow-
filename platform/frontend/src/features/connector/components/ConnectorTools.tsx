@@ -34,11 +34,12 @@ const { Title, Text } = Typography;
 // ── CIBIL score band config ───────────────────────────────────────────────────
 
 const SCORE_BANDS: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
-  EXCELLENT: { label: 'Excellent', color: '#15803d', bg: '#f0fdf4', border: '#86efac', desc: 'Highly likely to be approved. Best interest rates available.' },
-  GOOD:      { label: 'Good',      color: '#4d8f4a', bg: '#f0fdf4', border: '#a3e635', desc: 'Strong profile. Approval likely with standard terms.' },
-  FAIR:      { label: 'Fair',      color: '#b45309', bg: '#fffbeb', border: '#fcd34d', desc: 'Moderate risk. May face conditional approval.' },
-  POOR:      { label: 'Poor',      color: '#c2410c', bg: '#fff7ed', border: '#fdba74', desc: 'High risk. Approval uncertain. Higher interest rates.' },
-  VERY_POOR: { label: 'Very Poor', color: '#991b1b', bg: '#fff1f2', border: '#fca5a5', desc: 'Unlikely to be approved. Significant credit issues.' },
+  EXCELLENT: { label: 'Excellent',       color: '#15803d', bg: '#f0fdf4', border: '#86efac', desc: 'Highly likely to be approved. Best interest rates available.' },
+  GOOD:      { label: 'Good',            color: '#4d8f4a', bg: '#f0fdf4', border: '#a3e635', desc: 'Strong profile. Approval likely with standard terms.' },
+  FAIR:      { label: 'Fair',            color: '#b45309', bg: '#fffbeb', border: '#fcd34d', desc: 'Moderate risk. May face conditional approval.' },
+  POOR:      { label: 'Poor',            color: '#c2410c', bg: '#fff7ed', border: '#fdba74', desc: 'High risk. Approval uncertain. Higher interest rates.' },
+  VERY_POOR: { label: 'Very Poor',       color: '#991b1b', bg: '#fff1f2', border: '#fca5a5', desc: 'Unlikely to be approved. Significant credit issues.' },
+  NO_HISTORY:{ label: 'No History (NH)', color: '#64748b', bg: '#f8fafc', border: '#cbd5e1', desc: 'No sufficient credit history to compute a score. First loan applicant.' },
 };
 
 const scoreColor = (score: number) => {
@@ -124,9 +125,10 @@ export const CibilCheckPage: React.FC = () => {
           panNumber: lastValues.panNumber,
           consent: lastValues.consent,
         },
-        { responseType: 'blob' }
+        { responseType: 'blob', timeout: 120000 }
       );
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `CIBIL_Report_${lastValues.panNumber}.pdf`);
@@ -141,7 +143,11 @@ export const CibilCheckPage: React.FC = () => {
     }
   };
 
-  const band = summary ? (SCORE_BANDS[summary.scoreBand] || SCORE_BANDS['FAIR']) : null;
+  // CIBIL returns riskScore=1 for NH (No History / New-to-Credit) customers
+  const isNH = summary && (summary.cibilScore <= 5 || summary.scoreBand === 'NO_HISTORY');
+  const band = summary
+    ? (isNH ? SCORE_BANDS['NO_HISTORY'] : (SCORE_BANDS[summary.scoreBand] || SCORE_BANDS['FAIR']))
+    : null;
 
   return (
     <div className="max-w-5xl mx-auto py-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
@@ -234,7 +240,7 @@ export const CibilCheckPage: React.FC = () => {
           )}
 
           {/* Score hero card */}
-          <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100" bodyStyle={{ padding: 0 }}>
+          <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100" styles={{ body: { padding: 0 } }}>
             <div style={{ display: 'flex', alignItems: 'stretch' }}>
               {/* Left: gauge */}
               <div style={{
@@ -243,7 +249,16 @@ export const CibilCheckPage: React.FC = () => {
                 background: band.bg, borderRadius: '2.5rem 0 0 2.5rem',
                 borderRight: `2px solid ${band.border}`,
               }}>
-                <ScoreGauge score={summary.cibilScore} />
+                {isNH ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: 56, fontWeight: 900, color: '#64748b' }}>NH</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 6 }}>
+                      No Credit History · Range 300–900
+                    </div>
+                  </div>
+                ) : (
+                  <ScoreGauge score={summary.cibilScore} />
+                )}
                 <div style={{
                   marginTop: 10, padding: '6px 18px', borderRadius: 999,
                   background: band.color, color: '#fff', fontWeight: 800, fontSize: 13, letterSpacing: '0.06em',
@@ -303,7 +318,7 @@ export const CibilCheckPage: React.FC = () => {
           {/* Financial summary */}
           <Row gutter={12}>
             <Col span={12}>
-              <Card className="rounded-[1.5rem] border border-slate-100 shadow-sm" bodyStyle={{ padding: '20px 24px' }}>
+              <Card className="rounded-[1.5rem] border border-slate-100 shadow-sm" styles={{ body: { padding: '20px 24px' } }}>
                 <Text style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Outstanding Balance</Text>
                 <div style={{ fontSize: 26, fontWeight: 900, color: '#0f172a', marginTop: 6 }}>
                   ₹{Number(summary.totalBalance).toLocaleString('en-IN')}
@@ -312,7 +327,7 @@ export const CibilCheckPage: React.FC = () => {
               </Card>
             </Col>
             <Col span={12}>
-              <Card className="rounded-[1.5rem] border border-slate-100 shadow-sm" bodyStyle={{ padding: '20px 24px' }}>
+              <Card className="rounded-[1.5rem] border border-slate-100 shadow-sm" styles={{ body: { padding: '20px 24px' } }}>
                 <Text style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Overdue Amount</Text>
                 <div style={{ fontSize: 26, fontWeight: 900, color: summary.totalOverdue > 0 ? '#dc2626' : '#15803d', marginTop: 6 }}>
                   {summary.totalOverdue > 0 ? `₹${Number(summary.totalOverdue).toLocaleString('en-IN')}` : 'NIL'}
@@ -324,7 +339,7 @@ export const CibilCheckPage: React.FC = () => {
 
           {/* Accounts table */}
           {summary.accounts?.length > 0 && (
-            <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 24 }}>
+            <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
               <Text style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>
                 Credit Account Details
               </Text>
@@ -369,7 +384,7 @@ export const CibilCheckPage: React.FC = () => {
           )}
 
           {/* Score range reference */}
-          <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 24 }}>
+          <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
             <Text style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 14 }}>
               Score Range Reference
             </Text>
@@ -875,7 +890,7 @@ export const FoirCalculatorPage: React.FC = () => {
 
         {/* ══ LEFT: Input Form ══ */}
         <Col xs={24} lg={10}>
-          <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 28 }}>
+          <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 28 } }}>
 
             {/* Applicant name */}
             <div style={{ marginBottom: 16 }}>
@@ -1053,7 +1068,7 @@ export const FoirCalculatorPage: React.FC = () => {
         {/* ══ RIGHT: Results ══ */}
         <Col xs={24} lg={14}>
           {!r ? (
-            <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100 text-center" bodyStyle={{ padding: 60 }}>
+            <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100 text-center" styles={{ body: { padding: 60 } }}>
               <div style={{ width: 80, height: 80, background: '#f8fafc', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <TrendingUp size={36} color="#c7d2fe" />
               </div>
@@ -1064,7 +1079,7 @@ export const FoirCalculatorPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Gauge card */}
-              <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 24 }}>
+              <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                   <FoirGauge foirPct={r.foirAfterProposedLoan} eligibleLimit={r.foirEligibleLimit} borderlineLimit={r.foirBorderlineLimit} />
                   <div style={{ flex: 1 }}>
@@ -1103,7 +1118,7 @@ export const FoirCalculatorPage: React.FC = () => {
                   { lbl: 'Total Interest',      val: formatInr(r.totalInterestPayable),  sub: `over ${r.proposedTenureMonths} months` },
                   { lbl: 'Total Payable',       val: formatInr(r.totalAmountPayable),    sub: 'principal + interest' },
                 ].map(m => (
-                  <Card key={m.lbl} className="rounded-[1.25rem] border border-slate-100 shadow-sm" bodyStyle={{ padding: 16 }}>
+                  <Card key={m.lbl} className="rounded-[1.25rem] border border-slate-100 shadow-sm" styles={{ body: { padding: 16 } }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{m.lbl}</div>
                     <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>{m.val}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{m.sub}</div>
@@ -1112,7 +1127,7 @@ export const FoirCalculatorPage: React.FC = () => {
               </div>
 
               {/* Budget breakup */}
-              <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" bodyStyle={{ padding: 24 }}>
+              <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Monthly Budget Breakup</div>
                 <Row gutter={24}>
                   <Col span={14}>
