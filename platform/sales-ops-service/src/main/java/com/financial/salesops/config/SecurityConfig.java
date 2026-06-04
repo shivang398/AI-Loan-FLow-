@@ -1,19 +1,16 @@
-package com.financial.auth.config;
+package com.financial.salesops.config;
 
 import com.financial.common.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
@@ -31,29 +28,16 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final AuthRateLimitFilter authRateLimitFilter;
 
     @Value("${cors.allowed-origin:http://localhost:3000}")
     private String allowedOrigin;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
-
-    // A05: CORS — allowlist a single trusted frontend origin; never wildcard
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(allowedOrigin));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -64,35 +48,39 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)          // stateless JWT — no session cookie to protect
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // A05: CORS allowlist
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
-                // A05: X-Content-Type-Options: nosniff — prevents MIME-sniffing
                 .contentTypeOptions(ct -> {})
-                // A05: X-Frame-Options: DENY — clickjacking protection
                 .frameOptions(fo -> fo.deny())
-                // A02: HSTS — force HTTPS for 1 year including subdomains
                 .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
-                // A05: Referrer-Policy — no referrer on cross-origin navigation
                 .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                // A05: CSP — API returns JSON; frame-ancestors blocks clickjacking as second layer
                 .addHeaderWriter(new StaticHeadersWriter(
                     "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))
-                // A05: Permissions-Policy — deny hardware access this service never uses
                 .addHeaderWriter(new StaticHeadersWriter(
                     "Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=(), usb=()"))
-                // A05: X-XSS-Protection — legacy browsers
                 .addHeaderWriter(new StaticHeadersWriter("X-XSS-Protection", "0"))
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/auth/refresh", "/auth/register/partner").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                .requestMatchers("/auth/register").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "PARTNER_MANAGER", "ROLE_PARTNER_MANAGER")
-                .anyRequest().authenticated()
+                // A01: internal connector lookup — used by other services, not browsers; no JWT possible
+                .requestMatchers(HttpMethod.GET, "/connectors/internal/**").permitAll()
+                .requestMatchers("/actuator/**").hasAuthority("ADMIN")
+                // A01: CONNECTORs can read their own profile only
+                .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN")
+                // A01: read operations open to internal roles; write ops restricted to PM/ADMIN
+                .requestMatchers(HttpMethod.GET,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER", "OPERATIONS")
+                .requestMatchers(HttpMethod.POST,   "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
+                .requestMatchers("/foir/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/transactions/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/transactions/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/slabs/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/slabs/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
+                .anyRequest().hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
             )
-            .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

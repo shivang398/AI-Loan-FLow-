@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_MULTIPLE_DATABASES: "platform_auth,platform_connector,platform_customer,platform_loan,platform_eligibility,platform_policy,platform_routing,platform_document,platform_notification,platform_commission,platform_reporting,platform_analytics,platform_messaging"
+      POSTGRES_MULTIPLE_DATABASES: "platform_auth,platform_loan_core,platform_customer_docs,platform_communications,platform_analytics_reporting,platform_sales_ops"
     ports:
       - "5434:5432"
     volumes:

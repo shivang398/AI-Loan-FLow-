@@ -14,18 +14,11 @@
     <modules>
         <module>common-lib</module>
         <module>auth-service</module>
-        <module>connector-service</module>
-        <module>customer-service</module>
-        <module>loan-service</module>
-        <module>eligibility-service</module>
-        <module>policy-service</module>
-        <module>sm-routing-service</module>
-        <module>document-service</module>
-        <module>notification-service</module>
-        <module>commission-service</module>
-        <module>reporting-service</module>
-        <module>analytics-service</module>
-        <module>messaging-service</module>
+        <module>loan-core-service</module>
+        <module>customer-document-service</module>
+        <module>communications-service</module>
+        <module>analytics-reporting-service</module>
+        <module>sales-ops-service</module>
     </modules>
 
     <properties>

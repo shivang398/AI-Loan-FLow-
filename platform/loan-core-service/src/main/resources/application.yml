@@ -1,41 +1,47 @@
 server:
-  port: ${PORT:8081}
+  port: ${PORT:8084}
   error:
     include-stacktrace: never
     include-message: never
     include-binding-errors: never
 
 spring:
-  threads:
-    virtual:
-      enabled: true
   application:
-    name: auth-service
+    name: loan-core-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/platform_auth
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/platform_loan_core
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     open-in-view: false
   flyway:
     enabled: true
     baseline-on-migrate: true
+    baseline-version: 1
+    validate-on-migrate: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 55MB
+
+tenacio:
+  api:
+    url: ${TENACIO_API_URL:https://api.tenacio.io/api/v1/services/cibil-soft-pull}
+    client-id: ${TENACIO_CLIENT_ID:realf_96900}
+    key: ${TENACIO_API_KEY:tnc_prod_3b9b4ff8ed9}
+    workflow-id: ${TENACIO_WORKFLOW_ID:5d2e9c46-68e4-4d6e-a52e-b1287a63e80b}
 
 app:
   jwt:
     secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRY_MS:28800000}
   rabbitmq:
     exchange: platform.exchange
 
