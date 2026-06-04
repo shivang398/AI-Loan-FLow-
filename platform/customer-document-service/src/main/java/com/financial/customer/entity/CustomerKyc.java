@@ -1,6 +1,7 @@
 package com.financial.customer.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.financial.customer.config.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,12 +25,15 @@ public class CustomerKyc {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    // Fix 2: AES-256-GCM encrypted at rest — key from PII_ENCRYPTION_KEY env var
     @JsonIgnore
-    @Column(name = "pan_number", nullable = false, unique = true)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "pan_number", nullable = false, unique = true, length = 512)
     private String panNumber;
 
     @JsonIgnore
-    @Column(name = "aadhaar_number", unique = true)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "aadhaar_number", unique = true, length = 512)
     private String aadhaarNumber;
 
     @Column(name = "kyc_status", nullable = false)

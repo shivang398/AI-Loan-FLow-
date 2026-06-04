@@ -1,5 +1,6 @@
 package com.financial.eligibility.entity;
 
+import com.financial.eligibility.config.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -43,7 +44,9 @@ public class EligibilitySubmission {
     @Column(name = "city")
     private String city;
 
-    @Column(name = "pan_number")
+    // Fix 2: AES-256-GCM encrypted at rest
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "pan_number", length = 512)
     private String panNumber;
 
     @Column(name = "is_eligible")

@@ -7,6 +7,7 @@ import com.financial.connector.entity.HierarchyMapping;
 import com.financial.connector.service.ConnectorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,10 @@ import java.util.UUID;
 public class ConnectorController {
 
     private final ConnectorService connectorService;
+
+    // Fix 1: shared secret for inter-service calls — never exposed to internet
+    @Value("${app.internal-token}")
+    private String internalToken;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Connector>> createConnector(
@@ -73,11 +78,16 @@ public class ConnectorController {
     }
 
     /**
-     * Internal service-to-service endpoint — returns emails of ACTIVE OPERATIONS users.
-     * No auth required; only accessible within the internal network.
+     * Fix 1: Internal service-to-service endpoint — requires X-Internal-Token header.
+     * permitAll() in SecurityConfig because no JWT is available for inter-service calls,
+     * but the shared secret still authenticates the caller.
      */
     @GetMapping("/internal/active-ops")
-    public ResponseEntity<ApiResponse<List<String>>> getActiveOpsEmails() {
+    public ResponseEntity<ApiResponse<List<String>>> getActiveOpsEmails(
+            @RequestHeader(value = "X-Internal-Token", required = false) String token) {
+        if (!internalToken.equals(token)) {
+            return ResponseEntity.status(403).build();
+        }
         List<String> emails = connectorService.getActiveOpsEmails();
         return ResponseEntity.ok(ApiResponse.success("Active ops emails", emails, UUID.randomUUID().toString()));
     }

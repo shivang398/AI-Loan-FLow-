@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,10 @@ public class CustomerService {
     /** Fallback emails used if the connector service is unreachable */
     @Value("${app.ops.team-emails:unassigned}")
     private String fallbackOpsEmails;
+
+    // Fix 12: shared secret for inter-service calls — must match sales-ops-service
+    @Value("${app.internal-token}")
+    private String internalToken;
 
     @Transactional
     public Customer createCustomer(CustomerRequests.CreateCustomerRequest request) {
@@ -161,9 +167,14 @@ public class CustomerService {
      */
     private List<String> getActiveOpsEmails() {
         try {
+            // Fix 12: include shared secret so the internal endpoint rejects unauthenticated callers
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-Internal-Token", internalToken);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
             String url = connectorServiceUrl + "/connectors/internal/active-ops";
             ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
-                    url, HttpMethod.GET, null,
+                    url, HttpMethod.GET, entity,
                     new ParameterizedTypeReference<>() {}
             );
             if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {

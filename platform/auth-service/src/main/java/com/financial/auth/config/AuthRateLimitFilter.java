@@ -4,28 +4,29 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Duration;
 
+/**
+ * Fix 6 — Redis-backed distributed rate limiting.
+ * The old ConcurrentHashMap implementation broke with multiple instances;
+ * each JVM had its own counter so an attacker got N×5 attempts across N replicas.
+ * Redis counters are shared across all instances.
+ */
 @Component
 public class AuthRateLimitFilter extends OncePerRequestFilter {
 
-    // Login: 5 attempts per IP per minute
-    private static final int LOGIN_MAX = 5;
-    // Partner registration: 3 per IP per minute (bot/spam guard)
-    private static final int REGISTER_MAX = 3;
-    private static final long WINDOW_MS = 60_000L;
-    // Evict stale windows every 10 minutes to prevent unbounded memory growth
-    private static final long EVICT_INTERVAL_MS = 10 * 60_000L;
+    private static final int  LOGIN_MAX    = 5;
+    private static final int  REGISTER_MAX = 3;
+    private static final long WINDOW_SECS  = 60L;
 
-    private record Window(AtomicInteger count, long resetAt) {}
-    private final ConcurrentHashMap<String, Window> loginWindows    = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Window> registerWindows = new ConcurrentHashMap<>();
-    private volatile long lastEvictAt = System.currentTimeMillis();
+    @Autowired
+    private StringRedisTemplate redis;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -37,23 +38,17 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        evictExpiredWindows();
-
-        String ip = getClientIp(request);
+        String ip   = getClientIp(request);
         String path = request.getRequestURI();
+        int    max  = path.equals("/auth/login") ? LOGIN_MAX : REGISTER_MAX;
+        String key  = "ratelimit:" + (path.equals("/auth/login") ? "login" : "register") + ":" + ip;
 
-        ConcurrentHashMap<String, Window> map = path.equals("/auth/login") ? loginWindows : registerWindows;
-        int max = path.equals("/auth/login") ? LOGIN_MAX : REGISTER_MAX;
+        Long count = redis.opsForValue().increment(key);
+        if (count != null && count == 1) {
+            redis.expire(key, Duration.ofSeconds(WINDOW_SECS));
+        }
 
-        long now = System.currentTimeMillis();
-        Window w = map.compute(ip, (k, existing) -> {
-            if (existing == null || now >= existing.resetAt()) {
-                return new Window(new AtomicInteger(0), now + WINDOW_MS);
-            }
-            return existing;
-        });
-
-        if (w.count().incrementAndGet() > max) {
+        if (count != null && count > max) {
             response.setStatus(429);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Too many requests. Please wait before retrying.\"}");
@@ -62,18 +57,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private void evictExpiredWindows() {
-        long now = System.currentTimeMillis();
-        if (now - lastEvictAt < EVICT_INTERVAL_MS) return;
-        lastEvictAt = now;
-        loginWindows.entrySet().removeIf(e -> now >= e.getValue().resetAt());
-        registerWindows.entrySet().removeIf(e -> now >= e.getValue().resetAt());
-    }
-
     /**
-     * When behind a trusted reverse proxy (e.g. AWS ALB), the proxy appends the real
-     * client IP as the LAST entry in X-Forwarded-For. Taking the first entry is unsafe
-     * because an attacker can inject a spoofed IP before the request hits the proxy.
+     * Read the LAST entry in X-Forwarded-For — appended by our trusted proxy.
+     * Taking the first is unsafe; an attacker can prepend a spoofed IP.
      */
     private String getClientIp(HttpServletRequest request) {
         String xff = request.getHeader("X-Forwarded-For");

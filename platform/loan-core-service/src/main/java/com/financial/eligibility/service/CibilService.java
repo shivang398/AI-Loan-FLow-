@@ -22,8 +22,10 @@ import com.lowagie.text.pdf.PdfPageEventHelper;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.financial.common.security.PiiMaskingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -38,11 +40,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CibilService {
 
     private final ObjectMapper objectMapper;
+
+    // Fix 4: injected singleton with connect/read timeouts — no more new RestTemplate() per call
+    private final RestTemplate cibilRestTemplate;
+
+    public CibilService(ObjectMapper objectMapper,
+                        @Qualifier("cibilRestTemplate") RestTemplate cibilRestTemplate) {
+        this.objectMapper       = objectMapper;
+        this.cibilRestTemplate  = cibilRestTemplate;
+    }
 
     @Value("${tenacio.api.url}")
     private String apiUrl;
@@ -157,7 +167,9 @@ public class CibilService {
     // ── Tenacio API call ──────────────────────────────────────────────────────
 
     private JsonNode callTenacioApi(CibilRequestDto dto) {
-        RestTemplate restTemplate = new RestTemplate();
+        // Fix 4: SSRF guard — only allow calls to the configured Tenacio host
+        validateApiUrl(apiUrl);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("client-id",   clientId);
@@ -174,7 +186,9 @@ public class CibilService {
         payload.put("input", input);
 
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(
+            // Fix 10: log masked PAN so PII never appears in log files
+            log.info("Calling Tenacio CIBIL API for PAN={}", PiiMaskingUtils.maskPan(dto.getPanNumber()));
+            ResponseEntity<String> response = cibilRestTemplate.postForEntity(
                 apiUrl, new HttpEntity<>(payload, headers), String.class);
             log.info("Tenacio CIBIL API — status={}", response.getStatusCode());
             // Raw response body intentionally not logged — contains PAN, credit score (PII/A09)
@@ -1150,5 +1164,21 @@ public class CibilService {
 
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
+    }
+
+    // Fix 4: SSRF guard — only allow calls to the known Tenacio host
+    private static final String ALLOWED_CIBIL_HOST = "api.tenacio.io";
+
+    private void validateApiUrl(String url) {
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            String host = uri.getHost();
+            if (!ALLOWED_CIBIL_HOST.equals(host)) {
+                throw new IllegalStateException(
+                    "Blocked outbound CIBIL call to unexpected host: " + host);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid CIBIL API URL configured", e);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.financial.document.controller;
 
 import com.financial.common.dto.ApiResponse;
+import com.financial.common.security.FileValidator;
 import com.financial.document.entity.Document;
 import com.financial.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class DocumentController {
             @RequestParam(defaultValue = "/") String folderPath,
             @RequestParam MultipartFile file,
             Authentication auth) throws IOException {
+        FileValidator.validate(file); // Fix 7: MIME type + magic byte check
         UUID uploaderId = resolveUserId(auth);
         Document doc = documentService.uploadDocument(loanId, documentType, folderPath, file, uploaderId);
         return ResponseEntity.ok(ApiResponse.success("Document uploaded", doc, UUID.randomUUID().toString()));
@@ -55,6 +57,7 @@ public class DocumentController {
             @RequestParam UUID customerId,
             @RequestParam String documentType,
             @RequestParam MultipartFile file) throws IOException {
+        FileValidator.validate(file); // Fix 7: reject executables and oversized files
         Document doc = documentService.uploadPublicDocument(customerId, documentType, file);
         return ResponseEntity.ok(ApiResponse.success("Document uploaded", doc, UUID.randomUUID().toString()));
     }

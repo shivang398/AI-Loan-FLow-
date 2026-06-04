@@ -1,4 +1,4 @@
-package com.financial.customer.config;
+package com.financial.eligibility.config;
 
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -10,24 +10,27 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Fix 12 — RestTemplate with timeouts for inter-service calls to sales-ops-service.
- * Old implementation had no timeout; a slow sales-ops response would block threads.
+ * Fix 4 — singleton RestTemplate for the CIBIL/Tenacio API with enforced timeouts.
+ * The old code created new RestTemplate() on every call (no pooling, no timeout).
  */
 @Configuration
-public class AppConfig {
+public class CibilRestTemplateConfig {
 
-    @Bean
-    public RestTemplate restTemplate() {
+    @Bean("cibilRestTemplate")
+    public RestTemplate cibilRestTemplate() {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(Timeout.ofSeconds(3))
-                .setResponseTimeout(Timeout.ofSeconds(8))
+                .setConnectTimeout(Timeout.ofSeconds(5))
+                .setResponseTimeout(Timeout.ofSeconds(15))
                 .build();
 
         CloseableHttpClient httpClient = HttpClients.custom()
                 .setDefaultRequestConfig(requestConfig)
-                .disableRedirectHandling()
+                .disableRedirectHandling()   // Fix 4: no redirects to untrusted hosts
                 .build();
 
-        return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
+        HttpComponentsClientHttpRequestFactory factory =
+                new HttpComponentsClientHttpRequestFactory(httpClient);
+
+        return new RestTemplate(factory);
     }
 }

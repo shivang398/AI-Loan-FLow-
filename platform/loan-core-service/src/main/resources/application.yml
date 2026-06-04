@@ -50,7 +50,17 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
 
 # A05: CORS — override via env var in production (e.g. https://app.realmoney.in)
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
+# Fix 2: 32-char AES-256 key for PAN/Aadhaar encryption — set via env var in production
+# Generate with: openssl rand -hex 16
+# PII_ENCRYPTION_KEY is read directly from env by EncryptedStringConverter (not Spring)

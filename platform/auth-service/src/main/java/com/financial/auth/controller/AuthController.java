@@ -3,12 +3,16 @@ package com.financial.auth.controller;
 import com.financial.auth.dto.AuthRequests;
 import com.financial.auth.service.AuthService;
 import com.financial.common.dto.ApiResponse;
+import com.financial.common.security.JwtRevocationService;
+import com.financial.common.security.JwtTokenProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -23,9 +27,15 @@ public class AuthController {
     private static final int REFRESH_COOKIE_MAX_AGE = 7 * 24 * 3600; // 7 days
 
     private final AuthService authService;
+    private final JwtTokenProvider tokenProvider;
+    private final JwtRevocationService revocationService;
 
-    public AuthController(AuthService authService) {
-        this.authService = authService;
+    public AuthController(AuthService authService,
+                          JwtTokenProvider tokenProvider,
+                          JwtRevocationService revocationService) {
+        this.authService       = authService;
+        this.tokenProvider     = tokenProvider;
+        this.revocationService = revocationService;
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
@@ -77,7 +87,21 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<String>> logout(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        // Fix 5: blocklist the current access token so it cannot be reused
+        String bearer = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+            String token = bearer.substring(7);
+            try {
+                String jti      = tokenProvider.getJtiFromJWT(token);
+                long   expiryMs = tokenProvider.getExpiryEpochMs(token);
+                if (jti != null) revocationService.revoke(jti, expiryMs);
+            } catch (Exception ignored) { /* malformed token — nothing to revoke */ }
+        }
+
         // Clear the refresh token cookie
         Cookie cookie = new Cookie(REFRESH_COOKIE, "");
         cookie.setHttpOnly(true);

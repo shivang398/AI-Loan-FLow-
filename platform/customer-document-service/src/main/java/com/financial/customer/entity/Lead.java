@@ -1,6 +1,7 @@
 package com.financial.customer.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.financial.customer.config.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,8 +35,10 @@ public class Lead {
     @Column(nullable = false)
     private String mobile;
 
+    // Fix 2: AES-256-GCM encrypted at rest
     @JsonIgnore
-    @Column(name = "pan_number", nullable = false)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "pan_number", nullable = false, length = 512)
     private String panNumber;
 
     @Column(name = "loan_type")
