@@ -29,14 +29,14 @@ public class AuthExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(AuthExceptionHandler.class);
 
-    // Messages safe to expose to clients — subset of what AuthService throws
+    // Messages safe to expose to clients — deliberately excludes "Email is already taken!"
+    // to prevent user enumeration on the public registration endpoint.
     private static final Set<String> CLIENT_SAFE_MESSAGES = Set.of(
-        "Email is already taken!",
-        "User not found",
         "User account is not active",
         "Invalid or tampered token",
         "Refresh token has expired",
-        "Role not permitted for self-registration"
+        "Role not permitted for self-registration",
+        "Registration is restricted to authorised domains"
     );
 
     @ExceptionHandler(Exception.class)
@@ -105,9 +105,9 @@ public class AuthExceptionHandler {
         if (message == null) return HttpStatus.BAD_REQUEST;
         return switch (message) {
             case "User not found" -> HttpStatus.NOT_FOUND;
-            case "Email is already taken!" -> HttpStatus.CONFLICT;
             case "Invalid or tampered token", "Refresh token has expired" -> HttpStatus.UNAUTHORIZED;
             case "User account is not active" -> HttpStatus.FORBIDDEN;
+            case "Registration is restricted to authorised domains" -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

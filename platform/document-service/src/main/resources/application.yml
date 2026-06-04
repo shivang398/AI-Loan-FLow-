@@ -16,6 +16,11 @@ spring:
     baseline-on-migrate: true
     baseline-version: 2
     validate-on-migrate: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
   servlet:
     multipart:
       max-file-size: 50MB

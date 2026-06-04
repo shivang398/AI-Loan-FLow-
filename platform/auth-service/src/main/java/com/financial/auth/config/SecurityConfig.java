@@ -46,6 +46,11 @@ public class SecurityConfig {
                 .contentTypeOptions(ct -> {})
                 .frameOptions(fo -> fo.deny())
                 .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000))
+                .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                    "Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=(), usb=()"))
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/login", "/auth/refresh", "/auth/register/partner").permitAll()

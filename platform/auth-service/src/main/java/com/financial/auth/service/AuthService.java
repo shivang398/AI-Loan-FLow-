@@ -20,11 +20,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Modern Java 26 AuthService using Records and improved patterns.
- */
 @Service
 public class AuthService {
+
+    private static final Set<String> ALLOWED_DOMAINS = Set.of("realmoneygroups.in", "realfinserv.com");
 
     public static final String ROLE_CONNECTOR        = "CONNECTOR";
     public static final String ROLE_ADMIN            = "ADMIN";
@@ -54,8 +53,18 @@ public class AuthService {
         this.eventPublisher = eventPublisher;
     }
 
+    private void validateEmailDomain(String email) {
+        int atIndex = email.lastIndexOf('@');
+        if (atIndex < 0) throw new RuntimeException("Invalid email address");
+        String domain = email.substring(atIndex + 1).toLowerCase(java.util.Locale.ROOT);
+        if (!ALLOWED_DOMAINS.contains(domain)) {
+            throw new RuntimeException("Registration is restricted to authorised domains");
+        }
+    }
+
     @Transactional
     public Map<String, String> registerUser(AuthRequests.RegisterRequest request) {
+        validateEmailDomain(request.email());
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new RuntimeException("Email is already taken!");
         }
@@ -90,6 +99,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public Map<String, String> authenticateUser(AuthRequests.LoginRequest loginRequest) {
+        validateEmailDomain(loginRequest.email());
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.email(),

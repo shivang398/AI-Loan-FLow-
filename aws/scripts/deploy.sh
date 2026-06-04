@@ -284,8 +284,6 @@ deploy_backend "loan-service"       "platform_loan"
 deploy_backend "eligibility-service" "platform_eligibility"
 deploy_backend "policy-service"     "platform_policy"
 deploy_backend "sm-routing-service" "platform_routing"
-deploy_backend "rm-tracking-service" "platform_rm_tracking"
-deploy_backend "query-service"      "platform_query"
 deploy_backend "commission-service" "platform_commission"
 deploy_backend "reporting-service"  "platform_reporting"
 deploy_backend "analytics-service"  "platform_analytics"
@@ -343,8 +341,6 @@ FRONTEND_TASK_DEF=$(cat <<EOF
         {"name": "POLICY_SERVICE_URL",     "value": "policy-service.platform.local:8080"},
         {"name": "COMMISSION_SERVICE_URL", "value": "commission-service.platform.local:8080"},
         {"name": "MESSAGING_SERVICE_URL",  "value": "messaging-service.platform.local:8080"},
-        {"name": "RM_SERVICE_URL",         "value": "rm-tracking-service.platform.local:8080"},
-        {"name": "QUERY_SERVICE_URL",      "value": "query-service.platform.local:8080"},
         {"name": "DOCUMENT_SERVICE_URL",   "value": "document-service.platform.local:8080"},
         {"name": "REPORTING_SERVICE_URL",  "value": "reporting-service.platform.local:8080"},
         {"name": "ANALYTICS_SERVICE_URL",  "value": "analytics-service.platform.local:8080"},
@@ -416,8 +412,8 @@ log "Frontend deployed: $FRONTEND_TD_ARN"
 log "=== Waiting for services to stabilize... ==="
 
 SERVICES_TO_WATCH="frontend rabbitmq auth-service connector-service customer-service \
-  loan-service eligibility-service policy-service sm-routing-service rm-tracking-service \
-  query-service document-service notification-service commission-service reporting-service \
+  loan-service eligibility-service policy-service sm-routing-service \
+  document-service notification-service commission-service reporting-service \
   analytics-service messaging-service"
 
 aws ecs wait services-stable \

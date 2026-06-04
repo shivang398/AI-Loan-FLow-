@@ -41,15 +41,25 @@ class AuthServiceTest {
     @Test
     void registerUser_duplicateEmail_throws() {
         User existing = new User();
-        existing.setEmail("dupe@example.com");
-        when(userRepository.findByEmail("dupe@example.com")).thenReturn(Optional.of(existing));
+        existing.setEmail("dupe@realmoneygroups.in");
+        when(userRepository.findByEmail("dupe@realmoneygroups.in")).thenReturn(Optional.of(existing));
 
         AuthRequests.RegisterRequest req = new AuthRequests.RegisterRequest(
-                "dupe@example.com", "password123", "CONNECTOR");
+                "dupe@realmoneygroups.in", "password123", "CONNECTOR");
 
         assertThatThrownBy(() -> authService.registerUser(req))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("already taken");
+    }
+
+    @Test
+    void registerUser_forbiddenDomain_throws() {
+        AuthRequests.RegisterRequest req = new AuthRequests.RegisterRequest(
+                "user@example.com", "password123", "CONNECTOR");
+
+        assertThatThrownBy(() -> authService.registerUser(req))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("authorised domains");
     }
 
     @Test
@@ -63,17 +73,17 @@ class AuthServiceTest {
 
         User saved = new User();
         saved.setId(UUID.randomUUID());
-        saved.setEmail("new@example.com");
+        saved.setEmail("new@realfinserv.com");
         saved.setRoles(Set.of(role));
         when(userRepository.save(any())).thenReturn(saved);
 
         AuthRequests.RegisterRequest req = new AuthRequests.RegisterRequest(
-                "new@example.com", "password123", "CONNECTOR");
+                "new@realfinserv.com", "password123", "CONNECTOR");
 
         var result = authService.registerUser(req);
 
         assertThat(result).containsKey("userId");
-        assertThat(result.get("email")).isEqualTo("new@example.com");
+        assertThat(result.get("email")).isEqualTo("new@realfinserv.com");
         verify(eventPublisher).publishUserCreatedEvent(any(), anyString(), any());
     }
 

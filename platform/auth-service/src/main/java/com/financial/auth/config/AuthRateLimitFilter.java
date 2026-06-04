@@ -19,10 +19,13 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     // Partner registration: 3 per IP per minute (bot/spam guard)
     private static final int REGISTER_MAX = 3;
     private static final long WINDOW_MS = 60_000L;
+    // Evict stale windows every 10 minutes to prevent unbounded memory growth
+    private static final long EVICT_INTERVAL_MS = 10 * 60_000L;
 
     private record Window(AtomicInteger count, long resetAt) {}
     private final ConcurrentHashMap<String, Window> loginWindows    = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Window> registerWindows = new ConcurrentHashMap<>();
+    private volatile long lastEvictAt = System.currentTimeMillis();
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -34,6 +37,8 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
+        evictExpiredWindows();
+
         String ip = getClientIp(request);
         String path = request.getRequestURI();
 
@@ -57,10 +62,24 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    private void evictExpiredWindows() {
+        long now = System.currentTimeMillis();
+        if (now - lastEvictAt < EVICT_INTERVAL_MS) return;
+        lastEvictAt = now;
+        loginWindows.entrySet().removeIf(e -> now >= e.getValue().resetAt());
+        registerWindows.entrySet().removeIf(e -> now >= e.getValue().resetAt());
+    }
+
+    /**
+     * When behind a trusted reverse proxy (e.g. AWS ALB), the proxy appends the real
+     * client IP as the LAST entry in X-Forwarded-For. Taking the first entry is unsafe
+     * because an attacker can inject a spoofed IP before the request hits the proxy.
+     */
     private String getClientIp(HttpServletRequest request) {
         String xff = request.getHeader("X-Forwarded-For");
         if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
+            String[] parts = xff.split(",");
+            return parts[parts.length - 1].trim();
         }
         return request.getRemoteAddr();
     }

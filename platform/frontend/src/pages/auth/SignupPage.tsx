@@ -158,7 +158,7 @@ const SignupPage: React.FC = () => {
                   <Input
                     {...field}
                     prefix={<Mail size={16} style={{ color: 'var(--text-muted)', marginRight: 6 }} />}
-                    placeholder="you@company.com"
+                    placeholder="you@realmoneygroups.in"
                     style={{ height: 48, borderRadius: 12 }}
                   />
                 )}

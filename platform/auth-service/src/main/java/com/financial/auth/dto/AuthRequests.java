@@ -2,6 +2,7 @@ package com.financial.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -21,7 +22,9 @@ public class AuthRequests {
     ) {}
 
     public record UpdateStatusRequest(
-        @NotBlank String status
+        @NotBlank
+        @Pattern(regexp = "ACTIVE|INACTIVE|SUSPENDED", message = "Status must be ACTIVE, INACTIVE, or SUSPENDED")
+        String status
     ) {}
 
     public record RefreshRequest(
