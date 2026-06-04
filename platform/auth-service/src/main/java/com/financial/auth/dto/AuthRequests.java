@@ -17,7 +17,13 @@ public class AuthRequests {
 
     public record RegisterRequest(
         @NotBlank @Email String email,
-        @NotBlank @Size(min = 8, message = "Password must be at least 8 characters") String password,
+        @NotBlank
+        @Size(min = 8, message = "Password must be at least 8 characters")
+        @Pattern(
+            regexp = "^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$",
+            message = "Password must contain at least one uppercase letter, one number, and one special character"
+        )
+        String password,
         String role
     ) {}
 

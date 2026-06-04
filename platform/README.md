@@ -42,6 +42,195 @@ Think of it like an **internal CRM + loan pipeline + commission tracker** built 
 
 ---
 
+## System Workflow — Complete Journey
+
+```
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                    REAL MONEY ADVISORY PLATFORM — LOAN WORKFLOW                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 1 — LEAD CAPTURE  (Landing Page → eligibility-service)               │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [Customer]
+      │  Fills loan form on website
+      ▼
+  [eligibility-service :8085]
+      │  • Checks FOIR (Fixed Obligation to Income Ratio)
+      │  • Runs CIBIL score lookup via Tenacio API
+      │  • Returns: ELIGIBLE / BORDERLINE / NOT_ELIGIBLE
+      │
+      ├─ NOT_ELIGIBLE ──► Return rejection reason to customer (no further action)
+      │
+      └─ ELIGIBLE / BORDERLINE ──► Lead saved, event fired ──►
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 2 — CUSTOMER & KYC  (customer-service)                               │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [customer-service :8083]
+      │  • Stores customer profile (name, PAN, Aadhaar, mobile, employment)
+      │  • Creates KYC record
+      │  • Fires event: customer.created ──► RabbitMQ ──► loan-service
+      │
+      │  [document-service :8090]
+      │      • Connector uploads salary slips, bank statements, ID proofs → S3
+      │      • Generates pre-signed download URLs for bank submissions
+      │
+      ▼
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 3 — LOAN APPLICATION  (loan-service)                                 │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [loan-service :8084]
+      │  Receives event: customer.created
+      │  Creates LoanFile with status: NEW
+      │
+      │  Status lifecycle:
+      │
+      │  NEW
+      │   │
+      │   ▼
+      │  DOCUMENTS_PENDING  ◄── Connector uploads docs via document-service
+      │   │
+      │   ▼
+      │  UNDER_REVIEW       ◄── Operations team reviews the file
+      │   │
+      │   ├─ ADDITIONAL_INFO_REQUIRED ──► notification-service sends email/WhatsApp
+      │   │                               to Connector
+      │   ▼
+      │  APPROVED ──► Fires event: loan.status.updated ──► RabbitMQ
+      │   │
+      │   ├──► sm-routing-service (auto-assigns Sales Manager)
+      │   ├──► notification-service (emails customer + Connector)
+      │   └──► commission-service (creates pending commission entry)
+      │
+      │  DISBURSED ──► Fires event: loan.file.disbursed
+      │   │
+      │   └──► commission-service (marks commission as payable)
+      │
+      └─ REJECTED ──► notification-service (sends rejection reason)
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 4 — BANK MATCHING  (eligibility-service + policy-service)            │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [policy-service :8086]            [eligibility-service :8085]
+       │                                     │
+       │  Stores each bank's rules:          │  Runs loan file against all
+       │  • Min income                       │  bank policies:
+       │  • Max loan amount                  │  • FOIR check per bank
+       │  • Allowed employment types         │  • Amount within bank limits
+       │  • Cibil score cutoff               │  • Score ≥ bank threshold
+       │                                     │
+       └──────────────────┬──────────────────┘
+                          │
+                          ▼
+              Shortlist of eligible lenders
+              shown to Connector for bank selection
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 5 — SM ASSIGNMENT  (sm-routing-service — background only)            │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [sm-routing-service :8095]
+      │  Listens for: loan.status.updated (APPROVED)
+      │  • Finds the Sales Manager with fewest active files in the same region
+      │  • Assigns SM to the loan file
+      │  • Fires event: routing.sm.assigned (for future consumer)
+      │
+      └─ No UI — fully event-driven background service
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 6 — COMMISSION  (commission-service)                                 │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [commission-service :8092]
+      │  On loan APPROVED:
+      │  • Creates pending commission transaction
+      │  • Applies correct payout slab (global or per-Connector)
+      │
+      │  On loan DISBURSED:
+      │  • Marks transaction as PAYABLE
+      │  • Partner Manager reviews and approves payout
+      │
+      └─► Connector + RM can see their earnings in real time
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 7 — COMMUNICATION  (messaging-service + notification-service)        │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [notification-service :8091]           [messaging-service :8087]
+       │                                        │
+       │  Sends emails for:                     │  • WhatsApp messages to
+       │  • New lead assigned                   │    customers via Facebook API
+       │  • Status changes                      │  • Internal team STOMP chat
+       │  • Commission credited                 │  • Team meeting WebSocket
+       │  • Rejection with reason               │
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  PHASE 8 — REPORTING & ANALYTICS  (reporting-service + analytics-service)   │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [reporting-service :8093]              [analytics-service :8094]
+       │                                        │
+       │  Generates on-demand:                  │  Pre-computes KPI snapshots:
+       │  • Connector performance Excel         │  • Daily disbursal trend
+       │  • MIS monthly summary PDF             │  • Funnel conversion rates
+       │  • Lender-wise disbursement report     │  • Team scorecards
+       │  • Commission statement PDF            │  • Regional performance
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  CROSS-CUTTING — AUTH & USER MANAGEMENT  (auth-service)                     │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  [auth-service :8081]  ◄── Every other service validates JWT against this
+       │
+       │  • Issues JWT on login (8-hour expiry)
+       │  • Refresh token via HttpOnly cookie
+       │  • Domain restriction: @realmoneygroups.in / @realfinserv.com only
+       │  • Per-account lockout: 5 failed attempts → 15-min lock
+       │  • Rate limit: 5 login attempts / min / IP
+       │  • Security audit log: every login, failure, lockout, registration
+       │
+       │  Roles and what they see:
+       │
+       │  ADMIN         ──► Full platform: users, analytics, all dashboards
+       │  PARTNER_MANAGER──► Connector onboarding, commission slabs, payouts
+       │  TEAM_LEADER   ──► All RMs + their Connectors, team performance
+       │  RM            ──► Own Connectors, regional pipeline
+       │  CONNECTOR     ──► Own leads, commission tracker, loan status
+       │  OPERATIONS    ──► WhatsApp console, ops dashboard, file queries
+
+
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │  EVENT BUS — RabbitMQ  (platform.exchange — topic type)                     │
+ └─────────────────────────────────────────────────────────────────────────────┘
+
+  Publisher             Routing Key               Consumer(s)
+  ─────────────────     ──────────────────────    ──────────────────────────
+  auth-service      ──► auth.user.created      ──► connector-service
+  customer-service  ──► customer.created       ──► loan-service
+  loan-service      ──► loan.file.created      ──► notification-service
+  loan-service      ──► loan.status.updated    ──► notification-service
+                                               ──► sm-routing-service
+  sm-routing-service──► routing.sm.assigned    ──► (future consumer)
+  messaging-service ──► whatsapp.send.queue    ──► WhatsAppMessageConsumer
+  messaging-service ──► whatsapp.webhook.queue ──► WhatsAppWebhookConsumer
+```
+
+---
+
 ## Architecture Overview
 
 ```

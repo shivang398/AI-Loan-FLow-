@@ -1,4 +1,4 @@
-package com.financial.notification.config;
+package com.financial.messaging.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,9 +15,7 @@ public class JacksonConfig {
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                // A08: reject unknown properties — prevents mass-assignment / deserialization attacks
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                // A08: never trust polymorphic type info from the wire
                 .deactivateDefaultTyping();
     }
 }

@@ -15,9 +15,16 @@ const allowedDomainEmail = z
     { message: 'Only @realmoneygroups.in and @realfinserv.com email addresses are permitted' }
   );
 
+const strongPassword = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
+
 export const loginSchema = z.object({
   email: allowedDomainEmail,
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(1, 'Password is required'),
   remember: z.boolean().optional(),
 });
 
@@ -26,7 +33,7 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
 export const signupSchema = z
   .object({
     email: allowedDomainEmail,
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    password: strongPassword,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

@@ -36,7 +36,8 @@ public class AuthExceptionHandler {
         "Invalid or tampered token",
         "Refresh token has expired",
         "Role not permitted for self-registration",
-        "Registration is restricted to authorised domains"
+        "Registration is restricted to authorised domains",
+        "Account temporarily locked due to too many failed attempts. Try again in 15 minutes."
     );
 
     @ExceptionHandler(Exception.class)
@@ -108,6 +109,7 @@ public class AuthExceptionHandler {
             case "Invalid or tampered token", "Refresh token has expired" -> HttpStatus.UNAUTHORIZED;
             case "User account is not active" -> HttpStatus.FORBIDDEN;
             case "Registration is restricted to authorised domains" -> HttpStatus.FORBIDDEN;
+            case "Account temporarily locked due to too many failed attempts. Try again in 15 minutes." -> HttpStatus.LOCKED;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

@@ -31,6 +31,7 @@ class AuthControllerTest {
     final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
+    @SuppressWarnings("unused") // called reflectively by JUnit 5
     void setup() { mvc = MockMvcBuilders.standaloneSetup(controller).build(); }
 
     @Test
@@ -59,7 +60,7 @@ class AuthControllerTest {
         mvc.perform(post("/auth/register/partner")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(
-                                new AuthRequests.RegisterRequest("partner@example.com", "pass123!", null))))
+                                new AuthRequests.RegisterRequest("partner@example.com", "Pass123!", null))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }

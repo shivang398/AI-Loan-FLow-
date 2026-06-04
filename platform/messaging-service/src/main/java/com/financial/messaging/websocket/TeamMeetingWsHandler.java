@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class TeamMeetingWsHandler extends TextWebSocketHandler {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private final TeamMeetingRoomRepository roomRepository;
     private final TeamMeetingMessageRepository messageRepository;
     private final JwtTokenProvider jwtTokenProvider;

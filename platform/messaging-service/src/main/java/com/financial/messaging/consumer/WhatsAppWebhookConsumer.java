@@ -1,5 +1,6 @@
 package com.financial.messaging.consumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.messaging.entity.Conversation;
@@ -22,7 +23,7 @@ public class WhatsAppWebhookConsumer {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final SimpMessagingTemplate wsTemplate;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     @RabbitListener(queues = "whatsapp.webhook.queue")
     @Transactional
@@ -80,7 +81,7 @@ public class WhatsAppWebhookConsumer {
                     log.info("Inbound WhatsApp message from {} saved to conversation {}", senderPhone, conversation.getId());
                 }
             }
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.error("Failed to process WhatsApp webhook payload", e);
             throw new RuntimeException(e); // re-throw to trigger RabbitMQ retry
         }

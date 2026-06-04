@@ -17,10 +17,14 @@ const LOAN_PRODUCTS = [
   { value: 'education', label: 'Education Loan' },
 ];
 
+const RM_RED  = '#CC1B1B';
+const RM_BLUE = '#0F2B9F';
+const RM_NAVY = '#071560';
+
 const antTheme = {
   token: {
-    colorPrimary: '#0A1F44',
-    colorLink: '#D4AF37',
+    colorPrimary: RM_BLUE,
+    colorLink: RM_RED,
     borderRadius: 10,
     fontFamily: 'Inter, sans-serif',
   },
@@ -96,7 +100,7 @@ const PartnerRegistrationInner: React.FC = () => {
 
       {/* ── Navbar — identical dark navy as landing page hero ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #071729 0%, #0A1F44 100%)',
+        background: `linear-gradient(150deg, ${RM_NAVY} 0%, ${RM_BLUE} 100%)`,
         height: 64, padding: '0 32px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 100,
@@ -110,12 +114,12 @@ const PartnerRegistrationInner: React.FC = () => {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#D4AF37,#B8960C)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(212,175,55,0.35)' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${RM_NAVY},${RM_BLUE})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(212,175,55,0.35)' }}>
             <IndianRupee size={18} color="#0A1F44" strokeWidth={2.8} />
           </div>
           <div>
             <div style={{ fontFamily: '"Plus Jakarta Sans",sans-serif', fontWeight: 900, fontSize: 16, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>Real Money</div>
-            <div style={{ fontSize: 9, color: '#D4AF37', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>Partner Program</div>
+            <div style={{ fontSize: 9, color: RM_RED, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>Partner Program</div>
           </div>
         </div>
 
@@ -129,7 +133,7 @@ const PartnerRegistrationInner: React.FC = () => {
 
       {/* ── Hero banner — same dark gradient as landing page hero ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #071729 0%, #0A1F44 60%, #0D2654 100%)',
+        background: `linear-gradient(150deg, ${RM_NAVY} 0%, ${RM_BLUE} 55%, #8B1010 100%)`,
         padding: '56px 24px 72px',
         textAlign: 'center',
         position: 'relative',
@@ -163,11 +167,11 @@ const PartnerRegistrationInner: React.FC = () => {
                 background: '#fff', borderRadius: 14, padding: '16px 18px',
                 border: '1px solid #E2E8F0', boxShadow: '0 1px 8px rgba(10,31,68,0.06)',
               }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(212,175,55,0.1)', border: '1.5px solid rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(204,27,27,0.08)', border: `1.5px solid rgba(204,27,27,0.20)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={20} color="#D4AF37" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#0A1F44', lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans",sans-serif' }}>{title}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: RM_BLUE, lineHeight: 1.2, fontFamily: '"Plus Jakarta Sans",sans-serif' }}>{title}</div>
                   <div style={{ fontSize: 12, color: '#64748B', marginTop: 3 }}>{desc}</div>
                 </div>
               </div>
@@ -175,11 +179,11 @@ const PartnerRegistrationInner: React.FC = () => {
 
             {/* Info card */}
             <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid #E2E8F0', borderLeft: '3px solid #D4AF37', boxShadow: '0 1px 8px rgba(10,31,68,0.06)' }}>
-              <div style={{ display: 'inline-block', background: '#FEF9EC', borderRadius: 100, padding: '3px 12px', marginBottom: 10, border: '1px solid #D4AF3730' }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Why Partners Choose Us</span>
+              <div style={{ display: 'inline-block', background: '#F0F2FA', borderRadius: 100, padding: '3px 12px', marginBottom: 10, border: '1px solid #D4AF3730' }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Why Partners Choose Us</span>
               </div>
               <p style={{ margin: '0 0 14px', fontSize: 13, color: '#475569', lineHeight: 1.75 }}>
-                With <strong style={{ color: '#0A1F44' }}>22+ years of experience</strong> and a monthly business of <strong style={{ color: '#0A1F44' }}>₹10 Cr+</strong>, we give partners the tools and network to build a sustainable income stream.
+                With <strong style={{ color: RM_BLUE }}>22+ years of experience</strong> and a monthly business of <strong style={{ color: RM_BLUE }}>₹10 Cr+</strong>, we give partners the tools and network to build a sustainable income stream.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {['Fast & transparent payouts', 'Real-time commission tracking', 'Dedicated RM support'].map(t => (
@@ -198,16 +202,16 @@ const PartnerRegistrationInner: React.FC = () => {
               <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                 style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 8px 48px rgba(10,31,68,0.09)', textAlign: 'center', padding: '60px 40px' }}>
                 <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#dcfce7', border: '2px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 32 }}>✓</div>
-                <h3 style={{ fontSize: 22, fontWeight: 900, color: '#0A1F44', margin: '0 0 10px', fontFamily: '"Plus Jakarta Sans",sans-serif' }}>Account Created!</h3>
+                <h3 style={{ fontSize: 22, fontWeight: 900, color: RM_BLUE, margin: '0 0 10px', fontFamily: '"Plus Jakarta Sans",sans-serif' }}>Account Created!</h3>
                 <p style={{ fontSize: 15, color: '#64748b', margin: '0 0 20px', lineHeight: 1.6, maxWidth: 380, marginLeft: 'auto', marginRight: 'auto' }}>
                   Your channel partner account is ready. Our team will contact you within 24 hours to complete KYC and activate payouts.
                 </p>
-                <div style={{ background: '#FEF9EC', borderRadius: 12, padding: '14px 20px', border: '1px solid #D4AF3740', marginBottom: 24 }}>
-                  <p style={{ margin: 0, fontSize: 13.5, color: '#92400e', fontWeight: 600 }}>Sign in now to access your partner dashboard.</p>
+                <div style={{ background: '#F0F2FA', borderRadius: 12, padding: '14px 20px', border: `1px solid rgba(15,43,159,0.20)`, marginBottom: 24 }}>
+                  <p style={{ margin: 0, fontSize: 13.5, color: RM_BLUE, fontWeight: 600 }}>Sign in now to access your partner dashboard.</p>
                 </div>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button onClick={() => navigate('/login')}
-                    style={{ padding: '12px 32px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#0A1F44,#1e3a6e)', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 20px rgba(10,31,68,0.22)' }}>
+                    style={{ padding: '12px 32px', borderRadius: 12, border: 'none', background: `linear-gradient(135deg,${RM_NAVY},${RM_BLUE} 50%,${RM_RED})`, color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 20px rgba(10,31,68,0.22)' }}>
                     Go to Partner Login →
                   </button>
                   <button onClick={() => navigate('/')}
@@ -222,11 +226,11 @@ const PartnerRegistrationInner: React.FC = () => {
 
                   {/* Card header — same as CustomerRegistrationSection */}
                   <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#FEF9EC', borderRadius: 100, padding: '5px 16px', border: '1px solid #D4AF3740', marginBottom: 12 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D4AF37' }} />
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Channel Partner Registration</span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#F0F2FA', borderRadius: 100, padding: '5px 16px', border: `1px solid rgba(15,43,159,0.20)`, marginBottom: 12 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: RM_RED }} />
+                      <span style={{ fontSize: 11, fontWeight: 800, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Channel Partner Registration</span>
                     </div>
-                    <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem,2.5vw,1.6rem)', fontWeight: 900, color: '#0A1F44', fontFamily: '"Plus Jakarta Sans",sans-serif', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                    <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem,2.5vw,1.6rem)', fontWeight: 900, color: RM_BLUE, fontFamily: '"Plus Jakarta Sans",sans-serif', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
                       Create Your Partner Account
                     </h2>
                     <p style={{ margin: '6px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
@@ -243,8 +247,8 @@ const PartnerRegistrationInner: React.FC = () => {
                     {/* ── Section label helper ── */}
                     {(() => {
                       const SL = ({ children }: { children: React.ReactNode }) => (
-                        <div style={{ fontSize: 11, fontWeight: 800, color: '#0A1F44', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, marginTop: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ width: 18, height: 2, background: '#D4AF37', borderRadius: 2, flexShrink: 0 }} />
+                        <div style={{ fontSize: 11, fontWeight: 800, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, marginTop: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ width: 18, height: 2, background: RM_RED, borderRadius: 2, flexShrink: 0 }} />
                           {children}
                         </div>
                       );
@@ -261,7 +265,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                 <Controller name="name" control={control}
                                   render={({ field }) => (
                                     <input {...field} placeholder="Your full name" autoComplete="off" style={inp}
-                                      onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                      onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                       onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
                                   )} />
                               </F>
@@ -270,7 +274,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                 <Controller name="email" control={control}
                                   render={({ field }) => (
                                     <input {...field} type="email" placeholder="you@email.com" autoComplete="off" style={inp}
-                                      onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                      onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                       onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
                                   )} />
                               </F>
@@ -282,7 +286,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                       <div style={{ ...inp, width: 52, height: 42, borderRadius: '10px 0 0 10px', borderRight: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#475569', fontWeight: 700, fontSize: 12.5, flexShrink: 0, padding: 0 }}>+91</div>
                                       <input {...field} type="tel" placeholder="98765 43210" maxLength={10} autoComplete="off"
                                         style={{ ...inp, borderRadius: '0 10px 10px 0', flex: 1 }}
-                                        onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                        onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                         onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
                                     </div>
                                   )} />
@@ -292,7 +296,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                 <Controller name="businessName" control={control}
                                   render={({ field }) => (
                                     <input {...field} placeholder="Your firm name" autoComplete="off" style={inp}
-                                      onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                      onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                       onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
                                   )} />
                               </F>
@@ -301,7 +305,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                 <Controller name="city" control={control}
                                   render={({ field }) => (
                                     <input {...field} placeholder="e.g. Jaipur, Mumbai" autoComplete="off" style={inp}
-                                      onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                      onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                       onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
                                   )} />
                               </F>
@@ -333,7 +337,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                   <textarea {...field} rows={3} placeholder="Tell us about your client base and any specific requirements..."
                                     maxLength={500}
                                     style={{ ...inp, height: 'auto', resize: 'vertical', padding: '10px 14px', lineHeight: 1.6 }}
-                                    onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                    onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                     onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
                                 )} />
                             </F>
@@ -350,7 +354,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                         placeholder="Min. 8 characters"
                                         autoComplete="new-password"
                                         style={{ ...inp, padding: '0 12px' }}
-                                        onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                        onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                         onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
                                         iconRender={v => v ? <Eye size={14} /> : <EyeOff size={14} />} />
                                     )} />
@@ -363,7 +367,7 @@ const PartnerRegistrationInner: React.FC = () => {
                                         placeholder="Re-enter your password"
                                         autoComplete="new-password"
                                         style={{ ...inp, padding: '0 12px' }}
-                                        onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+                                        onFocus={e => (e.currentTarget.style.borderColor = RM_BLUE)}
                                         onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
                                         iconRender={v => v ? <Eye size={14} /> : <EyeOff size={14} />} />
                                     )} />
@@ -373,7 +377,7 @@ const PartnerRegistrationInner: React.FC = () => {
 
                             {/* Submit — same button style as landing page Continue button */}
                             <button type="submit" disabled={loading}
-                              style={{ width: '100%', padding: '14px 20px', borderRadius: 12, border: 'none', background: loading ? '#94a3b8' : 'linear-gradient(135deg,#0A1F44,#1e3a6e)', color: '#fff', fontSize: 15, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '0.01em', boxShadow: loading ? 'none' : '0 6px 20px rgba(10,31,68,0.22)', fontFamily: 'Inter, sans-serif' }}>
+                              style={{ width: '100%', padding: '14px 20px', borderRadius: 12, border: 'none', background: loading ? '#94a3b8' : `linear-gradient(135deg,${RM_NAVY},${RM_BLUE} 50%,${RM_RED})`, color: '#fff', fontSize: 15, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '0.01em', boxShadow: loading ? 'none' : '0 6px 20px rgba(10,31,68,0.22)', fontFamily: 'Inter, sans-serif' }}>
                               {loading ? 'Creating your account…' : 'Create Partner Account →'}
                             </button>
 

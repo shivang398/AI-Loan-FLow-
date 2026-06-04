@@ -44,6 +44,12 @@ public class User {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+
     @Column(name = "created_by")
     private UUID createdBy;
 
@@ -67,4 +73,8 @@ public class User {
     public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
     public UUID getUpdatedBy() { return updatedBy; }
     public void setUpdatedBy(UUID updatedBy) { this.updatedBy = updatedBy; }
+    public int getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void setFailedLoginAttempts(int n) { this.failedLoginAttempts = n; }
+    public Instant getLockedUntil() { return lockedUntil; }
+    public void setLockedUntil(Instant t) { this.lockedUntil = t; }
 }

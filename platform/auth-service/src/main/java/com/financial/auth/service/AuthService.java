@@ -12,9 +12,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.financial.auth.config.SecurityAuditLog;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +62,22 @@ public class AuthService {
         if (atIndex < 0) throw new RuntimeException("Invalid email address");
         String domain = email.substring(atIndex + 1).toLowerCase(java.util.Locale.ROOT);
         if (!ALLOWED_DOMAINS.contains(domain)) {
+            SecurityAuditLog.registrationBlocked(email, "domain-not-allowed:" + domain);
             throw new RuntimeException("Registration is restricted to authorised domains");
+        }
+    }
+
+    private String currentIp() {
+        try {
+            var attrs = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            String xff = attrs.getRequest().getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                String[] parts = xff.split(",");
+                return parts[parts.length - 1].trim();
+            }
+            return attrs.getRequest().getRemoteAddr();
+        } catch (IllegalStateException | NullPointerException e) {
+            return "UNKNOWN";
         }
     }
 
@@ -90,6 +109,7 @@ public class AuthService {
                 .collect(Collectors.toSet());
         eventPublisher.publishUserCreatedEvent(savedUser.getId(), savedUser.getEmail(), roleNames);
 
+        SecurityAuditLog.registrationSuccess(savedUser.getEmail(), roleName);
         return Map.of(
             "userId", savedUser.getId().toString(),
             "email", savedUser.getEmail(),
@@ -97,29 +117,61 @@ public class AuthService {
         );
     }
 
-    @Transactional(readOnly = true)
+    private static final int    MAX_FAILED_ATTEMPTS  = 5;
+    private static final long   LOCKOUT_DURATION_MIN = 15L;
+
+    @Transactional
     public Map<String, String> authenticateUser(AuthRequests.LoginRequest loginRequest) {
         validateEmailDomain(loginRequest.email());
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.email(),
-                        loginRequest.password()
-                )
-        );
+
+        // Pre-auth: check account lockout
+        User user = userRepository.findByEmail(loginRequest.email()).orElse(null);
+        if (user != null && user.getLockedUntil() != null && Instant.now().isBefore(user.getLockedUntil())) {
+            throw new RuntimeException("Account temporarily locked due to too many failed attempts. Try again in 15 minutes.");
+        }
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password()));
+        } catch (org.springframework.security.core.AuthenticationException ex) {
+            if (user != null) {
+                int attempts = user.getFailedLoginAttempts() + 1;
+                user.setFailedLoginAttempts(attempts);
+                if (attempts >= MAX_FAILED_ATTEMPTS) {
+                    user.setLockedUntil(Instant.now().plusSeconds(LOCKOUT_DURATION_MIN * 60));
+                    user.setFailedLoginAttempts(0);
+                    SecurityAuditLog.accountLocked(loginRequest.email(), currentIp());
+                } else {
+                    SecurityAuditLog.loginFailure(loginRequest.email(), currentIp(), attempts);
+                }
+                userRepository.save(user);
+            } else {
+                SecurityAuditLog.loginFailure(loginRequest.email(), currentIp(), 0);
+            }
+            throw ex;
+        }
+
+        // Successful login — reset failure counter
+        if (user != null && (user.getFailedLoginAttempts() > 0 || user.getLockedUntil() != null)) {
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+            userRepository.save(user);
+        }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
-        
-        User user = userRepository.findByEmail(loginRequest.email())
+
+        User freshUser = userRepository.findByEmail(loginRequest.email())
                 .orElseThrow(() -> new RuntimeException("User not found after authentication"));
-        
-        String role = user.getRoles().iterator().next().getName();
-        
+        String role = freshUser.getRoles().iterator().next().getName();
+
+        SecurityAuditLog.loginSuccess(freshUser.getEmail(), role, currentIp());
         return Map.of(
             "token", jwt,
             "role", role,
-            "email", user.getEmail(),
-            "id", user.getId().toString()
+            "email", freshUser.getEmail(),
+            "id", freshUser.getId().toString()
         );
     }
 

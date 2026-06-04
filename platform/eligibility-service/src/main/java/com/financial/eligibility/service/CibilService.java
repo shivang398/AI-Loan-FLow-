@@ -1,5 +1,6 @@
 package com.financial.eligibility.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.eligibility.dto.CibilRequestDto;
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayOutputStream;
@@ -85,7 +87,7 @@ public class CibilService {
         if (hasCredentials) {
             apiResponse = callTenacioApi(dto);
         } else {
-            log.warn("CIBIL API credentials not configured — generating demo report for PAN={}", dto.getPanNumber());
+            log.warn("CIBIL API credentials not configured — generating demo report for PAN=***REDACTED***");
         }
         return buildBankStandardPdf(dto, apiResponse);
     }
@@ -97,7 +99,7 @@ public class CibilService {
         if (hasCredentials) {
             apiResponse = callTenacioApi(dto);
         } else {
-            log.warn("CIBIL API credentials not configured — returning demo summary for PAN={}", dto.getPanNumber());
+            log.warn("CIBIL API credentials not configured — returning demo summary for PAN=***REDACTED***");
         }
 
         boolean demoMode = (apiResponse == null);
@@ -175,7 +177,7 @@ public class CibilService {
             ResponseEntity<String> response = restTemplate.postForEntity(
                 apiUrl, new HttpEntity<>(payload, headers), String.class);
             log.info("Tenacio CIBIL API — status={}", response.getStatusCode());
-            log.info("Tenacio RAW RESPONSE: {}", response.getBody());
+            // Raw response body intentionally not logged — contains PAN, credit score (PII/A09)
 
             JsonNode root = objectMapper.readTree(response.getBody());
 
@@ -184,7 +186,7 @@ public class CibilService {
             if ("error".equalsIgnoreCase(apiStatus)) {
                 String msg = root.path("serviceError").path("message").asText("");
                 if (msg.isBlank()) msg = root.path("message").asText("CIBIL lookup failed");
-                log.error("Tenacio business error for PAN={}: {}", dto.getPanNumber(), msg);
+                log.error("Tenacio business error [PAN=REDACTED]: {}", msg);
                 // Make "No Data Found" actionable for the connector
                 if ("No Data Found".equalsIgnoreCase(msg)) {
                     throw new RuntimeException(
@@ -199,9 +201,7 @@ public class CibilService {
         } catch (HttpStatusCodeException e) {
             log.error("Tenacio error: {} — {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException(extractErrorMessage(e.getResponseBodyAsString()));
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (JsonProcessingException | org.springframework.web.client.ResourceAccessException e) {
             log.error("Failed to reach Tenacio CIBIL API", e);
             throw new RuntimeException("Unable to reach CIBIL service. Please try again later.");
         }
@@ -217,7 +217,7 @@ public class CibilService {
                 if (errorNode.isTextual())                  return errorNode.asText();
                 if (errorNode.has("message"))               return errorNode.get("message").asText();
             }
-        } catch (Exception ignored) {}
+        } catch (JsonProcessingException ignored) {}
         return body != null && !body.isBlank() ? body : "Unknown API error";
     }
 
@@ -249,7 +249,7 @@ public class CibilService {
                         ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
                             new Phrase("Page " + w.getPageNumber(), footFont),
                             d.right(), d.bottom() - 22, 0);
-                    } catch (Exception ignored) {}
+                    } catch (DocumentException ignored) {}
                 }
             });
 
@@ -324,7 +324,7 @@ public class CibilService {
             doc.close();
             return out.toByteArray();
 
-        } catch (Exception e) {
+        } catch (DocumentException e) {
             log.error("Error building CIBIL PDF", e);
             throw new RuntimeException("Failed to generate CIBIL PDF", e);
         }
@@ -469,7 +469,7 @@ public class CibilService {
 
         Paragraph legend = new Paragraph();
         legend.add(new Chunk("Score Range Interpretation\n", bold(9, CIBIL_DARK_BLUE)));
-        legend.add(vGapInline(4));
+        legend.add(vGapInline());
 
         String[][] bands = {
             {"750 – 900", "EXCELLENT",  "Highly likely to be approved. Best interest rates available."},
@@ -822,10 +822,9 @@ public class CibilService {
         // ── Score ─────────────────────────────────────────────────────────────
         // riskScore is a STRING like "722" or "00722"
         String riskScoreRaw = safeText(navigate(borrower, "CreditScore"), "riskScore", "0");
-        try { d.cibilScore = Integer.parseInt(riskScoreRaw.trim()); } catch (Exception ignored) {}
+        try { d.cibilScore = Integer.parseInt(riskScoreRaw.trim()); } catch (NumberFormatException ignored) {}
 
-        log.info("Parsed cibilScore={} (raw='{}') from Tenacio response (reportId={})",
-            d.cibilScore, riskScoreRaw, d.reportId);
+        log.info("Parsed cibilScore={} from Tenacio response (reportId={})", d.cibilScore, d.reportId);
 
         // ── Personal info ─────────────────────────────────────────────────────
         JsonNode birth  = navigate(borrower, "Birth/BirthDate");
@@ -846,7 +845,7 @@ public class CibilService {
             try {
                 long income = (long) Double.parseDouble(incomeRaw);
                 d.income = "₹" + String.format("%,d", income) + " per month";
-            } catch (Exception ignored) { d.income = incomeRaw; }
+            } catch (NumberFormatException ignored) { d.income = incomeRaw; }
         }
 
         JsonNode emailArr = navigate(borrower, "EmailAddress");
@@ -978,7 +977,7 @@ public class CibilService {
             String date = raw.contains("+") ? raw.substring(0, raw.indexOf('+')) : raw;
             String[] parts = date.split("-");
             if (parts.length >= 3) return parts[2] + "-" + parts[1] + "-" + parts[0];
-        } catch (Exception ignored) {}
+        } catch (RuntimeException ignored) {}
         return raw;
     }
 
@@ -988,52 +987,7 @@ public class CibilService {
             long v = (long) Double.parseDouble(s.trim());
             return v < 0 ? 0 : v; // CIBIL uses -1 for "not reported" — treat as 0
         }
-        catch (Exception e) { return 0; }
-    }
-
-    private JsonNode firstNonNull(JsonNode... nodes) {
-        for (JsonNode n : nodes) if (n != null && !n.isNull() && !n.isMissingNode()) return n;
-        return null;
-    }
-
-    private int firstNonZeroInt(int... values) {
-        for (int v : values) if (v != 0) return v;
-        return 0;
-    }
-
-    private AccountDetail parseAccount(JsonNode a) {
-        AccountDetail acct = new AccountDetail();
-        acct.memberName       = safeText(a, "SubscriberName", safeText(a, "memberName", "Unknown Bank"));
-        acct.accountType      = safeText(a, "AccountType", safeText(a, "accountType", "—"));
-        acct.accountNumber    = maskAccount(safeText(a, "AccountNumber", safeText(a, "accountNumber", "****")));
-        acct.ownership        = safeText(a, "OwnershipType", "Self");
-        acct.dateOpened       = formatDate(safeText(a, "DateOpened", "—"));
-        acct.dateClosed       = formatDate(safeText(a, "DateClosed", ""));
-        acct.sanctionedAmount = safeInt(a, "HighCreditOrSanctionedAmount",
-                                  safeInt(a, "sanctionedAmount", safeInt(a, "CreditLimit", 0)));
-        acct.currentBalance   = safeInt(a, "CurrentBalance", safeInt(a, "currentBalance", 0));
-        acct.amountOverdue    = safeInt(a, "AmountOverdue", safeInt(a, "amountOverdue", 0));
-        acct.accountStatus    = safeText(a, "AccountStatus", safeText(a, "status", "STANDARD"));
-        acct.lastPaymentDate  = formatDate(safeText(a, "DateOfLastPayment", "—"));
-        acct.paymentFrequency = safeText(a, "PaymentFrequency", "Monthly");
-
-        // Payment history (24m)
-        acct.paymentHistory = new ArrayList<>();
-        JsonNode ph = navigate(a, "PaymentHistory");
-        if (ph == null) ph = navigate(a, "paymentHistory");
-        if (ph != null && ph.isArray()) {
-            for (JsonNode h : ph) {
-                acct.paymentHistory.add(h.asText("XXX").trim());
-                if (acct.paymentHistory.size() >= 24) break;
-            }
-        } else if (ph != null && ph.isTextual()) {
-            // Sometimes it's a string like "000111..."
-            for (char c : ph.asText().toCharArray()) {
-                acct.paymentHistory.add(String.valueOf(c).equals("0") ? "STD" : "SMA");
-                if (acct.paymentHistory.size() >= 24) break;
-            }
-        }
-        return acct;
+        catch (NumberFormatException ignored) { return 0; }
     }
 
     // ── Data classes ──────────────────────────────────────────────────────────
@@ -1063,7 +1017,7 @@ public class CibilService {
 
     private PdfPCell labelCell(String text, Color bg) {
         PdfPCell c = new PdfPCell(new Phrase(text, bold(8, CIBIL_DARK_BLUE)));
-        c.setBackgroundColor(CIBIL_LIGHT_BLUE);
+        c.setBackgroundColor(bg);
         c.setPadding(5);
         c.setBorderColor(BORDER_LIGHT);
         return c;
@@ -1094,8 +1048,7 @@ public class CibilService {
         return p;
     }
 
-    private Chunk vGapInline(float pts) {
-        // Chunk.setLineHeight() does not exist in OpenPDF; spacing is controlled by the surrounding Paragraph
+    private Chunk vGapInline() {
         return new Chunk("\n");
     }
 
@@ -1115,7 +1068,7 @@ public class CibilService {
             if (raw.matches("\\d{8}")) { // DDMMYYYY
                 return raw.substring(0, 2) + "-" + raw.substring(2, 4) + "-" + raw.substring(4);
             }
-        } catch (Exception ignored) {}
+        } catch (RuntimeException ignored) {}
         return raw;
     }
 
@@ -1125,17 +1078,7 @@ public class CibilService {
         return g.isEmpty() ? "—" : g;
     }
 
-    private String buildAddress(JsonNode addr) {
-        if (addr == null) return "—";
-        String[] parts = {
-            safeText(addr, "Line1", ""), safeText(addr, "Line2", ""),
-            safeText(addr, "City", ""),  safeText(addr, "State", ""),
-            safeText(addr, "PIN", ""),
-        };
-        StringBuilder sb = new StringBuilder();
-        for (String p : parts) if (!p.isBlank()) { if (sb.length() > 0) sb.append(", "); sb.append(p); }
-        return sb.length() == 0 ? "—" : sb.toString();
-    }
+
 
     private Color scoreColor(int score) {
         if (score >= 750) return SCORE_GREEN;
@@ -1160,7 +1103,7 @@ public class CibilService {
             int lo = Integer.parseInt(p[0].trim());
             int hi = Integer.parseInt(p[1].trim());
             return score >= lo && score <= hi;
-        } catch (Exception e) { return false; }
+        } catch (NumberFormatException ignored) { return false; }
     }
 
     private Color paymentColor(String code) {

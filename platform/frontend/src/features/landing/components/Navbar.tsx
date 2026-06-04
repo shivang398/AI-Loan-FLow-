@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Drawer, Button } from 'antd';
-import { IndianRupee, Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import '../styles/landing.css';
+
+const RM_RED  = '#CC1B1B';
+const RM_BLUE = '#0F2B9F';
+const RM_NAVY = '#071560';
 
 const NAV_LINKS = [
   { label: 'Home',          href: '#hero' },
@@ -18,6 +22,24 @@ const scrollTo = (href: string) => {
   const el = document.querySelector(href);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
+
+/* SVG globe logo matching the Real Money brand mark */
+const RMLogo: React.FC<{ size?: number }> = ({ size = 38 }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="8" fill="white" />
+    {/* Globe swoosh — blue arc left */}
+    <path d="M8 20 C8 12 14 6 20 6 C26 6 32 12 32 20" stroke={RM_BLUE} strokeWidth="2.8" strokeLinecap="round" fill="none" />
+    {/* Globe swoosh — red arc right */}
+    <path d="M8 20 C8 28 14 34 20 34 C26 34 32 28 32 20" stroke={RM_RED} strokeWidth="2.8" strokeLinecap="round" fill="none" />
+    {/* Horizontal white sweep */}
+    <path d="M6 17 Q20 21 34 17" stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+    <path d="M6 23 Q20 19 34 23" stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+    {/* R in red */}
+    <text x="12" y="19" fontFamily="Arial" fontWeight="900" fontSize="8" fill={RM_RED}>R</text>
+    {/* M in blue */}
+    <text x="20" y="26" fontFamily="Arial" fontWeight="900" fontSize="8" fill={RM_BLUE}>M</text>
+  </svg>
+);
 
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled]     = useState(false);
@@ -42,8 +64,8 @@ const Navbar: React.FC = () => {
           zIndex: 1000,
           height: 68,
           background: '#fff',
-          borderBottom: scrolled ? '1px solid #E5E7EB' : '1px solid #F3F4F6',
-          boxShadow: scrolled ? '0 2px 16px rgba(0,0,0,.06)' : 'none',
+          borderBottom: scrolled ? `1px solid #E5E7EB` : '1px solid #F3F4F6',
+          boxShadow: scrolled ? '0 2px 16px rgba(0,0,0,.07)' : 'none',
           transition: 'box-shadow .25s, border-color .25s',
         }}
       >
@@ -54,16 +76,12 @@ const Navbar: React.FC = () => {
             onClick={() => scrollTo('#hero')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            <div style={{
-              width: 38, height: 38, borderRadius: 8,
-              background: '#0A1F44',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <IndianRupee size={19} color="#ffffff" strokeWidth={2.5} />
-            </div>
+            <RMLogo size={40} />
             <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-              <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, color: '#0A1F44', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
-                Real Money
+              <div style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 16, whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>
+                <span style={{ color: RM_RED }}>REAL</span>
+                {' '}
+                <span style={{ color: RM_BLUE }}>MONEY</span>
               </div>
               <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 Personal Loan Advisory
@@ -78,7 +96,7 @@ const Navbar: React.FC = () => {
                 key={link.label}
                 onClick={() => scrollTo(link.href)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#374151', fontFamily: 'Inter, sans-serif', padding: '4px 0', whiteSpace: 'nowrap', transition: 'color .15s' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#0A1F44')}
+                onMouseEnter={e => (e.currentTarget.style.color = RM_NAVY)}
                 onMouseLeave={e => (e.currentTarget.style.color = '#374151')}
               >
                 {link.label}
@@ -87,14 +105,14 @@ const Navbar: React.FC = () => {
 
             <Button
               onClick={() => navigate('/partners/register')}
-              style={{ borderColor: '#D1D5DB', color: '#374151', fontWeight: 600, borderRadius: 6, height: 38, paddingInline: 16, fontSize: 13, whiteSpace: 'nowrap' }}
+              style={{ borderColor: RM_RED, color: RM_RED, fontWeight: 600, borderRadius: 6, height: 38, paddingInline: 16, fontSize: 13, whiteSpace: 'nowrap' }}
             >
               Become a Partner
             </Button>
             <Button
               onClick={() => navigate('/login')}
               icon={<LogIn size={14} />}
-              style={{ background: '#0A1F44', borderColor: '#0A1F44', color: '#ffffff', fontWeight: 700, borderRadius: 6, height: 38, paddingInline: 16, fontSize: 13, whiteSpace: 'nowrap' }}
+              style={{ background: `linear-gradient(135deg, ${RM_NAVY}, ${RM_BLUE})`, borderColor: RM_BLUE, color: '#ffffff', fontWeight: 700, borderRadius: 6, height: 38, paddingInline: 16, fontSize: 13, whiteSpace: 'nowrap' }}
             >
               Login
             </Button>
@@ -106,7 +124,7 @@ const Navbar: React.FC = () => {
             onClick={() => setDrawerOpen(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8 }}
           >
-            <Menu size={24} color="#0A1F44" />
+            <Menu size={24} color={RM_NAVY} />
           </button>
         </div>
       </motion.header>
@@ -115,11 +133,10 @@ const Navbar: React.FC = () => {
       <Drawer
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0A1F44', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <IndianRupee size={15} color="#ffffff" />
-            </div>
-            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, color: '#0A1F44', fontSize: 15 }}>
-              Real Money
+            <RMLogo size={34} />
+            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 800, fontSize: 15 }}>
+              <span style={{ color: RM_RED }}>REAL</span>{' '}
+              <span style={{ color: RM_BLUE }}>MONEY</span>
             </span>
           </div>
         }
@@ -142,10 +159,10 @@ const Navbar: React.FC = () => {
             </button>
           ))}
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Button block size="large" onClick={() => { navigate('/partners/register'); setDrawerOpen(false); }} style={{ borderColor: '#D1D5DB', color: '#374151', fontWeight: 600, borderRadius: 6 }}>
+            <Button block size="large" onClick={() => { navigate('/partners/register'); setDrawerOpen(false); }} style={{ borderColor: RM_RED, color: RM_RED, fontWeight: 600, borderRadius: 6 }}>
               Become a Partner
             </Button>
-            <Button block size="large" icon={<LogIn size={14} />} onClick={() => { navigate('/login'); setDrawerOpen(false); }} style={{ background: '#0A1F44', borderColor: '#0A1F44', color: '#ffffff', fontWeight: 700, borderRadius: 6 }}>
+            <Button block size="large" icon={<LogIn size={14} />} onClick={() => { navigate('/login'); setDrawerOpen(false); }} style={{ background: `linear-gradient(135deg, ${RM_NAVY}, ${RM_BLUE})`, borderColor: RM_BLUE, color: '#ffffff', fontWeight: 700, borderRadius: 6 }}>
               Login
             </Button>
           </div>
