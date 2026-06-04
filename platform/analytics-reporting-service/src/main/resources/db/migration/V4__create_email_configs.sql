@@ -1,9 +1,9 @@
 CREATE TABLE email_configs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    frequency VARCHAR(50) NOT NULL DEFAULT 'weekly',
-    recipients TEXT NOT NULL DEFAULT '',
-    updated_at TIMESTAMP NOT NULL DEFAULT now()
-);
+    id         CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
+    frequency  VARCHAR(50)   NOT NULL DEFAULT 'weekly',
+    recipients VARCHAR(5000) NOT NULL DEFAULT '',
+    updated_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO email_configs (id, frequency, recipients)
-VALUES (gen_random_uuid(), 'weekly', 'admin@realmoney.in');
+VALUES (UUID(), 'weekly', 'admin@realmoney.in');

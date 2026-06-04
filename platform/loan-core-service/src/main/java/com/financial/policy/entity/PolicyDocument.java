@@ -30,7 +30,7 @@ public class PolicyDocument {
     @Column(name = "mime_type", nullable = false)
     private String mimeType;
 
-    @Column(name = "file_data", nullable = false, columnDefinition = "bytea")
+    @Column(name = "file_data", nullable = false, columnDefinition = "LONGBLOB")
     private byte[] fileData;
 
     @Column(name = "file_size_bytes")

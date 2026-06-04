@@ -1,4 +1,4 @@
-ARG SERVICE_NAME=loan-service
+ARG SERVICE_NAME=auth-service
 
 # ── Build Stage ──────────────────────────────────────────────────────────────
 FROM eclipse-temurin:25-jdk-alpine AS builder

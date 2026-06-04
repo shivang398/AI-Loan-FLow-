@@ -1,1 +1,1 @@
-INSERT INTO roles (id, name) VALUES (gen_random_uuid(), 'PARTNER_MANAGER') ON CONFLICT (name) DO NOTHING;
+INSERT IGNORE INTO roles (id, name) VALUES (UUID(), 'PARTNER_MANAGER');

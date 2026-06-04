@@ -10,28 +10,29 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // Dedicated health-check routes — must come BEFORE the general service routes
-      // so they don't get caught and path-rewritten incorrectly.
-      // Each rewrites to /actuator/health on the target service directly.
-      '/api/svc-health/auth':        { target: 'http://127.0.0.1:8081', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/connector':   { target: 'http://127.0.0.1:8082', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/customer':    { target: 'http://127.0.0.1:8083', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/loan':        { target: 'http://127.0.0.1:8084', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/eligibility': { target: 'http://127.0.0.1:8085', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/policy':      { target: 'http://127.0.0.1:8086', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/messaging':   { target: 'http://127.0.0.1:8087', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/document':    { target: 'http://127.0.0.1:8090', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/notification':{ target: 'http://127.0.0.1:8091', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/commission':  { target: 'http://127.0.0.1:8092', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/reporting':   { target: 'http://127.0.0.1:8093', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/analytics':   { target: 'http://127.0.0.1:8094', changeOrigin: true, rewrite: () => '/actuator/health' },
-      '/api/svc-health/routing':     { target: 'http://127.0.0.1:8095', changeOrigin: true, rewrite: () => '/actuator/health' },
+      // ── Health-check routes (6 merged services) ──────────────────────────────
+      '/api/svc-health/auth':         { target: 'http://127.0.0.1:8081', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/connector':    { target: 'http://127.0.0.1:8082', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/commission':   { target: 'http://127.0.0.1:8082', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/routing':      { target: 'http://127.0.0.1:8082', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/customer':     { target: 'http://127.0.0.1:8083', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/document':     { target: 'http://127.0.0.1:8083', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/loan':         { target: 'http://127.0.0.1:8084', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/eligibility':  { target: 'http://127.0.0.1:8084', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/policy':       { target: 'http://127.0.0.1:8084', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/messaging':    { target: 'http://127.0.0.1:8087', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/notification': { target: 'http://127.0.0.1:8087', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/reporting':    { target: 'http://127.0.0.1:8093', changeOrigin: true, rewrite: () => '/actuator/health' },
+      '/api/svc-health/analytics':    { target: 'http://127.0.0.1:8093', changeOrigin: true, rewrite: () => '/actuator/health' },
 
+      // ── auth-service :8081 ───────────────────────────────────────────────────
       '/api/auth': {
         target: 'http://127.0.0.1:8081',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/auth/, '/auth'),
       },
+
+      // ── sales-ops-service :8082 (connectors + commissions + routing) ─────────
       '/api/connectors': {
         target: 'http://127.0.0.1:8082',
         changeOrigin: true,
@@ -42,30 +43,66 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/foir/, '/foir'),
       },
-      '/api/loans': {
-        target: 'http://127.0.0.1:8084',
+      '/api/transactions': {
+        target: 'http://127.0.0.1:8082',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/loans/, '/loans'),
+        rewrite: (path) => path.replace(/^\/api\/transactions/, '/transactions'),
       },
+      '/api/slabs': {
+        target: 'http://127.0.0.1:8082',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/slabs/, '/slabs'),
+      },
+      '/api/commissions': {
+        target: 'http://127.0.0.1:8082',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/commissions/, ''),
+      },
+      '/api/routing': {
+        target: 'http://127.0.0.1:8082',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/routing/, '/routing'),
+      },
+
+      // ── customer-document-service :8083 (customers + documents) ─────────────
       '/api/customers': {
         target: 'http://127.0.0.1:8083',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/customers/, '/customers'),
       },
+      '/api/documents': {
+        target: 'http://127.0.0.1:8083',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/documents/, '/documents'),
+      },
+
+      // ── loan-core-service :8084 (loans + eligibility + policy) ──────────────
+      '/api/loans': {
+        target: 'http://127.0.0.1:8084',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/loans/, '/loans'),
+      },
       '/api/eligibility': {
-        target: 'http://127.0.0.1:8085',
+        target: 'http://127.0.0.1:8084',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/eligibility/, '/eligibility'),
       },
       '/api/analyse': {
-        target: 'http://127.0.0.1:8085',
+        target: 'http://127.0.0.1:8084',
         changeOrigin: true,
       },
-      '/api/commissions': {
-        target: 'http://127.0.0.1:8092',
+      '/api/policies': {
+        target: 'http://127.0.0.1:8084',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/commissions/, ''),
+        rewrite: (path) => path.replace(/^\/api\/policies/, '/policies'),
       },
+      '/api/bsa': {
+        target: 'http://127.0.0.1:8084',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/bsa/, '/bsa'),
+      },
+
+      // ── communications-service :8087 (messaging + notifications) ────────────
       '/api/messaging/team-meeting': {
         target: 'http://127.0.0.1:8087',
         changeOrigin: true,
@@ -76,31 +113,30 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/messaging/, '/messaging'),
       },
-      '/api/policies': {
-        target: 'http://127.0.0.1:8086',
+      '/api/notifications': {
+        target: 'http://127.0.0.1:8087',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/policies/, '/policies'),
+        rewrite: (path) => path.replace(/^\/api\/notifications/, '/notifications'),
       },
-      '/api/documents': {
-        target: 'http://127.0.0.1:8090',
+      '/api/webhooks': {
+        target: 'http://127.0.0.1:8087',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/documents/, '/documents'),
+        rewrite: (path) => path.replace(/^\/api\/webhooks/, '/webhooks'),
+      },
+
+      // ── analytics-reporting-service :8093 (analytics + reporting) ───────────
+      '/api/analytics': {
+        target: 'http://127.0.0.1:8093',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/analytics/, '/analytics'),
       },
       '/api/reports': {
         target: 'http://127.0.0.1:8093',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/reports/, '/reports'),
       },
-      '/api/analytics': {
-        target: 'http://127.0.0.1:8094',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/analytics/, '/analytics'),
-      },
-      '/api/routing': {
-        target: 'http://127.0.0.1:8095',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/routing/, '/routing'),
-      },
+
+      // ── WebSocket (communications-service) ───────────────────────────────────
       '/ws-messaging': {
         target: 'http://127.0.0.1:8087',
         ws: true,
@@ -111,12 +147,8 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
-      '/api/notifications': {
-        target: 'http://127.0.0.1:8091',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/notifications/, '/notifications'),
-      },
-      // Catch-all for any other /api requests to auth-service or a default
+
+      // ── Catch-all ────────────────────────────────────────────────────────────
       '/api': {
         target: 'http://127.0.0.1:8081',
         changeOrigin: true,

@@ -28,7 +28,7 @@ SERVICES=(
 mkdir -p "$LOG_DIR"
 > "$PID_FILE"
 
-echo "==> Infrastructure assumed ready (PostgreSQL:5434, RabbitMQ:5673, Redis:6381)."
+echo "==> Infrastructure assumed ready (MySQL 8.0.44:3307, RabbitMQ:5673, Redis:6381)."
 
 echo ""
 echo "==> Building all services (skipping tests)..."
@@ -55,8 +55,8 @@ for entry in "${SERVICES[@]}"; do
   java -XX:TieredStopAtLevel=1 -Xmx384m \
     -Dserver.port="$PORT" -DPORT="$PORT" \
     -Dspring.datasource.hikari.maximum-pool-size=3 \
-    -DDB_HOST=localhost -DDB_PORT=5434 \
-    -DDB_USER=postgres -DDB_PASSWORD=password \
+    -DDB_HOST=localhost -DDB_PORT=3307 \
+    -DDB_USER=root -DDB_PASSWORD=password \
     -Dspring.rabbitmq.host=localhost -Dspring.rabbitmq.port=5673 \
     -Dspring.rabbitmq.username=guest -Dspring.rabbitmq.password=guest \
     -DRABBITMQ_HOST=localhost -DRABBITMQ_PORT=5673 \
@@ -65,6 +65,8 @@ for entry in "${SERVICES[@]}"; do
     -Dspring.data.redis.host=localhost -Dspring.data.redis.port=6381 \
     -DJWT_SECRET="$JWT_SECRET" \
     -DJWT_EXPIRY_MS="$JWT_EXPIRY_MS" \
+    -DINTERNAL_SERVICE_TOKEN="${INTERNAL_SERVICE_TOKEN:-dev-internal-token-for-local-testing}" \
+    -DPII_ENCRYPTION_KEY="${PII_ENCRYPTION_KEY:-DevEncryptionKey32CharactersLong}" \
     -DCORS_ALLOWED_ORIGIN="$CORS_ALLOWED_ORIGIN" \
     -Dmanagement.health.rabbit.enabled=false \
     -Dmanagement.health.redis.enabled=false \
@@ -110,7 +112,7 @@ for entry in "${SERVICES[@]}"; do
   printf "  %-36s %-7s http://localhost:%s\n" "$SVC" "$PORT" "$PORT"
 done
 echo ""
-echo "  Databases:  PostgreSQL → localhost:5434"
+echo "  Databases:  MySQL 8.0.44 → localhost:3307"
 echo "              platform_auth, platform_sales_ops, platform_customer_docs,"
 echo "              platform_loan_core, platform_communications, platform_analytics_reporting"
 echo "  Cache:      Redis      → localhost:6381"

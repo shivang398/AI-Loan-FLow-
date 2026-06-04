@@ -26,7 +26,7 @@ public class PolicyRule {
     private String ruleKey;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "rule_value", columnDefinition = "jsonb", nullable = false)
+    @Column(name = "rule_value", columnDefinition = "JSON", nullable = false)
     private Map<String, Object> ruleValue;
 
     public PolicyRule() {}

@@ -1,1 +1,1 @@
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS ops_notes TEXT;
+ALTER TABLE leads ADD COLUMN ops_notes TEXT;
