@@ -11,7 +11,7 @@ Think of it like an **internal CRM + loan pipeline + commission tracker** built 
 1. A customer visits the website and fills a loan enquiry form.
 2. A **Connector** (loan agent) picks up the lead and submits documents.
 3. The platform automatically checks if the customer qualifies for a loan (income, EMI capacity).
-4. It matches the application to the right bank based on that bank's rules.
+4. It matches the application to the right bank based on that bank's lending rules.
 5. A **Sales Manager** is auto-assigned to push the file forward.
 6. The **RM** (Relationship Manager) monitors their team of Connectors.
 7. A **Team Leader** gets a bird's-eye view across all RMs.
@@ -21,19 +21,35 @@ Think of it like an **internal CRM + loan pipeline + commission tracker** built 
 
 ---
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Java 25, Spring Boot 4.x, Spring Security 7, Hibernate 6 |
+| Database | **MySQL 8.0.44** (migrated from PostgreSQL) |
+| Migrations | Flyway 11 |
+| Message broker | RabbitMQ 3 |
+| Cache | Redis 7 |
+| File storage | Amazon S3 (LocalStack for local dev) |
+| Frontend | React 19, Vite 5, Ant Design 5, Redux Toolkit 2 |
+| Auth | Stateless JWT (jjwt 0.12.5), BCrypt cost 12 |
+| Build | Maven 3.9.6 (bundled — do not use system mvn) |
+
+---
+
 ## What each service does — plain English
 
 The platform runs as **6 merged backend services** (consolidated from 13 for simpler deployment and lower infrastructure cost):
 
-| Service | What it actually does |
-|---|---|
-| **auth-service** | The security guard. Every user logs in here, gets a digital pass (JWT token), and every other service checks that pass before doing anything. |
-| **sales-ops-service** | Everything sales-related in one place — Connector and RM profiles, FOIR (debt-to-income) calculations, payout slabs, commission transactions, and automatic Sales Manager assignment. |
-| **customer-document-service** | Stores customer/lead information (name, PAN, Aadhaar, mobile, employment) and manages all file uploads and downloads (salary slips, bank statements, ID proofs) stored securely in S3. |
-| **loan-core-service** | The heart of the platform. Tracks the full lifecycle of a loan application, runs eligibility checks (FOIR + CIBIL via Tenacio API), and enforces each bank's lending rules. |
-| **communications-service** | All outbound and inbound communication — WhatsApp messages to customers, an internal real-time team chat (WebSocket/STOMP), and email notifications for status changes and reminders. |
-| **analytics-reporting-service** | Generates Excel/PDF reports (MIS summaries, connector performance, monthly disbursements) and provides KPI dashboards (daily/weekly trends, team scorecards, funnel conversion rates). |
-| **Frontend (React)** | The browser application every user sees. Role-aware — each role (Admin, RM, Connector, etc.) sees a different dashboard. |
+| Service | Port | Database | What it does |
+|---|---|---|---|
+| **auth-service** | 8081 | `platform_auth` | The security guard. Login, JWT tokens, BCrypt passwords, account lockout, role management. |
+| **sales-ops-service** | 8082 | `platform_sales_ops` | Everything sales-related — Connector and RM profiles, FOIR calculations, commission slabs, payout ledger, and automatic Sales Manager assignment. |
+| **customer-document-service** | 8083 | `platform_customer_docs` | Stores customer/lead information (name, PAN, Aadhaar, mobile) and manages file uploads to S3. PAN and Aadhaar are **AES-256-GCM encrypted at rest**. |
+| **loan-core-service** | 8084 | `platform_loan_core` | The heart of the platform. Tracks the full loan lifecycle, runs eligibility checks (FOIR + CIBIL via Tenacio API), and enforces each bank's lending rules. |
+| **communications-service** | 8087 | `platform_communications` | All outbound and inbound communication — WhatsApp messages, internal real-time team chat (WebSocket/STOMP), and email notifications. |
+| **analytics-reporting-service** | 8093 | `platform_analytics_reporting` | Generates Excel/PDF reports (MIS summaries, connector performance) and provides KPI dashboards (daily trends, team scorecards). |
+| **Frontend (React)** | 3000 | — | Role-aware browser app. Each role sees a different dashboard. |
 
 ---
 
@@ -58,143 +74,34 @@ The platform runs as **6 merged backend services** (consolidated from 13 for sim
       │  • Returns: ELIGIBLE / BORDERLINE / NOT_ELIGIBLE
       │
       ├─ NOT_ELIGIBLE ──► Return rejection reason (no further action)
-      │
-      └─ ELIGIBLE / BORDERLINE ──► Lead saved, event fired ──►
-
+      └─ ELIGIBLE / BORDERLINE ──► Lead saved ──►
 
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │  PHASE 2 — CUSTOMER & KYC  (customer-document-service :8083)                │
  └─────────────────────────────────────────────────────────────────────────────┘
 
   [customer-document-service — customer sub-module]
-      │  • Stores customer profile (name, PAN, Aadhaar, mobile, employment)
+      │  • Stores customer profile (PAN encrypted with AES-256-GCM)
       │  • Creates KYC record
       │  • Fires event: customer.created ──► RabbitMQ ──► loan-core-service
       │
   [customer-document-service — document sub-module]
       │  • Connector uploads salary slips, bank statements, ID proofs → S3
-      │  • Generates pre-signed download URLs for bank submissions
-      │
-      ▼
-
+      │  • File type validated by MIME + magic bytes before upload
 
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │  PHASE 3 — LOAN APPLICATION  (loan-core-service :8084)                      │
  └─────────────────────────────────────────────────────────────────────────────┘
 
-  [loan-core-service — loan sub-module]
-      │  Receives event: customer.created
-      │  Creates LoanFile with status: NEW
-      │
-      │  Status lifecycle:
-      │
-      │  NEW
-      │   │
-      │   ▼
-      │  DOCUMENTS_PENDING  ◄── Connector uploads docs
-      │   │
-      │   ▼
-      │  UNDER_REVIEW       ◄── Operations team reviews the file
-      │   │
-      │   ├─ ADDITIONAL_INFO_REQUIRED ──► communications-service sends WhatsApp/email
-      │   │
-      │   ▼
-      │  APPROVED ──► Fires event: loan.status.updated ──► RabbitMQ
-      │   │
-      │   ├──► sales-ops-service (routing sub-module: auto-assigns Sales Manager)
-      │   ├──► communications-service (emails customer + Connector)
-      │   └──► sales-ops-service (commission sub-module: creates pending entry)
-      │
-      │  DISBURSED ──► Fires event: loan.file.disbursed
-      │   │
-      │   └──► sales-ops-service (commission sub-module: marks as payable)
-      │
-      └─ REJECTED ──► communications-service (sends rejection reason)
+  NEW → DOCUMENTS_PENDING → UNDER_REVIEW → APPROVED / REJECTED → DISBURSED
 
+  On APPROVED:
+      ├──► sales-ops-service (routing) — auto-assigns Sales Manager
+      ├──► communications-service — emails customer + Connector
+      └──► sales-ops-service (commission) — creates pending commission entry
 
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │  PHASE 4 — BANK MATCHING  (loan-core-service :8084)                         │
- └─────────────────────────────────────────────────────────────────────────────┘
-
-  [loan-core-service — policy sub-module]      [loan-core-service — eligibility sub-module]
-       │                                              │
-       │  Stores each bank's rules:                   │  Runs loan file against all
-       │  • Min income                                │  bank policies:
-       │  • Max loan amount                           │  • FOIR check per bank
-       │  • Allowed employment types                  │  • Amount within bank limits
-       │  • CIBIL score cutoff                        │  • Score ≥ bank threshold
-       │                                              │
-       └─────────────────────┬────────────────────────┘
-                             │
-                             ▼
-                 Shortlist of eligible lenders
-                 shown to Connector for bank selection
-
-
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │  PHASE 5 — SM ASSIGNMENT  (sales-ops-service — routing sub-module)          │
- └─────────────────────────────────────────────────────────────────────────────┘
-
-  [sales-ops-service — routing sub-module]
-      │  Listens for: loan.status.updated (APPROVED)
-      │  • Finds the Sales Manager with fewest active files in the same region
-      │  • Assigns SM to the loan file
-      │  • Fires event: routing.sm.assigned (for future consumer)
-      │
-      └─ No UI — fully event-driven background process
-
-
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │  PHASE 6 — COMMISSION  (sales-ops-service — commission sub-module)          │
- └─────────────────────────────────────────────────────────────────────────────┘
-
-  [sales-ops-service — commission sub-module]
-      │  On loan APPROVED:
-      │  • Creates pending commission transaction
-      │  • Applies correct payout slab (global or per-Connector)
-      │
-      │  On loan DISBURSED:
-      │  • Marks transaction as PAYABLE
-      │  • Partner Manager reviews and approves payout
-      │
-      └─► Connector + RM can see their earnings in real time
-
-
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │  PHASE 7 — COMMUNICATION  (communications-service :8087)                    │
- └─────────────────────────────────────────────────────────────────────────────┘
-
-  [communications-service — notification sub-module]
-       │  Sends emails for:
-       │  • New lead assigned
-       │  • Status changes
-       │  • Commission credited
-       │  • Rejection with reason
-
-  [communications-service — messaging sub-module]
-       │  • WhatsApp messages to customers via Facebook API
-       │  • Internal team STOMP chat (WebSocket)
-       │  • Team meeting WebSocket
-
-
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │  PHASE 8 — REPORTING & ANALYTICS  (analytics-reporting-service :8093)       │
- └─────────────────────────────────────────────────────────────────────────────┘
-
-  [analytics-reporting-service — reporting sub-module]
-       │  Generates on-demand:
-       │  • Connector performance Excel
-       │  • MIS monthly summary PDF
-       │  • Lender-wise disbursement report
-       │  • Commission statement PDF
-
-  [analytics-reporting-service — analytics sub-module]
-       │  Pre-computes KPI snapshots:
-       │  • Daily disbursal trend
-       │  • Funnel conversion rates
-       │  • Team scorecards
-       │  • Regional performance
-
+  On DISBURSED:
+      └──► sales-ops-service (commission) — marks commission as payable
 
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │  EVENT BUS — RabbitMQ  (platform.exchange — topic type)                     │
@@ -208,8 +115,6 @@ The platform runs as **6 merged backend services** (consolidated from 13 for sim
   loan-core-service         ──► loan.status.updated    ──► communications-service
                                                        ──► sales-ops-service (routing)
   sales-ops-service         ──► routing.sm.assigned    ──► (future consumer)
-  communications-service    ──► whatsapp.send.queue    ──► WhatsAppMessageConsumer
-  communications-service    ──► whatsapp.webhook.queue ──► WhatsAppWebhookConsumer
 ```
 
 ---
@@ -225,15 +130,15 @@ Internet → EC2 (Nginx :80/:443)
                          │
           ┌──────────────┼──────────────┐
           │              │              │
-     [Spring Boot services — 6 total, each on its own port]
+     [6 Spring Boot services — each on its own port]
           │              │              │
           └──────────────┴──────────────┘
                          │
               ┌──────────┼──────────┐
               │          │          │
-         Amazon RDS    Redis      RabbitMQ
-         PostgreSQL   (cache)   (event bus)
-          (6 DBs)     on EC2      on EC2
+          Amazon RDS    Redis      RabbitMQ
+         MySQL 8.0.44  (cache)   (event bus)
+          (6 databases)  on EC2    on EC2
                          │
                      Amazon S3
                   (document files)
@@ -241,21 +146,111 @@ Internet → EC2 (Nginx :80/:443)
 
 ---
 
-## Deployment — EC2 + RDS + S3
+## Security — OWASP Top 10 Coverage
 
-This guide deploys the entire platform on a single AWS EC2 instance using Java JARs and Nginx, with Amazon RDS for the database and Amazon S3 for document storage.
+| Control | Implementation |
+|---|---|
+| **A01 Broken Access Control** | Role-based `authorizeHttpRequests` on every endpoint; `@PreAuthorize` on sensitive operations |
+| **A02 Cryptographic Failures** | HSTS on all services; BCrypt cost 12; JWT HMAC-SHA256; min 32-char secret enforced at startup; **PAN/Aadhaar AES-256-GCM encrypted at rest** |
+| **A03 Injection** | `@Valid`/`@Validated` on all controller inputs; parameterised JPQL only — no string-concatenated queries |
+| **A05 Misconfiguration** | `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Content-Security-Policy`, `Permissions-Policy`, `Referrer-Policy` on all services; `server.error.include-stacktrace: never`; CORS allowlist via `CORS_ALLOWED_ORIGIN` env var |
+| **A06 Vulnerable Components** | OWASP dependency-check runs on `mvn verify`, fails on CVSS ≥ 7; all dependencies at latest patched versions |
+| **A07 Auth Failures** | Redis-backed distributed rate limiting (5 req/min/IP on login); account lockout after 5 failed attempts; JWT revocation via Redis blocklist on logout |
+| **A08 Data Integrity** | `ObjectMapper.deactivateDefaultTyping()` on all services; file uploads validated by MIME type + magic bytes |
+| **A09 Security Logging** | `SecurityEventLogger` (common-lib) logs every `ACCESS_DENIED` to `SECURITY_AUDIT` log stream; auth-service logs every login, lockout, and registration event |
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Java 25 (JDK)
+- Docker + Docker Compose
+- Node.js 20+
+- Maven 3.9.6 — **use the bundled one**: `platform/maven/apache-maven-3.9.6/bin/mvn`
+
+### Step 1 — Start infrastructure
+
+```bash
+cd platform
+docker compose up -d
+docker compose ps    # wait until all 4 containers are healthy (~30s)
+```
+
+This starts:
+- **MySQL 8.0.44** on `localhost:3307` — 6 databases auto-created
+- **RabbitMQ 3** on `localhost:5673` (UI: `localhost:15673`)
+- **Redis 7** on `localhost:6381`
+- **LocalStack S3** on `localhost:4566`
+
+### Step 2 — Build and run backend
+
+```bash
+export MVN=~/Desktop/Auditor/maven/apache-maven-3.9.6/bin/mvn
+cd platform
+
+# Install common-lib first on a clean checkout
+$MVN -pl common-lib install -DskipTests -q
+
+# Start all 6 services at once
+./start-all.sh
+```
+
+Or start a single service manually:
+
+```bash
+$MVN -pl common-lib,auth-service -am package -DskipTests -q
+
+java -jar auth-service/target/auth-service-1.0.0-SNAPSHOT.jar \
+  -DDB_HOST=localhost -DDB_PORT=3307 -DDB_USER=root -DDB_PASSWORD=password \
+  -DJWT_SECRET=LocalDevSecretMustBeAtLeast32CharsLong! \
+  -DRABBITMQ_HOST=localhost -DRABBITMQ_PORT=5673 \
+  -DRABBITMQ_USER=guest -DRABBITMQ_PASS=guest \
+  -DREDIS_HOST=localhost -DREDIS_PORT=6381
+```
+
+### Step 3 — Start frontend
+
+```bash
+cd platform/frontend
+npm install --legacy-peer-deps
+npm run dev    # dev server on :3000, proxies /api/* to backend services
+```
+
+### Required env vars
+
+Every service needs at minimum:
+
+```
+DB_PASSWORD=password              # MySQL root password
+DB_USER=root                      # MySQL user
+DB_PORT=3307                      # MySQL port
+RABBITMQ_USER=guest
+RABBITMQ_PASS=guest
+JWT_SECRET=<any-string-32-chars+>
+INTERNAL_SERVICE_TOKEN=<any-string>   # shared secret for inter-service calls
+```
+
+Optional (safe to leave empty locally):
+- `PII_ENCRYPTION_KEY` — 32-char AES key for PAN/Aadhaar encryption (dev fallback used if missing)
+- `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`
+- `MAIL_USERNAME`, `MAIL_PASSWORD`
+- `CORS_ALLOWED_ORIGIN` — defaults to `http://localhost:3000`
+
+---
+
+## Deployment — EC2 + RDS MySQL + S3
 
 ### Estimated cost
 
 | Resource | Spec | $/month |
 |---|---|---|
 | EC2 t3.large (8 GB RAM) | All 6 services + Nginx | ~$60 |
-| RDS PostgreSQL db.t3.micro | Single-AZ | ~$15 |
+| RDS MySQL db.t3.small | Single-AZ, MySQL 8.0 | ~$25 |
 | S3 | Documents storage | ~$2 |
 | Elastic IP | Static public IP | ~$4 |
-| **Total** | | **~$81/month** |
-
-> Reduced from ~$156/month (13-service setup) to ~$81/month thanks to the service consolidation. Use `t3.medium` (4 GB) for staging/dev.
+| **Total** | | **~$91/month** |
 
 ---
 
@@ -274,54 +269,49 @@ This guide deploys the entire platform on a single AWS EC2 instance using Java J
    | 443 | 0.0.0.0/0 | HTTPS |
 
 6. Create or select a key pair and download the `.pem` file.
-7. Allocate and associate an **Elastic IP** so the address does not change on restart.
+7. Allocate and associate an **Elastic IP**.
 
 ---
 
-### Step 2 — Create RDS PostgreSQL
+### Step 2 — Create RDS MySQL 8.0
 
 1. Open **RDS → Create database**.
-2. Engine: **PostgreSQL 15**.
+2. Engine: **MySQL 8.0.44** (or latest 8.0.x).
 3. DB instance class: `db.t3.micro` (dev) / `db.t3.small` (prod).
 4. DB instance identifier: `platform-db`
-5. Master username: `postgres`
-6. Master password: choose a strong password — save it, you will need it below.
-7. **Connectivity**: same VPC as your EC2. Security group must allow **port 5432 inbound from the EC2 instance's security group only** (not from the internet).
-8. Initial database name: `postgres` (leave default — Step 9 creates the 6 app databases).
-9. Note the **Endpoint** after the instance creates (looks like `platform-db.xxxx.us-east-1.rds.amazonaws.com`).
+5. Master username: `root` (or any user you prefer)
+6. Master password: choose a strong password — save it.
+7. **Connectivity**: same VPC as your EC2. Security group must allow **port 3306 inbound from the EC2 security group only**.
+8. Additional config → Initial database name: leave blank (Step 9 creates the 6 databases).
+9. Note the **Endpoint** after the instance creates.
 
 ---
 
 ### Step 3 — Create S3 bucket
 
 1. Open **S3 → Create bucket**.
-2. Bucket name: `realmoneygroups-documents-prod` (must be globally unique — add a short suffix if taken).
-3. Region: same as your EC2.
-4. **Block all public access**: ON — files are only accessed by the app, never directly by browsers.
+2. Bucket name: `realmoneygroups-documents-prod`.
+3. Region: same as EC2.
+4. **Block all public access**: ON.
 
 ---
 
 ### Step 4 — Create IAM role for EC2
 
-This lets the EC2 instance upload and download files from S3 without storing AWS keys anywhere in the code.
-
-1. Open **IAM → Roles → Create role**.
-2. Trusted entity: **EC2**.
-3. Attach policy: `AmazonS3FullAccess` (or a scoped policy for your specific bucket).
-4. Role name: `platform-ec2-role`.
-5. In EC2 console → select your instance → **Actions → Security → Modify IAM role** → attach `platform-ec2-role`.
+1. **IAM → Roles → Create role** → Trusted entity: **EC2**.
+2. Attach policy: `AmazonS3FullAccess` (or scoped to your bucket).
+3. Role name: `platform-ec2-role`.
+4. Attach to your EC2 instance via **Actions → Security → Modify IAM role**.
 
 ---
 
-### Step 5 — Install Java on EC2
-
-SSH into the instance:
+### Step 5 — Install Java and Docker on EC2
 
 ```bash
 ssh -i your-key.pem ubuntu@<your-elastic-ip>
 ```
 
-Install Java 25 (Temurin):
+Install Java 25:
 
 ```bash
 wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
@@ -333,10 +323,10 @@ echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] \
   | sudo tee /etc/apt/sources.list.d/adoptium.list
 
 sudo apt-get update && sudo apt-get install -y temurin-25-jdk
-java -version   # should print 25.x
+java -version    # should print 25.x
 ```
 
-Install Docker (needed for RabbitMQ and Redis):
+Install Docker (RabbitMQ + Redis):
 
 ```bash
 curl -fsSL https://get.docker.com | sudo sh
@@ -349,18 +339,15 @@ newgrp docker
 
 ### Step 6 — Copy the project to EC2
 
-From your **local machine**:
-
 ```bash
 rsync -av --exclude='node_modules' --exclude='target' --exclude='.git' \
   /path/to/Auditor/platform/ \
   ubuntu@<your-elastic-ip>:/home/ubuntu/platform/
 ```
 
-Or if the project is on GitHub:
+Or clone from GitHub:
 
 ```bash
-# On the EC2 instance:
 git clone https://github.com/shivang398/AI-Loan-FLow-.git
 cd AI-Loan-FLow-/platform
 ```
@@ -369,16 +356,13 @@ cd AI-Loan-FLow-/platform
 
 ### Step 7 — Build all service JARs
 
-On the EC2 instance:
-
 ```bash
 export MVN=/home/ubuntu/platform/maven/apache-maven-3.9.6/bin/mvn
-
 cd /home/ubuntu/platform
 $MVN clean package -DskipTests -T4 --no-transfer-progress
 ```
 
-This produces a runnable `.jar` inside each `<service>/target/` folder. Takes about 3–5 minutes.
+Takes about 3–5 minutes.
 
 ---
 
@@ -386,31 +370,37 @@ This produces a runnable `.jar` inside each `<service>/target/` folder. Takes ab
 
 ```bash
 cat > /home/ubuntu/platform/.env.prod << 'EOF'
-# ── Database (RDS) ──────────────────────────────────────────────────────────
+# ── Database (RDS MySQL) ─────────────────────────────────────────────────────
 DB_HOST=platform-db.xxxx.us-east-1.rds.amazonaws.com
-DB_PORT=5432
-DB_USER=postgres
+DB_PORT=3306
+DB_USER=root
 DB_PASSWORD=YOUR_STRONG_RDS_PASSWORD_HERE
 
-# ── Message broker (runs on this EC2) ───────────────────────────────────────
+# ── Message broker ────────────────────────────────────────────────────────────
 RABBITMQ_HOST=localhost
 RABBITMQ_PORT=5672
 RABBITMQ_USER=guest
 RABBITMQ_PASS=guest
 
-# ── Cache (runs on this EC2) ─────────────────────────────────────────────────
+# ── Cache ─────────────────────────────────────────────────────────────────────
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# ── Security ─────────────────────────────────────────────────────────────────
-# Generate with: openssl rand -hex 32
-JWT_SECRET=REPLACE_WITH_64_CHAR_HEX_FROM_OPENSSL_RAND
+# ── Security ──────────────────────────────────────────────────────────────────
+# Generate: openssl rand -hex 32
+JWT_SECRET=REPLACE_WITH_64_CHAR_HEX
 
-# ── CORS — set to your actual frontend domain in production ──────────────────
+# Shared secret for inter-service calls — generate: openssl rand -hex 16
+INTERNAL_SERVICE_TOKEN=REPLACE_WITH_RANDOM_STRING
+
+# AES-256 key for PAN/Aadhaar encryption — generate: openssl rand -hex 16
+PII_ENCRYPTION_KEY=REPLACE_WITH_32_CHAR_KEY
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGIN=https://yourdomain.com
 
-# ── AWS — IAM role handles credentials, no keys needed ──────────────────────
-AWS_REGION=us-east-1
+# ── AWS ───────────────────────────────────────────────────────────────────────
+AWS_REGION=ap-south-1
 AWS_S3_BUCKET=realmoneygroups-documents-prod
 
 # ── Email ─────────────────────────────────────────────────────────────────────
@@ -419,36 +409,30 @@ MAIL_PASSWORD=YOUR_GMAIL_APP_PASSWORD
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 
-# ── WhatsApp (optional — leave blank to disable) ─────────────────────────────
+# ── WhatsApp (optional) ───────────────────────────────────────────────────────
 WHATSAPP_TOKEN=
 WHATSAPP_PHONE_ID=
 WHATSAPP_VERIFY_TOKEN=
 WHATSAPP_APP_SECRET=
 EOF
-
 chmod 600 /home/ubuntu/platform/.env.prod
 ```
 
 ---
 
-### Step 9 — Create the 6 databases on RDS
-
-Run this once — it creates all the application databases on your RDS instance.
+### Step 9 — Create the 6 MySQL databases on RDS
 
 ```bash
-sudo apt-get install -y postgresql-client
+sudo apt-get install -y mysql-client
 
-export PGPASSWORD=YOUR_STRONG_RDS_PASSWORD_HERE
-
-psql -h platform-db.xxxx.us-east-1.rds.amazonaws.com -U postgres << 'SQL'
-CREATE DATABASE platform_auth;
-CREATE DATABASE platform_sales_ops;
-CREATE DATABASE platform_customer_docs;
-CREATE DATABASE platform_loan_core;
-CREATE DATABASE platform_communications;
-CREATE DATABASE platform_analytics_reporting;
+mysql -h platform-db.xxxx.us-east-1.rds.amazonaws.com -uroot -pYOUR_PASSWORD << 'SQL'
+CREATE DATABASE platform_auth               CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE platform_sales_ops          CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE platform_customer_docs      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE platform_loan_core          CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE platform_communications     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE platform_analytics_reporting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 SQL
-
 echo "Databases created."
 ```
 
@@ -468,27 +452,14 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 EOF
 
 docker compose -f /home/ubuntu/platform/docker-compose.infra.yml up -d
-
-# Wait for healthy
 sleep 15
 docker compose -f /home/ubuntu/platform/docker-compose.infra.yml ps
 ```
@@ -526,8 +497,7 @@ for svc in "${!SERVICES[@]}"; do
   echo $! > "/tmp/${svc}.pid"
 done
 
-echo ""
-echo "All services launched. Waiting 60s for startup..."
+echo "Waiting 60s for startup..."
 sleep 60
 
 echo ""
@@ -550,20 +520,19 @@ All 6 should print `UP`. If any show `DOWN`, check `logs/<service>.log`.
 ### Step 12 — Build and serve the frontend
 
 ```bash
-# Install Node.js 20
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# Build the React app
 cd /home/ubuntu/platform/frontend
 npm install --legacy-peer-deps
-npm run build
-# Output is in frontend/dist/
+npm run build     # output in frontend/dist/
 
-# Install Nginx
 sudo apt-get install -y nginx
+```
 
-# Configure Nginx to proxy /api/* to each service
+Create the Nginx config:
+
+```bash
 sudo tee /etc/nginx/sites-available/platform << 'NGINX'
 server {
     listen 80;
@@ -572,34 +541,32 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # React SPA fallback
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
+    location / { try_files $uri $uri/ /index.html; }
 
     # Auth
     location /api/auth/     { proxy_pass http://localhost:8081/auth/; }
-    # Sales ops (connectors, commission, routing)
-    location /api/connectors/  { proxy_pass http://localhost:8082/connectors/; }
+    # Sales Ops (connectors, commissions, routing, FOIR)
+    location /api/connectors/   { proxy_pass http://localhost:8082/connectors/; }
     location /api/transactions/ { proxy_pass http://localhost:8082/transactions/; }
-    location /api/slabs/       { proxy_pass http://localhost:8082/slabs/; }
-    location /api/routing/     { proxy_pass http://localhost:8082/routing/; }
-    location /api/foir/        { proxy_pass http://localhost:8082/foir/; }
-    # Customer & documents
-    location /api/customers/   { proxy_pass http://localhost:8083/customers/; }
-    location /api/documents/   { proxy_pass http://localhost:8083/documents/; }
-    # Loan core (loans, eligibility, policy)
-    location /api/loans/       { proxy_pass http://localhost:8084/loans/; }
-    location /api/eligibility/ { proxy_pass http://localhost:8084/eligibility/; }
-    location /api/policy/      { proxy_pass http://localhost:8084/policy/; }
+    location /api/slabs/        { proxy_pass http://localhost:8082/slabs/; }
+    location /api/foir/         { proxy_pass http://localhost:8082/foir/; }
+    location /api/routing/      { proxy_pass http://localhost:8082/routing/; }
+    # Customer & Documents
+    location /api/customers/    { proxy_pass http://localhost:8083/customers/; }
+    location /api/documents/    { proxy_pass http://localhost:8083/documents/; }
+    # Loan Core (loans, eligibility, policy, BSA)
+    location /api/loans/        { proxy_pass http://localhost:8084/loans/; }
+    location /api/eligibility/  { proxy_pass http://localhost:8084/eligibility/; }
+    location /api/policies/     { proxy_pass http://localhost:8084/policies/; }
+    location /api/bsa/          { proxy_pass http://localhost:8084/bsa/; }
     # Communications (messaging, notifications, webhooks)
-    location /api/messaging/   { proxy_pass http://localhost:8087/messaging/; }
+    location /api/messaging/    { proxy_pass http://localhost:8087/messaging/; }
     location /api/notifications/ { proxy_pass http://localhost:8087/notifications/; }
-    location /api/webhooks/    { proxy_pass http://localhost:8087/webhooks/; }
-    # Analytics & reporting
-    location /api/analytics/   { proxy_pass http://localhost:8093/analytics/; }
-    location /api/reporting/   { proxy_pass http://localhost:8093/reporting/; }
-    # WebSocket (messaging)
+    location /api/webhooks/     { proxy_pass http://localhost:8087/webhooks/; }
+    # Analytics & Reporting
+    location /api/analytics/    { proxy_pass http://localhost:8093/analytics/; }
+    location /api/reports/      { proxy_pass http://localhost:8093/reports/; }
+    # WebSocket
     location /ws-messaging {
         proxy_pass http://localhost:8087;
         proxy_http_version 1.1;
@@ -611,12 +578,7 @@ NGINX
 
 sudo ln -sf /etc/nginx/sites-available/platform /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
-
-# Deploy frontend static files
-sudo rm -rf /usr/share/nginx/html/*
 sudo cp -r /home/ubuntu/platform/frontend/dist/* /usr/share/nginx/html/
-
-# Start Nginx
 sudo nginx -t && sudo systemctl restart nginx && sudo systemctl enable nginx
 ```
 
@@ -624,19 +586,12 @@ Your platform is now live at `http://<your-elastic-ip>`.
 
 ---
 
-### Step 13 — Add HTTPS with a custom domain (recommended)
-
-Point your domain's DNS A-record to the Elastic IP, then:
+### Step 13 — Add HTTPS
 
 ```bash
 sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-sudo certbot renew --dry-run    # verify auto-renewal works
-```
-
-Also update `.env.prod` so CORS allows your real domain:
-```bash
-CORS_ALLOWED_ORIGIN=https://yourdomain.com
+sudo certbot --nginx -d yourdomain.com
+# Update CORS_ALLOWED_ORIGIN in .env.prod to https://yourdomain.com
 ```
 
 ---
@@ -656,8 +611,7 @@ RemainAfterExit=yes
 User=ubuntu
 ExecStart=/bin/bash -c \
   'docker compose -f /home/ubuntu/platform/docker-compose.infra.yml up -d && \
-   sleep 15 && \
-   /home/ubuntu/platform/start-services.sh'
+   sleep 15 && /home/ubuntu/platform/start-services.sh'
 ExecStop=/bin/bash -c \
   'pkill -f "1.0.0-SNAPSHOT.jar" 2>/dev/null; \
    docker compose -f /home/ubuntu/platform/docker-compose.infra.yml down'
@@ -668,24 +622,20 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable platform.service
-echo "Platform will auto-start on every reboot."
 ```
 
 ---
 
 ## Deploying updates
 
-When you push new code:
-
 ```bash
-# On the EC2 instance:
 cd /home/ubuntu/platform && git pull
 
-# Rebuild only what changed — e.g. loan-core-service
+# Rebuild only what changed
 export MVN=/home/ubuntu/platform/maven/apache-maven-3.9.6/bin/mvn
 $MVN -pl common-lib,loan-core-service -am package -DskipTests -q
 
-# Kill the old process and start the new JAR
+# Kill old process and start new JAR
 fuser -k 8084/tcp
 source /home/ubuntu/platform/.env.prod
 nohup java -Xmx768m -jar loan-core-service/target/loan-core-service-1.0.0-SNAPSHOT.jar \
@@ -702,7 +652,7 @@ sudo cp -r dist/* /usr/share/nginx/html/
 ## Health monitoring
 
 ```bash
-# Check all 6 services at once
+# Check all 6 services
 for port in 8081 8082 8083 8084 8087 8093; do
   s=$(curl -s --max-time 2 "http://localhost:$port/actuator/health" \
       | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "DOWN")
@@ -712,12 +662,11 @@ done
 # Tail a specific service log
 tail -f /home/ubuntu/platform/logs/loan-core-service.log
 
-# RabbitMQ management UI — open in browser
-# http://<your-ec2-ip>:15672  (login: guest / guest)
-# Change this password in production — edit docker-compose.infra.yml
+# RabbitMQ management UI
+# http://<your-ec2-ip>:15672  (login: guest / guest — change in production!)
 
-# System memory
-free -h
+# MySQL — check tables
+mysql -h localhost -uroot -ppassword -e "SELECT TABLE_SCHEMA, COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA LIKE 'platform_%' GROUP BY TABLE_SCHEMA;"
 ```
 
 ---
@@ -728,48 +677,33 @@ free -h
 |---|---|
 | Service won't start | `tail -50 logs/<service>.log` — look for `ERROR` or `APPLICATION FAILED` |
 | `Port already in use` | `fuser -k <port>/tcp` then restart the service |
-| Database connection refused | Verify RDS security group allows port 5432 from your EC2's private IP |
-| `DB_PASSWORD` missing | Services refuse to start without it — make sure `.env.prod` is sourced |
-| 502 Bad Gateway in browser | The backend service crashed — check its log and restart it |
-| Out of memory (OOM) | `free -h` — the `-Xmx768m` flag in `start-services.sh` caps each service's heap |
+| MySQL connection refused | Check RDS security group allows port 3306 from your EC2 security group |
+| `DB_PASSWORD` missing | Services refuse to start — ensure `.env.prod` is sourced |
+| 502 Bad Gateway | The backend service crashed — check its log and restart |
+| Out of memory | `free -h` — `-Xmx768m` in `start-services.sh` caps each service's heap |
 | RabbitMQ unreachable | `docker compose -f docker-compose.infra.yml ps` — restart if unhealthy |
-| S3 upload fails | Verify EC2 IAM role has `s3:PutObject` and `s3:GetObject` on the correct bucket |
-| Flyway error on startup | Check log for "non-empty schema" — ensure `baseline-on-migrate: true` is set |
+| S3 upload fails | Verify EC2 IAM role has `s3:PutObject` and `s3:GetObject` on the bucket |
+| Flyway error on startup | Check log for table errors — likely a MySQL syntax issue in a migration file |
 | CORS blocked in browser | Set `CORS_ALLOWED_ORIGIN` in `.env.prod` to your actual frontend domain |
-| Login blocked for all users | Confirm email domain is `@realmoneygroups.in` or `@realfinserv.com` |
+| Login blocked | Confirm email domain is `@realmoneygroups.in` or `@realfinserv.com` |
+| UUID insert error in MySQL | Ensure `hibernate.type.preferred_uuid_jdbc_type: CHAR` is in `application.yml` |
 
 ---
 
 ## Service and port reference
 
-| Service | Port | Database | Contains |
+| Service | Port | Database | Merged from |
 |---|---|---|---|
-| auth-service | 8081 | platform_auth | JWT, BCrypt, roles, lockout |
-| sales-ops-service | 8082 | platform_sales_ops | connector, commission, sm-routing |
-| customer-document-service | 8083 | platform_customer_docs | customer, document/S3 |
-| loan-core-service | 8084 | platform_loan_core | loan, eligibility, policy |
-| communications-service | 8087 | platform_communications | messaging/WhatsApp, notification |
-| analytics-reporting-service | 8093 | platform_analytics_reporting | analytics, reporting/MIS |
+| auth-service | 8081 | platform_auth | *(standalone)* |
+| sales-ops-service | 8082 | platform_sales_ops | connector + commission + sm-routing |
+| customer-document-service | 8083 | platform_customer_docs | customer + document |
+| loan-core-service | 8084 | platform_loan_core | loan + eligibility + policy |
+| communications-service | 8087 | platform_communications | messaging + notification |
+| analytics-reporting-service | 8093 | platform_analytics_reporting | analytics + reporting |
 | Frontend (Nginx) | 80 / 443 | — | React SPA |
 | RabbitMQ | 5672 / 15672 (UI) | — | Event bus |
-| Redis | 6379 | — | Cache |
-
----
-
-## Security — OWASP Top 10
-
-Every service enforces:
-
-| Control | Implementation |
-|---|---|
-| Broken Access Control (A01) | Role-based `authorizeHttpRequests` on every endpoint; method-level `@PreAuthorize` |
-| Cryptographic Failures (A02) | HSTS on all services; BCrypt cost 12; JWT signed with HMAC-SHA256; min 32-char secret enforced at startup |
-| Injection (A03) | `@Valid`/`@Validated` on all controller inputs; parameterised JPQL only — no string-concatenated queries |
-| Security Misconfiguration (A05) | `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Content-Security-Policy`, `Permissions-Policy`, `Referrer-Policy`; `server.error.include-stacktrace: never` in all services; CORS allowlist via `CORS_ALLOWED_ORIGIN` |
-| Vulnerable Components (A06) | OWASP dependency-check runs on `mvn verify` and fails on CVSS ≥ 7 |
-| Auth Failures (A07) | Rate limiting (5 req/min/IP on login); account lockout after 5 failed attempts; refresh tokens in httpOnly cookies |
-| Data Integrity (A08) | `ObjectMapper.deactivateDefaultTyping()` in every service; `FAIL_ON_UNKNOWN_PROPERTIES` disabled |
-| Security Logging (A09) | `SecurityEventLogger` (common-lib) logs every `ACCESS_DENIED` event to `SECURITY_AUDIT` stream; `SecurityAuditLog` in auth-service logs every login, lockout, and registration |
+| Redis | 6379 | — | Cache / JWT blocklist / Rate limiting |
+| MySQL | 3307 (dev) / 3306 (prod) | — | Primary database |
 
 ---
 
@@ -792,19 +726,29 @@ Only `@realmoneygroups.in` and `@realfinserv.com` addresses can log in or regist
 
 ### Creating the first Admin user
 
-The `/auth/register` endpoint requires the caller to already be an ADMIN. For first-time setup:
-
 ```bash
-# 1. Create any user via the public endpoint
+# 1. Register via the public endpoint (CONNECTOR role)
 curl -X POST http://localhost:8081/auth/register/partner \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@realmoneygroups.in","password":"StrongPass@123"}'
 
-# 2. Promote to ADMIN in RDS
-export PGPASSWORD=YOUR_STRONG_RDS_PASSWORD_HERE
-psql -h platform-db.xxxx.us-east-1.rds.amazonaws.com -U postgres -d platform_auth << 'SQL'
+# 2. Promote to ADMIN in MySQL
+mysql -h platform-db.xxxx.us-east-1.rds.amazonaws.com -uroot -pYOUR_PASSWORD platform_auth << 'SQL'
 UPDATE user_roles
    SET role_id = (SELECT id FROM roles WHERE name = 'ADMIN')
  WHERE user_id = (SELECT id FROM users WHERE email = 'admin@realmoneygroups.in');
 SQL
 ```
+
+---
+
+## Key constraints
+
+- **Java 25** — local dev must use JDK 25. The Maven enforcer rejects JDK 26+.
+- **Maven 3.9.6** — use the bundled `platform/maven/apache-maven-3.9.6/bin/mvn`. The system mvn (3.8.x) will be rejected by the enforcer.
+- **MySQL 8.0.44** — all UUIDs stored as `CHAR(36)`; do not change to binary storage without updating Hibernate config.
+- **`ddl-auto: none`** — schema changes require a new Flyway migration file; you cannot just change an entity and restart.
+- **One SecurityConfig per service** — each merged service has exactly one `@Bean SecurityFilterChain`. Never add a second one.
+- **Flyway migration numbering** — within each merged service, migrations are sequenced across all merged origins. New migrations must continue from the last V number.
+- **PII fields** — PAN and Aadhaar are encrypted at the JPA layer (`EncryptedStringConverter`). Never store plaintext; never log raw PAN numbers.
+- **OWASP dependency check** runs on `mvn verify` and fails on CVEs with CVSS ≥ 7.

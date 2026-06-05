@@ -97,17 +97,44 @@ public class ConnectorController {
      * e.g. Channel Partner → Team Leader, Team Leader → RM
      */
     @GetMapping("/{id}/hierarchy")
-    public ResponseEntity<ApiResponse<List<HierarchyMapping>>> getHierarchy(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<List<HierarchyMapping>>> getHierarchy(
+            @PathVariable UUID id,
+            Authentication authentication) {
+        boolean isPrivileged = authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
+                            || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER")
+                            || a.equals("RM") || a.equals("ROLE_RM"));
+        if (!isPrivileged) {
+            // Non-privileged users may only view their own hierarchy
+            UUID callerId = UUID.nameUUIDFromBytes(
+                    authentication.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            if (!callerId.equals(id)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Cannot view another connector's hierarchy");
+            }
+        }
         List<HierarchyMapping> chain = connectorService.getHierarchy(id);
         return ResponseEntity.ok(ApiResponse.success("Hierarchy fetched", chain, UUID.randomUUID().toString()));
     }
 
-    /**
-     * Returns everyone who directly reports to this connector (as their manager).
-     * e.g. for an RM → returns all Team Leaders; for a Team Leader → returns Channel Partners
-     */
     @GetMapping("/{id}/reportees")
-    public ResponseEntity<ApiResponse<List<HierarchyMapping>>> getReportees(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<List<HierarchyMapping>>> getReportees(
+            @PathVariable UUID id,
+            Authentication authentication) {
+        boolean isPrivileged = authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
+                            || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER")
+                            || a.equals("RM") || a.equals("ROLE_RM"));
+        if (!isPrivileged) {
+            UUID callerId = UUID.nameUUIDFromBytes(
+                    authentication.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            if (!callerId.equals(id)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Cannot view another connector's reportees");
+            }
+        }
         List<HierarchyMapping> reportees = connectorService.getReportees(id);
         return ResponseEntity.ok(ApiResponse.success("Reportees fetched", reportees, UUID.randomUUID().toString()));
     }

@@ -207,9 +207,12 @@ public class CustomerService {
     }
 
     @Transactional
-    public Lead updateLeadNotes(UUID leadId, String notes) {
+    public Lead updateLeadNotes(UUID leadId, String notes, String callerEmail, boolean isAdmin) {
         Lead lead = leadRepository.findById(leadId)
                 .orElseThrow(() -> new RuntimeException("Lead not found"));
+        if (!isAdmin && !callerEmail.equals(lead.getAssignedTo())) {
+            throw new RuntimeException("Access denied: this lead is not assigned to you");
+        }
         lead.setOpsNotes(notes);
         return leadRepository.save(lead);
     }

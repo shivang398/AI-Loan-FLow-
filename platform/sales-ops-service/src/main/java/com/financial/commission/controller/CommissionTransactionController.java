@@ -5,6 +5,8 @@ import com.financial.commission.service.CommissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,13 +23,29 @@ public class CommissionTransactionController {
     private final CommissionService commissionService;
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
     public ResponseEntity<List<CommissionTransaction>> getAllTransactions(
             @RequestParam(required = false) UUID connectorId) {
         return ResponseEntity.ok(commissionService.getAllTransactions(connectorId));
     }
 
     @GetMapping("/connector/{connectorId}")
-    public ResponseEntity<List<CommissionTransaction>> getTransactionsByConnector(@PathVariable UUID connectorId) {
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'CONNECTOR', 'ROLE_CONNECTOR')")
+    public ResponseEntity<List<CommissionTransaction>> getTransactionsByConnector(
+            @PathVariable UUID connectorId,
+            Authentication auth) {
+        // CONNECTORs may only view their own transactions
+        boolean isPrivileged = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
+                            || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER"));
+        if (!isPrivileged) {
+            UUID callerId = UUID.nameUUIDFromBytes(
+                    auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            if (!callerId.equals(connectorId)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Cannot view another connector's transactions");
+            }
+        }
         return ResponseEntity.ok(commissionService.getTransactionsByConnector(connectorId));
     }
 

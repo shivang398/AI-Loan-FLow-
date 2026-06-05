@@ -377,7 +377,11 @@ const ConnectorHub: React.FC = () => {
       fetchConnectors();
       message.success(`Channel partner ${values.firstName} ${values.lastName} onboarded successfully!`);
     } catch (err: any) {
-      message.error(err.response?.data?.message || err.message || 'Onboarding failed');
+      const resp = err.response?.data;
+      const detail = resp?.errors?.length
+        ? resp.errors.join(' ')
+        : (resp?.message || err.message || 'Onboarding failed');
+      message.error(detail);
     } finally {
       setLoading(false);
     }

@@ -94,8 +94,11 @@ public class PolicyController {
                 .filter(PolicyDocument::isActive)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
+        // Sanitize filename to prevent header injection / path traversal via Content-Disposition
+        String safeFilename = doc.getFileName()
+                .replaceAll("[^a-zA-Z0-9._\\-]", "_");
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + doc.getFileName() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFilename + "\"")
                 .contentType(MediaType.parseMediaType(doc.getMimeType()))
                 .body(doc.getFileData());
     }

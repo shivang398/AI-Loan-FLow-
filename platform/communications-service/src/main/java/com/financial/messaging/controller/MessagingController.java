@@ -14,6 +14,9 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -71,15 +74,37 @@ public class MessagingController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<ApiResponse<Message>> sendMessage(@Valid @RequestBody SendMessageRequest request) {
-        UUID senderId = UUID.randomUUID(); 
+    public ResponseEntity<ApiResponse<Message>> sendMessage(
+            @Valid @RequestBody SendMessageRequest request,
+            Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            throw new AccessDeniedException("Authentication required");
+        }
+        // Derive sender ID from authenticated identity — never trust client-supplied IDs
+        UUID senderId = UUID.nameUUIDFromBytes(
+                auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        // Ownership check: must be a participant or privileged role
+        Conversation conv = conversationRepository.findById(request.getConversationId())
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+        boolean isPrivileged = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
+                            || a.equals("OPERATIONS") || a.equals("ROLE_OPERATIONS"));
+        boolean isParticipant = senderId.equals(conv.getConnectorId())
+                || senderId.equals(conv.getRmId())
+                || senderId.equals(conv.getAssignedOpsUserId());
+        if (!isPrivileged && !isParticipant) {
+            throw new AccessDeniedException("Not a participant in this conversation");
+        }
+
         Message message = messagingService.sendMessage(
-                request.getConversationId(), 
-                request.getBody(), 
-                senderId, 
+                request.getConversationId(),
+                request.getBody(),
+                senderId,
+                auth.getName(),
                 request.getChannel()
         );
-        
         return ResponseEntity.ok(ApiResponse.success("Message sent", message, UUID.randomUUID().toString()));
     }
 

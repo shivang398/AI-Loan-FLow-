@@ -35,18 +35,27 @@ public class NotificationController {
     }
 
     @PostMapping("/{id}/read")
-    public ResponseEntity<ApiResponse<Void>> markRead(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> markRead(@PathVariable UUID id, Authentication auth) {
+        if (auth == null) throw new org.springframework.security.access.AccessDeniedException("Authentication required");
+        UUID callerId = UUID.nameUUIDFromBytes(auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         notificationRepository.findById(id).ifPresent(n -> {
-            n.setRead(true);
-            notificationRepository.save(n);
+            // Only allow marking own notifications as read, unless admin/ops
+            if (isAdmin(auth) || callerId.equals(n.getRecipientId())) {
+                n.setRead(true);
+                notificationRepository.save(n);
+            }
         });
         return ResponseEntity.ok(ApiResponse.success("Marked as read", null, UUID.randomUUID().toString()));
     }
 
     @PostMapping("/read-all")
-    public ResponseEntity<ApiResponse<Void>> markAllRead() {
+    public ResponseEntity<ApiResponse<Void>> markAllRead(Authentication auth) {
+        if (auth == null) throw new org.springframework.security.access.AccessDeniedException("Authentication required");
+        UUID callerId = UUID.nameUUIDFromBytes(auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        // Mark only the caller's unread notifications — not the entire system's
         List<Notification> unread = notificationRepository.findAll().stream()
-                .filter(n -> !n.isRead()).toList();
+                .filter(n -> !n.isRead() && (isAdmin(auth) || callerId.equals(n.getRecipientId())))
+                .toList();
         unread.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unread);
         return ResponseEntity.ok(ApiResponse.success("All marked as read", null, UUID.randomUUID().toString()));

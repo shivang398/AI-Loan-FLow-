@@ -55,10 +55,13 @@ public class CustomerController {
     @PutMapping("/leads/{id}/notes")
     public ResponseEntity<ApiResponse<Lead>> updateLeadNotes(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
         String notes = body.get("notes");
         if (notes == null) throw new RuntimeException("notes field is required");
-        Lead updated = customerService.updateLeadNotes(id, notes);
+        String email = auth.getName();
+        boolean isAdmin = hasAdminAccess(auth);
+        Lead updated = customerService.updateLeadNotes(id, notes, email, isAdmin);
         return ResponseEntity.ok(ApiResponse.success("Notes saved", updated, UUID.randomUUID().toString()));
     }
 

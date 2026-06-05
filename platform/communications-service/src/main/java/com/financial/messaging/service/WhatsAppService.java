@@ -66,8 +66,8 @@ public class WhatsAppService {
                     .retrieve()
                     .body(String.class);
         } catch (Exception e) {
-            log.error("Failed to send WhatsApp message", e);
-            throw new RuntimeException("WhatsApp API failure: " + e.getMessage());
+            log.error("Failed to send WhatsApp message to phoneNumberId={}", phoneNumberId, e);
+            throw new RuntimeException("Failed to send message. Please try again later.");
         }
     }
 }

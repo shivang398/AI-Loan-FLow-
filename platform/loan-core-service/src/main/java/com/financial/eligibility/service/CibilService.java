@@ -66,6 +66,19 @@ public class CibilService {
     @Value("${tenacio.api.workflow-id}")
     private String workflowId;
 
+    // ── CRIF soft-pull credentials (secondary bureau, no PAN required) ─────────
+    @Value("${tenacio.crif.url}")
+    private String crifUrl;
+
+    @Value("${tenacio.crif.client-id}")
+    private String crifClientId;
+
+    @Value("${tenacio.crif.key}")
+    private String crifApiKey;
+
+    @Value("${tenacio.crif.workflow-id}")
+    private String crifWorkflowId;
+
     // ── Colours matching TransUnion CIBIL palette ─────────────────────────────
 
     private static final Color CIBIL_DARK_BLUE  = new Color(0,  60, 113);   // #003C71
@@ -91,30 +104,39 @@ public class CibilService {
     // ── Public entry points ───────────────────────────────────────────────────
 
     public byte[] generateCibilReportPdf(CibilRequestDto dto) {
-        boolean hasCredentials = !isBlank(clientId) && !isBlank(apiKey) && !isBlank(workflowId);
-
-        JsonNode apiResponse = null;
-        if (hasCredentials) {
-            apiResponse = callTenacioApi(dto);
-        } else {
-            log.warn("CIBIL API credentials not configured — generating demo report for PAN=***REDACTED***");
-        }
-        return buildBankStandardPdf(dto, apiResponse);
+        return buildBankStandardPdf(dto, resolveApiResponse(dto));
     }
 
     public CibilSummaryDto getCibilSummary(CibilRequestDto dto) {
-        boolean hasCredentials = !isBlank(clientId) && !isBlank(apiKey) && !isBlank(workflowId);
-
-        JsonNode apiResponse = null;
-        if (hasCredentials) {
-            apiResponse = callTenacioApi(dto);
-        } else {
-            log.warn("CIBIL API credentials not configured — returning demo summary for PAN=***REDACTED***");
-        }
-
+        JsonNode apiResponse = resolveApiResponse(dto);
         boolean demoMode = (apiResponse == null);
         CibilData data = demoMode ? buildDemoData(dto) : parseApiResponse(dto, apiResponse);
         return toSummaryDto(data, demoMode);
+    }
+
+    /**
+     * Resolves the live bureau response — tries CRIF first (no PAN required),
+     * falls back to CIBIL, then returns null (demo mode) if neither is configured.
+     */
+    private JsonNode resolveApiResponse(CibilRequestDto dto) {
+        boolean hasCrifCreds  = !isBlank(crifClientId) && !isBlank(crifApiKey) && !isBlank(crifWorkflowId);
+        boolean hasCibilCreds = !isBlank(clientId)     && !isBlank(apiKey)     && !isBlank(workflowId);
+
+        if (hasCrifCreds) {
+            try {
+                return callCrifApi(dto);
+            } catch (RuntimeException e) {
+                if (!hasCibilCreds) throw e;
+                log.warn("CRIF API failed — retrying with CIBIL. Reason: {}", e.getMessage());
+            }
+        }
+
+        if (hasCibilCreds) {
+            return callTenacioApi(dto);
+        }
+
+        log.warn("Neither CRIF nor CIBIL credentials configured — using demo mode");
+        return null;
     }
 
     private CibilSummaryDto toSummaryDto(CibilData data, boolean demoMode) {
@@ -218,6 +240,57 @@ public class CibilService {
         } catch (JsonProcessingException | org.springframework.web.client.ResourceAccessException e) {
             log.error("Failed to reach Tenacio CIBIL API", e);
             throw new RuntimeException("Unable to reach CIBIL service. Please try again later.");
+        }
+    }
+
+    // ── CRIF soft-pull API call ───────────────────────────────────────────────
+
+    private JsonNode callCrifApi(CibilRequestDto dto) {
+        validateApiUrl(crifUrl);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("client-id",   crifClientId);
+        headers.set("x-api-key",   crifApiKey);
+        headers.set("workflow-id", crifWorkflowId);
+
+        // CRIF soft-pull requires mobile + name + consent only — PAN is NOT sent
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("mobileNumber", dto.getMobileNumber());
+        input.put("name",         dto.getName());
+        input.put("consent",      dto.isConsent());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("input", input);
+
+        try {
+            log.info("Calling Tenacio CRIF API for mobile={}", maskMobile(dto.getMobileNumber()));
+            ResponseEntity<String> response = cibilRestTemplate.postForEntity(
+                crifUrl, new HttpEntity<>(payload, headers), String.class);
+            log.info("Tenacio CRIF API — status={}", response.getStatusCode());
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+
+            String apiStatus = root.path("status").asText("");
+            if ("error".equalsIgnoreCase(apiStatus)) {
+                String msg = root.path("serviceError").path("message").asText("");
+                if (msg.isBlank()) msg = root.path("message").asText("CRIF lookup failed");
+                log.error("Tenacio CRIF business error: {}", msg);
+                if ("No Data Found".equalsIgnoreCase(msg)) {
+                    throw new RuntimeException(
+                        "No CRIF record found for this mobile + name combination. " +
+                        "Please verify the mobile number is correct.");
+                }
+                throw new RuntimeException(msg);
+            }
+
+            return root;
+        } catch (HttpStatusCodeException e) {
+            log.error("Tenacio CRIF error: {} — RESPONSE REDACTED", e.getStatusCode());
+            throw new RuntimeException(extractErrorMessage(e.getResponseBodyAsString()));
+        } catch (JsonProcessingException | org.springframework.web.client.ResourceAccessException e) {
+            log.error("Failed to reach Tenacio CRIF API", e);
+            throw new RuntimeException("Unable to reach CRIF service. Please try again later.");
         }
     }
 
@@ -821,6 +894,11 @@ public class CibilService {
     // ── Real API response parser ───────────────────────────────────────────────
 
     private CibilData parseApiResponse(CibilRequestDto dto, JsonNode api) {
+        // Route to CRIF parser when the response carries crifData
+        if (navigate(api, "data/crifData") != null) {
+            return parseCrifResponse(dto, api);
+        }
+
         CibilData d = new CibilData();
         d.reportId  = safeText(api, "requestId", "RMAP-" + System.currentTimeMillis() % 100000);
         d.fullName  = dto.getName().toUpperCase();
@@ -929,6 +1007,123 @@ public class CibilService {
                 er.purpose     = "Personal Loan";
                 er.amount      = "₹" + formatAmount(parseLongSafe(safeText(inq, "amount", "0")));
                 er.productType = "Personal Loan";
+                d.enquiries.add(er);
+            }
+        }
+
+        return d;
+    }
+
+    // ── CRIF response parser (Tenacio CCRResponse structure) ─────────────────
+
+    private CibilData parseCrifResponse(CibilRequestDto dto, JsonNode api) {
+        CibilData d = new CibilData();
+        d.reportId  = safeText(api, "requestId", "CRIF-" + System.currentTimeMillis() % 100000);
+        d.fullName  = dto.getName().toUpperCase();
+        d.scoreDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        d.accounts  = new ArrayList<>();
+        d.enquiries = new ArrayList<>();
+
+        // Tenacio normalises CRIF bureau data under CCRResponse
+        JsonNode crifData = navigate(api, "data/crifData/CCRResponse/CIRReportDataLst/0/CIRReportData");
+        if (crifData == null) {
+            crifData = navigate(api, "data/crifData/CCRResponse/CIRReportData");
+        }
+        if (crifData == null) {
+            log.warn("Could not locate CIRReportData in CRIF response (requestId={})", d.reportId);
+            return d;
+        }
+
+        // Score
+        JsonNode scores = navigate(crifData, "ScoreDetails");
+        if (scores != null && scores.isArray()) {
+            for (JsonNode s : scores) {
+                String val = safeText(s, "Value", "");
+                if (!val.isBlank()) {
+                    try { d.cibilScore = Integer.parseInt(val.trim()); break; }
+                    catch (NumberFormatException ignored) {}
+                }
+            }
+        }
+        log.info("Parsed crifScore={} from CRIF response (reportId={})", d.cibilScore, d.reportId);
+
+        // Personal info
+        JsonNode personal = navigate(crifData, "IDAndContactInfo/PersonalInfo");
+        if (personal != null) {
+            String fn = safeText(navigate(personal, "Name"), "FullName", "");
+            if (!fn.isBlank()) d.fullName = fn.toUpperCase();
+            d.dob    = safeText(navigate(personal, "DOBAge"), "DOB", "—");
+            d.gender = genderLabel(safeText(personal, "Gender", ""));
+        }
+
+        // Email
+        JsonNode emails = navigate(crifData, "IDAndContactInfo/EmailAddressInfo");
+        if (emails != null && emails.isArray() && emails.size() > 0) {
+            d.email = safeText(emails.get(0), "EmailAddress", "—");
+        }
+        if (d.email == null) d.email = "—";
+
+        // Address
+        JsonNode addrs = navigate(crifData, "IDAndContactInfo/AddressInfo");
+        if (addrs != null && addrs.isArray() && addrs.size() > 0) {
+            JsonNode addr = navigate(addrs.get(0), "Address");
+            if (addr != null) {
+                String flat = safeText(addr, "FlatNoPlotNoHouseNo", "");
+                String area = safeText(addr, "AreaLocalityTaluka", "");
+                String city = safeText(addr, "City", "");
+                String pin  = safeText(addr, "PinCode", "");
+                StringBuilder sb = new StringBuilder();
+                if (!flat.isBlank()) sb.append(flat).append(", ");
+                if (!area.isBlank()) sb.append(area).append(", ");
+                if (!city.isBlank()) sb.append(city);
+                if (!pin.isBlank()) { if (sb.length() > 0) sb.append(" — "); sb.append(pin); }
+                d.address = sb.length() > 0 ? sb.toString() : "—";
+            }
+        }
+        if (d.address == null) d.address = "—";
+
+        // Retail accounts
+        JsonNode accountsList = navigate(crifData, "RetailAccountDetails");
+        if (accountsList != null && accountsList.isArray()) {
+            for (JsonNode wrapper : accountsList) {
+                JsonNode acct = navigate(wrapper, "RetailAccountDetails");
+                if (acct == null) acct = wrapper;
+                AccountDetail a = new AccountDetail();
+                a.memberName       = safeText(acct, "InstitutionName", "Unknown");
+                a.accountType      = safeText(acct, "AccountType", "Loan");
+                a.accountNumber    = maskAccount(safeText(acct, "AccountNumber", "****"));
+                a.ownership        = safeText(acct, "OwnershipIndicator", "Individual");
+                a.dateOpened       = safeText(acct, "DateOpenedOrDisbursed", "");
+                a.dateClosed       = safeText(acct, "DateClosed", "");
+                a.sanctionedAmount = parseLongSafe(safeText(acct, "SanctionedAmt", "0"));
+                a.currentBalance   = parseLongSafe(safeText(acct, "CurrentBalance", "0"));
+                a.amountOverdue    = parseLongSafe(safeText(acct, "AmountPastDue", "0"));
+                a.accountStatus    = a.amountOverdue > 0 ? "OVERDUE" : "STANDARD";
+                a.lastPaymentDate  = safeText(acct, "LastPaymentDate", "");
+                a.paymentFrequency = "Monthly";
+                a.paymentHistory   = new ArrayList<>();
+                d.accounts.add(a);
+            }
+        }
+
+        d.activeAccounts  = (int) d.accounts.stream().filter(a -> a.dateClosed.isBlank()).count();
+        d.closedAccounts  = d.accounts.size() - d.activeAccounts;
+        d.overdueAccounts = (int) d.accounts.stream().filter(a -> a.amountOverdue > 0).count();
+        d.totalBalance    = d.accounts.stream().mapToLong(a -> a.currentBalance).sum();
+        d.totalOverdue    = d.accounts.stream().mapToLong(a -> a.amountOverdue).sum();
+
+        // Enquiries
+        JsonNode enquiriesList = navigate(crifData, "EnquiryDetails");
+        if (enquiriesList != null && enquiriesList.isArray()) {
+            for (JsonNode wrapper : enquiriesList) {
+                JsonNode eq = navigate(wrapper, "EnquiryDetails");
+                if (eq == null) eq = wrapper;
+                EnquiryRecord er = new EnquiryRecord();
+                er.date        = safeText(eq, "DateOfEnquiry", "—");
+                er.memberName  = safeText(eq, "InstitutionName", "—");
+                er.purpose     = safeText(eq, "EnquiryPurpose", "—");
+                er.amount      = "₹" + formatAmount(parseLongSafe(safeText(eq, "EnquiryAmount", "0")));
+                er.productType = safeText(eq, "LoanType", "Loan");
                 d.enquiries.add(er);
             }
         }
@@ -1075,6 +1270,11 @@ public class CibilService {
         return "****" + acc.substring(acc.length() - 4);
     }
 
+    private String maskMobile(String mobile) {
+        if (mobile == null || mobile.length() < 4) return "***";
+        return mobile.substring(0, 2) + "xxxxxx" + mobile.substring(mobile.length() - 2);
+    }
+
     private String formatDate(String raw) {
         if (raw == null || raw.isBlank() || raw.equals("—")) return raw == null ? "" : raw;
         // Try to parse known formats
@@ -1166,19 +1366,20 @@ public class CibilService {
         return s == null || s.isBlank();
     }
 
-    // Fix 4: SSRF guard — only allow calls to the known Tenacio host
-    private static final String ALLOWED_CIBIL_HOST = "api.tenacio.io";
+    // SSRF guard — only allow calls to the known Tenacio hosts (prod + test)
+    private static final java.util.Set<String> ALLOWED_TENACIO_HOSTS =
+        java.util.Set.of("api.tenacio.io", "testapi.tenacio.io");
 
     private void validateApiUrl(String url) {
         try {
             java.net.URI uri = java.net.URI.create(url);
             String host = uri.getHost();
-            if (!ALLOWED_CIBIL_HOST.equals(host)) {
+            if (!ALLOWED_TENACIO_HOSTS.contains(host)) {
                 throw new IllegalStateException(
-                    "Blocked outbound CIBIL call to unexpected host: " + host);
+                    "Blocked outbound API call to unexpected host: " + host);
             }
         } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("Invalid CIBIL API URL configured", e);
+            throw new IllegalStateException("Invalid API URL configured", e);
         }
     }
 }

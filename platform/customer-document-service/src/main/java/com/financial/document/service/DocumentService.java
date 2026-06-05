@@ -53,8 +53,12 @@ public class DocumentService {
             throw new RuntimeException("Invalid file type");
         }
 
-        byte[] header = file.getBytes();
-        if (!hasValidMagicBytes(header, mimeType)) {
+        // Read only the first 8 bytes for magic-byte check — never load the full file into heap
+        byte[] magicHeader = new byte[8];
+        try (java.io.InputStream is = file.getInputStream()) {
+            is.read(magicHeader);
+        }
+        if (!hasValidMagicBytes(magicHeader, mimeType)) {
             throw new RuntimeException("File content does not match declared type");
         }
 
@@ -63,13 +67,16 @@ public class DocumentService {
 
         String s3Key = "documents/" + loanId + "/" + UUID.randomUUID();
 
+        // Stream directly to S3 — avoids loading the entire file into memory
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(bucket)
                         .key(s3Key)
                         .contentType(mimeType)
+                        .contentLength(file.getSize())
                         .build(),
-                RequestBody.fromBytes(header)
+                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
+                        file.getInputStream(), file.getSize())
         );
 
         Document document = Document.builder()

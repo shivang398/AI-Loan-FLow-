@@ -9,6 +9,7 @@ import com.financial.eligibility.service.EligibilityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -85,17 +86,21 @@ public class EligibilityController {
         return ResponseEntity.ok(ApiResponse.success("Submissions fetched", result, UUID.randomUUID().toString()));
     }
 
-    /** Update submission status */
+    /** Update submission status — restricted to privileged roles */
     @PutMapping("/submissions/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'OPERATIONS', 'ROLE_OPERATIONS')")
     public ResponseEntity<ApiResponse<String>> updateSubmissionStatus(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body) {
         String newStatus = body.getOrDefault("status", "CONTACTED").toUpperCase();
         submissionRepository.findById(id).ifPresent(s -> {
             s.setStatus(newStatus);
-            if (body.containsKey("connectorId")) {
-                try { s.setAssignedConnectorId(UUID.fromString(body.get("connectorId"))); }
-                catch (IllegalArgumentException ignored) {}
+            // connectorId reassignment is admin/PM only — validate it is a non-null UUID; no free-form string accepted
+            if (body.containsKey("connectorId") && body.get("connectorId") != null) {
+                try {
+                    UUID newConnectorId = UUID.fromString(body.get("connectorId"));
+                    s.setAssignedConnectorId(newConnectorId);
+                } catch (IllegalArgumentException ignored) {}
             }
             submissionRepository.save(s);
         });

@@ -28,7 +28,13 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
     public EncryptedStringConverter() {
         String raw = System.getenv("PII_ENCRYPTION_KEY");
         if (raw == null || raw.isBlank()) {
-            raw = "DevOnlyPlaceholderKey32CharsLong";
+            throw new IllegalStateException(
+                "PII_ENCRYPTION_KEY must be set to exactly 32 ASCII characters. " +
+                "Generate with: openssl rand -hex 16");
+        }
+        if (raw.length() < 32) {
+            throw new IllegalStateException(
+                "PII_ENCRYPTION_KEY must be at least 32 characters (got " + raw.length() + ")");
         }
         this.secretKey = new SecretKeySpec(Arrays.copyOf(raw.getBytes(StandardCharsets.UTF_8), 32), "AES");
     }

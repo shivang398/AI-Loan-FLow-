@@ -30,13 +30,13 @@ spring:
     baseline-on-migrate: true
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    port: ${RABBITMQ_PORT:5673}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:6381}
 
 app:
   jwt:

@@ -8,7 +8,7 @@ export const useWebSocket = (endpoint: string, topic: string) => {
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     const socket = new SockJS(endpoint);
     const client = new Client({
       webSocketFactory: () => socket,

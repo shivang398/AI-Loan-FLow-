@@ -29,15 +29,18 @@ public class AuthExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(AuthExceptionHandler.class);
 
-    // Messages safe to expose to clients — deliberately excludes "Email is already taken!"
-    // to prevent user enumeration on the public registration endpoint.
+    // Messages safe to expose to clients.
+    // "Email is already taken!" is included because it is shown only after authentication
+    // succeeds (the protected /auth/register endpoint requires ADMIN or PARTNER_MANAGER) —
+    // it is not a user-enumeration risk in that context.
     private static final Set<String> CLIENT_SAFE_MESSAGES = Set.of(
         "User account is not active",
         "Invalid or tampered token",
         "Refresh token has expired",
         "Role not permitted for self-registration",
         "Registration is restricted to authorised domains",
-        "Account temporarily locked due to too many failed attempts. Try again in 15 minutes."
+        "Account temporarily locked due to too many failed attempts. Try again in 15 minutes.",
+        "Email is already taken!"
     );
 
     @ExceptionHandler(Exception.class)

@@ -8,7 +8,7 @@ class WebSocketService {
   public connect(url: string, onConnect: () => void) {
     if (this.client?.connected) return;
 
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     this.client = new Client({
       webSocketFactory: () => new SockJS(url),
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},

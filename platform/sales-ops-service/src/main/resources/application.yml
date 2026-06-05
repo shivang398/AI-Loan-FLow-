@@ -29,7 +29,7 @@ spring:
     validate-on-migrate: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    port: ${RABBITMQ_PORT:5673}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
     connection-timeout: 1000

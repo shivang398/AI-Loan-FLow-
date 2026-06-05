@@ -10,9 +10,11 @@
 #   PUBLIC_SUBNET_1, PUBLIC_SUBNET_2,
 #   BACKEND_SG, FRONTEND_SG, RABBITMQ_SG,
 #   FRONTEND_TG_ARN, EFS_ID,
-#   DB_PASSWORD, RABBITMQ_PASSWORD, JWT_SECRET,
+#   DB_PASSWORD, RABBITMQ_PASSWORD, JWT_SECRET, PII_ENCRYPTION_KEY,
 #   MAIL_USERNAME, MAIL_PASSWORD,
-#   WHATSAPP_TOKEN, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, WHATSAPP_APP_SECRET
+#   WHATSAPP_TOKEN, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, WHATSAPP_APP_SECRET,
+#   TENACIO_CRIF_CLIENT_ID, TENACIO_CRIF_API_KEY, TENACIO_CRIF_WORKFLOW_ID,
+#   TENACIO_CLIENT_ID, TENACIO_API_KEY, TENACIO_WORKFLOW_ID
 
 set -euo pipefail
 
@@ -281,7 +283,18 @@ deploy_backend "auth-service"       "platform_auth"
 deploy_backend "connector-service"  "platform_connector"
 deploy_backend "customer-service"   "platform_customer"
 deploy_backend "loan-service"       "platform_loan"
-deploy_backend "eligibility-service" "platform_eligibility"
+deploy_backend "eligibility-service" "platform_eligibility" "$(cat <<'ENVEOF'
+[
+  {"name":"TENACIO_CRIF_CLIENT_ID","value":"${TENACIO_CRIF_CLIENT_ID}"},
+  {"name":"TENACIO_CRIF_API_KEY","value":"${TENACIO_CRIF_API_KEY}"},
+  {"name":"TENACIO_CRIF_WORKFLOW_ID","value":"${TENACIO_CRIF_WORKFLOW_ID}"},
+  {"name":"TENACIO_CLIENT_ID","value":"${TENACIO_CLIENT_ID}"},
+  {"name":"TENACIO_API_KEY","value":"${TENACIO_API_KEY}"},
+  {"name":"TENACIO_WORKFLOW_ID","value":"${TENACIO_WORKFLOW_ID}"},
+  {"name":"PII_ENCRYPTION_KEY","value":"${PII_ENCRYPTION_KEY}"}
+]
+ENVEOF
+)"
 deploy_backend "policy-service"     "platform_policy"
 deploy_backend "sm-routing-service" "platform_routing"
 deploy_backend "commission-service" "platform_commission"
