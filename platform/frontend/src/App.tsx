@@ -10,6 +10,8 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardOverview from './features/dashboard/components/DashboardOverview';
 import UserManagement from './features/users/components/UserManagement';
 import RegionalDashboard from './features/rm/components/RegionalDashboard';
+import ConnectorTracker from './features/rm/components/ConnectorTracker';
+import WorkflowMonitor from './features/rm/components/WorkflowMonitor';
 import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDashboard';
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
@@ -83,8 +85,8 @@ const App: React.FC = () => {
               {/* RM Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['RM']} />}>
                 <Route path="/rm/dashboard"    element={<RegionalDashboard />} />
-                <Route path="/rm/connectors"   element={<div style={{ padding: 40 }}>Connector Tracker — Coming Soon</div>} />
-                <Route path="/rm/workflow"     element={<div style={{ padding: 40 }}>Workflow Monitor — Coming Soon</div>} />
+                <Route path="/rm/connectors"   element={<ConnectorTracker />} />
+                <Route path="/rm/workflow"     element={<WorkflowMonitor />} />
                 <Route path="/rm/policies"     element={<PoliciesPage />} />
                 <Route path="/rm/team-meeting" element={<TeamMeeting />} />
               </Route>
