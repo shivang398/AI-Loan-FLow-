@@ -3,10 +3,16 @@ package com.financial.eligibility.config;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
@@ -52,7 +58,8 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             System.arraycopy(iv, 0, out, 0, IV_BYTES);
             System.arraycopy(ct, 0, out, IV_BYTES, ct.length);
             return Base64.getEncoder().encodeToString(out);
-        } catch (Exception e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException
+               | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
             throw new IllegalStateException("PII encryption failed", e);
         }
     }
@@ -67,7 +74,8 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             Cipher cipher   = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(TAG_BITS, iv));
             return new String(cipher.doFinal(ct), StandardCharsets.UTF_8);
-        } catch (Exception e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException
+               | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
             throw new IllegalStateException("PII decryption failed", e);
         }
     }

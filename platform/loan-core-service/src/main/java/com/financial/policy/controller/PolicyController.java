@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -52,7 +53,7 @@ public class PolicyController {
                 "category",        d.getCategory(),
                 "fileName",        d.getFileName(),
                 "mimeType",        d.getMimeType(),
-                "fileSizeBytes",   d.getFileSizeBytes() != null ? d.getFileSizeBytes() : 0L,
+                "fileSizeBytes",   Objects.requireNonNullElse(d.getFileSizeBytes(), 0L),
                 "uploadedByEmail", d.getUploadedByEmail() != null ? d.getUploadedByEmail() : "",
                 "uploadedAt",      d.getUploadedAt().toString()
         )).toList();

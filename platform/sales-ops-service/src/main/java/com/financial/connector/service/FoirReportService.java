@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -45,9 +46,8 @@ public class FoirReportService {
     private static final Font FONT_SMALL      = FontFactory.getFont(FontFactory.HELVETICA,      8,  TEXT_MUTED);
 
     public byte[] generate(FoirResult r) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document doc = new Document(PageSize.A4, 45, 45, 60, 55);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             Document doc = new Document(PageSize.A4, 45, 45, 60, 55)) {
             PdfWriter writer = PdfWriter.getInstance(doc, baos);
             writer.setPageEvent(new HeaderFooterEvent(r.applicantName()));
             doc.open();
@@ -71,7 +71,7 @@ public class FoirReportService {
             doc.close();
             log.info("FOIR PDF generated for '{}'", r.applicantName());
             return baos.toByteArray();
-        } catch (Exception e) {
+        } catch (DocumentException | IOException e) {
             log.error("Failed to generate FOIR PDF for '{}'", r.applicantName(), e);
             throw new RuntimeException("PDF generation failed: " + e.getMessage(), e);
         }
@@ -104,8 +104,14 @@ public class FoirReportService {
         doc.add(sectionHeader("Applicant Information"));
         PdfPTable t = kvTable();
         addKv(t, "Applicant Name",        r.applicantName(), false);
-        addKv(t, "Applicant Type",        r.applicantType() == com.financial.connector.model.ApplicantType.SALARIED
-                                          ? "Salaried Employee" : "Self-Employed / Business Owner", false);
+        addKv(t, "Applicant Type",        switch (r.applicantType()) {
+            case SALARIED                   -> "Salaried Employee";
+            case GOVT_SALARIED              -> "Government / PSU Salaried";
+            case SELF_EMPLOYED              -> "Self-Employed / Business Owner";
+            case SELF_EMPLOYED_PROFESSIONAL -> "Self-Employed Professional";
+            case NRI                        -> "NRI";
+            case PENSIONER                  -> "Pensioner";
+        }, false);
         addKv(t, "Gross Monthly Income",  formatInr(r.grossMonthlyIncome()), false);
         addKv(t, "Net Monthly Income",    formatInr(r.netMonthlyIncome()), true);
         doc.add(t);

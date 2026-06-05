@@ -23,14 +23,12 @@ import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.financial.common.security.PiiMaskingUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayOutputStream;
@@ -311,9 +309,8 @@ public class CibilService {
     // ── Master PDF builder ────────────────────────────────────────────────────
 
     private byte[] buildBankStandardPdf(CibilRequestDto dto, JsonNode api) {
-        try {
-            Document doc = new Document(PageSize.A4, 40, 40, 55, 55);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             Document doc = new Document(PageSize.A4, 40, 40, 55, 55)) {
             PdfWriter writer = PdfWriter.getInstance(doc, out);
 
             // Page-number footer
@@ -411,7 +408,7 @@ public class CibilService {
             doc.close();
             return out.toByteArray();
 
-        } catch (DocumentException e) {
+        } catch (DocumentException | java.io.IOException e) {
             log.error("Error building CIBIL PDF", e);
             throw new RuntimeException("Failed to generate CIBIL PDF", e);
         }
@@ -775,25 +772,32 @@ public class CibilService {
         p.add(new Chunk(
             "2. This is a Soft Pull enquiry. It does NOT impact the consumer's CIBIL Score.\n\n",
             reg(7.5f, HEADER_GREY)));
-        p.add(new Chunk(
-            "3. This report is CONFIDENTIAL and is intended solely for the use of the authorised financial "
-            + "institution or individual that initiated the enquiry. Any unauthorised disclosure, reproduction "
-            + "or redistribution is strictly prohibited under applicable RBI and CICRA regulations.\n\n",
+        p.add(new Chunk("""
+            3. This report is CONFIDENTIAL and is intended solely for the use of the authorised financial \
+            institution or individual that initiated the enquiry. Any unauthorised disclosure, reproduction \
+            or redistribution is strictly prohibited under applicable RBI and CICRA regulations.
+
+            """,
             reg(7.5f, HEADER_GREY)));
-        p.add(new Chunk(
-            "4. Credit decisions must not be based solely on this report. Lenders are required to exercise "
-            + "independent credit judgment as per RBI Master Circular on Fair Practices Code.\n\n",
+        p.add(new Chunk("""
+            4. Credit decisions must not be based solely on this report. Lenders are required to exercise \
+            independent credit judgment as per RBI Master Circular on Fair Practices Code.
+
+            """,
             reg(7.5f, HEADER_GREY)));
-        p.add(new Chunk(
-            "5. TransUnion CIBIL Limited is a Credit Information Company licensed by Reserve Bank of India. "
-            + "For disputes or corrections, the consumer may write to cibilsupport@transunion.com or "
-            + "visit www.cibil.com.\n\n",
+        p.add(new Chunk("""
+            5. TransUnion CIBIL Limited is a Credit Information Company licensed by Reserve Bank of India. \
+            For disputes or corrections, the consumer may write to cibilsupport@transunion.com or \
+            visit www.cibil.com.
+
+            """,
             reg(7.5f, HEADER_GREY)));
         if (demoMode) {
-            p.add(new Chunk(
-                "⚠  DEMO DATA NOTICE: This report was generated in demo mode because CIBIL API credentials "
-                + "(TENACIO_CLIENT_ID / TENACIO_API_KEY / TENACIO_WORKFLOW_ID) are not configured in the "
-                + "environment. All credit data shown is fictitious and for format demonstration only.\n",
+            p.add(new Chunk("""
+                ⚠  DEMO DATA NOTICE: This report was generated in demo mode because CIBIL API credentials \
+                (TENACIO_CLIENT_ID / TENACIO_API_KEY / TENACIO_WORKFLOW_ID) are not configured in the \
+                environment. All credit data shown is fictitious and for format demonstration only.
+                """,
                 bold(7.5f, new Color(185, 28, 28))));
         }
         cell.addElement(p);
@@ -924,8 +928,10 @@ public class CibilService {
             String day   = safeText(birth, "day",   "01");
             String month = safeText(birth, "month", "01");
             String year  = safeText(birth, "year",  "");
-            if (!year.isEmpty()) d.dob = String.format("%02d-%02d-%s",
-                Integer.parseInt(day), Integer.parseInt(month), year);
+            if (!year.isEmpty())
+                d.dob = (day.length() == 1 ? "0" + day : day)
+                      + "-" + (month.length() == 1 ? "0" + month : month)
+                      + "-" + year;
         }
 
         d.gender = genderLabel(safeText(borrower, "Gender", ""));
@@ -1275,17 +1281,6 @@ public class CibilService {
         return mobile.substring(0, 2) + "xxxxxx" + mobile.substring(mobile.length() - 2);
     }
 
-    private String formatDate(String raw) {
-        if (raw == null || raw.isBlank() || raw.equals("—")) return raw == null ? "" : raw;
-        // Try to parse known formats
-        try {
-            if (raw.matches("\\d{8}")) { // DDMMYYYY
-                return raw.substring(0, 2) + "-" + raw.substring(2, 4) + "-" + raw.substring(4);
-            }
-        } catch (RuntimeException ignored) {}
-        return raw;
-    }
-
     private String genderLabel(String g) {
         if ("M".equalsIgnoreCase(g) || "MALE".equalsIgnoreCase(g)) return "Male";
         if ("F".equalsIgnoreCase(g) || "FEMALE".equalsIgnoreCase(g)) return "Female";
@@ -1334,12 +1329,6 @@ public class CibilService {
         if (node == null) return fallback;
         JsonNode n = navigateFromNode(node, path);
         return (n != null && !n.isNull() && n.isValueNode()) ? n.asText(fallback) : fallback;
-    }
-
-    private int safeInt(JsonNode node, String path, int fallback) {
-        if (node == null) return fallback;
-        JsonNode n = navigateFromNode(node, path);
-        return (n != null && !n.isNull() && n.isValueNode()) ? n.asInt(fallback) : fallback;
     }
 
     private JsonNode navigate(JsonNode root, String path) {

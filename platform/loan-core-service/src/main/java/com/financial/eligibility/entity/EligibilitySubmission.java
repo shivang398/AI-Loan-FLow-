@@ -64,6 +64,7 @@ public class EligibilitySubmission {
     @Column(name = "assigned_connector_id")
     private UUID assignedConnectorId;
 
+    @Builder.Default
     @Column(name = "status", nullable = false)
     private String status = "NEW";
 

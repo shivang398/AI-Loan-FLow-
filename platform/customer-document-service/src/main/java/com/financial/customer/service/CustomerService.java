@@ -188,7 +188,7 @@ public class CustomerService {
                     if (!emails.isEmpty()) return emails;
                 }
             }
-        } catch (Exception ex) {
+        } catch (org.springframework.web.client.RestClientException ex) {
             log.warn("Could not reach connector-service for ops lookup: {}", ex.getMessage());
         }
         // Fallback to statically configured emails
