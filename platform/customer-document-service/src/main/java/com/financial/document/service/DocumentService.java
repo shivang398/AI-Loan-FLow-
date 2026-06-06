@@ -139,11 +139,11 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public String generatePresignedUrl(UUID documentId, UUID requesterId) {
+    public String generatePresignedUrl(UUID documentId, UUID requesterId, boolean isStaff) {
         Document doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
-        if (!doc.getUploadedBy().equals(requesterId)) {
+        if (!isStaff && !doc.getUploadedBy().equals(requesterId)) {
             throw new AccessDeniedException("Access denied to document");
         }
 

@@ -121,6 +121,7 @@ public class CustomerService {
                 // Employment
                 .jobType(request.getJobType())
                 .designation(request.getDesignation())
+                .companyName(request.getCompanyName())
                 .modeOfSalary(request.getModeOfSalary())
                 // Office Address
                 .officeAddress(request.getOfficeAddress())

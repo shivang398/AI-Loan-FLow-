@@ -12,6 +12,7 @@ import {
   Card,
   Tooltip,
   Spin,
+  Modal,
 } from 'antd';
 import {
   Search,
@@ -302,9 +303,11 @@ const OperationsDashboard: React.FC = () => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  // Document status for the open lead
-  const [leadDocs, setLeadDocs] = useState<Record<string, boolean>>({});
+  // Document records for the open lead: documentType -> { id, fileName }
+  const [leadDocs, setLeadDocs] = useState<Record<string, { id: string; fileName?: string }>>({});
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState<string | null>(null); // doc id being fetched
+  const [docsModalOpen, setDocsModalOpen] = useState(false);
   // Ops notes
   const [notesValue, setNotesValue] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
@@ -343,8 +346,8 @@ const OperationsDashboard: React.FC = () => {
       try {
         const res = await api.get(`/documents/by-customer/${lead.customerId}`);
         const docs: any[] = res.data?.data ?? [];
-        const map: Record<string, boolean> = {};
-        docs.forEach((d: any) => { if (d.documentType) map[d.documentType] = true; });
+        const map: Record<string, { id: string; fileName?: string }> = {};
+        docs.forEach((d: any) => { if (d.documentType && d.id) map[d.documentType] = { id: d.id, fileName: d.fileName }; });
         setLeadDocs(map);
       } catch {
         setLeadDocs({});
@@ -353,6 +356,19 @@ const OperationsDashboard: React.FC = () => {
       }
     } else {
       setLeadDocs({});
+    }
+  };
+
+  const handleViewDoc = async (docId: string) => {
+    setViewingDoc(docId);
+    try {
+      const res = await api.get(`/documents/${docId}/presigned-url`);
+      const url: string = res.data?.data ?? res.data;
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      notification.error({ message: 'Could not open document. Please try again.', style: { borderRadius: 12 } });
+    } finally {
+      setViewingDoc(null);
     }
   };
 
@@ -598,39 +614,21 @@ const OperationsDashboard: React.FC = () => {
                   <Spin size="small" />
                 ) : (
                   <Timeline items={[
-                    {
-                      color: leadDocs['PAN_CARD'] ? 'green' : 'gray',
+                    { key: 'PAN_CARD', label: 'PAN Card' },
+                    { key: 'AADHAAR_CARD', label: 'Aadhaar Card' },
+                    { key: 'BANK_STATEMENT', label: 'Bank Statement (6 months)' },
+                    { key: 'SALARY_SLIP', label: 'Salary Slips (3 months)' },
+                  ].map(({ key, label }) => {
+                    const doc = leadDocs[key];
+                    return {
+                      color: doc ? 'green' : 'gray',
                       children: (
-                        <Text style={{ fontWeight: leadDocs['PAN_CARD'] ? 700 : 600, color: leadDocs['PAN_CARD'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
-                          PAN Card — {leadDocs['PAN_CARD'] ? '✓ Submitted' : 'Not uploaded'}
+                        <Text style={{ fontWeight: doc ? 700 : 600, color: doc ? '#15803d' : '#94a3b8', fontSize: 12 }}>
+                          {label} — {doc ? '✓ Submitted' : 'Not uploaded'}
                         </Text>
                       ),
-                    },
-                    {
-                      color: leadDocs['AADHAAR_CARD'] ? 'green' : 'gray',
-                      children: (
-                        <Text style={{ fontWeight: leadDocs['AADHAAR_CARD'] ? 700 : 600, color: leadDocs['AADHAAR_CARD'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
-                          Aadhaar Card — {leadDocs['AADHAAR_CARD'] ? '✓ Submitted' : 'Not uploaded'}
-                        </Text>
-                      ),
-                    },
-                    {
-                      color: leadDocs['BANK_STATEMENT'] ? 'green' : 'gray',
-                      children: (
-                        <Text style={{ fontWeight: leadDocs['BANK_STATEMENT'] ? 700 : 600, color: leadDocs['BANK_STATEMENT'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
-                          Bank Statement (6 months) — {leadDocs['BANK_STATEMENT'] ? '✓ Submitted' : 'Not uploaded'}
-                        </Text>
-                      ),
-                    },
-                    {
-                      color: leadDocs['SALARY_SLIP'] ? 'green' : 'gray',
-                      children: (
-                        <Text style={{ fontWeight: leadDocs['SALARY_SLIP'] ? 700 : 600, color: leadDocs['SALARY_SLIP'] ? '#15803d' : '#94a3b8', fontSize: 12 }}>
-                          Salary Slips (3 months) — {leadDocs['SALARY_SLIP'] ? '✓ Submitted' : 'Not uploaded'}
-                        </Text>
-                      ),
-                    },
-                  ]} />
+                    };
+                  })} />
                 )}
               </Card>
 
@@ -667,7 +665,16 @@ const OperationsDashboard: React.FC = () => {
                 </div>
               </Card>
             </div>
-            <div style={{ background: '#fff', padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12 }}>
+            <div style={{ background: '#fff', padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {/* View Documents — always available if any docs exist */}
+              {Object.keys(leadDocs).length > 0 && (
+                <Button
+                  onClick={() => setDocsModalOpen(true)}
+                  style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #bfdbfe', color: '#1d4ed8', background: '#eff6ff', fontSize: 13, letterSpacing: '0.02em' }}
+                >
+                  View Documents
+                </Button>
+              )}
               {/* Ask for Info — something is missing or unclear, shown on all active leads */}
               {drawerLead?.status !== 'QUERY_RAISED' && drawerLead?.status !== 'RESOLVED' && (
                 <Button
@@ -714,6 +721,60 @@ const OperationsDashboard: React.FC = () => {
           </div>
         )}
       </Drawer>
+
+      {/* Document Review Modal */}
+      <Modal
+        open={docsModalOpen}
+        onCancel={() => setDocsModalOpen(false)}
+        footer={null}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={16} color="#4f46e5" />
+            <span style={{ fontWeight: 900, fontSize: 15, color: '#1e293b' }}>
+              KYC Documents — {drawerLead?.firstName} {drawerLead?.lastName}
+            </span>
+          </div>
+        }
+        width={480}
+        styles={{ body: { padding: '20px 24px' } }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[
+            { key: 'PAN_CARD',      label: 'PAN Card',                   icon: '🪪' },
+            { key: 'AADHAAR_CARD',  label: 'Aadhaar Card',               icon: '📋' },
+            { key: 'BANK_STATEMENT',label: 'Bank Statement (6 months)',   icon: '🏦' },
+            { key: 'SALARY_SLIP',   label: 'Salary Slips (3 months)',     icon: '💰' },
+          ].map(({ key, label, icon }) => {
+            const doc = leadDocs[key];
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 10, background: doc ? '#f0fdf4' : '#f8fafc', border: `1px solid ${doc ? '#bbf7d0' : '#e2e8f0'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 18 }}>{icon}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: doc ? '#15803d' : '#94a3b8' }}>{label}</div>
+                    <div style={{ fontSize: 11, color: doc ? '#16a34a' : '#cbd5e1', fontWeight: 600 }}>
+                      {doc ? '✓ Submitted' : 'Not uploaded'}
+                    </div>
+                  </div>
+                </div>
+                {doc ? (
+                  <Button
+                    size="small"
+                    icon={<Eye size={12} />}
+                    loading={viewingDoc === doc.id}
+                    onClick={() => handleViewDoc(doc.id)}
+                    style={{ fontWeight: 700, fontSize: 12, borderRadius: 8, height: 32, padding: '0 14px', background: '#4f46e5', color: '#fff', border: 'none' }}
+                  >
+                    Open
+                  </Button>
+                ) : (
+                  <span style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600 }}>—</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
 
       <style>{`
         .ops-queue-table .ant-table-thead > tr > th {

@@ -32,7 +32,7 @@ public class CibilController {
             CibilSummaryDto summary = cibilService.getCibilSummary(requestDto);
             return ResponseEntity.ok(ApiResponse.success("CIBIL summary retrieved", summary, null));
         } catch (Exception e) {
-            log.error("CIBIL check failed for PAN {}: {}", requestDto.getPanNumber(), e.getMessage());
+            log.error("CRIF check failed for mobile {}: {}", requestDto.getMobileNumber(), e.getMessage());
             // 422 for bureau lookup failures (wrong PAN/mobile, no data) vs 502 for infra errors
             HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY;
             return ResponseEntity.status(status)
@@ -53,15 +53,18 @@ public class CibilController {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
+            String fileId = requestDto.getPanNumber() != null && !requestDto.getPanNumber().isBlank()
+                ? requestDto.getPanNumber().toUpperCase()
+                : requestDto.getMobileNumber();
             headers.setContentDisposition(ContentDisposition.attachment()
-                .filename("CIBIL_Report_" + requestDto.getPanNumber() + ".pdf")
+                .filename("CRIF_Report_" + fileId + ".pdf")
                 .build());
             headers.setCacheControl("no-cache");
 
             return ResponseEntity.ok().headers(headers).body(pdfBytes);
 
         } catch (Exception e) {
-            log.error("CIBIL report generation failed for PAN {}: {}", requestDto.getPanNumber(), e.getMessage());
+            log.error("CRIF report generation failed for mobile {}: {}", requestDto.getMobileNumber(), e.getMessage());
             HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY;
             return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)

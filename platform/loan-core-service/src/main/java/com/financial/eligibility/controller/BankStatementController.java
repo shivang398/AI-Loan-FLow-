@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.financial.eligibility.dto.BsaAiResult;
 import com.financial.eligibility.model.AnalysisResult;
 import com.financial.eligibility.model.Transaction;
 import com.financial.eligibility.service.ExcelGeneratorService;
+import com.financial.eligibility.service.GroqBsaService;
 import com.financial.eligibility.service.PdfParserService;
 import com.financial.eligibility.service.TransactionAnalyserService;
 
@@ -37,6 +39,7 @@ public class BankStatementController {
     private final PdfParserService           pdfParserService;
     private final TransactionAnalyserService analyserService;
     private final ExcelGeneratorService      excelGeneratorService;
+    private final GroqBsaService             groqBsaService;
 
     // ── Upload page redirect ──────────────────────────────────────────────────
 
@@ -126,6 +129,41 @@ public class BankStatementController {
             log.error("Unexpected error processing {}", filename, e);
             return error(HttpStatus.INTERNAL_SERVER_ERROR,
                     "An unexpected error occurred. Please try again or contact support.");
+        }
+    }
+
+    // ── AI-powered analysis (Groq) ────────────────────────────────────────────
+
+    @PostMapping(value = "/bsa/ai-analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> aiAnalyze(
+            @RequestParam(value = "file",         required = false) MultipartFile file,
+            @RequestParam(value = "statementUrl", required = false) String statementUrl) {
+
+        boolean hasFile = file != null && !file.isEmpty();
+        boolean hasUrl  = statementUrl != null && !statementUrl.isBlank();
+
+        if (!hasFile && !hasUrl) {
+            return error(HttpStatus.BAD_REQUEST, "Provide either a PDF file or a statementUrl.");
+        }
+
+        try {
+            BsaAiResult result;
+            if (hasFile) {
+                // Option B or hybrid — file always wins
+                if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+                    return error(HttpStatus.PAYLOAD_TOO_LARGE, "File exceeds 20 MB limit.");
+                }
+                String source = hasUrl ? "HYBRID" : "MANUAL_UPLOAD";
+                result = groqBsaService.analyzeFile(file.getBytes(), source);
+            } else {
+                // Option A — fetch from presigned S3 URL
+                result = groqBsaService.analyzeUrl(statementUrl, "CUSTOMER_RECORD");
+            }
+            return ResponseEntity.ok(Map.of("success", true, "data", result));
+        } catch (Exception e) {
+            log.error("AI BSA analysis failed: {}", e.getMessage());
+            return error(HttpStatus.INTERNAL_SERVER_ERROR,
+                "AI analysis failed: " + e.getMessage());
         }
     }
 

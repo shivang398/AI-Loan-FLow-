@@ -69,6 +69,8 @@ public class SecurityConfig {
                 .requestMatchers("/bsa/**", "/api/analyse/**", "/api/analyse").authenticated()
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((req, res, e) -> res.sendError(401, "Unauthorized")))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

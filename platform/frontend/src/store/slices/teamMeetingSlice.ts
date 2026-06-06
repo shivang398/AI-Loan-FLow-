@@ -116,7 +116,16 @@ const teamMeetingSlice = createSlice({
     receiveMessage: (state, action: PayloadAction<TeamMessage>) => {
       const m = action.payload;
       if (!state.messagesByRoom[m.roomId]) state.messagesByRoom[m.roomId] = [];
-      state.messagesByRoom[m.roomId].push(m);
+      const msgs = state.messagesByRoom[m.roomId];
+      // Replace the optimistic copy (id starts with 'm-') if body+sender match
+      const optimisticIdx = msgs.findIndex(
+        x => x.id.startsWith('m-') && x.senderId === m.senderId && x.body === m.body,
+      );
+      if (optimisticIdx !== -1) {
+        msgs[optimisticIdx] = m;
+      } else {
+        msgs.push(m);
+      }
       const room = state.rooms.find(r => r.id === m.roomId);
       if (room) {
         room.lastMessage = m.body;

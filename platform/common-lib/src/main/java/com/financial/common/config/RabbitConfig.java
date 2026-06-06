@@ -14,7 +14,6 @@ public class RabbitConfig {
     @Bean
     @NonNull
     public JacksonJsonMessageConverter jsonMessageConverter() {
-        // In Spring Boot 4 / Jackson 3, we use JsonMapper
         JsonMapper jsonMapper = JsonMapper.builder()
                 .findAndAddModules()
                 .build();

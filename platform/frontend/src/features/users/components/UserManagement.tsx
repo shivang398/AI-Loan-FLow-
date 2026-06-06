@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import { App, Button, Input, Space, Tag, Avatar, Badge, Tooltip, Modal, Form, Select, DatePicker, Row, Col, Card, Statistic, Divider, Spin } from 'antd';
@@ -101,7 +101,7 @@ const UserManagement: React.FC = () => {
     setFilteredData(result);
   }, [staffData, deptFilter, searchTerm]);
 
-  const columnDefs: any[] = [
+  const columnDefs: any[] = useMemo(() => [
     {
       field: 'name',
       headerName: 'Employee Profile',
@@ -245,7 +245,8 @@ const UserManagement: React.FC = () => {
         );
       }
     }
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [fetchStaff]);
 
   const splitName = (fullName: string) => {
     const parts = fullName.trim().split(/\s+/);
@@ -312,7 +313,10 @@ const UserManagement: React.FC = () => {
       form.resetFields();
       fetchStaff();
     } catch (err: any) {
-      message.error(err.response?.data?.message || err.message || 'Failed to save employee');
+      const serverErrors: string[] = err.response?.data?.errors ?? [];
+      const serverMsg: string = err.response?.data?.message ?? '';
+      const detail = serverErrors.length > 0 ? serverErrors.join(' · ') : serverMsg || err.message;
+      message.error(detail || 'Failed to save employee');
     }
   };
 
@@ -524,8 +528,19 @@ const UserManagement: React.FC = () => {
             </Col>
             <Col span={12}>
               {!editingStaff && (
-                <Form.Item name="tempPassword" label="Temporary Password" rules={[{ required: true, min: 8, message: 'At least 8 characters required' }]}>
-                  <Input.Password placeholder="Set initial password (min 8 chars)" />
+                <Form.Item
+                  name="tempPassword"
+                  label="Temporary Password"
+                  rules={[
+                    { required: true, message: 'Password is required' },
+                    { min: 8, message: 'At least 8 characters' },
+                    {
+                      pattern: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/,
+                      message: 'Must have uppercase, number & special character',
+                    },
+                  ]}
+                >
+                  <Input.Password placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special (!@#$...)" />
                 </Form.Item>
               )}
             </Col>

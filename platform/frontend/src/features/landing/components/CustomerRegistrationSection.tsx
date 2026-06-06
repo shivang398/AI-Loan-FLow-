@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { INDIA_STATES, getDistricts, getCities } from '../constants/indiaLocations';
 
@@ -46,6 +46,7 @@ interface FormData {
   // Step 4 – Employment
   jobType: string;
   designation: string;
+  companyName: string;
   modeOfSalary: string;
   officeAddress: string;
   officeState: string;
@@ -71,7 +72,7 @@ const INITIAL: FormData = {
   permanentAddressLine1: '', permanentAddressLine2: '',
   permanentState: '', permanentDistrict: '', permanentCity: '', permanentCityCustom: '',
   permanentPincode: '',
-  jobType: '', designation: '', modeOfSalary: '',
+  jobType: '', designation: '', companyName: '', modeOfSalary: 'BANK_TRANSFER',
   officeAddress: '',
   officeState: '', officeDistrict: '', officeCity: '', officeCityCustom: '',
   officePincode: '',
@@ -100,16 +101,32 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
 );
 
 const Input = ({
-  placeholder, value, onChange, type = 'text', disabled = false,
-}: { placeholder: string; value: string; onChange: (v: string) => void; type?: string; disabled?: boolean }) => (
+  placeholder, value, onChange, type = 'text', disabled = false, maxLength, inputMode,
+}: {
+  placeholder: string; value: string; onChange: (v: string) => void;
+  type?: string; disabled?: boolean; maxLength?: number; inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+}) => (
   <input
     type={type} value={value} placeholder={placeholder} disabled={disabled}
+    maxLength={maxLength} inputMode={inputMode}
     onChange={e => onChange(e.target.value)}
     style={{ ...inp, ...(disabled ? { background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed' } : {}) }}
     onFocus={e => { if (!disabled) e.currentTarget.style.borderColor = '#D4AF37'; }}
     onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
   />
 );
+
+// Digits-only transformer for phone/numeric fields
+const digitsOnly = (v: string) => v.replace(/\D/g, '');
+// Aadhaar formatter: auto-inserts spaces → "1234 5678 9012"
+const formatAadhaar = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 12);
+  return d.replace(/^(\d{1,4})(\d{0,4})(\d{0,4})$/, (_m, a, b, c) =>
+    [a, b, c].filter(s => s.length > 0).join(' ')
+  );
+};
+// PAN transformer: uppercase + alphanumeric only, max 10 chars
+const transformPan = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
 
 const Sel = ({ value, onChange, options }: {
   value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
@@ -121,6 +138,139 @@ const Sel = ({ value, onChange, options }: {
     {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
   </select>
 );
+
+// ── India company list ─────────────────────────────────────────────────────
+const INDIA_COMPANIES: string[] = [
+  // IT & Technology
+  'Accenture India', 'Amazon India', 'Capgemini India', 'Cognizant Technology Solutions',
+  'Flipkart', 'Google India', 'HCL Technologies', 'IBM India', 'Infosys',
+  'Microsoft India', 'MakeMyTrip', 'Mphasis', 'Mindtree', 'NIIT Technologies',
+  'Ola Cabs', 'Paytm (One97 Communications)', 'PhonePe', 'Swiggy', 'Tata Consultancy Services (TCS)',
+  'Tech Mahindra', 'Uber India', 'Wipro', 'Zomato',
+  // Banking & Financial Services
+  'Axis Bank', 'Bajaj Finance', 'Bajaj Finserv', 'Bank of Baroda', 'Bank of India',
+  'Bandhan Bank', 'Canara Bank', 'Central Bank of India', 'City Union Bank',
+  'Federal Bank', 'HDFC Bank', 'HDFC Life Insurance', 'ICICI Bank', 'ICICI Lombard',
+  'ICICI Prudential Life Insurance', 'IDFC First Bank', 'IndusInd Bank', 'Indian Bank',
+  'Kotak Mahindra Bank', 'Karnataka Bank', 'LIC (Life Insurance Corporation)',
+  'Punjab National Bank', 'RBL Bank', 'SBI (State Bank of India)', 'SBI Life Insurance',
+  'South Indian Bank', 'UCO Bank', 'Union Bank of India', 'Yes Bank',
+  // Government & PSUs
+  'Air India', 'BPCL (Bharat Petroleum)', 'BEL (Bharat Electronics)', 'BHEL',
+  'BSNL', 'Coal India', 'GAIL India', 'HAL (Hindustan Aeronautics)', 'HPCL',
+  'IOC (Indian Oil Corporation)', 'IRCON International', 'NMDC', 'NTPC',
+  'ONGC (Oil and Natural Gas Corporation)', 'Power Grid Corporation',
+  'SAIL (Steel Authority of India)', 'Indian Railways', 'India Post',
+  // Defense & Uniformed Services
+  'Indian Army', 'Indian Air Force', 'Indian Navy', 'Indian Coast Guard',
+  'CISF', 'CRPF', 'BSF', 'ITBP', 'SSB',
+  'Central Government (Ministry/Department)', 'State Government Employee', 'Municipal Corporation',
+  // Manufacturing & Industrial
+  'Adani Group', 'Ambuja Cements', 'Bajaj Auto', 'Birla Corporation',
+  'Bosch India', 'Cummins India', 'DLF', 'Eicher Motors', 'Escorts Group',
+  'Godrej Industries', 'Hero MotoCorp', 'Hindustan Zinc', 'Honda India',
+  'Hyundai India', 'JSW Steel', 'L&T (Larsen & Toubro)', 'Mahindra & Mahindra',
+  'Maruti Suzuki', 'Motherson Sumi', 'Reliance Industries', 'Schaeffler India',
+  'Siemens India', 'SKF India', 'Tata Motors', 'Tata Steel', 'TVS Motor Company',
+  'Ultratech Cement', 'Vedanta Limited', 'Voltas',
+  // FMCG & Consumer Goods
+  'Britannia Industries', 'Colgate-Palmolive India', 'Dabur India', 'Emami',
+  'Godrej Consumer Products', 'Hindustan Unilever (HUL)', 'ITC Limited', 'Jyothy Labs',
+  'Marico', 'Nestlé India', 'Procter & Gamble India', 'Tata Consumer Products',
+  // Telecom
+  'Bharti Airtel', 'Reliance Jio', 'Vodafone Idea', 'Tata Communications',
+  // Pharma & Healthcare
+  'Apollo Hospitals', 'Aurobindo Pharma', 'Biocon', 'Cipla', 'Dr. Reddy\'s Laboratories',
+  'Divi\'s Laboratories', 'Fortis Healthcare', 'Lupin', 'Max Healthcare', 'Manipal Hospitals',
+  'Narayana Health', 'Sun Pharmaceuticals', 'Torrent Pharmaceuticals', 'Zydus Lifesciences',
+  // Retail & E-commerce
+  'DMart (Avenue Supermarts)', 'Future Retail', 'Shoppers Stop', 'Titan Company',
+  'Trent Limited', 'Reliance Retail', 'Nykaa',
+  // Real Estate & Infrastructure
+  'Brigade Group', 'DLF Limited', 'Embassy Group', 'Godrej Properties',
+  'Lodha Group (Macrotech)', 'Oberoi Realty', 'Phoenix Mills', 'Prestige Group',
+  'Puravankara', 'Sobha Limited', 'Shapoorji Pallonji', 'Sunteck Realty',
+  // Education
+  'Aakash Educational Services', 'Allen Career Institute', 'Amity University',
+  'Byju\'s', 'FIITJEE', 'Manipal Academy', 'Unacademy', 'Vedantu',
+  // Media & Entertainment
+  'Zee Entertainment', 'Sony Pictures Networks India', 'Star India (Disney)', 'Times of India Group',
+  // Others
+  'Tata Group (Other)', 'Reliance Group (Other)', 'Mahindra Group (Other)',
+].sort();
+
+// ── Company Picker (searchable combobox with "Other" fallback) ─────────────
+const CompanyPicker: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
+  const lower = query.trim().toLowerCase();
+  const matches = lower.length === 0
+    ? []
+    : INDIA_COMPANIES.filter(c => c.toLowerCase().includes(lower)).slice(0, 8);
+  const exactMatch = INDIA_COMPANIES.some(c => c.toLowerCase() === lower);
+  const showOther = lower.length > 0 && !exactMatch;
+
+  const pick = (company: string) => {
+    setQuery(company);
+    onChange(company);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <input
+        type="text"
+        value={query}
+        placeholder="Type to search company… (e.g. Infosys, TCS, SBI)"
+        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={e => { setOpen(true); e.currentTarget.style.borderColor = '#D4AF37'; }}
+        onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+        style={inp}
+      />
+      {open && (matches.length > 0 || showOther) && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
+          background: '#fff', border: '1.5px solid #D4AF37', borderRadius: 10,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.14)', maxHeight: 240, overflowY: 'auto', marginTop: 4,
+        }}>
+          {matches.map(c => (
+            <div
+              key={c}
+              onMouseDown={() => pick(c)}
+              style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, color: '#0f172a', borderBottom: '1px solid #f1f5f9' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.background = '#fef9ec')}
+              onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = '')}
+            >{c}</div>
+          ))}
+          {showOther && (
+            <div
+              onMouseDown={() => pick(query.trim())}
+              style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, color: '#7c3aed', fontWeight: 700, background: '#f5f3ff', borderTop: matches.length > 0 ? '1px solid #e2e8f0' : undefined }}
+              onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.background = '#ede9fe')}
+              onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = '#f5f3ff')}
+            >
+              ✚ Use &quot;{query.trim()}&quot; as company name
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Location Picker: cascading State → District → City (with "Others" text input) ──
 const LocationPicker: React.FC<{
@@ -217,13 +367,20 @@ const validateStep = (step: number, f: FormData): string => {
       return 'Enter a valid monthly salary.';
   }
   if (step === 1) {
-    if (!f.firstName.trim()) return 'First name is required.';
-    if (!f.lastName.trim()) return 'Last name is required.';
+    if (!f.firstName.trim() || !/^[A-Za-z\s]{2,}$/.test(f.firstName.trim())) return 'First name must be at least 2 letters (no numbers).';
+    if (!f.lastName.trim() || !/^[A-Za-z\s]{1,}$/.test(f.lastName.trim())) return 'Last name must be letters only.';
     if (!f.gender) return 'Select gender.';
     if (!f.dob) return 'Date of birth is required.';
-    if (!/^[0-9]{10}$/.test(f.mobile)) return 'Mobile must be 10 digits.';
-    if (!f.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return 'Valid email is required.';
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(f.panNumber.toUpperCase())) return 'Invalid PAN (e.g. ABCDE1234F).';
+    const dobDate = new Date(f.dob);
+    const today = new Date();
+    const age = today.getFullYear() - dobDate.getFullYear() - (today < new Date(today.getFullYear(), dobDate.getMonth(), dobDate.getDate()) ? 1 : 0);
+    if (age < 21) return 'Applicant must be at least 21 years old.';
+    if (age > 60) return 'Applicant must be under 60 years of age.';
+    if (!/^[6-9][0-9]{9}$/.test(f.mobile)) return 'Mobile must be a valid 10-digit Indian number starting with 6–9.';
+    if (f.alternateContact && !/^[6-9][0-9]{9}$/.test(f.alternateContact)) return 'Alternate contact must be a valid 10-digit number.';
+    if (!f.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return 'Valid email address is required (e.g. name@gmail.com).';
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(f.panNumber)) return 'Invalid PAN format — must be 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).';
+    if (f.aadhaarNumber && !/^[0-9]{12}$/.test(f.aadhaarNumber.replace(/\s/g, ''))) return 'Aadhaar must be exactly 12 digits.';
   }
   if (step === 2) {
     if (!f.currentAddressLine1.trim()) return 'Current address is required.';
@@ -303,7 +460,7 @@ const CustomerRegistrationSection: React.FC = () => {
         email: form.email,
         mobile: form.mobile,
         panNumber: form.panNumber.toUpperCase(),
-        aadhaarNumber: form.aadhaarNumber || undefined,
+        aadhaarNumber: form.aadhaarNumber ? form.aadhaarNumber.replace(/\s/g, '') : undefined,
         loanType: form.loanType,
         loanAmount: Number(form.loanAmount),
         profession: form.profession,
@@ -324,6 +481,7 @@ const CustomerRegistrationSection: React.FC = () => {
         ...permanent,
         jobType: form.jobType,
         designation: form.designation,
+        companyName: form.companyName || undefined,
         modeOfSalary: form.modeOfSalary,
         officeAddress: form.officeAddress || undefined,
         officeState: form.officeState || undefined,
@@ -345,13 +503,8 @@ const CustomerRegistrationSection: React.FC = () => {
     }
   };
 
-  const handleDocFileChange = (docKey: string, file: File | null) => {
-    setDocFiles(prev => ({ ...prev, [docKey]: file }));
-    if (file) setDocState(prev => ({ ...prev, [docKey]: 'idle' }));
-  };
-
-  const handleDocUpload = async (docKey: string) => {
-    const file = docFiles[docKey];
+  const handleDocUpload = async (docKey: string, fileArg?: File) => {
+    const file = fileArg ?? docFiles[docKey];
     if (!file || !customerId) return;
     setDocState(prev => ({ ...prev, [docKey]: 'uploading' }));
     try {
@@ -359,12 +512,20 @@ const CustomerRegistrationSection: React.FC = () => {
       fd.append('file', file);
       fd.append('customerId', customerId);
       fd.append('documentType', docKey);
-      await axios.post('/api/documents/public/upload', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Do NOT set Content-Type manually — browser must auto-generate boundary
+      await axios.post('/api/documents/public/upload', fd);
       setDocState(prev => ({ ...prev, [docKey]: 'done' }));
     } catch {
       setDocState(prev => ({ ...prev, [docKey]: 'error' }));
+    }
+  };
+
+  // Auto-upload as soon as a file is selected
+  const handleDocFileChange = (docKey: string, file: File | null) => {
+    setDocFiles(prev => ({ ...prev, [docKey]: file }));
+    if (file) {
+      setDocState(prev => ({ ...prev, [docKey]: 'idle' }));
+      handleDocUpload(docKey, file);
     }
   };
 
@@ -511,22 +672,40 @@ const CustomerRegistrationSection: React.FC = () => {
                           { value: 'WIDOWED', label: 'Widowed' },
                         ]} />
                       </F>
-                      <F label="Date of Birth">
-                        <input type="date" value={form.dob} onChange={e => set('dob')(e.target.value)} style={inp}
+                      <F label="Date of Birth *">
+                        <input
+                          type="date" value={form.dob}
+                          onChange={e => set('dob')(e.target.value)}
+                          min={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 60); return d.toISOString().split('T')[0]; })()}
+                          max={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 21); return d.toISOString().split('T')[0]; })()}
+                          style={inp}
                           onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
-                          onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')} />
+                          onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                        />
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Age must be 21–60 years</span>
                       </F>
                     </div>
                     <div style={grid2}>
-                      <F label="Mobile No.">
-                        <Input placeholder="9876543210" value={form.mobile} onChange={v => {
-                          set('mobile')(v);
-                          // keep whatsapp in sync if "same" is checked
-                          if (form.whatsappSameAsMobile) set('whatsappNo')(v);
-                        }} type="tel" />
+                      <F label="Mobile No. *">
+                        <Input
+                          placeholder="10-digit number (e.g. 9876543210)"
+                          value={form.mobile}
+                          onChange={v => {
+                            const digits = digitsOnly(v).slice(0, 10);
+                            set('mobile')(digits);
+                            if (form.whatsappSameAsMobile) set('whatsappNo')(digits);
+                          }}
+                          type="tel" inputMode="numeric" maxLength={10}
+                        />
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Must start with 6, 7, 8 or 9</span>
                       </F>
                       <F label="Alternate Contact">
-                        <Input placeholder="Optional" value={form.alternateContact} onChange={set('alternateContact')} type="tel" />
+                        <Input
+                          placeholder="Optional 10-digit number"
+                          value={form.alternateContact}
+                          onChange={v => set('alternateContact')(digitsOnly(v).slice(0, 10))}
+                          type="tel" inputMode="numeric" maxLength={10}
+                        />
                       </F>
                     </div>
 
@@ -561,10 +740,10 @@ const CustomerRegistrationSection: React.FC = () => {
                         </label>
                         {!form.whatsappSameAsMobile && (
                           <Input
-                            placeholder="Enter WhatsApp number"
+                            placeholder="10-digit WhatsApp number"
                             value={form.whatsappNo}
-                            onChange={set('whatsappNo')}
-                            type="tel"
+                            onChange={v => set('whatsappNo')(digitsOnly(v).slice(0, 10))}
+                            type="tel" inputMode="numeric" maxLength={10}
                           />
                         )}
                       </div>
@@ -579,11 +758,24 @@ const CustomerRegistrationSection: React.FC = () => {
                       </F>
                     </div>
                     <div style={grid2}>
-                      <F label="PAN Number">
-                        <Input placeholder="ABCDE1234F" value={form.panNumber} onChange={v => set('panNumber')(v.toUpperCase())} />
+                      <F label="PAN Number *">
+                        <Input
+                          placeholder="ABCDE1234F"
+                          value={form.panNumber}
+                          onChange={v => set('panNumber')(transformPan(v))}
+                          maxLength={10}
+                        />
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>5 letters · 4 digits · 1 letter (auto-uppercase)</span>
                       </F>
                       <F label="Aadhaar Number">
-                        <Input placeholder="1234 5678 9012" value={form.aadhaarNumber} onChange={set('aadhaarNumber')} />
+                        <Input
+                          placeholder="1234 5678 9012"
+                          value={form.aadhaarNumber}
+                          onChange={v => set('aadhaarNumber')(formatAadhaar(v))}
+                          inputMode="numeric"
+                          maxLength={14}
+                        />
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>12-digit Aadhaar number</span>
                       </F>
                     </div>
                   </div>
@@ -670,6 +862,10 @@ const CustomerRegistrationSection: React.FC = () => {
                 {/* ── Step 3: Employment ── */}
                 {step === 3 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <F label="Company / Employer Name *">
+                      <CompanyPicker value={form.companyName} onChange={set('companyName')} />
+                      <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Search from list or type your company name if not found</span>
+                    </F>
                     <div style={grid3}>
                       <F label="Job Type">
                         <Sel value={form.jobType} onChange={set('jobType')} options={[
@@ -681,14 +877,18 @@ const CustomerRegistrationSection: React.FC = () => {
                         ]} />
                       </F>
                       <F label="Designation">
-                        <Input placeholder="Software Engineer" value={form.designation} onChange={set('designation')} />
+                        <Input placeholder="e.g. Software Engineer" value={form.designation} onChange={set('designation')} />
                       </F>
                       <F label="Mode of Salary">
-                        <Sel value={form.modeOfSalary} onChange={set('modeOfSalary')} options={[
-                          { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-                          { value: 'CASH', label: 'Cash' },
-                          { value: 'CHEQUE', label: 'Cheque' },
-                        ]} />
+                        <div style={{
+                          ...inp, display: 'flex', alignItems: 'center', gap: 10,
+                          background: '#f0fdf4', borderColor: '#86efac', cursor: 'default',
+                        }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', flexShrink: 0, boxShadow: '0 0 0 2px #bbf7d0' }} />
+                          <span style={{ fontWeight: 700, color: '#15803d', fontSize: 13 }}>Bank Transfer</span>
+                          <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, background: '#dcfce7', color: '#16a34a', borderRadius: 100, padding: '2px 8px', letterSpacing: '0.05em' }}>REQUIRED</span>
+                        </div>
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Lenders require salary via bank transfer for loan eligibility</span>
                       </F>
                     </div>
                     <F label="Office Address">
@@ -740,11 +940,11 @@ const CustomerRegistrationSection: React.FC = () => {
                 {/* ── Step 4: Documents ── */}
                 {step === 4 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: 18 }}>✓</span>
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 18 }}>📋</span>
                       <div>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#15803d' }}>Application submitted successfully!</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#166534' }}>Now upload your KYC documents to speed up processing. You can also do this later.</p>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>Upload your KYC documents to complete the application</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#1e40af' }}>All 4 documents are required. Your application will be submitted once all are uploaded.</p>
                       </div>
                     </div>
                     {DOC_TYPES.map(doc => {
@@ -828,23 +1028,39 @@ const CustomerRegistrationSection: React.FC = () => {
                   {step === 3 && (
                     <button onClick={handleSubmit} disabled={loading} style={{
                       padding: '12px 32px', borderRadius: 12, border: 'none',
-                      background: loading ? '#94a3b8' : 'linear-gradient(135deg,#D4AF37,#B8960C)',
-                      color: loading ? '#fff' : '#0A1F44', fontSize: 14, fontWeight: 800,
+                      background: loading ? '#94a3b8' : 'linear-gradient(135deg,#0A1F44,#1e3a6e)',
+                      color: '#fff', fontSize: 14, fontWeight: 800,
                       cursor: loading ? 'not-allowed' : 'pointer',
-                      boxShadow: loading ? 'none' : '0 6px 20px rgba(212,175,55,0.35)',
+                      boxShadow: loading ? 'none' : '0 6px 20px rgba(10,31,68,0.22)',
                     }}>
-                      {loading ? 'Submitting…' : 'Submit Application ✓'}
+                      {loading ? 'Saving…' : 'Save & Continue to Documents →'}
                     </button>
                   )}
                   {step === 4 && (
-                    <button onClick={() => setSuccess(true)} style={{
-                      padding: '12px 32px', borderRadius: 12, border: 'none',
-                      background: allRequiredUploaded ? 'linear-gradient(135deg,#059669,#047857)' : 'linear-gradient(135deg,#64748b,#475569)',
-                      color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer',
-                      boxShadow: allRequiredUploaded ? '0 6px 20px rgba(5,150,105,0.3)' : 'none',
-                    }}>
-                      {allRequiredUploaded ? 'Done ✓' : 'Skip for Now →'}
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                      {!allRequiredUploaded && (
+                        <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>
+                          Upload all 4 required documents to submit
+                        </span>
+                      )}
+                      <button
+                        onClick={() => { if (allRequiredUploaded) setSuccess(true); }}
+                        disabled={!allRequiredUploaded}
+                        style={{
+                          padding: '12px 32px', borderRadius: 12, border: 'none',
+                          background: allRequiredUploaded
+                            ? 'linear-gradient(135deg,#D4AF37,#B8960C)'
+                            : '#e2e8f0',
+                          color: allRequiredUploaded ? '#0A1F44' : '#94a3b8',
+                          fontSize: 14, fontWeight: 800,
+                          cursor: allRequiredUploaded ? 'pointer' : 'not-allowed',
+                          boxShadow: allRequiredUploaded ? '0 6px 20px rgba(212,175,55,0.35)' : 'none',
+                          transition: 'all 300ms',
+                        }}
+                      >
+                        Submit Application ✓
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -134,6 +134,9 @@ public class Lead {
     @Column(name = "designation")
     private String designation;
 
+    @Column(name = "company_name")
+    private String companyName;
+
     @Column(name = "mode_of_salary")
     private String modeOfSalary;
 

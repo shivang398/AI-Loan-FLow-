@@ -24,7 +24,7 @@ public class TeamMeetingController {
     @GetMapping("/rooms/{roomKey}/messages")
     public ResponseEntity<ApiResponse<List<TeamMeetingMessage>>> getRoomMessages(
             @PathVariable
-            @Pattern(regexp = "^[a-zA-Z0-9_-]{1,64}$", message = "Invalid room key")
+            @Pattern(regexp = "^[a-zA-Z0-9@._%-]{1,200}$", message = "Invalid room key")
             String roomKey) {
         List<TeamMeetingMessage> messages = messageRepository.findByRoomKeyOrderByCreatedAtAsc(roomKey);
         // Return last 100 messages

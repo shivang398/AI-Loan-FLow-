@@ -81,6 +81,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/slabs/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
                 .anyRequest().hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
             )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((req, res, e) -> res.sendError(401, "Unauthorized")))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

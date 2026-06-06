@@ -22,7 +22,6 @@ import com.lowagie.text.pdf.PdfPageEventHelper;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-import com.financial.common.security.PiiMaskingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,19 +51,7 @@ public class CibilService {
         this.cibilRestTemplate  = cibilRestTemplate;
     }
 
-    @Value("${tenacio.api.url}")
-    private String apiUrl;
-
-    @Value("${tenacio.api.client-id}")
-    private String clientId;
-
-    @Value("${tenacio.api.key}")
-    private String apiKey;
-
-    @Value("${tenacio.api.workflow-id}")
-    private String workflowId;
-
-    // ── CRIF soft-pull credentials (secondary bureau, no PAN required) ─────────
+    // ── CRIF soft-pull credentials (no PAN required) ────────────────────────────
     @Value("${tenacio.crif.url}")
     private String crifUrl;
 
@@ -112,28 +99,12 @@ public class CibilService {
         return toSummaryDto(data, demoMode);
     }
 
-    /**
-     * Resolves the live bureau response — tries CRIF first (no PAN required),
-     * falls back to CIBIL, then returns null (demo mode) if neither is configured.
-     */
     private JsonNode resolveApiResponse(CibilRequestDto dto) {
-        boolean hasCrifCreds  = !isBlank(crifClientId) && !isBlank(crifApiKey) && !isBlank(crifWorkflowId);
-        boolean hasCibilCreds = !isBlank(clientId)     && !isBlank(apiKey)     && !isBlank(workflowId);
-
+        boolean hasCrifCreds = !isBlank(crifClientId) && !isBlank(crifApiKey) && !isBlank(crifWorkflowId);
         if (hasCrifCreds) {
-            try {
-                return callCrifApi(dto);
-            } catch (RuntimeException e) {
-                if (!hasCibilCreds) throw e;
-                log.warn("CRIF API failed — retrying with CIBIL. Reason: {}", e.getMessage());
-            }
+            return callCrifApi(dto);
         }
-
-        if (hasCibilCreds) {
-            return callTenacioApi(dto);
-        }
-
-        log.warn("Neither CRIF nor CIBIL credentials configured — using demo mode");
+        log.warn("CRIF credentials not configured — using demo mode");
         return null;
     }
 
@@ -184,63 +155,6 @@ public class CibilService {
         return "VERY_POOR";
     }
 
-    // ── Tenacio API call ──────────────────────────────────────────────────────
-
-    private JsonNode callTenacioApi(CibilRequestDto dto) {
-        // Fix 4: SSRF guard — only allow calls to the configured Tenacio host
-        validateApiUrl(apiUrl);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("client-id",   clientId);
-        headers.set("x-api-key",   apiKey);
-        headers.set("workflow-id", workflowId);
-
-        Map<String, Object> input = new LinkedHashMap<>();
-        input.put("mobileNumber", dto.getMobileNumber());
-        input.put("name",         dto.getName());
-        input.put("panNumber",    dto.getPanNumber());
-        input.put("consent",      dto.isConsent());
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("input", input);
-
-        try {
-            // Fix 10: log masked PAN so PII never appears in log files
-            log.info("Calling Tenacio CIBIL API for PAN={}", PiiMaskingUtils.maskPan(dto.getPanNumber()));
-            ResponseEntity<String> response = cibilRestTemplate.postForEntity(
-                apiUrl, new HttpEntity<>(payload, headers), String.class);
-            log.info("Tenacio CIBIL API — status={}", response.getStatusCode());
-            // Raw response body intentionally not logged — contains PAN, credit score (PII/A09)
-
-            JsonNode root = objectMapper.readTree(response.getBody());
-
-            // Tenacio returns HTTP 200 for business errors — detect and throw
-            String apiStatus = root.path("status").asText("");
-            if ("error".equalsIgnoreCase(apiStatus)) {
-                String msg = root.path("serviceError").path("message").asText("");
-                if (msg.isBlank()) msg = root.path("message").asText("CIBIL lookup failed");
-                log.error("Tenacio business error [PAN=REDACTED]: {}", msg);
-                // Make "No Data Found" actionable for the connector
-                if ("No Data Found".equalsIgnoreCase(msg)) {
-                    throw new RuntimeException(
-                        "No CIBIL record found for this PAN + mobile combination. " +
-                        "Please verify: (1) PAN is correct, (2) Mobile number is the one " +
-                        "the customer used when applying for their first loan or credit card.");
-                }
-                throw new RuntimeException(msg);
-            }
-
-            return root;
-        } catch (HttpStatusCodeException e) {
-            log.error("Tenacio error: {} — {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException(extractErrorMessage(e.getResponseBodyAsString()));
-        } catch (JsonProcessingException | org.springframework.web.client.ResourceAccessException e) {
-            log.error("Failed to reach Tenacio CIBIL API", e);
-            throw new RuntimeException("Unable to reach CIBIL service. Please try again later.");
-        }
-    }
-
     // ── CRIF soft-pull API call ───────────────────────────────────────────────
 
     private JsonNode callCrifApi(CibilRequestDto dto) {
@@ -271,9 +185,19 @@ public class CibilService {
 
             String apiStatus = root.path("status").asText("");
             if ("error".equalsIgnoreCase(apiStatus)) {
-                String msg = root.path("serviceError").path("message").asText("");
+                // Tenacio CRIF format: {"status":"error","error":{"code":...,"message":"..."}}
+                String msg = root.path("error").path("message").asText("");
+                if (msg.isBlank()) msg = root.path("serviceError").path("message").asText("");
                 if (msg.isBlank()) msg = root.path("message").asText("CRIF lookup failed");
                 log.error("Tenacio CRIF business error: {}", msg);
+                // Billing/quota errors → fall back to demo mode rather than surface a raw API error
+                String msgLower = msg.toLowerCase();
+                if (msgLower.contains("insufficient") || msgLower.contains("credit") ||
+                        msgLower.contains("quota") || msgLower.contains("limit") ||
+                        msgLower.contains("balance") || msgLower.contains("subscription")) {
+                    log.warn("CRIF API quota exhausted — falling back to demo mode");
+                    return null;
+                }
                 if ("No Data Found".equalsIgnoreCase(msg)) {
                     throw new RuntimeException(
                         "No CRIF record found for this mobile + name combination. " +
@@ -285,6 +209,12 @@ public class CibilService {
             return root;
         } catch (HttpStatusCodeException e) {
             log.error("Tenacio CRIF error: {} — RESPONSE REDACTED", e.getStatusCode());
+            String msg = extractErrorMessage(e.getResponseBodyAsString()).toLowerCase();
+            // Any 4xx from Tenacio (quota, validation, auth) → demo mode
+            if (e.getStatusCode().is4xxClientError()) {
+                log.warn("Tenacio CRIF 4xx ({}) — falling back to demo mode", e.getStatusCode());
+                return null;
+            }
             throw new RuntimeException(extractErrorMessage(e.getResponseBodyAsString()));
         } catch (JsonProcessingException | org.springframework.web.client.ResourceAccessException e) {
             log.error("Failed to reach Tenacio CRIF API", e);
@@ -366,7 +296,7 @@ public class CibilService {
                 {"Full Name (as per PAN)", data.fullName},
                 {"Date of Birth",          data.dob},
                 {"Gender",                 data.gender},
-                {"PAN Number",             dto.getPanNumber().toUpperCase()},
+                {"PAN Number",             dto.getPanNumber() != null ? dto.getPanNumber().toUpperCase() : "N/A"},
                 {"Mobile Number",          dto.getMobileNumber()},
                 {"Email Address",          data.email},
                 {"Current Address",        data.address},
@@ -462,7 +392,9 @@ public class CibilService {
 
         headerTable.addCell(headerInfoCell("Report Generated", now("dd MMM yyyy, hh:mm a")));
         headerTable.addCell(headerInfoCell("Report Reference ID", data.reportId));
-        headerTable.addCell(headerInfoCell("Member Reference", "RMAP/" + dto.getPanNumber().toUpperCase()));
+        String refId = (dto.getPanNumber() != null && !dto.getPanNumber().isBlank())
+            ? dto.getPanNumber().toUpperCase() : dto.getMobileNumber();
+        headerTable.addCell(headerInfoCell("Member Reference", "RMAP/" + refId));
         doc.add(headerTable);
     }
 
@@ -764,9 +696,11 @@ public class CibilService {
 
         Paragraph p = new Paragraph();
         p.add(new Chunk("REGULATORY NOTICES\n\n", bold(9, CIBIL_DARK_BLUE)));
+        String panClause = (dto.getPanNumber() != null && !dto.getPanNumber().isBlank())
+            ? " (PAN: " + dto.getPanNumber().toUpperCase() + ")" : "";
         p.add(new Chunk(
             "1. This Credit Information Report (CIR) has been generated pursuant to explicit written consent "
-            + "obtained from " + dto.getName() + " (PAN: " + dto.getPanNumber().toUpperCase() + ") as mandated "
+            + "obtained from " + dto.getName() + panClause + " as mandated "
             + "under Section 20(b) of the Credit Information Companies (Regulation) Act, 2005 (CICRA).\n\n",
             reg(7.5f, HEADER_GREY)));
         p.add(new Chunk(
@@ -794,9 +728,9 @@ public class CibilService {
             reg(7.5f, HEADER_GREY)));
         if (demoMode) {
             p.add(new Chunk("""
-                ⚠  DEMO DATA NOTICE: This report was generated in demo mode because CIBIL API credentials \
-                (TENACIO_CLIENT_ID / TENACIO_API_KEY / TENACIO_WORKFLOW_ID) are not configured in the \
-                environment. All credit data shown is fictitious and for format demonstration only.
+                ⚠  DEMO DATA NOTICE: This report was generated in demo mode because CRIF API credentials \
+                (TENACIO_CRIF_CLIENT_ID / TENACIO_CRIF_API_KEY / TENACIO_CRIF_WORKFLOW_ID) are not configured \
+                in the environment. All credit data shown is fictitious and for format demonstration only.
                 """,
                 bold(7.5f, new Color(185, 28, 28))));
         }
@@ -1024,7 +958,8 @@ public class CibilService {
 
     private CibilData parseCrifResponse(CibilRequestDto dto, JsonNode api) {
         CibilData d = new CibilData();
-        d.reportId  = safeText(api, "requestId", "CRIF-" + System.currentTimeMillis() % 100000);
+        String rid = safeText(api, "request_id", "");
+        d.reportId  = rid.isBlank() ? safeText(api, "requestId", "CRIF-" + System.currentTimeMillis() % 100000) : rid;
         d.fullName  = dto.getName().toUpperCase();
         d.scoreDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
         d.accounts  = new ArrayList<>();

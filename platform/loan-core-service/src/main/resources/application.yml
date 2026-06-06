@@ -6,6 +6,8 @@ server:
     include-binding-errors: never
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: loan-core-service
   datasource:
@@ -38,17 +40,17 @@ spring:
       max-file-size: 50MB
       max-request-size: 55MB
 
+groq:
+  api-key: ${GROQ_API_KEY}
+  url: https://api.groq.com/openai/v1/chat/completions
+  model: llama-3.3-70b-versatile
+
 tenacio:
-  api:
-    url: ${TENACIO_API_URL:https://api.tenacio.io/api/v1/services/cibil-soft-pull}
-    client-id: ${TENACIO_CLIENT_ID}
-    key: ${TENACIO_API_KEY}
-    workflow-id: ${TENACIO_WORKFLOW_ID}
   crif:
     url: ${TENACIO_CRIF_URL:https://testapi.tenacio.io/api/v1/services/crif-soft-pull}
-    client-id: ${TENACIO_CRIF_CLIENT_ID:}
-    key: ${TENACIO_CRIF_API_KEY:}
-    workflow-id: ${TENACIO_CRIF_WORKFLOW_ID:}
+    client-id: ${TENACIO_CRIF_CLIENT_ID:realf_52498}
+    key: ${TENACIO_CRIF_API_KEY:tnc_test_4c3c25777c1fe7a228808dcb127591408d3bb563}
+    workflow-id: ${TENACIO_CRIF_WORKFLOW_ID:c001aecc-e992-42d6-a3fe-b55810d21a02}
 
 app:
   jwt:
@@ -62,8 +64,9 @@ management:
       exposure:
         include: health,info,metrics,prometheus
   tracing:
+    enabled: ${TRACING_ENABLED:false}
     sampling:
-      probability: 1.0
+      probability: ${TRACING_SAMPLE_RATE:0.0}
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

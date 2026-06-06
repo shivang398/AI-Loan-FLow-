@@ -6,6 +6,8 @@ server:
     include-binding-errors: never
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: communications-service
   datasource:
@@ -36,11 +38,14 @@ spring:
     password: ${RABBITMQ_PASS}
     listener:
       simple:
+        auto-startup: false
         retry:
           enabled: true
           initial-interval: 1000
           max-attempts: 3
           multiplier: 2.0
+      direct:
+        auto-startup: false
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -83,8 +88,9 @@ management:
       exposure:
         include: health,info,metrics,prometheus
   tracing:
+    enabled: ${TRACING_ENABLED:false}
     sampling:
-      probability: 1.0
+      probability: ${TRACING_SAMPLE_RATE:0.0}
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

@@ -69,6 +69,7 @@ public class CustomerRequests {
         // Employment
         private String jobType;
         private String designation;
+        private String companyName;
         private String modeOfSalary;
 
         // Office Address

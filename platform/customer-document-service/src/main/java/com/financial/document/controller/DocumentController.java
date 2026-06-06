@@ -47,7 +47,12 @@ public class DocumentController {
             @PathVariable UUID id,
             Authentication auth) {
         UUID requesterId = resolveUserId(auth);
-        String url = documentService.generatePresignedUrl(id, requesterId);
+        boolean isStaff = auth.getAuthorities().stream()
+                .anyMatch(a -> {
+                    String r = a.getAuthority();
+                    return r.equals("ADMIN") || r.equals("OPERATIONS") || r.equals("PARTNER_MANAGER") || r.equals("RM");
+                });
+        String url = documentService.generatePresignedUrl(id, requesterId, isStaff);
         return ResponseEntity.ok(ApiResponse.success("Pre-signed URL generated", url, UUID.randomUUID().toString()));
     }
 

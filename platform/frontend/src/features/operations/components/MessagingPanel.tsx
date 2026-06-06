@@ -52,6 +52,8 @@ const MessagingPanel: React.FC<Props> = ({
   const [simTyping, setSimTyping]   = useState(false);
   const scrollRef   = useRef<HTMLDivElement>(null);
   const simTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track bodies we sent optimistically so we can skip the server echo
+  const pendingEchoes = useRef<Set<string>>(new Set());
 
   const wsEndpoint = `${window.location.origin}/ws-messaging`;
   const { lastMessage, isConnected, sendMessage } = useWebSocket(
@@ -89,11 +91,15 @@ const MessagingPanel: React.FC<Props> = ({
       .finally(() => setLoading(false));
   }, [conversationId]);
 
-  /* Push new WebSocket messages into local state */
+  /* Push new WebSocket messages into local state — skip echoes of our own sends */
   useEffect(() => {
-    if (lastMessage) {
-      setMessages(prev => [...prev, lastMessage as Message]);
+    if (!lastMessage) return;
+    const body = getBody(lastMessage as Message);
+    if (pendingEchoes.current.has(body)) {
+      pendingEchoes.current.delete(body);
+      return;
     }
+    setMessages(prev => [...prev, lastMessage as Message]);
   }, [lastMessage]);
 
   /* Auto-scroll */
@@ -115,6 +121,8 @@ const MessagingPanel: React.FC<Props> = ({
     setInputValue('');
 
     if (isConnected) {
+      /* Register this body so the server echo is ignored */
+      pendingEchoes.current.add(inputValue.trim());
       /* Send over STOMP to ChatController → MessagingService → broadcast */
       sendMessage('/app/chat.send', {
         conversationId,

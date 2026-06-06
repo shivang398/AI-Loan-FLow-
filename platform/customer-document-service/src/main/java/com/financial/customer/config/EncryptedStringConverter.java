@@ -32,12 +32,14 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
 
     private final SecretKeySpec secretKey;
 
+    private static final String DEV_FALLBACK_KEY = "dev-only-key-not-for-production!!";
+
     public EncryptedStringConverter() {
         String raw = System.getenv("PII_ENCRYPTION_KEY");
         if (raw == null || raw.isBlank()) {
-            throw new IllegalStateException(
-                "PII_ENCRYPTION_KEY must be set to exactly 32 ASCII characters. " +
-                "Generate with: openssl rand -hex 16");
+            System.err.println("[WARN] PII_ENCRYPTION_KEY not set — using insecure dev fallback. " +
+                "Set PII_ENCRYPTION_KEY (openssl rand -hex 16) before going to production.");
+            raw = DEV_FALLBACK_KEY;
         }
         if (raw.length() < 32) {
             throw new IllegalStateException(

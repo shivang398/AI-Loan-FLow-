@@ -25,18 +25,19 @@ import java.util.Base64;
 @Converter
 public class EncryptedStringConverter implements AttributeConverter<String, String> {
 
-    private static final String ALGORITHM = "AES/GCM/NoPadding";
-    private static final int    IV_BYTES  = 12;
-    private static final int    TAG_BITS  = 128;
+    private static final String ALGORITHM        = "AES/GCM/NoPadding";
+    private static final int    IV_BYTES         = 12;
+    private static final int    TAG_BITS         = 128;
+    private static final String DEV_FALLBACK_KEY = "dev-only-key-not-for-production!!";
 
     private final SecretKeySpec secretKey;
 
     public EncryptedStringConverter() {
         String raw = System.getenv("PII_ENCRYPTION_KEY");
         if (raw == null || raw.isBlank()) {
-            throw new IllegalStateException(
-                "PII_ENCRYPTION_KEY must be set to exactly 32 ASCII characters. " +
-                "Generate with: openssl rand -hex 16");
+            System.err.println("[WARN] PII_ENCRYPTION_KEY not set — using insecure dev fallback. " +
+                "Set PII_ENCRYPTION_KEY (openssl rand -hex 16) before going to production.");
+            raw = DEV_FALLBACK_KEY;
         }
         if (raw.length() < 32) {
             throw new IllegalStateException(

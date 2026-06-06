@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Typography,
   Card,
@@ -12,6 +12,10 @@ import {
   Col,
   Alert,
   Select,
+  Tabs,
+  Spin,
+  Tag,
+  Progress,
 } from 'antd';
 import {
   ShieldCheck,
@@ -25,7 +29,13 @@ import {
   Trash2,
   Download,
   AlertTriangle,
-  IndianRupee
+  IndianRupee,
+  Sparkles,
+  Upload,
+  Building2,
+  TrendingDown,
+  BadgeAlert,
+  CheckCircle2,
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
 
@@ -436,195 +446,416 @@ export const CibilCheckPage: React.FC = () => {
   );
 };
 
+// ── AI Result display ─────────────────────────────────────────────────────────
+
+const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
+
+const AiResultView: React.FC<{ result: any; onReset: () => void }> = ({ result, onReset }) => {
+  const d = result.data ?? result;
+  const riskColor = (flags: string[]) => flags.length === 0 ? '#15803d' : flags.length <= 2 ? '#d97706' : '#dc2626';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: '#0f172a' }}>{d.accountHolderName || 'Account Holder'}</div>
+          <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>{d.bankName} · {d.accountNumber} · {d.statementPeriod}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Tag color={d.source === 'CUSTOMER_RECORD' ? 'blue' : d.source === 'HYBRID' ? 'purple' : 'green'} style={{ fontWeight: 700, borderRadius: 8 }}>
+            {d.source === 'CUSTOMER_RECORD' ? '📁 From Records' : d.source === 'HYBRID' ? '⚡ Hybrid' : '📤 Manual Upload'}
+          </Tag>
+          <Tag color="gold" style={{ fontWeight: 700, borderRadius: 8 }}>✦ Groq AI</Tag>
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <Row gutter={[12, 12]}>
+        {[
+          { label: 'Avg Monthly Credit', value: fmt(d.monthlyAverageCredit), icon: <TrendingUp size={16} />, color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Avg Monthly Debit',  value: fmt(d.monthlyAverageDebit),  icon: <TrendingDown size={16} />, color: '#dc2626', bg: '#fff1f2' },
+          { label: 'Closing Balance',    value: fmt(d.closingBalance),        icon: <IndianRupee size={16} />, color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Est. FOIR',          value: `${(d.estimatedFoir ?? 0).toFixed(1)}%`, icon: <BarChart3 size={16} />, color: d.estimatedFoir > 50 ? '#dc2626' : '#15803d', bg: d.estimatedFoir > 50 ? '#fff1f2' : '#f0fdf4' },
+        ].map(k => (
+          <Col xs={12} sm={6} key={k.label}>
+            <div style={{ background: k.bg, borderRadius: 14, padding: '14px 16px', border: `1px solid ${k.color}22` }}>
+              <div style={{ color: k.color, marginBottom: 4 }}>{k.icon}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>{k.value}</div>
+              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginTop: 2 }}>{k.label}</div>
+            </div>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Salary credits */}
+      {d.salaryCredits?.length > 0 && (
+        <Card size="small" style={{ borderRadius: 14, border: '1px solid #f1f5f9' }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={14} color="#15803d" /> Salary / Regular Credits
+          </div>
+          {d.salaryCredits.map((s: any, i: number) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < d.salaryCredits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>{s.source || 'Credit'}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.date}</div>
+              </div>
+              <div style={{ fontWeight: 800, color: '#15803d', fontSize: 13 }}>{fmt(s.amount)}</div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* EMI debits */}
+      {d.emiDebits?.length > 0 && (
+        <Card size="small" style={{ borderRadius: 14, border: '1px solid #f1f5f9' }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Building2 size={14} color="#d97706" /> EMI / Fixed Obligations
+          </div>
+          {d.emiDebits.map((e: any, i: number) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < d.emiDebits.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>{e.label}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>{e.date}</div>
+              </div>
+              <div style={{ fontWeight: 800, color: '#dc2626', fontSize: 13 }}>{fmt(e.amount)}</div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Top expense categories */}
+      {d.topExpenseCategories?.length > 0 && (
+        <Card size="small" style={{ borderRadius: 14, border: '1px solid #f1f5f9' }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b', marginBottom: 12 }}>Top Expense Categories</div>
+          {d.topExpenseCategories.map((c: any, i: number) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>{c.category}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#0f172a' }}>{fmt(c.amount)}</span>
+              </div>
+              <Progress percent={Math.min(c.percentage, 100)} showInfo={false} strokeColor="#6366f1" trailColor="#f1f5f9" size="small" />
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* Risk flags */}
+      {(d.riskFlags?.length > 0 || d.bouncedCheques > 0) && (
+        <Card size="small" style={{ borderRadius: 14, border: `1px solid ${riskColor(d.riskFlags ?? [])}33`, background: `${riskColor(d.riskFlags ?? [])}08` }}>
+          <div style={{ fontWeight: 800, fontSize: 13, color: riskColor(d.riskFlags ?? []), marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <BadgeAlert size={14} /> Risk Indicators
+          </div>
+          {d.bouncedCheques > 0 && (
+            <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 700, marginBottom: 4 }}>⚠ {d.bouncedCheques} bounced cheque(s) detected</div>
+          )}
+          {d.riskFlags?.map((f: string, i: number) => (
+            <div key={i} style={{ fontSize: 12, color: '#64748b', fontWeight: 600, marginBottom: 2 }}>• {f}</div>
+          ))}
+        </Card>
+      )}
+
+      {/* Analysis notes */}
+      {d.analysisNotes && (
+        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>AI Summary</div>
+          <div style={{ fontSize: 13, color: '#334155', fontWeight: 600, lineHeight: 1.6 }}>{d.analysisNotes}</div>
+        </div>
+      )}
+
+      <Button block onClick={onReset} style={{ borderRadius: 12, height: 44, fontWeight: 800, marginTop: 4 }}>
+        Analyse Another Statement
+      </Button>
+    </div>
+  );
+};
+
+// ── Bank Statement Analyzer (Hybrid) ─────────────────────────────────────────
+
 export const BankStatementAnalyzerPage: React.FC = () => {
-  const [file, setFile]           = useState<File | null>(null);
-  const [loading, setLoading]     = useState(false);
+  // ── Excel report state ────────────────────────────────────────────────────
+  const [file, setFile]               = useState<File | null>(null);
+  const [loading, setLoading]         = useState(false);
   const [usePassword, setUsePassword] = useState(false);
-  const [password, setPassword]   = useState('');
-  const [result, setResult]       = useState<{ success: boolean; txnCount?: number; error?: string } | null>(null);
-  const [dragOver, setDragOver]   = useState(false);
+  const [password, setPassword]       = useState('');
+  const [excelResult, setExcelResult] = useState<{ success: boolean; txnCount?: number; error?: string } | null>(null);
+  const [dragOver, setDragOver]       = useState(false);
+
+  // ── AI analysis state ─────────────────────────────────────────────────────
+  const [aiFile, setAiFile]           = useState<File | null>(null);
+  const [aiDragOver, setAiDragOver]   = useState(false);
+  const [leads, setLeads]             = useState<any[]>([]);
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+  const [leadDocs, setLeadDocs]       = useState<Record<string, any>>({});
+  const [loadingLeads, setLoadingLeads] = useState(false);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [aiLoading, setAiLoading]     = useState(false);
+  const [aiResult, setAiResult]       = useState<any | null>(null);
+  const [aiError, setAiError]         = useState<string | null>(null);
+
+  // Fetch connector's own leads for Option A picker
+  useEffect(() => {
+    setLoadingLeads(true);
+    apiClient.get('/customers/leads')
+      .then(res => setLeads(res.data?.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingLeads(false));
+  }, []);
+
+  // When lead selected, fetch their documents
+  const handleLeadSelect = async (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    setSelectedLead(lead ?? null);
+    setLeadDocs({});
+    if (!lead?.customerId) return;
+    setLoadingDocs(true);
+    try {
+      const res = await apiClient.get(`/documents/by-customer/${lead.customerId}`);
+      const docs: any[] = res.data?.data ?? [];
+      const map: Record<string, any> = {};
+      docs.forEach(d => { if (d.documentType && d.id) map[d.documentType] = d; });
+      setLeadDocs(map);
+    } catch {} finally { setLoadingDocs(false); }
+  };
+
+  const hasBankStatement = !!leadDocs['BANK_STATEMENT'];
+  const canAnalyzeAi = aiFile !== null || hasBankStatement;
+
+  const handleAiAnalyse = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    setAiResult(null);
+    try {
+      const formData = new FormData();
+
+      if (aiFile) {
+        // File always wins (Option B or hybrid)
+        formData.append('file', aiFile);
+        if (hasBankStatement) {
+          // Hybrid: also pass URL for metadata context
+          const urlRes = await apiClient.get(`/documents/${leadDocs['BANK_STATEMENT'].id}/presigned-url`);
+          const presignedUrl: string = urlRes.data?.data ?? urlRes.data;
+          formData.append('statementUrl', presignedUrl);
+        }
+      } else if (hasBankStatement) {
+        // Option A: fetch presigned URL then pass to backend
+        const urlRes = await apiClient.get(`/documents/${leadDocs['BANK_STATEMENT'].id}/presigned-url`);
+        const presignedUrl: string = urlRes.data?.data ?? urlRes.data;
+        formData.append('statementUrl', presignedUrl);
+      }
+
+      const res = await apiClient.post('/bsa/ai-analyze', formData);
+      setAiResult(res.data);
+    } catch (err: any) {
+      setAiError(err?.response?.data?.error ?? err?.response?.data?.message ?? 'AI analysis failed. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // ── Excel handlers ────────────────────────────────────────────────────────
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
+    e.preventDefault(); setDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f?.name.toLowerCase().endsWith('.pdf')) { setFile(f); setResult(null); }
+    if (f?.name.toLowerCase().endsWith('.pdf')) { setFile(f); setExcelResult(null); }
   };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) { setFile(f); setResult(null); }
+    if (f) { setFile(f); setExcelResult(null); }
   };
-
   const handleAnalyse = async () => {
     if (!file) return;
-    setLoading(true);
-    setResult(null);
-
+    setLoading(true); setExcelResult(null);
     const formData = new FormData();
     formData.append('file', file);
-    const url = usePassword && password.trim()
-      ? '/analyse/with-password'
-      : '/analyse';
+    const url = usePassword && password.trim() ? '/analyse/with-password' : '/analyse';
     if (usePassword && password.trim()) formData.append('password', password.trim());
-
     try {
-      const res = await apiClient.post(url, formData, {
-        responseType: 'blob',
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
+      const res = await apiClient.post(url, formData, { responseType: 'blob' });
       const txnHeader = res.headers['x-transactions-found'];
       const disposition = res.headers['content-disposition'] || '';
       const nameMatch = disposition.match(/filename="?([^"]+)"?/);
       const filename = nameMatch?.[1] ?? 'BSA_Report.xlsx';
-
       const link = document.createElement('a');
       link.href = URL.createObjectURL(new Blob([res.data]));
       link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setResult({ success: true, txnCount: txnHeader ? parseInt(txnHeader) : undefined });
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      setExcelResult({ success: true, txnCount: txnHeader ? parseInt(txnHeader) : undefined });
     } catch (err: any) {
       let msg = 'Analysis failed. Please try again.';
       if (err?.response?.data instanceof Blob) {
-        try {
-          const text = await err.response.data.text();
-          const json = JSON.parse(text);
-          msg = json.error || msg;
-        } catch {}
+        try { const t = await err.response.data.text(); msg = JSON.parse(t).error || msg; } catch {}
       }
-      setResult({ success: false, error: msg });
-    } finally {
-      setLoading(false);
-    }
+      setExcelResult({ success: false, error: msg });
+    } finally { setLoading(false); }
   };
 
-  if (result?.success) {
-    return (
-      <div className="max-w-2xl mx-auto py-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <Result
-          status="success"
-          title={<Title level={2} className="font-black m-0">Report Downloaded</Title>}
-          subTitle={
-            <div className="space-y-2">
-              {result.txnCount && (
-                <Text className="block text-emerald-600 font-bold">{result.txnCount} transactions analysed across 9 Excel sheets.</Text>
-              )}
-              <Text className="text-slate-500 font-medium">The report has been saved to your downloads folder.</Text>
-            </div>
-          }
-          extra={[
-            <Button key="another" size="large" type="primary"
-              onClick={() => { setResult(null); setFile(null); }}
-              className="h-14 px-8 rounded-2xl bg-slate-900 border-none font-black shadow-xl">
-              Analyse Another Statement
-            </Button>
-          ]}
-        />
-      </div>
-    );
-  }
+  // ── AI drop zone ──────────────────────────────────────────────────────────
+  const handleAiDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setAiDragOver(false);
+    const f = e.dataTransfer.files[0];
+    if (f?.name.toLowerCase().endsWith('.pdf')) { setAiFile(f); setAiResult(null); setAiError(null); }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+    <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 0' }}>
       {/* Header */}
-      <div className="mb-10 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
-              <Files size={28} />
-            </div>
-            <Text className="text-slate-400 text-xs font-black uppercase tracking-[0.25em]">Financial Analysis</Text>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <div style={{ width: 48, height: 48, background: '#f0f9ff', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #bae6fd' }}>
+            <Files size={24} color="#0284c7" />
           </div>
-          <Title level={1} className="m-0 font-black tracking-tighter text-slate-800">Statement Analyser</Title>
-          <Text className="text-slate-500 font-medium text-lg">Upload any Indian bank PDF — instant 8-sheet Excel report</Text>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>Statement Analyser</div>
+            <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Excel report · AI-powered insights via Groq</div>
+          </div>
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100 p-8">
-        {/* Drop zone */}
-        <div
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => document.getElementById('bsa-file-input')?.click()}
-          className={`relative border-2 border-dashed rounded-[1.5rem] p-10 text-center cursor-pointer transition-all duration-200
-            ${dragOver ? 'border-blue-500 bg-blue-50' : file ? 'border-emerald-400 bg-emerald-50/30' : 'border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/50'}`}
-        >
-          <input id="bsa-file-input" type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
-          <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-4">
-            <Files size={28} className={file ? 'text-emerald-500' : 'text-blue-400'} />
-          </div>
-          {file ? (
-            <>
-              <Text className="block font-black text-slate-800 text-base mb-1">{file.name}</Text>
-              <Text className="text-emerald-600 text-sm font-bold">
-                {(file.size / 1024 / 1024).toFixed(2)} MB · Click to change
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text className="block font-black text-slate-700 text-base mb-1">Drag & drop PDF here</Text>
-              <Text className="text-slate-400 text-sm font-medium">or click to browse · Max 50 MB</Text>
-            </>
-          )}
-        </div>
+      <Tabs
+        defaultActiveKey="ai"
+        type="card"
+        style={{ fontWeight: 700 }}
+        items={[
+          {
+            key: 'ai',
+            label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={14} />AI Analysis</span>,
+            children: (
+              <Card style={{ borderRadius: '0 16px 16px 16px', border: '1px solid #e2e8f0' }}>
+                {aiResult ? (
+                  <AiResultView result={aiResult} onReset={() => { setAiResult(null); setAiFile(null); setSelectedLead(null); setLeadDocs({}); }} />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {/* Option A — customer picker */}
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                        Option A — Pick from Customer Records
+                      </div>
+                      <Select
+                        showSearch
+                        allowClear
+                        placeholder="Search by customer name or mobile…"
+                        style={{ width: '100%' }}
+                        loading={loadingLeads}
+                        filterOption={(input, opt) => (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
+                        options={leads.map(l => ({
+                          value: l.id,
+                          label: `${l.firstName} ${l.lastName} · ${l.mobile}`,
+                        }))}
+                        onChange={(val) => val ? handleLeadSelect(val) : (setSelectedLead(null), setLeadDocs({}))}
+                      />
+                      {loadingDocs && <div style={{ marginTop: 8 }}><Spin size="small" /> <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 6 }}>Loading documents…</span></div>}
+                      {selectedLead && !loadingDocs && (
+                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: hasBankStatement ? '#f0fdf4' : '#fff7ed', border: `1px solid ${hasBankStatement ? '#86efac' : '#fed7aa'}` }}>
+                          {hasBankStatement
+                            ? <><CheckCircle2 size={14} color="#15803d" /><span style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>Bank statement on file — ready to analyse</span></>
+                            : <><AlertTriangle size={14} color="#d97706" /><span style={{ fontSize: 12, fontWeight: 700, color: '#d97706' }}>No bank statement uploaded for this customer</span></>
+                          }
+                        </div>
+                      )}
+                    </div>
 
-        {/* Password toggle */}
-        <div className="mt-6 flex items-center gap-3">
-          <Checkbox checked={usePassword} onChange={e => setUsePassword(e.target.checked)} />
-          <Text className="font-semibold text-slate-600 text-sm cursor-pointer" onClick={() => setUsePassword(!usePassword)}>
-            PDF is password-protected
-          </Text>
-        </div>
-        {usePassword && (
-          <Input.Password
-            className="mt-3 h-12 rounded-xl border-slate-200 bg-slate-50"
-            placeholder="e.g. DDMMYYYY · last 4 digits of mobile"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-        )}
+                    <Divider style={{ margin: '0' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>OR</span>
+                    </Divider>
 
-        {/* Info */}
-        <Alert
-          className="mt-6 rounded-2xl border-none bg-blue-50/60"
-          showIcon={false}
-          message={
-            <Text className="text-blue-700 text-xs font-bold">
-              🔒 Processed entirely on-server · Never stored · Supports SBI, HDFC, ICICI, Axis, Kotak, PNB & more
-            </Text>
-          }
-        />
+                    {/* Option B — manual upload */}
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                        Option B — Upload a Statement
+                        {selectedLead && <span style={{ color: '#6366f1', marginLeft: 6 }}>(overrides record)</span>}
+                      </div>
+                      <div
+                        onDragOver={e => { e.preventDefault(); setAiDragOver(true); }}
+                        onDragLeave={() => setAiDragOver(false)}
+                        onDrop={handleAiDrop}
+                        onClick={() => document.getElementById('ai-bsa-input')?.click()}
+                        style={{
+                          border: `2px dashed ${aiDragOver ? '#6366f1' : aiFile ? '#10b981' : '#cbd5e1'}`,
+                          borderRadius: 14, padding: '24px 16px', textAlign: 'center', cursor: 'pointer',
+                          background: aiDragOver ? '#eef2ff' : aiFile ? '#f0fdf4' : '#f8fafc',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <input id="ai-bsa-input" type="file" accept=".pdf" style={{ display: 'none' }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) { setAiFile(f); setAiResult(null); setAiError(null); } }} />
+                        <Upload size={22} color={aiFile ? '#10b981' : '#94a3b8'} style={{ marginBottom: 6 }} />
+                        {aiFile
+                          ? <><div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>{aiFile.name}</div><div style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>{(aiFile.size / 1024 / 1024).toFixed(2)} MB · click to change</div></>
+                          : <><div style={{ fontWeight: 700, fontSize: 13, color: '#475569' }}>Drag & drop PDF or click to browse</div><div style={{ fontSize: 11, color: '#94a3b8' }}>Max 20 MB · SBI, HDFC, ICICI, Axis, Kotak, PNB & more</div></>
+                        }
+                      </div>
+                    </div>
 
-        {/* Error */}
-        {result?.error && (
-          <Alert
-            type="error"
-            message={result.error}
-            className="mt-4 rounded-2xl"
-            showIcon
-          />
-        )}
+                    {aiError && <Alert type="error" message={aiError} style={{ borderRadius: 10 }} showIcon />}
 
-        <Divider className="my-6 opacity-40" />
-
-        <Button
-          type="primary"
-          size="large"
-          block
-          loading={loading}
-          disabled={!file}
-          onClick={handleAnalyse}
-          className="h-14 rounded-2xl bg-indigo-600 border-none font-black shadow-xl shadow-indigo-100 hover:bg-indigo-500 flex items-center justify-center gap-2"
-        >
-          {loading ? 'Analysing…' : 'GENERATE EXCEL REPORT'}
-          {!loading && <ArrowRight size={18} />}
-        </Button>
-      </Card>
+                    <Button
+                      type="primary"
+                      block
+                      size="large"
+                      loading={aiLoading}
+                      disabled={!canAnalyzeAi}
+                      onClick={handleAiAnalyse}
+                      style={{ height: 52, borderRadius: 14, fontWeight: 900, fontSize: 14, background: canAnalyzeAi ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : undefined, border: 'none', boxShadow: canAnalyzeAi ? '0 4px 20px rgba(99,102,241,0.35)' : 'none' }}
+                    >
+                      {aiLoading ? 'Analysing with Groq AI…' : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Sparkles size={16} /> Analyse with AI</span>}
+                    </Button>
+                    <div style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: -8 }}>
+                      Powered by Groq · llama-3.3-70b-versatile · End-to-end encrypted
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ),
+          },
+          {
+            key: 'excel',
+            label: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Download size={14} />Excel Report</span>,
+            children: (
+              <Card style={{ borderRadius: '0 16px 16px 16px', border: '1px solid #e2e8f0' }}>
+                {excelResult?.success ? (
+                  <Result status="success"
+                    title={<Title level={3} style={{ margin: 0 }}>Report Downloaded</Title>}
+                    subTitle={excelResult.txnCount ? `${excelResult.txnCount} transactions analysed across 9 Excel sheets.` : 'Saved to your downloads folder.'}
+                    extra={<Button onClick={() => { setExcelResult(null); setFile(null); }} style={{ borderRadius: 12, fontWeight: 800 }}>Analyse Another</Button>}
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div
+                      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={handleDrop}
+                      onClick={() => document.getElementById('bsa-file-input')?.click()}
+                      style={{ border: `2px dashed ${dragOver ? '#3b82f6' : file ? '#10b981' : '#cbd5e1'}`, borderRadius: 14, padding: '32px 16px', textAlign: 'center', cursor: 'pointer', background: dragOver ? '#eff6ff' : file ? '#f0fdf4' : '#f8fafc', transition: 'all 0.2s' }}
+                    >
+                      <input id="bsa-file-input" type="file" accept=".pdf" style={{ display: 'none' }} onChange={handleFileChange} />
+                      <Files size={28} color={file ? '#10b981' : '#94a3b8'} style={{ marginBottom: 8 }} />
+                      {file
+                        ? <><div style={{ fontWeight: 800, color: '#0f172a' }}>{file.name}</div><div style={{ fontSize: 12, color: '#10b981', fontWeight: 700 }}>{(file.size / 1024 / 1024).toFixed(2)} MB · click to change</div></>
+                        : <><div style={{ fontWeight: 700, color: '#475569' }}>Drag & drop PDF or click to browse</div><div style={{ fontSize: 12, color: '#94a3b8' }}>Max 50 MB</div></>
+                      }
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Checkbox checked={usePassword} onChange={e => setUsePassword(e.target.checked)} />
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#475569', cursor: 'pointer' }} onClick={() => setUsePassword(!usePassword)}>PDF is password-protected</span>
+                    </div>
+                    {usePassword && <Input.Password style={{ borderRadius: 10, height: 44 }} placeholder="e.g. DDMMYYYY or last 4 digits of mobile" value={password} onChange={e => setPassword(e.target.value)} />}
+                    {excelResult?.error && <Alert type="error" message={excelResult.error} style={{ borderRadius: 10 }} showIcon />}
+                    <Button type="primary" block size="large" loading={loading} disabled={!file} onClick={handleAnalyse}
+                      style={{ height: 52, borderRadius: 14, fontWeight: 900, background: '#1e293b', border: 'none' }}>
+                      {loading ? 'Generating…' : 'GENERATE EXCEL REPORT'} {!loading && <ArrowRight size={16} />}
+                    </Button>
+                    <div style={{ textAlign: 'center', fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
+                      🔒 Processed on-server · Never stored · SBI, HDFC, ICICI, Axis, Kotak, PNB & more
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 };
