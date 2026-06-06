@@ -40,10 +40,6 @@ spring:
       max-file-size: 50MB
       max-request-size: 55MB
 
-groq:
-  api-key: ${GROQ_API_KEY}
-  url: https://api.groq.com/openai/v1/chat/completions
-  model: llama-3.3-70b-versatile
 
 tenacio:
   crif:
