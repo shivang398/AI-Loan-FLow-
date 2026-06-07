@@ -552,20 +552,20 @@ All 6 should print `UP`. If any show `DOWN`, check `logs/<service>.log`.
 ### Step 12 — Build and serve the frontend
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+yum install -y nodejs
 
-cd /home/ubuntu/platform/frontend
+cd /home/ec2-user/platform/frontend
 npm install --legacy-peer-deps
 npm run build     # output in frontend/dist/
 
-sudo apt-get install -y nginx
+amazon-linux-extras install -y nginx1
 ```
 
-Create the Nginx config:
+Create the Nginx config (Amazon Linux 2 uses `/etc/nginx/conf.d/`, not `sites-available/`):
 
 ```bash
-sudo tee /etc/nginx/sites-available/platform << 'NGINX'
+cat > /etc/nginx/conf.d/platform.conf << 'NGINX'
 server {
     listen 80;
     server_name _;
@@ -608,10 +608,8 @@ server {
 }
 NGINX
 
-sudo ln -sf /etc/nginx/sites-available/platform /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo cp -r /home/ubuntu/platform/frontend/dist/* /usr/share/nginx/html/
-sudo nginx -t && sudo systemctl restart nginx && sudo systemctl enable nginx
+cp -r /home/ec2-user/platform/frontend/dist/* /usr/share/nginx/html/
+nginx -t && systemctl restart nginx && systemctl enable nginx
 ```
 
 Your platform is now live at `http://<your-elastic-ip>`.
@@ -621,8 +619,9 @@ Your platform is now live at `http://<your-elastic-ip>`.
 ### Step 13 — Add HTTPS
 
 ```bash
-sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com
+amazon-linux-extras install -y epel
+yum install -y certbot python3-certbot-nginx
+certbot --nginx -d yourdomain.com
 # Update CORS_ALLOWED_ORIGIN in .env.prod to https://yourdomain.com
 ```
 
@@ -631,7 +630,7 @@ sudo certbot --nginx -d yourdomain.com
 ### Step 14 — Auto-start on reboot
 
 ```bash
-sudo tee /etc/systemd/system/platform.service << 'EOF'
+tee /etc/systemd/system/platform.service << 'EOF'
 [Unit]
 Description=Real Money Platform
 After=docker.service network-online.target
@@ -640,20 +639,20 @@ Requires=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-User=ubuntu
+User=ec2-user
 ExecStart=/bin/bash -c \
-  'docker compose -f /home/ubuntu/platform/docker-compose.infra.yml up -d && \
-   sleep 15 && /home/ubuntu/platform/start-services.sh'
+  'docker compose -f /home/ec2-user/platform/docker-compose.infra.yml up -d && \
+   sleep 15 && /home/ec2-user/platform/start-services.sh'
 ExecStop=/bin/bash -c \
   'pkill -f "1.0.0-SNAPSHOT.jar" 2>/dev/null; \
-   docker compose -f /home/ubuntu/platform/docker-compose.infra.yml down'
+   docker compose -f /home/ec2-user/platform/docker-compose.infra.yml down'
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable platform.service
+systemctl daemon-reload
+systemctl enable platform.service
 ```
 
 ---
@@ -661,22 +660,22 @@ sudo systemctl enable platform.service
 ## Deploying updates
 
 ```bash
-cd /home/ubuntu/platform && git pull
+cd /home/ec2-user/platform && git pull
 
 # Rebuild only what changed
-export MVN=/home/ubuntu/platform/maven/apache-maven-3.9.6/bin/mvn
+export MVN=/home/ec2-user/platform/maven/apache-maven-3.9.6/bin/mvn
 $MVN -pl common-lib,loan-core-service -am package -DskipTests -q
 
 # Kill old process and start new JAR
 fuser -k 8084/tcp
-source /home/ubuntu/platform/.env.prod
+source /home/ec2-user/platform/.env.prod
 nohup java -Xmx768m -jar loan-core-service/target/loan-core-service-1.0.0-SNAPSHOT.jar \
   --server.port=8084 >> logs/loan-core-service.log 2>&1 &
 echo "loan-core-service restarted"
 
 # If frontend changed:
-cd /home/ubuntu/platform/frontend && npm run build
-sudo cp -r dist/* /usr/share/nginx/html/
+cd /home/ec2-user/platform/frontend && npm run build
+cp -r dist/* /usr/share/nginx/html/
 ```
 
 ---
@@ -692,7 +691,7 @@ for port in 8081 8082 8083 8084 8087 8093; do
 done
 
 # Tail a specific service log
-tail -f /home/ubuntu/platform/logs/loan-core-service.log
+tail -f /home/ec2-user/platform/logs/loan-core-service.log
 
 # RabbitMQ management UI
 # http://<your-ec2-ip>:15672  (login: guest / guest — change in production!)
