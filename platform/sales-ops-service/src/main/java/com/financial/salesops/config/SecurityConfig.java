@@ -70,7 +70,7 @@ public class SecurityConfig {
                 // A01: CONNECTORs can read their own profile only
                 .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN")
                 // A01: read operations open to internal roles; write ops restricted to PM/ADMIN
-                .requestMatchers(HttpMethod.GET,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER", "OPERATIONS")
+                .requestMatchers(HttpMethod.GET,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER", "OPERATIONS", "CONNECTOR")
                 .requestMatchers(HttpMethod.POST,   "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")

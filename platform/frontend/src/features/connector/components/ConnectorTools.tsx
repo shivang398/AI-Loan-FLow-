@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Typography,
   Card,
@@ -6,19 +6,22 @@ import {
   Input,
   Button,
   Result,
+  Divider,
   Checkbox,
+  Row,
+  Col,
   Alert,
 } from 'antd';
 import {
   ShieldCheck,
+  BarChart3,
   Files,
   Zap,
   Lock,
   ArrowRight,
-  Plus,
-  Trash2,
+  TrendingUp,
   Download,
-  AlertTriangle,
+  IndianRupee,
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
 
@@ -429,9 +432,6 @@ export const CibilCheckPage: React.FC = () => {
   );
 };
 
-// ── AI Result display ─────────────────────────────────────────────────────────
-
-const fmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
 // ── Bank Statement Analyzer (Excel only) ─────────────────────────────────────
 
@@ -539,43 +539,8 @@ export const BankStatementAnalyzerPage: React.FC = () => {
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type AppType = 'SALARIED' | 'GOVT_SALARIED' | 'SELF_EMPLOYED' | 'SELF_EMPLOYED_PROFESSIONAL' | 'NRI' | 'PENSIONER';
-type ObType  = 'HOME_LOAN_EMI' | 'CAR_LOAN_EMI' | 'PERSONAL_LOAN_EMI' | 'CREDIT_CARD_MINIMUM' | 'OTHER';
-
-interface EmiRow { id: number; type: ObType; amount: string; }
-
-interface FoirResultData {
-  applicantName: string;
-  applicantType: AppType;
-  grossMonthlyIncome: number;
-  netMonthlyIncome: number;
-  existingObligations: Array<{ type: string; amount: number }>;
-  totalExistingObligations: number;
-  currentFoirPercent: number;
-  foirAfterProposedLoan: number;
-  foirEligibleLimit: number;
-  foirBorderlineLimit: number;
-  eligibilityStatus: 'ELIGIBLE' | 'BORDERLINE' | 'NOT_ELIGIBLE';
-  eligibilityMessage: string;
-  alreadyOverLeveraged: boolean;
-  proposedLoanAmount: number;
-  proposedTenureMonths: number;
-  proposedInterestRate: number;
-  proposedEmi: number;
-  totalInterestPayable: number;
-  totalAmountPayable: number;
-  maxEligibleLoanAmount: number;
-  maxAffordableEmi: number;
-  monthlyBudgetBreakup: {
-    income: number; existingEmiTotal: number; newEmiAmount: number;
-    remainingBalance: number; existingEmiPercent: number;
-    newEmiPercent: number; remainingPercent: number;
-  };
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-let _emiId = 0;
-const nextId = () => ++_emiId;
 
 const formatInr = (val: number | string | null | undefined): string => {
   const n = typeof val === 'string' ? parseFloat(val) : (val ?? 0);
@@ -583,247 +548,91 @@ const formatInr = (val: number | string | null | undefined): string => {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(n);
 };
 
-const calcEmiJS = (P: number, annualRate: number, months: number): number => {
-  const r = annualRate / 1200;
-  if (r === 0) return P / months;
-  const pow = Math.pow(1 + r, months);
-  return (P * r * pow) / (pow - 1);
-};
-
-const OB_LABELS: Record<ObType, string> = {
-  HOME_LOAN_EMI:       'Home Loan EMI',
-  CAR_LOAN_EMI:        'Car Loan EMI',
-  PERSONAL_LOAN_EMI:   'Personal Loan EMI',
-  CREDIT_CARD_MINIMUM: 'Credit Card Minimum',
-  OTHER:               'Other Obligation',
-};
-
-// ── Gauge ─────────────────────────────────────────────────────────────────────
-
-const FoirGauge: React.FC<{ foirPct: number; eligibleLimit: number; borderlineLimit: number }> = ({
-  foirPct, eligibleLimit, borderlineLimit,
-}) => {
-  const CIRCUM = Math.PI * 80;
-  const clipped = Math.min(Math.max(foirPct, 0), 100);
-  const offset  = CIRCUM * (1 - clipped / 100);
-  const color   = foirPct <= eligibleLimit ? '#059669' : foirPct <= borderlineLimit ? '#d97706' : '#dc2626';
-
-  return (
-    <svg viewBox="0 0 200 115" width={200} height={110} style={{ overflow: 'visible' }}>
-      <path d="M 20,100 A 80,80 0 0,1 180,100" stroke="#e2e8f0" strokeWidth={16} fill="none" strokeLinecap="round" />
-      <path
-        d="M 20,100 A 80,80 0 0,1 180,100"
-        stroke={color}
-        strokeWidth={16}
-        fill="none"
-        strokeLinecap="round"
-        strokeDasharray={CIRCUM}
-        strokeDashoffset={offset}
-        style={{ transition: 'stroke-dashoffset 0.7s ease, stroke 0.3s ease' }}
-      />
-      <text x="100" y="92" textAnchor="middle" fontSize="26" fontWeight="900" fill={color}
-        style={{ fontFamily: "'Segoe UI', sans-serif" }}>
-        {foirPct.toFixed(1)}%
-      </text>
-      <text x="100" y="112" textAnchor="middle" fontSize="10" fill="#64748b" fontWeight="700"
-        style={{ fontFamily: "'Segoe UI', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-        FOIR After Loan
-      </text>
-    </svg>
-  );
-};
-
-// ── Budget bar ────────────────────────────────────────────────────────────────
-
-const BudgetBar: React.FC<{ label: string; amount: number; pct: number; color: string; negative?: boolean }> = ({
-  label, amount, pct, color, negative
-}) => (
-  <div style={{ marginBottom: 14 }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-      <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>{label}</span>
-      <span style={{ fontSize: 12, fontWeight: 800, color: negative ? '#dc2626' : '#0f172a' }}>{formatInr(amount)}</span>
-    </div>
-    <div style={{ height: 8, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
-      <div style={{
-        width: `${Math.min(Math.max(pct, 0), 100)}%`, height: '100%', borderRadius: 99,
-        background: color, transition: 'width 0.6s ease',
-      }} />
-    </div>
-    <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'right', marginTop: 2 }}>{pct.toFixed(1)}% of income</div>
-  </div>
-);
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const FoirCalculatorPage: React.FC = () => {
   const [applicantType, setApplicantType] = useState<AppType>('SALARIED');
-  const [name,     setName]     = useState('');
-  const [gross,    setGross]    = useState('');
-  const [net,      setNet]      = useState('');
+  const [income,   setIncome]   = useState('');
+  const [existEmi, setExistEmi] = useState('');
   const [loan,     setLoan]     = useState('');
-  const [tenure,   setTenure]   = useState('');
-  const [rate,     setRate]     = useState('');
-  const [emis,     setEmis]     = useState<EmiRow[]>([]);
-  const [loading,  setLoading]  = useState(false);
-  const [pdfLoad,  setPdfLoad]  = useState(false);
-  const [result,   setResult]   = useState<FoirResultData | null>(null);
+  const [tenure,   setTenure]   = useState('60');
+  const [rate,     setRate]     = useState('10.5');
   const [error,    setError]    = useState<string | null>(null);
 
-  // ── Live calculations ────────────────────────────────────────────────────
-  const netIncome     = parseFloat(net)    || 0;
-  const totalEmis     = emis.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-  const liveFoir      = netIncome > 0 ? (totalEmis / netIncome) * 100 : 0;
   const FOIR_LIMITS: Record<AppType, [number, number]> = {
-    SALARIED: [50, 55],
-    GOVT_SALARIED: [60, 65],
-    SELF_EMPLOYED: [55, 65],
+    SALARIED:                   [50, 55],
+    GOVT_SALARIED:              [60, 65],
+    SELF_EMPLOYED:              [55, 65],
     SELF_EMPLOYED_PROFESSIONAL: [60, 70],
-    NRI: [50, 55],
-    PENSIONER: [40, 50],
+    NRI:                        [50, 55],
+    PENSIONER:                  [40, 50],
   };
   const [eligLim, bdLim] = FOIR_LIMITS[applicantType] ?? [50, 55];
-  const liveEmi       = (() => {
-    const P = parseFloat(loan) || 0, n = parseInt(tenure) || 0, r = parseFloat(rate) || 0;
-    return P > 0 && n >= 12 && r >= 1 ? calcEmiJS(P, r, n) : 0;
-  })();
-  const tenureYrs = Math.floor(parseInt(tenure) || 0) / 12 | 0;
-  const tenureMns = (parseInt(tenure) || 0) % 12;
 
-  // ── EMI row management ───────────────────────────────────────────────────
-  const addEmi = () => setEmis(prev => [...prev, { id: nextId(), type: 'OTHER', amount: '' }]);
-  const removeEmi = (id: number) => setEmis(prev => prev.filter(r => r.id !== id));
-  const updateEmiType = (id: number, type: ObType) =>
-    setEmis(prev => prev.map(r => r.id === id ? { ...r, type } : r));
-  const updateEmiAmt  = (id: number, amount: string) =>
-    setEmis(prev => prev.map(r => r.id === id ? { ...r, amount } : r));
+  const netIncome   = parseFloat(income)   || 0;
+  const totalEmi    = parseFloat(existEmi) || 0;
+  const loanAmt     = parseFloat(loan)     || 0;
+  const tenureMo    = parseInt(tenure)     || 60;
+  const interestRate = parseFloat(rate)    || 10.5;
 
-  // ── Build request body ────────────────────────────────────────────────────
-  const buildRequest = useCallback(() => ({
-    applicantName:        name.trim() || 'Applicant',
-    applicantType,
-    grossMonthlyIncome:   parseFloat(gross) || 0,
-    netMonthlyIncome:     netIncome,
-    existingObligations:  emis.filter(r => parseFloat(r.amount) > 0)
-                              .map(r => ({ type: r.type, amount: parseFloat(r.amount) })),
-    proposedLoanAmount:   parseFloat(loan),
-    proposedTenureMonths: parseInt(tenure),
-    proposedInterestRate: parseFloat(rate),
-  }), [name, applicantType, gross, net, emis, loan, tenure, rate, netIncome]);
+  // ── Core calculations (pure frontend — instant, no API needed) ─────────────
+  const currentFoir    = netIncome > 0 ? (totalEmi / netIncome) * 100 : 0;
+  const maxAllowedEmi  = (eligLim / 100) * netIncome;
+  const availableEmi   = Math.max(maxAllowedEmi - totalEmi, 0);
 
-  // ── Validate ──────────────────────────────────────────────────────────────
-  const validate = (): string | null => {
-    if (netIncome <= 0)              return 'Net monthly income must be greater than 0.';
-    if (!parseFloat(loan))           return 'Proposed loan amount is required.';
-    const n = parseInt(tenure);
-    if (!n || n < 12 || n > 360)    return 'Tenure must be between 12 and 360 months.';
-    const r = parseFloat(rate);
-    if (!r || r < 1 || r > 36)      return 'Interest rate must be between 1% and 36% p.a.';
-    return null;
-  };
+  // Max personal loan = PV of available EMI capacity
+  const monthlyRate    = interestRate / 12 / 100;
+  const maxLoan = availableEmi > 0 && monthlyRate > 0
+    ? availableEmi * (1 - Math.pow(1 + monthlyRate, -tenureMo)) / monthlyRate
+    : 0;
 
-  // ── Calculate ─────────────────────────────────────────────────────────────
-  const handleCalculate = async () => {
-    setError(null);
-    const err = validate();
-    if (err) { setError(err); return; }
-    setLoading(true);
-    try {
-      const res = await apiClient.post('/foir/calculate', buildRequest());
-      if (res.data?.success) setResult(res.data.data);
-      else setError(res.data?.message || 'Calculation failed.');
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'Request failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // EMI for the entered loan amount
+  const proposedEmi = loanAmt > 0 && monthlyRate > 0
+    ? loanAmt * monthlyRate * Math.pow(1 + monthlyRate, tenureMo) / (Math.pow(1 + monthlyRate, tenureMo) - 1)
+    : 0;
 
-  // ── PDF download ──────────────────────────────────────────────────────────
-  const handleDownloadPdf = async () => {
-    setPdfLoad(true);
-    try {
-      const res = await apiClient.post('/foir/report', buildRequest(), { responseType: 'blob' });
-      const disposition = res.headers['content-disposition'] || '';
-      const nameMatch   = disposition.match(/filename="?([^"]+)"?/);
-      const filename    = nameMatch?.[1] ?? 'FOIR_Report.pdf';
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (e: any) {
-      setError('PDF generation failed. Please try again.');
-    } finally {
-      setPdfLoad(false);
-    }
-  };
+  const foirAfterLoan  = netIncome > 0 ? ((totalEmi + proposedEmi) / netIncome) * 100 : 0;
+  const totalInterest  = proposedEmi > 0 ? (proposedEmi * tenureMo) - loanAmt : 0;
 
-  // ── Reset ─────────────────────────────────────────────────────────────────
-  const handleReset = () => {
-    setResult(null); setError(null); setName(''); setGross(''); setNet('');
-    setLoan(''); setTenure(''); setRate(''); setEmis([]);
-  };
+  const foirColor = (f: number) => f <= eligLim ? '#059669' : f <= bdLim ? '#d97706' : '#dc2626';
+  const foirLabel = (f: number) => f <= eligLim ? 'Eligible' : f <= bdLim ? 'Borderline' : 'Over Limit';
 
-  // ── Status helpers ────────────────────────────────────────────────────────
-  const statusConfig = (status?: string) => {
-    if (status === 'ELIGIBLE')     return { color: '#059669', bg: '#d1fae5', label: '✓ Eligible' };
-    if (status === 'BORDERLINE')   return { color: '#d97706', bg: '#fef3c7', label: '~ Borderline' };
-    return { color: '#dc2626', bg: '#fee2e2', label: '✗ Not Eligible' };
-  };
+  const canCalculate = netIncome > 0;
 
-  const r = result;
-  const sc = statusConfig(r?.eligibilityStatus);
-
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-6xl mx-auto py-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+    <div className="max-w-5xl mx-auto py-8">
 
-      {/* ── Header ── */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
-              <BarChart3 size={28} />
-            </div>
-            <Text className="text-slate-400 text-xs font-black uppercase tracking-[0.25em]">Eligibility Engine</Text>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 border border-emerald-100">
+            <BarChart3 size={28} />
           </div>
-          <Title level={1} className="m-0 font-black tracking-tighter text-slate-800">FOIR Calculator</Title>
-          <Text className="text-slate-500 font-medium text-lg">Fixed Obligation to Income Ratio — Loan eligibility per Indian bank norms</Text>
+          <Text className="text-slate-400 text-xs font-black uppercase tracking-[0.25em]">Eligibility Engine</Text>
         </div>
+        <Title level={1} className="m-0 font-black tracking-tighter text-slate-800">FOIR Calculator</Title>
+        <Text className="text-slate-500 font-medium">Fixed Obligation to Income Ratio — Personal loan eligibility</Text>
       </div>
 
       <Row gutter={[20, 20]}>
 
-        {/* ══ LEFT: Input Form ══ */}
+        {/* ── LEFT: Inputs ── */}
         <Col xs={24} lg={10}>
           <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 28 } }}>
 
-            {/* Applicant name */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
-                Applicant Name
-              </label>
-              <Input
-                value={name} onChange={e => setName(e.target.value)}
-                placeholder="e.g. Rahul Sharma"
-                className="h-12 rounded-xl border-slate-200 bg-slate-50 font-semibold"
-              />
-            </div>
-
             {/* Applicant type */}
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>
                 Applicant Type
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                 {([
-                  { type: 'SALARIED' as AppType, label: '👔 Salaried' },
-                  { type: 'GOVT_SALARIED' as AppType, label: '🏛️ Govt / PSU' },
-                  { type: 'SELF_EMPLOYED' as AppType, label: '🏢 Self-Employed' },
+                  { type: 'SALARIED' as AppType,                   label: '👔 Salaried' },
+                  { type: 'GOVT_SALARIED' as AppType,              label: '🏛️ Govt / PSU' },
+                  { type: 'SELF_EMPLOYED' as AppType,              label: '🏢 Self-Employed' },
                   { type: 'SELF_EMPLOYED_PROFESSIONAL' as AppType, label: '⚕️ Professional' },
-                  { type: 'NRI' as AppType, label: '✈️ NRI' },
-                  { type: 'PENSIONER' as AppType, label: '👴 Pensioner' },
+                  { type: 'NRI' as AppType,                        label: '✈️ NRI' },
+                  { type: 'PENSIONER' as AppType,                  label: '👴 Pensioner' },
                 ]).map(({ type: t, label }) => (
                   <button key={t} onClick={() => setApplicantType(t)}
                     style={{
@@ -838,257 +647,227 @@ export const FoirCalculatorPage: React.FC = () => {
                 ))}
               </div>
               <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
-                FOIR limits: {eligLim}% eligible · {bdLim}% borderline (per RBI/IBA norms)
+                FOIR limit: {eligLim}% eligible · {bdLim}% borderline (RBI/IBA norms)
               </div>
             </div>
 
-            {/* Income */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-              Income Details
+            {/* Monthly Income */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
+                Net Monthly Income
+              </label>
+              <Input
+                prefix={<IndianRupee size={14} />}
+                type="number"
+                value={income}
+                onChange={e => setIncome(e.target.value)}
+                placeholder="e.g. 75000"
+                className="h-12 rounded-xl border-slate-200 bg-slate-50"
+              />
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>Take-home / net salary after all deductions</div>
             </div>
-            {(() => {
-              const INCOME_LABELS: Record<AppType, { gross: string; net: string; hint: string }> = {
-                SALARIED:                { gross: 'Gross Monthly Salary (CTC/12)', net: 'Net Take-Home Salary', hint: 'After PF, TDS deductions' },
-                GOVT_SALARIED:           { gross: 'Gross Monthly Salary (CTC/12)', net: 'Net Take-Home Salary', hint: 'After GPF, IT deductions · DA included' },
-                SELF_EMPLOYED:           { gross: 'Avg Monthly Bank Credit (12-month avg)', net: 'Net Monthly Income (ITR / Declared)', hint: 'As per last 2 years ITR · banks typically take 2-yr avg' },
-                SELF_EMPLOYED_PROFESSIONAL: { gross: 'Gross Monthly Professional Income', net: 'Net Monthly Income (ITR / Declared)', hint: 'CA / Doctor / Lawyer · Form 26AS cross-checked' },
-                NRI:                     { gross: 'Foreign Monthly Income (INR equiv. at remittance rate)', net: 'Net Monthly Income after overseas deductions', hint: 'OFC / NRE credit average · typically 50% discount applied by banks' },
-                PENSIONER:               { gross: 'Gross Monthly Pension (govt / EPS)', net: 'Net Pension (after deductions)', hint: 'Age-adjusted tenure · max retirement age 60–65 yrs' },
-              };
-              const lbl = INCOME_LABELS[applicantType];
-              return (
-                <>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>{lbl.gross}</label>
-                    <Input prefix={<IndianRupee size={14} />} type="number" value={gross} onChange={e => setGross(e.target.value)}
-                      placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>{lbl.net}</label>
-                    <Input prefix={<IndianRupee size={14} />} type="number" value={net} onChange={e => setNet(e.target.value)}
-                      placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{lbl.hint}</div>
-                  </div>
-                </>
-              );
-            })()}
 
-            {/* Existing EMIs */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-              Existing EMIs / Obligations
+            {/* Existing EMI */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
+                Existing Total EMI / Month
+              </label>
+              <Input
+                prefix={<IndianRupee size={14} />}
+                type="number"
+                value={existEmi}
+                onChange={e => setExistEmi(e.target.value)}
+                placeholder="e.g. 12000"
+                className="h-12 rounded-xl border-slate-200 bg-slate-50"
+              />
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>Total of all running loan EMIs (home, car, personal, credit card, etc.)</div>
             </div>
-            {emis.map(row => (
-              <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 6, marginBottom: 8, alignItems: 'center' }}>
-                <Select value={row.type} onChange={v => updateEmiType(row.id, v as ObType)} size="middle"
-                  style={{ borderRadius: 10 }}>
-                  {(Object.keys(OB_LABELS) as ObType[]).map(k => (
-                    <Select.Option key={k} value={k}>{OB_LABELS[k]}</Select.Option>
-                  ))}
-                </Select>
-                <Input prefix={<IndianRupee size={12} />} type="number" value={row.amount}
-                  onChange={e => updateEmiAmt(row.id, e.target.value)}
-                  placeholder="0" size="middle" style={{ borderRadius: 10 }} />
-                <button onClick={() => removeEmi(row.id)}
-                  style={{ width: 36, height: 36, border: '1px solid #fecaca', borderRadius: 8, background: '#fff5f5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Trash2 size={14} color="#dc2626" />
-                </button>
-              </div>
-            ))}
-            <button onClick={addEmi}
-              style={{ width: '100%', padding: '10px', border: '1.5px dashed #c7d2fe', borderRadius: 10, background: '#f8fafc', color: '#4f46e5', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
-              <Plus size={15} /> Add EMI / Obligation
-            </button>
 
-            {/* Minimum income warning */}
-            {netIncome > 0 && netIncome < 15000 && (
-              <div style={{ padding: '10px 14px', borderRadius: 10, background: '#fff7ed', border: '1px solid #fed7aa', marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#c2410c' }}>
-                  ⚠️ Income below ₹15,000/month — most Indian banks require minimum ₹15,000 net monthly income for personal loans (₹25,000 for home loans).
-                </div>
-              </div>
-            )}
-
-            {/* Live FOIR preview */}
+            {/* Live current FOIR badge */}
             {netIncome > 0 && (
-              <div style={{ padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(79,70,229,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: '#eef2ff', border: '1px solid rgba(79,70,229,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Current FOIR (without new loan)</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                    {`≤${eligLim}% eligible · ≤${bdLim}% borderline`}
-                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b' }}>Current FOIR</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Existing EMI ÷ Income</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: liveFoir <= eligLim ? '#059669' : liveFoir <= bdLim ? '#d97706' : '#dc2626' }}>
-                    {liveFoir.toFixed(1)}%
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: liveFoir <= eligLim ? '#059669' : liveFoir <= bdLim ? '#d97706' : '#dc2626' }}>
-                    {liveFoir <= eligLim ? 'Eligible range' : liveFoir <= bdLim ? 'Borderline' : 'Over limit'}
-                  </div>
+                  <div style={{ fontSize: 26, fontWeight: 900, color: foirColor(currentFoir) }}>{currentFoir.toFixed(1)}%</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: foirColor(currentFoir) }}>{foirLabel(currentFoir)}</div>
                 </div>
               </div>
             )}
 
-            {/* Proposed loan */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-              Proposed Loan
-            </div>
+            <Divider style={{ margin: '0 0 20px 0' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>PERSONAL LOAN CHECK</span>
+            </Divider>
+
+            {/* Loan amount */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Loan Amount</label>
-              <Input prefix={<IndianRupee size={14} />} type="number" value={loan} onChange={e => setLoan(e.target.value)}
-                placeholder="0" className="h-12 rounded-xl border-slate-200 bg-slate-50" />
+              <label style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>
+                Personal Loan Amount
+              </label>
+              <Input
+                prefix={<IndianRupee size={14} />}
+                type="number"
+                value={loan}
+                onChange={e => setLoan(e.target.value)}
+                placeholder="e.g. 500000"
+                className="h-12 rounded-xl border-slate-200 bg-slate-50"
+              />
             </div>
+
             <Row gutter={10} style={{ marginBottom: 12 }}>
               <Col span={12}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Tenure (months)</label>
-                <Input type="number" value={tenure} onChange={e => setTenure(e.target.value)} suffix="mo"
-                  placeholder="60" min={12} max={360} className="h-12 rounded-xl border-slate-200 bg-slate-50" />
-                {parseInt(tenure) > 0 && (
-                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{tenureYrs}y {tenureMns}m</div>
-                )}
+                <Input
+                  type="number" value={tenure} onChange={e => setTenure(e.target.value)}
+                  suffix="mo" min={12} max={360}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50"
+                />
               </Col>
               <Col span={12}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 5 }}>Rate (% p.a.)</label>
-                <Input type="number" value={rate} onChange={e => setRate(e.target.value)} suffix="%"
-                  placeholder="10.5" min={1} max={36} step={0.1} className="h-12 rounded-xl border-slate-200 bg-slate-50" />
+                <Input
+                  type="number" value={rate} onChange={e => setRate(e.target.value)}
+                  suffix="%" step={0.1} min={1} max={36}
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50"
+                />
               </Col>
             </Row>
-
-            {/* Live EMI preview */}
-            {liveEmi > 0 && (
-              <div style={{ padding: '10px 14px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>Estimated Monthly EMI</span>
-                <span style={{ fontSize: 18, fontWeight: 900, color: '#15803d' }}>{formatInr(liveEmi)}</span>
-              </div>
-            )}
 
             {error && (
               <Alert type="error" message={error} className="rounded-xl mb-4" showIcon closable onClose={() => setError(null)} />
             )}
 
-            <Button type="primary" block size="large" loading={loading} onClick={handleCalculate}
-              className="h-14 rounded-2xl bg-emerald-600 border-none font-black shadow-xl shadow-emerald-100 hover:bg-emerald-500 flex items-center justify-center gap-2">
-              {!loading && <><BarChart3 size={18} /> CALCULATE FOIR</>}
-            </Button>
+            {!canCalculate && (
+              <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', padding: '12px 0' }}>
+                Enter your net monthly income to see results
+              </div>
+            )}
           </Card>
         </Col>
 
-        {/* ══ RIGHT: Results ══ */}
+        {/* ── RIGHT: Results (live, no button needed) ── */}
         <Col xs={24} lg={14}>
-          {!r ? (
+          {!canCalculate ? (
             <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100 text-center" styles={{ body: { padding: 60 } }}>
               <div style={{ width: 80, height: 80, background: '#f8fafc', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <TrendingUp size={36} color="#c7d2fe" />
               </div>
-              <Title level={4} className="font-black text-slate-700 mb-2">Enter details and calculate</Title>
-              <Text className="text-slate-400 font-medium">Your FOIR analysis, eligibility status, and monthly budget breakdown will appear here.</Text>
+              <Title level={4} className="font-black text-slate-700 mb-2">Enter income to begin</Title>
+              <Text className="text-slate-400 font-medium">Results update live as you type.</Text>
             </Card>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-              {/* Gauge card */}
+              {/* ── FOIR Summary Card ── */}
               <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                  <FoirGauge foirPct={r.foirAfterProposedLoan} eligibleLimit={r.foirEligibleLimit} borderlineLimit={r.foirBorderlineLimit} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 999, background: sc.bg, marginBottom: 10 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: sc.color }} />
-                      <span style={{ fontSize: 12, fontWeight: 800, color: sc.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{sc.label}</span>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>FOIR Summary</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  {[
+                    { label: 'Current FOIR',       value: `${currentFoir.toFixed(1)}%`,   color: foirColor(currentFoir),  sub: 'Existing burden' },
+                    { label: 'FOIR After Loan',     value: loanAmt > 0 ? `${foirAfterLoan.toFixed(1)}%` : '—', color: loanAmt > 0 ? foirColor(foirAfterLoan) : '#94a3b8', sub: loanAmt > 0 ? foirLabel(foirAfterLoan) : 'Enter loan amount' },
+                    { label: 'Eligible Limit',      value: `${eligLim}%`,                  color: '#4f46e5',               sub: 'As per RBI norms' },
+                  ].map(m => (
+                    <div key={m.label} style={{ background: '#f8fafc', borderRadius: 14, padding: '14px 16px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{m.label}</div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: m.color }}>{m.value}</div>
+                      <div style={{ fontSize: 11, color: m.color, fontWeight: 700, marginTop: 2 }}>{m.sub}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: 16, marginBottom: 10, flexWrap: 'wrap' }}>
-                      {[
-                        { lbl: 'Current', val: `${r.currentFoirPercent}%` },
-                        { lbl: 'After Loan', val: `${r.foirAfterProposedLoan}%` },
-                        { lbl: 'Limit', val: `${r.foirEligibleLimit}%` },
-                      ].map(m => (
-                        <div key={m.lbl}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{m.lbl}</div>
-                          <div style={{ fontSize: 15, fontWeight: 900, color: '#0f172a' }}>{m.val}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: sc.color, background: sc.bg, padding: '8px 12px', borderRadius: 10, lineHeight: 1.5 }}>
-                      {r.eligibilityMessage}
-                    </div>
-                    {r.alreadyOverLeveraged && (
-                      <Alert type="error" showIcon icon={<AlertTriangle size={14} />}
-                        message="Existing EMIs alone exceed the eligible FOIR limit." className="rounded-xl mt-2 text-xs" />
+                  ))}
+                </div>
+
+                {/* FOIR bar */}
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 6 }}>
+                    <span>0%</span><span>{eligLim}% limit</span><span>100%</span>
+                  </div>
+                  <div style={{ position: 'relative', height: 12, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(currentFoir, 100)}%`, background: foirColor(currentFoir), borderRadius: 999, transition: 'width 0.4s ease' }} />
+                    {loanAmt > 0 && proposedEmi > 0 && (
+                      <div style={{ position: 'absolute', left: `${Math.min(currentFoir, 100)}%`, top: 0, height: '100%', width: `${Math.min(foirAfterLoan - currentFoir, 100 - currentFoir)}%`, background: '#818cf8', opacity: 0.7, transition: 'width 0.4s ease' }} />
                     )}
+                    <div style={{ position: 'absolute', left: `${eligLim}%`, top: 0, width: 2, height: '100%', background: '#4f46e5' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: foirColor(currentFoir), display: 'inline-block' }} />Existing EMI</span>
+                    {loanAmt > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#818cf8', display: 'inline-block' }} />New Loan EMI</span>}
                   </div>
                 </div>
               </Card>
 
-              {/* Metrics grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {[
-                  { lbl: 'Monthly EMI',        val: formatInr(r.proposedEmi),           sub: 'reducing balance method' },
-                  { lbl: 'Max Eligible Loan',   val: formatInr(r.maxEligibleLoanAmount), sub: `at ${r.foirEligibleLimit}% FOIR limit` },
-                  { lbl: 'Total Interest',      val: formatInr(r.totalInterestPayable),  sub: `over ${r.proposedTenureMonths} months` },
-                  { lbl: 'Total Payable',       val: formatInr(r.totalAmountPayable),    sub: 'principal + interest' },
-                ].map(m => (
-                  <Card key={m.lbl} className="rounded-[1.25rem] border border-slate-100 shadow-sm" styles={{ body: { padding: 16 } }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{m.lbl}</div>
-                    <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>{m.val}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{m.sub}</div>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Budget breakup */}
+              {/* ── Max Eligible Loan Card ── */}
               <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Monthly Budget Breakup</div>
-                <Row gutter={24}>
-                  <Col span={14}>
-                    <BudgetBar label="Net Monthly Income"  amount={r.monthlyBudgetBreakup.income}          pct={100}                                        color="linear-gradient(90deg,#4f46e5,#818cf8)" />
-                    <BudgetBar label="Existing EMIs"       amount={r.monthlyBudgetBreakup.existingEmiTotal} pct={r.monthlyBudgetBreakup.existingEmiPercent} color="linear-gradient(90deg,#d97706,#fbbf24)" />
-                    <BudgetBar label="New EMI (Proposed)"  amount={r.monthlyBudgetBreakup.newEmiAmount}    pct={r.monthlyBudgetBreakup.newEmiPercent}       color="linear-gradient(90deg,#4f46e5,#818cf8)" />
-                    <BudgetBar label="Remaining Balance"   amount={r.monthlyBudgetBreakup.remainingBalance} pct={Math.max(r.monthlyBudgetBreakup.remainingPercent, 0)} color="linear-gradient(90deg,#059669,#34d399)" negative={r.monthlyBudgetBreakup.remainingBalance < 0} />
-                  </Col>
-                  <Col span={10}>
-                    {r.existingObligations && r.existingObligations.length > 0 ? (
-                      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ background: '#0f172a', color: '#fff', padding: '7px 10px', textAlign: 'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', borderRadius: '6px 0 0 0' }}>Obligation</th>
-                            <th style={{ background: '#0f172a', color: '#fff', padding: '7px 10px', textAlign: 'right', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', borderRadius: '0 6px 0 0' }}>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {r.existingObligations.map((ob, i) => (
-                            <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
-                              <td style={{ padding: '7px 10px', borderBottom: '1px solid #e2e8f0', color: '#374151', fontWeight: 600 }}>
-                                {ob.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </td>
-                              <td style={{ padding: '7px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatInr(ob.amount)}</td>
-                            </tr>
-                          ))}
-                          <tr style={{ background: '#eef2ff' }}>
-                            <td style={{ padding: '7px 10px', fontWeight: 800, color: '#4f46e5' }}>Total EMIs</td>
-                            <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 900, color: '#4f46e5' }}>{formatInr(r.totalExistingObligations)}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div style={{ padding: 12, background: '#f8fafc', borderRadius: 10, fontSize: 12, color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>No existing EMIs entered</div>
-                    )}
-                  </Col>
-                </Row>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Personal Loan Eligibility</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ background: '#f0fdf4', borderRadius: 14, padding: '16px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Max Eligible Loan</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#15803d' }}>{formatInr(Math.round(maxLoan))}</div>
+                    <div style={{ fontSize: 11, color: '#15803d', marginTop: 2 }}>at {eligLim}% FOIR · {tenureMo}mo · {interestRate}%</div>
+                  </div>
+                  <div style={{ background: '#eff6ff', borderRadius: 14, padding: '16px', border: '1px solid #bfdbfe' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Max Monthly EMI</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#1d4ed8' }}>{formatInr(Math.round(availableEmi))}</div>
+                    <div style={{ fontSize: 11, color: '#1d4ed8', marginTop: 2 }}>Available after existing obligations</div>
+                  </div>
+                </div>
               </Card>
 
-              {/* Actions */}
-              <Row gutter={12}>
-                <Col span={14}>
-                  <Button block size="large" loading={pdfLoad} onClick={handleDownloadPdf}
-                    style={{ height: 52, borderRadius: 14, border: '2px solid #4f46e5', color: '#4f46e5', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    {!pdfLoad && <Download size={18} />} Download PDF Report
-                  </Button>
-                </Col>
-                <Col span={10}>
-                  <Button block size="large" onClick={handleReset}
-                    style={{ height: 52, borderRadius: 14, border: '1.5px solid #e2e8f0', color: '#64748b', fontWeight: 700, fontSize: 13 }}>
-                    New Calculation
-                  </Button>
-                </Col>
-              </Row>
+              {/* ── Loan Check Card (if loan amount entered) ── */}
+              {loanAmt > 0 && (
+                <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loan of {formatInr(loanAmt)}</div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 14px', borderRadius: 999,
+                      background: foirAfterLoan <= eligLim ? '#d1fae5' : foirAfterLoan <= bdLim ? '#fef3c7' : '#fee2e2',
+                      color: foirColor(foirAfterLoan), fontWeight: 800, fontSize: 12 }}>
+                      {foirAfterLoan <= eligLim ? '✓ Eligible' : foirAfterLoan <= bdLim ? '~ Borderline' : '✗ Not Eligible'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                    {[
+                      { label: 'Monthly EMI',     value: formatInr(Math.round(proposedEmi)),    sub: `over ${tenureMo} months` },
+                      { label: 'Total Interest',  value: formatInr(Math.round(totalInterest)),  sub: 'cost of borrowing' },
+                      { label: 'Total Payable',   value: formatInr(Math.round(loanAmt + totalInterest)), sub: 'principal + interest' },
+                    ].map(m => (
+                      <div key={m.label} style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{m.label}</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#0f172a' }}>{m.value}</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{m.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {foirAfterLoan > eligLim && (
+                    <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#c2410c' }}>
+                        ⚠ This loan pushes FOIR to {foirAfterLoan.toFixed(1)}% — above the {eligLim}% eligible limit.
+                        Max eligible loan for this tenure and rate is {formatInr(Math.round(maxLoan))}.
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {/* ── Income breakdown ── */}
+              <Card className="rounded-[2rem] border-none shadow-xl shadow-slate-100" styles={{ body: { padding: 24 } }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Monthly Income Breakdown</div>
+                {[
+                  { label: 'Net Monthly Income',   amount: netIncome,                                      color: '#4f46e5', pct: 100 },
+                  { label: 'Existing EMIs',         amount: totalEmi,                                       color: '#d97706', pct: netIncome > 0 ? (totalEmi / netIncome) * 100 : 0 },
+                  { label: 'New Loan EMI',          amount: proposedEmi > 0 ? Math.round(proposedEmi) : 0, color: '#818cf8', pct: netIncome > 0 ? (proposedEmi / netIncome) * 100 : 0 },
+                  { label: 'Remaining Balance',     amount: netIncome - totalEmi - (proposedEmi || 0),      color: '#059669', pct: netIncome > 0 ? ((netIncome - totalEmi - (proposedEmi || 0)) / netIncome) * 100 : 0 },
+                ].map(row => (
+                  <div key={row.label} style={{ marginBottom: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4 }}>
+                      <span>{row.label}</span>
+                      <span style={{ color: row.amount < 0 ? '#dc2626' : '#0f172a' }}>{formatInr(row.amount)}</span>
+                    </div>
+                    <div style={{ height: 8, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.min(Math.max(row.pct, 0), 100)}%`, background: row.amount < 0 ? '#dc2626' : row.color, borderRadius: 999, transition: 'width 0.3s ease' }} />
+                    </div>
+                  </div>
+                ))}
+              </Card>
 
             </div>
           )}

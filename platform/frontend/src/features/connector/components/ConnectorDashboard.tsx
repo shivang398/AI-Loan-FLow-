@@ -127,20 +127,31 @@ const ConnectorDashboard: React.FC = () => {
   const navigate  = useNavigate();
   const { user }  = useSelector((state: RootState) => state.auth);
 
-  const [loans,        setLoans]        = useState<Loan[]>([]);
-  const [earnings,     setEarnings]     = useState<Earning[]>([]);
-  const [leads,        setLeads]        = useState<number>(0);
-  const [loadingLoans, setLoadingLoans] = useState(true);
+  const [loans,              setLoans]              = useState<Loan[]>([]);
+  const [earnings,           setEarnings]           = useState<Earning[]>([]);
+  const [leads,              setLeads]              = useState<number>(0);
+  const [loadingLoans,       setLoadingLoans]       = useState(true);
+  const [connectorProfileId, setConnectorProfileId] = useState<string | null>(null);
 
-  // Only treat as connectorId if it's a UUID (not the email fallback from old sessions)
+  // auth user id (UUID) — used for loans query
   const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-  const connectorId = user?.id && isUUID(user.id) ? user.id : null;
+  const authUserId = user?.id && isUUID(user.id) ? user.id : null;
+
+  // connector profile id comes from /connectors/me — different from auth user id
+  useEffect(() => {
+    apiClient.get('/connectors/me')
+      .then(res => {
+        const profile = res.data?.data || res.data;
+        setConnectorProfileId(profile?.id || null);
+      })
+      .catch(() => setConnectorProfileId(null));
+  }, []);
 
   useEffect(() => {
     const fetchLoans = async () => {
       setLoadingLoans(true);
       try {
-        const params = connectorId ? { connectorId } : {};
+        const params = authUserId ? { connectorId: authUserId } : {};
         const res  = await apiClient.get('/loans', { params });
         const list: Loan[] = res.data?.data || res.data || [];
         setLoans(list.slice(0, 6));
@@ -148,19 +159,19 @@ const ConnectorDashboard: React.FC = () => {
       finally   { setLoadingLoans(false); }
     };
     fetchLoans();
-  }, [connectorId]);
+  }, [authUserId]);
 
   useEffect(() => {
     const fetchEarnings = async () => {
+      if (!connectorProfileId) return;
       try {
-        const params = connectorId ? { connectorId } : {};
-        const res  = await apiClient.get('/commissions/transactions', { params });
+        const res  = await apiClient.get(`/transactions/connector/${connectorProfileId}`);
         const list: Earning[] = res.data?.data || res.data || [];
         setEarnings(list);
       } catch { setEarnings([]); }
     };
     fetchEarnings();
-  }, [connectorId]);
+  }, [connectorProfileId]);
 
   useEffect(() => {
     const fetchLeads = async () => {

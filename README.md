@@ -257,7 +257,7 @@ Optional (safe to leave empty locally):
 ### Step 1 — Launch EC2 instance
 
 1. Open **EC2 → Launch Instance** in the AWS Console.
-2. Choose **Ubuntu 24.04 LTS**.
+2. Choose **Amazon Linux 2** (AMI search: `amzn2-ami-hvm`).
 3. Instance type: `t3.large` (prod) or `t3.medium` (dev/staging).
 4. Storage: **30 GB gp3** root volume.
 5. Security Group — open these ports:
@@ -308,31 +308,63 @@ Optional (safe to leave empty locally):
 ### Step 5 — Install Java and Docker on EC2
 
 ```bash
-ssh -i your-key.pem ubuntu@<your-elastic-ip>
+ssh -i your-key.pem ec2-user@<your-elastic-ip>
 ```
 
-Install Java 25:
+Install Java 25 (Temurin via Adoptium RPM repo):
 
 ```bash
-wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
-  | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
+# Add Adoptium yum repository
+cat > /etc/yum.repos.d/adoptium.repo << 'EOF'
+[Adoptium]
+name=Adoptium
+baseurl=https://packages.adoptium.net/artifactory/rpm/amazonlinux/2/x86_64/
+enabled=1
+gpgcheck=1
+gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
+EOF
 
-echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] \
-  https://packages.adoptium.net/artifactory/deb \
-  $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" \
-  | sudo tee /etc/apt/sources.list.d/adoptium.list
-
-sudo apt-get update && sudo apt-get install -y temurin-25-jdk
-java -version    # should print 25.x
+yum install -y temurin-25-jdk
+java -version    # should print openjdk 25
 ```
 
-Install Docker (RabbitMQ + Redis):
+If `temurin-25-jdk` is not yet in the repo, install from the binary tarball instead:
 
 ```bash
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker ubuntu
-sudo apt-get install -y docker-compose-plugin
-newgrp docker
+cd /tmp
+wget -q "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B9/OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_9.tar.gz" \
+  -O temurin-25.tar.gz
+
+mkdir -p /usr/local/java
+tar -xzf temurin-25.tar.gz -C /usr/local/java/
+
+JAVA_DIR=$(ls /usr/local/java/ | grep jdk-25)
+cat > /etc/profile.d/java.sh << EOF
+export JAVA_HOME=/usr/local/java/$JAVA_DIR
+export PATH=\$JAVA_HOME/bin:\$PATH
+EOF
+
+source /etc/profile.d/java.sh
+java -version    # should print openjdk 25
+```
+
+Install Docker (for RabbitMQ + Redis containers):
+
+```bash
+amazon-linux-extras install -y docker
+systemctl start docker
+systemctl enable docker
+docker --version
+```
+
+Install Docker Compose v2:
+
+```bash
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version    # should print v2.27.0
 ```
 
 ---
@@ -342,14 +374,14 @@ newgrp docker
 ```bash
 rsync -av --exclude='node_modules' --exclude='target' --exclude='.git' \
   /path/to/Auditor/platform/ \
-  ubuntu@<your-elastic-ip>:/home/ubuntu/platform/
+  ec2-user@<your-elastic-ip>:/home/ec2-user/platform/
 ```
 
-Or clone from GitHub:
+Or clone from GitHub (recommended — no local rsync needed):
 
 ```bash
-git clone https://github.com/shivang398/AI-Loan-FLow-.git
-cd AI-Loan-FLow-/platform
+yum install -y git
+git clone https://github.com/shivang398/AI-Loan-FLow-.git /home/ec2-user/platform
 ```
 
 ---
@@ -357,8 +389,8 @@ cd AI-Loan-FLow-/platform
 ### Step 7 — Build all service JARs
 
 ```bash
-export MVN=/home/ubuntu/platform/maven/apache-maven-3.9.6/bin/mvn
-cd /home/ubuntu/platform
+export MVN=/home/ec2-user/platform/maven/apache-maven-3.9.6/bin/mvn
+cd /home/ec2-user/platform
 $MVN clean package -DskipTests -T4 --no-transfer-progress
 ```
 
@@ -369,7 +401,7 @@ Takes about 3–5 minutes.
 ### Step 8 — Create the environment file
 
 ```bash
-cat > /home/ubuntu/platform/.env.prod << 'EOF'
+cat > /home/ec2-user/platform/.env.prod << 'EOF'
 # ── Database (RDS MySQL) ─────────────────────────────────────────────────────
 DB_HOST=platform-db.xxxx.us-east-1.rds.amazonaws.com
 DB_PORT=3306
@@ -415,7 +447,7 @@ WHATSAPP_PHONE_ID=
 WHATSAPP_VERIFY_TOKEN=
 WHATSAPP_APP_SECRET=
 EOF
-chmod 600 /home/ubuntu/platform/.env.prod
+chmod 600 /home/ec2-user/platform/.env.prod
 ```
 
 ---
@@ -423,7 +455,7 @@ chmod 600 /home/ubuntu/platform/.env.prod
 ### Step 9 — Create the 6 MySQL databases on RDS
 
 ```bash
-sudo apt-get install -y mysql-client
+yum install -y mysql
 
 mysql -h platform-db.xxxx.us-east-1.rds.amazonaws.com -uroot -pYOUR_PASSWORD << 'SQL'
 CREATE DATABASE platform_auth               CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -441,7 +473,7 @@ echo "Databases created."
 ### Step 10 — Start RabbitMQ and Redis
 
 ```bash
-cat > /home/ubuntu/platform/docker-compose.infra.yml << 'EOF'
+cat > /home/ec2-user/platform/docker-compose.infra.yml << 'EOF'
 services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -459,9 +491,9 @@ services:
       - "6379:6379"
 EOF
 
-docker compose -f /home/ubuntu/platform/docker-compose.infra.yml up -d
+docker compose -f /home/ec2-user/platform/docker-compose.infra.yml up -d
 sleep 15
-docker compose -f /home/ubuntu/platform/docker-compose.infra.yml ps
+docker compose -f /home/ec2-user/platform/docker-compose.infra.yml ps
 ```
 
 ---
@@ -469,13 +501,13 @@ docker compose -f /home/ubuntu/platform/docker-compose.infra.yml ps
 ### Step 11 — Start all 6 backend services
 
 ```bash
-cat > /home/ubuntu/platform/start-services.sh << 'SCRIPT'
+cat > /home/ec2-user/platform/start-services.sh << 'SCRIPT'
 #!/bin/bash
 set -a
-source /home/ubuntu/platform/.env.prod
+source /home/ec2-user/platform/.env.prod
 set +a
 
-BASEDIR=/home/ubuntu/platform
+BASEDIR=/home/ec2-user/platform
 LOGDIR=$BASEDIR/logs
 mkdir -p "$LOGDIR"
 
@@ -509,8 +541,8 @@ for port in 8081 8082 8083 8084 8087 8093; do
 done
 SCRIPT
 
-chmod +x /home/ubuntu/platform/start-services.sh
-/home/ubuntu/platform/start-services.sh
+chmod +x /home/ec2-user/platform/start-services.sh
+/home/ec2-user/platform/start-services.sh
 ```
 
 All 6 should print `UP`. If any show `DOWN`, check `logs/<service>.log`.

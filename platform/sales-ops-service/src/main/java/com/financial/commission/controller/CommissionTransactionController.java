@@ -2,6 +2,7 @@ package com.financial.commission.controller;
 
 import com.financial.commission.entity.CommissionTransaction;
 import com.financial.commission.service.CommissionService;
+import com.financial.connector.service.ConnectorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class CommissionTransactionController {
 
     private final CommissionService commissionService;
+    private final ConnectorService  connectorService;
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
@@ -39,8 +41,7 @@ public class CommissionTransactionController {
                 .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
                             || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER"));
         if (!isPrivileged) {
-            UUID callerId = UUID.nameUUIDFromBytes(
-                    auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            UUID callerId = connectorService.getMe(auth.getName()).getId();
             if (!callerId.equals(connectorId)) {
                 throw new org.springframework.security.access.AccessDeniedException(
                         "Cannot view another connector's transactions");

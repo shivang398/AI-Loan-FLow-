@@ -67,3 +67,12 @@ management:
 # A05: CORS — override via env var in production (e.g. https://app.realmoney.in)
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
+# FOIR eligibility configuration — all values runtime-overridable via env vars.
+# Override example: FOIR_PERSONAL-LOAN_LIMIT-PERCENTAGE=55.0
+foir:
+  personal-loan:
+    limit-percentage: ${FOIR_LIMIT_PCT:50.0}
+    min-income: ${FOIR_MIN_INCOME:15000}
+    max-tenure-months: ${FOIR_MAX_TENURE:84}
+    default-annual-interest-rate: ${FOIR_DEFAULT_RATE:12.0}
