@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
                         ApiResponse.error("Validation failed", errors, traceId),
                         HttpStatus.BAD_REQUEST);
             }
-            case org.springframework.security.access.AccessDeniedException ade -> {
+            case org.springframework.security.access.AccessDeniedException _ -> {
                 log.warn("Access denied [TraceID: {}]", traceId);
                 yield new ResponseEntity<>(
                         ApiResponse.error("Access denied", Collections.emptyList(), traceId),
