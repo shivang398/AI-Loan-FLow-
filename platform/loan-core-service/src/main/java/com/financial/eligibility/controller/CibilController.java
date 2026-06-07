@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +28,7 @@ public class CibilController {
     private final CibilService cibilService;
 
     @PostMapping("/check")
-    public ResponseEntity<?> getCibilSummary(@RequestBody CibilRequestDto requestDto) {
+    public ResponseEntity<?> getCibilSummary(@Valid @RequestBody CibilRequestDto requestDto) {
         try {
             CibilSummaryDto summary = cibilService.getCibilSummary(requestDto);
             return ResponseEntity.ok(ApiResponse.success("CIBIL summary retrieved", summary, null));
@@ -47,15 +48,19 @@ public class CibilController {
     }
 
     @PostMapping("/report")
-    public ResponseEntity<?> generateCibilReport(@RequestBody CibilRequestDto requestDto) {
+    public ResponseEntity<?> generateCibilReport(@Valid @RequestBody CibilRequestDto requestDto) {
         try {
             byte[] pdfBytes = cibilService.generateCibilReportPdf(requestDto);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            String fileId = requestDto.getPanNumber() != null && !requestDto.getPanNumber().isBlank()
+            // SECURITY: sanitize fileId to [A-Z0-9] only — prevents header injection via
+            // attacker-controlled PAN/mobile containing newlines or path traversal sequences.
+            String rawId = requestDto.getPanNumber() != null && !requestDto.getPanNumber().isBlank()
                 ? requestDto.getPanNumber().toUpperCase()
                 : requestDto.getMobileNumber();
+            String fileId = rawId.replaceAll("[^A-Z0-9]", "");
+            if (fileId.isBlank()) fileId = "REPORT";
             headers.setContentDisposition(ContentDisposition.attachment()
                 .filename("CRIF_Report_" + fileId + ".pdf")
                 .build());

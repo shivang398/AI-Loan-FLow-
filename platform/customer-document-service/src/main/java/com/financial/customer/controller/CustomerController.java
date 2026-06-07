@@ -8,6 +8,7 @@ import com.financial.customer.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
@@ -70,6 +71,7 @@ public class CustomerController {
      * Called by admin when offboarding an OPERATIONS employee.
      */
     @PostMapping("/leads/reassign")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> reassignLeads(
             @RequestBody Map<String, String> body) {
         String fromEmail = body.get("fromEmail");

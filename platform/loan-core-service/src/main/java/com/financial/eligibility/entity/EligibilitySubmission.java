@@ -1,5 +1,6 @@
 package com.financial.eligibility.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.financial.eligibility.config.EncryptedStringConverter;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,7 +45,8 @@ public class EligibilitySubmission {
     @Column(name = "city")
     private String city;
 
-    // Fix 2: AES-256-GCM encrypted at rest
+    // Fix 2: AES-256-GCM encrypted at rest; @JsonIgnore prevents decrypted value leaking in API responses
+    @JsonIgnore
     @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "pan_number", length = 512)
     private String panNumber;

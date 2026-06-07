@@ -2,6 +2,7 @@ package com.financial.document.controller;
 
 import com.financial.common.dto.ApiResponse;
 import com.financial.common.security.FileValidator;
+import com.financial.customer.repository.CustomerRepository;
 import com.financial.document.entity.Document;
 import com.financial.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final CustomerRepository customerRepository;
 
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<Document>> upload(
@@ -62,7 +64,13 @@ public class DocumentController {
             @RequestParam UUID customerId,
             @RequestParam String documentType,
             @RequestParam MultipartFile file) throws IOException {
-        FileValidator.validate(file); // Fix 7: reject executables and oversized files
+        // SECURITY: verify the customerId actually exists before accepting the upload.
+        // Prevents IDOR where an attacker guesses UUIDs and pollutes other customers' records.
+        if (!customerRepository.existsById(customerId)) {
+            return ResponseEntity.status(404)
+                    .body(ApiResponse.error("Customer not found", java.util.List.of(), UUID.randomUUID().toString()));
+        }
+        FileValidator.validate(file);
         Document doc = documentService.uploadPublicDocument(customerId, documentType, file);
         return ResponseEntity.ok(ApiResponse.success("Document uploaded", doc, UUID.randomUUID().toString()));
     }
