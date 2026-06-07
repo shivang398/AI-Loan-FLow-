@@ -170,8 +170,8 @@ const RegionalDashboard: React.FC = () => {
       sorter: (a: any, b: any) => a.rate - b.rate,
       render: (v: number) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 130 }}>
-          <Progress percent={v} size="small" showInfo={false}
-            strokeColor={v >= 70 ? '#10b981' : v >= 40 ? '#f59e0b' : '#ef4444'} strokeWidth={6} />
+          <Progress percent={v} showInfo={false}
+            strokeColor={v >= 70 ? '#10b981' : v >= 40 ? '#f59e0b' : '#ef4444'} size={['100%', 6]} />
           <span style={{ fontSize: 12, fontWeight: 800, width: 36, color: v >= 70 ? '#16a34a' : 'var(--text-primary)' }}>{v}%</span>
         </div>
       ),
@@ -194,7 +194,9 @@ const RegionalDashboard: React.FC = () => {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-      <Spin size="large" tip="Loading regional data…" />
+      <Spin size="large" tip="Loading regional data…">
+        <div style={{ padding: 24 }} />
+      </Spin>
     </div>
   );
 
@@ -339,7 +341,7 @@ const RegionalDashboard: React.FC = () => {
                 percent={totalFiles > 0 ? Math.round((submissions.filter(s => ['APPROVED','DISBURSED'].includes(s.status)).length / totalFiles) * 100) : 0}
                 showInfo={false}
                 strokeColor={{ from: '#7c3aed', to: '#4f46e5' }}
-                strokeWidth={8}
+                size={['100%', 8]}
               />
             </div>
           </div>

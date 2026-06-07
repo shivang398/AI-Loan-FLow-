@@ -9,6 +9,8 @@ import {
   XCircle, AlertTriangle, Loader, FileText, Eye,
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../store';
 
 /* ── types ──────────────────────────────────────────────────────────────── */
 interface Connector { id: string; firstName: string; lastName: string; email: string; }
@@ -38,7 +40,7 @@ const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTim
 
 /* ── component ───────────────────────────────────────────────────────────── */
 const WorkflowMonitor: React.FC = () => {
-  const [_rmProfile,   setRmProfile]    = useState<Connector | null>(null);
+  const [_rmProfile, setRmProfile] = useState<Connector | null>(null);
   const [reportees,    setReportees]    = useState<HierarchyMapping[]>([]);
   const [submissions,  setSubmissions]  = useState<Submission[]>([]);
   const [filtered,     setFiltered]     = useState<Submission[]>([]);

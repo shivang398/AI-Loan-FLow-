@@ -67,16 +67,16 @@ public class SecurityConfig {
                 // A01: internal connector lookup — used by other services, not browsers; no JWT possible
                 .requestMatchers(HttpMethod.GET, "/connectors/internal/**").permitAll()
                 .requestMatchers("/actuator/**").hasAuthority("ADMIN")
-                // A01: CONNECTORs can read their own profile only
-                .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN")
+                // A01: each role can read their own profile; RM/TL/PM/OPS need it for dashboard init
+                .requestMatchers(HttpMethod.GET, "/connectors/me").hasAnyAuthority("CONNECTOR", "ADMIN", "RM", "TEAM_LEADER", "PARTNER_MANAGER", "OPERATIONS")
                 // A01: read operations open to internal roles; write ops restricted to PM/ADMIN
                 .requestMatchers(HttpMethod.GET,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN", "RM", "TEAM_LEADER", "OPERATIONS", "CONNECTOR")
                 .requestMatchers(HttpMethod.POST,   "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/connectors/**").hasAnyAuthority("PARTNER_MANAGER", "ADMIN")
                 .requestMatchers("/foir/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/transactions/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/transactions/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/transactions/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN", "RM")
+                .requestMatchers(HttpMethod.GET, "/transactions/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN", "RM")
                 .requestMatchers(HttpMethod.GET, "/slabs/connector/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/slabs/**").hasAnyAuthority("CONNECTOR", "PARTNER_MANAGER", "ADMIN")
                 .anyRequest().hasAnyAuthority("PARTNER_MANAGER", "ADMIN")

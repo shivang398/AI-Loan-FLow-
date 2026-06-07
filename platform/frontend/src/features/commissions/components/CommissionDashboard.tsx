@@ -47,9 +47,10 @@ const CommissionDashboard: React.FC = () => {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
-      if (connectorId) params.connectorId = connectorId;
-      const res = await apiClient.get('/commissions/transactions', { params });
+      const endpoint = connectorId
+        ? `/commissions/transactions/connector/${connectorId}`
+        : '/commissions/transactions';
+      const res = await apiClient.get(endpoint);
       const list: Transaction[] = (res.data?.data || res.data || []).map((t: any) => ({
         id: t.id,
         status: t.status,

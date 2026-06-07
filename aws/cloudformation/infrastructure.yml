@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Platform Infrastructure — VPC, RDS PostgreSQL, ElastiCache Redis,
+  Platform Infrastructure — VPC, RDS MySQL 8.0, ElastiCache Redis,
   RabbitMQ (ECS), ECS Fargate Cluster, ALB, Cloud Map, ECR, IAM, S3.
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ Parameters:
     Type: String
     NoEcho: true
     MinLength: 8
-    Description: Master password for RDS PostgreSQL
+    Description: Master password for RDS MySQL
 
   RabbitMQPassword:
     Type: String
@@ -32,16 +32,39 @@ Parameters:
     MinLength: 32
     Description: JWT signing secret (at least 32 chars)
 
+  PiiEncryptionKey:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: AES-256 key for PAN/Aadhaar encryption — generate with openssl rand -hex 16
+
+  InternalServiceToken:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: Shared secret for inter-service API calls
+
   MailUsername:
     Type: String
     Default: ''
-    Description: SMTP username for notification-service (e.g. Gmail address)
+    Description: SMTP username for communications-service
 
   MailPassword:
     Type: String
     NoEcho: true
     Default: ''
-    Description: SMTP password / app-password for notification-service
+    Description: SMTP password for communications-service
+
+  SmtpUser:
+    Type: String
+    Default: ''
+    Description: SMTP username for analytics-reporting-service
+
+  SmtpPassword:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: SMTP password for analytics-reporting-service
 
   WhatsAppToken:
     Type: String
@@ -58,6 +81,25 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+
+  TenacioClientId:
+    Type: String
+    Default: ''
+    Description: Tenacio CRIF client ID for loan-core-service credit checks
+  TenacioApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Tenacio CRIF API key
+  TenacioWorkflowId:
+    Type: String
+    Default: ''
+    Description: Tenacio CRIF workflow ID
+
+  CorsAllowedOrigin:
+    Type: String
+    Default: ''
+    Description: CORS allowed origin for all services (e.g. https://app.realmoney.in)
 
   CertificateArn:
     Type: String
@@ -243,15 +285,16 @@ Resources:
       ToPort: 8080
       SourceSecurityGroupId: !Ref BackendSecurityGroup
 
+  # Bug 1+3 fixed: was "PostgreSQL" with port 5432; app uses MySQL on 3306
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: RDS PostgreSQL — accepts from backend services only
+      GroupDescription: RDS MySQL — accepts from backend services only
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 5432
-          ToPort: 5432
+          FromPort: 3306
+          ToPort: 3306
           SourceSecurityGroupId: !Ref BackendSecurityGroup
       Tags: [{Key: Name, Value: platform-rds-sg}]
 
@@ -289,7 +332,8 @@ Resources:
           SourceSecurityGroupId: !Ref RabbitMQSecurityGroup
       Tags: [{Key: Name, Value: platform-efs-sg}]
 
-  # ── RDS PostgreSQL ──────────────────────────────────────────────────────────
+  # ── RDS MySQL 8.0 ───────────────────────────────────────────────────────────
+  # Bug 1 fixed: was Engine: postgres / EngineVersion: 15.7 — all services use jdbc:mysql://
 
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -304,13 +348,13 @@ Resources:
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Snapshot
     Properties:
-      DBInstanceIdentifier: platform-postgres
+      DBInstanceIdentifier: platform-mysql
       DBInstanceClass: !If [IsProd, db.t3.medium, db.t3.micro]
-      Engine: postgres
-      EngineVersion: '15.7'
-      MasterUsername: postgres
+      Engine: mysql
+      EngineVersion: '8.0'
+      MasterUsername: platform
       MasterUserPassword: !Ref DBPassword
-      DBName: postgres
+      DBName: platform_auth
       AllocatedStorage: !If [IsProd, '100', '20']
       MaxAllocatedStorage: !If [IsProd, '500', '100']
       StorageType: gp3
@@ -322,9 +366,10 @@ Resources:
       VPCSecurityGroups: [!Ref RDSSecurityGroup]
       DBSubnetGroupName: !Ref DBSubnetGroup
       PubliclyAccessible: false
-      Tags: [{Key: Name, Value: platform-postgres}]
+      Tags: [{Key: Name, Value: platform-mysql}]
 
   # ── ElastiCache Redis ───────────────────────────────────────────────────────
+  # Bug 4 fixed: removed TransitEncryptionEnabled — no service has spring.data.redis.ssl.enabled
 
   RedisSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
@@ -345,7 +390,6 @@ Resources:
       CacheSubnetGroupName: !Ref RedisSubnetGroup
       SecurityGroupIds: [!Ref RedisSecurityGroup]
       AtRestEncryptionEnabled: true
-      TransitEncryptionEnabled: true
       AutomaticFailoverEnabled: !If [IsProd, true, false]
       Tags: [{Key: Name, Value: platform-redis}]
 
@@ -397,6 +441,8 @@ Resources:
               NoncurrentDays: 90
 
   # ── ECR Repositories ────────────────────────────────────────────────────────
+  # Bug 5 fixed: replaced 16 pre-merger repos with the 8 actual repos
+  # (6 merged backend services + frontend + rabbitmq)
 
   ECRFrontend:
     Type: AWS::ECR::Repository
@@ -414,114 +460,42 @@ Resources:
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
 
-  ECRConnectorService:
+  ECRSalesOpsService:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: platform-connector-service
+      RepositoryName: platform-sales-ops-service
       ImageScanningConfiguration: {ScanOnPush: true}
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
 
-  ECRCustomerService:
+  ECRCustomerDocumentService:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: platform-customer-service
+      RepositoryName: platform-customer-document-service
       ImageScanningConfiguration: {ScanOnPush: true}
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
 
-  ECRLoanService:
+  ECRLoanCoreService:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: platform-loan-service
+      RepositoryName: platform-loan-core-service
       ImageScanningConfiguration: {ScanOnPush: true}
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
 
-  ECREligibilityService:
+  ECRCommunicationsService:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: platform-eligibility-service
+      RepositoryName: platform-communications-service
       ImageScanningConfiguration: {ScanOnPush: true}
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
 
-  ECRPolicyService:
+  ECRAnalyticsReportingService:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: platform-policy-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRSmRoutingService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-sm-routing-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRRmTrackingService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-rm-tracking-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRQueryService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-query-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRDocumentService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-document-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRNotificationService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-notification-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRCommissionService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-commission-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRReportingService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-reporting-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRAnalyticsService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-analytics-service
-      ImageScanningConfiguration: {ScanOnPush: true}
-      LifecyclePolicy:
-        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
-
-  ECRMessagingService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: platform-messaging-service
+      RepositoryName: platform-analytics-reporting-service
       ImageScanningConfiguration: {ScanOnPush: true}
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"selection":{"tagStatus":"untagged","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
@@ -677,12 +651,15 @@ Resources:
                 Resource: '*'
 
   # ── SSM Parameter Store (secrets) ───────────────────────────────────────────
+  # Bug 2 fixed: CloudFormation does not support Type: SecureString for
+  # AWS::SSM::Parameter. All changed to Type: String.
+  # Restrict access via the SSMReadSecrets IAM policy above.
 
   SSMDBPassword:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /platform/db/password
-      Type: SecureString
+      Type: String
       Value: !Ref DBPassword
       Description: RDS master password
 
@@ -690,7 +667,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /platform/rabbitmq/password
-      Type: SecureString
+      Type: String
       Value: !Ref RabbitMQPassword
       Description: RabbitMQ admin password
 
@@ -698,33 +675,51 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /platform/jwt/secret
-      Type: SecureString
+      Type: String
       Value: !Ref JwtSecret
       Description: JWT signing secret
+
+  # Bug 6 fixed: PiiEncryptionKey and InternalServiceToken were missing
+  SSMPiiEncryptionKey:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/pii/encryption-key
+      Type: String
+      Value: !Ref PiiEncryptionKey
+      Description: AES-256 key for PAN/Aadhaar field encryption
+
+  SSMInternalServiceToken:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /platform/internal/service-token
+      Type: String
+      Value: !Ref InternalServiceToken
+      Description: Shared token for inter-service API calls
 
   SSMMailPassword:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /platform/mail/password
-      Type: SecureString
+      Type: String
       Value: !Ref MailPassword
-      Description: SMTP password for notification service
+      Description: SMTP password for communications-service
 
   SSMWhatsAppToken:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /platform/whatsapp/token
-      Type: SecureString
+      Type: String
       Value: !Ref WhatsAppToken
 
   SSMWhatsAppAppSecret:
     Type: AWS::SSM::Parameter
     Properties:
       Name: /platform/whatsapp/app-secret
-      Type: SecureString
+      Type: String
       Value: !Ref WhatsAppAppSecret
 
   # ── CloudWatch Log Groups ────────────────────────────────────────────────────
+  # Bug 5 fixed: replaced 16 pre-merger log groups with 8 matching actual services
 
   LogGroupFrontend:
     Type: AWS::Logs::LogGroup
@@ -744,88 +739,34 @@ Resources:
       LogGroupName: /ecs/platform/auth-service
       RetentionInDays: 14
 
-  LogGroupConnectorService:
+  LogGroupSalesOpsService:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /ecs/platform/connector-service
+      LogGroupName: /ecs/platform/sales-ops-service
       RetentionInDays: 14
 
-  LogGroupCustomerService:
+  LogGroupCustomerDocumentService:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /ecs/platform/customer-service
+      LogGroupName: /ecs/platform/customer-document-service
       RetentionInDays: 14
 
-  LogGroupLoanService:
+  LogGroupLoanCoreService:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /ecs/platform/loan-service
+      LogGroupName: /ecs/platform/loan-core-service
       RetentionInDays: 14
 
-  LogGroupEligibilityService:
+  LogGroupCommunicationsService:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /ecs/platform/eligibility-service
+      LogGroupName: /ecs/platform/communications-service
       RetentionInDays: 14
 
-  LogGroupPolicyService:
+  LogGroupAnalyticsReportingService:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /ecs/platform/policy-service
-      RetentionInDays: 14
-
-  LogGroupSmRoutingService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/sm-routing-service
-      RetentionInDays: 14
-
-  LogGroupRmTrackingService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/rm-tracking-service
-      RetentionInDays: 14
-
-  LogGroupQueryService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/query-service
-      RetentionInDays: 14
-
-  LogGroupDocumentService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/document-service
-      RetentionInDays: 14
-
-  LogGroupNotificationService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/notification-service
-      RetentionInDays: 14
-
-  LogGroupCommissionService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/commission-service
-      RetentionInDays: 14
-
-  LogGroupReportingService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/reporting-service
-      RetentionInDays: 14
-
-  LogGroupAnalyticsService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/analytics-service
-      RetentionInDays: 14
-
-  LogGroupMessagingService:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/platform/messaging-service
+      LogGroupName: /ecs/platform/analytics-reporting-service
       RetentionInDays: 14
 
 # ──────────────────────────────────────────────────────────────────────────────

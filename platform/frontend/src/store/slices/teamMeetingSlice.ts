@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'TEAM_LEADER' | 'CONNECTOR';
+export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'TEAM_LEADER' | 'CONNECTOR' | 'PARTNER_MANAGER';
 export type WSConnectionStatus = 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED' | 'SIMULATED';
 
 export interface RoomParticipant {
@@ -52,11 +52,12 @@ export function getRoomsForRole(rooms: TeamRoom[], role: UserRole): TeamRoom[] {
 }
 
 const ROLE_COLOR: Record<UserRole, string> = {
-  ADMIN:       '#6366f1',
-  RM:          '#3b82f6',
-  OPERATIONS:  '#f59e0b',
-  TEAM_LEADER: '#8b5cf6',
-  CONNECTOR:   '#10b981',
+  ADMIN:           '#6366f1',
+  RM:              '#3b82f6',
+  OPERATIONS:      '#f59e0b',
+  TEAM_LEADER:     '#8b5cf6',
+  CONNECTOR:       '#10b981',
+  PARTNER_MANAGER: '#ec4899',
 };
 
 export function buildParticipant(id: string, name: string, role: UserRole): RoomParticipant {
@@ -123,7 +124,7 @@ const teamMeetingSlice = createSlice({
       );
       if (optimisticIdx !== -1) {
         msgs[optimisticIdx] = m;
-      } else {
+      } else if (!msgs.some(x => x.id === m.id)) {
         msgs.push(m);
       }
       const room = state.rooms.find(r => r.id === m.roomId);

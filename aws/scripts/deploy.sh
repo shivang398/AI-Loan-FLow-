@@ -10,11 +10,13 @@
 #   PUBLIC_SUBNET_1, PUBLIC_SUBNET_2,
 #   BACKEND_SG, FRONTEND_SG, RABBITMQ_SG,
 #   FRONTEND_TG_ARN, EFS_ID,
-#   DB_PASSWORD, RABBITMQ_PASSWORD, JWT_SECRET, PII_ENCRYPTION_KEY,
+#   DB_PASSWORD, RABBITMQ_PASSWORD, JWT_SECRET,
+#   PII_ENCRYPTION_KEY, INTERNAL_SERVICE_TOKEN,
 #   MAIL_USERNAME, MAIL_PASSWORD,
+#   SMTP_USER, SMTP_PASSWORD,
 #   WHATSAPP_TOKEN, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, WHATSAPP_APP_SECRET,
 #   TENACIO_CRIF_CLIENT_ID, TENACIO_CRIF_API_KEY, TENACIO_CRIF_WORKFLOW_ID,
-#   TENACIO_CLIENT_ID, TENACIO_API_KEY, TENACIO_WORKFLOW_ID
+#   CORS_ALLOWED_ORIGIN
 
 set -euo pipefail
 
@@ -46,10 +48,9 @@ upsert_service() {
   local subnets="$3"
   local sg="$4"
   local desired_count="${5:-1}"
-  local tg_arn="${6:-}"           # optional target group for frontend
-  local extra_flags="${7:-}"      # e.g. --enable-execute-command
+  local tg_arn="${6:-}"
+  local extra_flags="${7:-}"
 
-  # Check if service already exists
   local existing
   existing=$(aws ecs describe-services \
     --region "$AWS_REGION" \
@@ -63,7 +64,6 @@ upsert_service() {
     load_balancers="--load-balancers targetGroupArn=${tg_arn},containerName=${service_name},containerPort=8080"
   fi
 
-  # Cloud Map service discovery
   local sd_arn
   sd_arn=$(ensure_cloudmap_service "$service_name")
 
@@ -121,25 +121,30 @@ ensure_cloudmap_service() {
 }
 
 # ── Common env vars for all backend services ─────────────────────────────────
+# Bug 7 fixed: DB_PORT was 5432 (PostgreSQL) — all services use MySQL on 3306
+# Bug 9 fixed: added PORT=8080 so every container starts on the mapped port
+# Bug 12 fixed: added PII_ENCRYPTION_KEY and INTERNAL_SERVICE_TOKEN
 backend_common_env() {
-  local db_name="$1"
   cat <<EOF
 [
-  {"name":"DB_HOST","value":"${RDS_ENDPOINT}"},
-  {"name":"DB_PORT","value":"5432"},
-  {"name":"DB_USER","value":"postgres"},
-  {"name":"DB_PASSWORD","value":"${DB_PASSWORD}"},
-  {"name":"DB_NAME","value":"${db_name}"},
-  {"name":"RABBITMQ_HOST","value":"${RABBITMQ_HOST}"},
-  {"name":"RABBITMQ_PORT","value":"${RABBITMQ_PORT}"},
-  {"name":"RABBITMQ_USER","value":"${RABBITMQ_USER}"},
-  {"name":"RABBITMQ_PASS","value":"${RABBITMQ_PASSWORD}"},
-  {"name":"REDIS_HOST","value":"${REDIS_ENDPOINT}"},
-  {"name":"REDIS_PORT","value":"6379"},
-  {"name":"JWT_SECRET","value":"${JWT_SECRET}"},
-  {"name":"JWT_EXPIRY_MS","value":"28800000"},
-  {"name":"AWS_REGION","value":"${AWS_REGION}"},
-  {"name":"AWS_S3_BUCKET","value":"${S3_BUCKET}"}
+  {"name":"DB_HOST",              "value":"${RDS_ENDPOINT}"},
+  {"name":"DB_PORT",              "value":"3306"},
+  {"name":"DB_USER",              "value":"platform"},
+  {"name":"DB_PASSWORD",          "value":"${DB_PASSWORD}"},
+  {"name":"RABBITMQ_HOST",        "value":"${RABBITMQ_HOST}"},
+  {"name":"RABBITMQ_PORT",        "value":"${RABBITMQ_PORT}"},
+  {"name":"RABBITMQ_USER",        "value":"${RABBITMQ_USER}"},
+  {"name":"RABBITMQ_PASS",        "value":"${RABBITMQ_PASSWORD}"},
+  {"name":"REDIS_HOST",           "value":"${REDIS_ENDPOINT}"},
+  {"name":"REDIS_PORT",           "value":"6379"},
+  {"name":"JWT_SECRET",           "value":"${JWT_SECRET}"},
+  {"name":"JWT_EXPIRY_MS",        "value":"28800000"},
+  {"name":"AWS_REGION",           "value":"${AWS_REGION}"},
+  {"name":"AWS_S3_BUCKET",        "value":"${S3_BUCKET}"},
+  {"name":"PORT",                 "value":"8080"},
+  {"name":"INTERNAL_SERVICE_TOKEN","value":"${INTERNAL_SERVICE_TOKEN}"},
+  {"name":"PII_ENCRYPTION_KEY",   "value":"${PII_ENCRYPTION_KEY}"},
+  {"name":"CORS_ALLOWED_ORIGIN",  "value":"${CORS_ALLOWED_ORIGIN}"}
 ]
 EOF
 }
@@ -148,14 +153,13 @@ EOF
 backend_task_def() {
   local service_name="$1"
   local db_name="$2"
-  local extra_env="${3:-[]}"   # JSON array of extra env vars
+  local extra_env="${3:-[]}"
 
   local image="${ECR_REGISTRY}/platform-${service_name}:${IMAGE_TAG}"
 
-  # Merge base env + extra env via jq
   local merged_env
   merged_env=$(jq -n \
-    --argjson base "$(backend_common_env "$db_name")" \
+    --argjson base "$(backend_common_env)" \
     --argjson extra "$extra_env" \
     '$base + $extra')
 
@@ -263,7 +267,11 @@ upsert_service "rabbitmq" "$MQ_ARN" "$SUBNETS" "$RABBITMQ_SG" 1
 log "RabbitMQ deployed: $MQ_ARN"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 2. Backend Java microservices
+# 2. Backend Java microservices — 6 merged services
+# Bug 8 fixed: replaced 13 pre-merger service names with the 6 actual services
+# Bug 10 fixed: heredoc delimiters are now unquoted (ENVEOF not 'ENVEOF')
+#               so ${VAR} references expand correctly
+# Bug 11 fixed: DB names updated to match actual application.yml databases
 # ═══════════════════════════════════════════════════════════════════════════════
 
 deploy_backend() {
@@ -279,54 +287,52 @@ deploy_backend() {
   log "$service_name deployed: $td_arn"
 }
 
-deploy_backend "auth-service"       "platform_auth"
-deploy_backend "connector-service"  "platform_connector"
-deploy_backend "customer-service"   "platform_customer"
-deploy_backend "loan-service"       "platform_loan"
-deploy_backend "eligibility-service" "platform_eligibility" "$(cat <<'ENVEOF'
-[
-  {"name":"TENACIO_CRIF_CLIENT_ID","value":"${TENACIO_CRIF_CLIENT_ID}"},
-  {"name":"TENACIO_CRIF_API_KEY","value":"${TENACIO_CRIF_API_KEY}"},
-  {"name":"TENACIO_CRIF_WORKFLOW_ID","value":"${TENACIO_CRIF_WORKFLOW_ID}"},
-  {"name":"TENACIO_CLIENT_ID","value":"${TENACIO_CLIENT_ID}"},
-  {"name":"TENACIO_API_KEY","value":"${TENACIO_API_KEY}"},
-  {"name":"TENACIO_WORKFLOW_ID","value":"${TENACIO_WORKFLOW_ID}"},
-  {"name":"PII_ENCRYPTION_KEY","value":"${PII_ENCRYPTION_KEY}"}
-]
-ENVEOF
-)"
-deploy_backend "policy-service"     "platform_policy"
-deploy_backend "sm-routing-service" "platform_routing"
-deploy_backend "commission-service" "platform_commission"
-deploy_backend "reporting-service"  "platform_reporting"
-deploy_backend "analytics-service"  "platform_analytics"
+deploy_backend "auth-service" "platform_auth"
 
-# notification-service needs SMTP credentials
-deploy_backend "notification-service" "platform_notification" "$(cat <<'ENVEOF'
+deploy_backend "sales-ops-service" "platform_sales_ops"
+
+deploy_backend "customer-document-service" "platform_customer_docs"
+
+# loan-core-service includes the eligibility sub-package (Tenacio CRIF credit checks)
+deploy_backend "loan-core-service" "platform_loan_core" "$(cat <<ENVEOF
 [
-  {"name":"MAIL_HOST","value":"smtp.gmail.com"},
-  {"name":"MAIL_PORT","value":"587"},
-  {"name":"MAIL_USERNAME","value":"${MAIL_USERNAME}"},
-  {"name":"MAIL_PASSWORD","value":"${MAIL_PASSWORD}"}
+  {"name":"TENACIO_CRIF_CLIENT_ID",  "value":"${TENACIO_CRIF_CLIENT_ID}"},
+  {"name":"TENACIO_CRIF_API_KEY",    "value":"${TENACIO_CRIF_API_KEY}"},
+  {"name":"TENACIO_CRIF_WORKFLOW_ID","value":"${TENACIO_CRIF_WORKFLOW_ID}"}
 ]
 ENVEOF
 )"
 
-# document-service and messaging-service use S3 via IAM task role (no explicit keys needed)
-deploy_backend "document-service"   "platform_document"
-deploy_backend "messaging-service"  "platform_messaging" "$(cat <<'ENVEOF'
+# communications-service includes messaging + notification sub-packages
+deploy_backend "communications-service" "platform_communications" "$(cat <<ENVEOF
 [
-  {"name":"WHATSAPP_API_URL","value":"https://graph.facebook.com/v19.0"},
-  {"name":"WHATSAPP_PHONE_ID","value":"${WHATSAPP_PHONE_ID}"},
-  {"name":"WHATSAPP_TOKEN","value":"${WHATSAPP_TOKEN}"},
+  {"name":"MAIL_HOST",          "value":"smtp.gmail.com"},
+  {"name":"MAIL_PORT",          "value":"587"},
+  {"name":"MAIL_USERNAME",      "value":"${MAIL_USERNAME}"},
+  {"name":"MAIL_PASSWORD",      "value":"${MAIL_PASSWORD}"},
+  {"name":"WHATSAPP_API_URL",   "value":"https://graph.facebook.com/v19.0"},
+  {"name":"WHATSAPP_PHONE_ID",  "value":"${WHATSAPP_PHONE_ID}"},
+  {"name":"WHATSAPP_TOKEN",     "value":"${WHATSAPP_TOKEN}"},
   {"name":"WHATSAPP_VERIFY_TOKEN","value":"${WHATSAPP_VERIFY_TOKEN}"},
   {"name":"WHATSAPP_APP_SECRET","value":"${WHATSAPP_APP_SECRET}"}
 ]
 ENVEOF
 )"
 
+# analytics-reporting-service includes reporting + analytics sub-packages
+deploy_backend "analytics-reporting-service" "platform_analytics_reporting" "$(cat <<ENVEOF
+[
+  {"name":"SMTP_HOST",    "value":"smtp.gmail.com"},
+  {"name":"SMTP_PORT",    "value":"587"},
+  {"name":"SMTP_USER",    "value":"${SMTP_USER}"},
+  {"name":"SMTP_PASSWORD","value":"${SMTP_PASSWORD}"}
+]
+ENVEOF
+)"
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. Frontend
+# Bug 13 fixed: Cloud Map URLs updated to actual merged service names
 # ═══════════════════════════════════════════════════════════════════════════════
 log "=== Deploying frontend ==="
 
@@ -345,19 +351,13 @@ FRONTEND_TASK_DEF=$(cat <<EOF
       "image": "${ECR_REGISTRY}/platform-frontend:${IMAGE_TAG}",
       "portMappings": [{"containerPort": 8080, "protocol": "tcp"}],
       "environment": [
-        {"name": "PORT", "value": "8080"},
-        {"name": "AUTH_SERVICE_URL",       "value": "auth-service.platform.local:8080"},
-        {"name": "CONNECTOR_SERVICE_URL",  "value": "connector-service.platform.local:8080"},
-        {"name": "CUSTOMER_SERVICE_URL",   "value": "customer-service.platform.local:8080"},
-        {"name": "LOAN_SERVICE_URL",       "value": "loan-service.platform.local:8080"},
-        {"name": "ELIGIBILITY_SERVICE_URL","value": "eligibility-service.platform.local:8080"},
-        {"name": "POLICY_SERVICE_URL",     "value": "policy-service.platform.local:8080"},
-        {"name": "COMMISSION_SERVICE_URL", "value": "commission-service.platform.local:8080"},
-        {"name": "MESSAGING_SERVICE_URL",  "value": "messaging-service.platform.local:8080"},
-        {"name": "DOCUMENT_SERVICE_URL",   "value": "document-service.platform.local:8080"},
-        {"name": "REPORTING_SERVICE_URL",  "value": "reporting-service.platform.local:8080"},
-        {"name": "ANALYTICS_SERVICE_URL",  "value": "analytics-service.platform.local:8080"},
-        {"name": "ROUTING_SERVICE_URL",    "value": "sm-routing-service.platform.local:8080"}
+        {"name": "PORT",                            "value": "8080"},
+        {"name": "AUTH_SERVICE_URL",                "value": "auth-service.platform.local:8080"},
+        {"name": "SALES_OPS_SERVICE_URL",           "value": "sales-ops-service.platform.local:8080"},
+        {"name": "CUSTOMER_DOCUMENT_SERVICE_URL",   "value": "customer-document-service.platform.local:8080"},
+        {"name": "LOAN_CORE_SERVICE_URL",           "value": "loan-core-service.platform.local:8080"},
+        {"name": "COMMUNICATIONS_SERVICE_URL",      "value": "communications-service.platform.local:8080"},
+        {"name": "ANALYTICS_REPORTING_SERVICE_URL", "value": "analytics-reporting-service.platform.local:8080"}
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
@@ -383,7 +383,6 @@ EOF
 
 FRONTEND_TD_ARN=$(register_task_def "platform-frontend" "$FRONTEND_TASK_DEF")
 
-# Frontend runs in a PUBLIC subnet so ALB can reach it, and is associated with the ALB target group
 existing_frontend=$(aws ecs describe-services \
   --region "$AWS_REGION" \
   --cluster "$ECS_CLUSTER" \
@@ -424,15 +423,15 @@ log "Frontend deployed: $FRONTEND_TD_ARN"
 # ═══════════════════════════════════════════════════════════════════════════════
 log "=== Waiting for services to stabilize... ==="
 
-SERVICES_TO_WATCH="frontend rabbitmq auth-service connector-service customer-service \
-  loan-service eligibility-service policy-service sm-routing-service \
-  document-service notification-service commission-service reporting-service \
-  analytics-service messaging-service"
+# Bug 8 fixed: list updated to actual 6 backend services + frontend + rabbitmq
+SERVICES_TO_WATCH="frontend rabbitmq auth-service sales-ops-service \
+  customer-document-service loan-core-service \
+  communications-service analytics-reporting-service"
 
 aws ecs wait services-stable \
   --region "$AWS_REGION" \
   --cluster "$ECS_CLUSTER" \
   --services $SERVICES_TO_WATCH \
-  || true  # don't fail CI if some services take longer; logs will show status
+  || true
 
 log "=== Deployment complete ==="

@@ -25,7 +25,7 @@ public class CommissionTransactionController {
     private final ConnectorService  connectorService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'RM', 'ROLE_RM')")
     public ResponseEntity<List<CommissionTransaction>> getAllTransactions(
             @RequestParam(required = false) UUID connectorId) {
         return ResponseEntity.ok(commissionService.getAllTransactions(connectorId));

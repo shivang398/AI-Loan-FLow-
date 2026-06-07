@@ -116,7 +116,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/connector/dashboard',        icon: <LayoutDashboard size={18} />, label: 'Overview' },
     { key: '/connector/cibil',            icon: <ShieldCheck size={18} />,     label: 'CIBIL Check' },
     { key: '/connector/bsa',              icon: <Files size={18} />,           label: 'Statement Analyzer' },
-    { key: '/connector/foir',             icon: <BarChart3 size={18} />,       label: 'FOIR Calculator' },
+    { key: '/connector/foir',             icon: <BarChart3 size={18} />,       label: 'Check Eligibility' },
     { key: '/connector/emi-calculator',   icon: <Calculator size={18} />,      label: 'EMI Calculator' },
     { key: '/connector/earnings',         icon: <Wallet size={18} />,          label: 'My Earnings' },
     { key: '/connector/policies',         icon: <BookOpen size={18} />,        label: 'Policies' },

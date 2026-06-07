@@ -472,7 +472,7 @@ const UserManagement: React.FC = () => {
         footer={null}
         width={650}
         centered
-        destroyOnHidden
+        forceRender
       >
         <Form form={form} layout="vertical" onFinish={handleSaveStaff} style={{ marginTop: 20 }}>
           <Row gutter={16}>

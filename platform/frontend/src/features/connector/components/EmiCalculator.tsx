@@ -263,7 +263,7 @@ const EmiCalculator: React.FC = () => {
 
                   {/* Pie Chart */}
                   <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '1px solid var(--surface-3)', height: 220 }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={172} debounce={10}>
                       <PieChart>
                         <Pie
                           data={pieData}
@@ -313,7 +313,7 @@ const EmiCalculator: React.FC = () => {
                 <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '1px solid var(--surface-3)' }}>
                   <Title level={5} style={{ marginBottom: 20 }}>Yearly Principal vs Interest</Title>
                   <div style={{ height: 200 }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={200} debounce={10}>
                       <LineChart data={yearlySummary} margin={{ left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                         <XAxis dataKey="year" tick={{ fontSize: 12 }} />

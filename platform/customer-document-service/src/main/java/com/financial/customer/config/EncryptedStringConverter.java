@@ -77,9 +77,17 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
             Cipher cipher   = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(TAG_BITS, iv));
             return new String(cipher.doFinal(ct), StandardCharsets.UTF_8);
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            // Row was saved with a different key or stored in plaintext before encryption was introduced
+            System.err.println("[WARN] PII decryption failed for a stored value (key mismatch or legacy plaintext) — returning null");
+            return null;
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException
-               | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+               | InvalidAlgorithmParameterException e) {
             throw new IllegalStateException("PII decryption failed", e);
+        } catch (IllegalArgumentException e) {
+            // Base64.decode throws IllegalArgumentException for plaintext that isn't valid base64
+            System.err.println("[WARN] PII field is not valid base64 (legacy plaintext?) — returning null");
+            return null;
         }
     }
 }

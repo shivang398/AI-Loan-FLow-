@@ -349,7 +349,7 @@ const BusinessAnalytics: React.FC = () => {
             </div>
             <div style={{ height: 280, minHeight: 280 }}>
               {hasDisbursal ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={280} debounce={10}>
                   <LineChart data={disbursementData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
@@ -396,7 +396,7 @@ const BusinessAnalytics: React.FC = () => {
                 <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Loan rejection reasons · live from loan-service</div>
                 <div style={{ height: 200, minHeight: 200 }}>
                   {hasRejections ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={200} debounce={10}>
                       <PieChart>
                         <Pie data={rejectionData} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
                           paddingAngle={4} dataKey="value" startAngle={90} endAngle={-270}>
@@ -433,7 +433,7 @@ const BusinessAnalytics: React.FC = () => {
                 <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Connector status breakdown · live from connector-service</div>
                 <div style={{ height: 200, minHeight: 200 }}>
                   {connectors.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={200} debounce={10}>
                       <BarChart data={[
                         { name: 'Active',   count: connectors.filter(c => c.status === 'ACTIVE').length },
                         { name: 'Pending',  count: connectors.filter(c => c.status === 'PENDING_APPROVAL').length },

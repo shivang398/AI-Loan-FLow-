@@ -102,6 +102,8 @@ export function useTeamMeetingWS() {
     ws.onerror = () => setStatus('RECONNECTING');
 
     ws.onclose = () => {
+      // If cleanup already cleared the ref, this is an intentional close — skip reconnect
+      if (wsRef.current !== ws) return;
       wsRef.current = null;
       retriesRef.current += 1;
       if (retriesRef.current >= MAX_RETRIES) {
@@ -118,8 +120,11 @@ export function useTeamMeetingWS() {
   useEffect(() => {
     connect();
     return () => {
-      wsRef.current?.close();
-      wsRef.current = null;
+      const ws = wsRef.current;
+      wsRef.current = null;  // clear ref first so onclose sees null !== ws and skips reconnect
+      if (ws && ws.readyState !== WebSocket.CLOSING && ws.readyState !== WebSocket.CLOSED) {
+        ws.close();
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

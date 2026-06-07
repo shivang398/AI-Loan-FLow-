@@ -444,6 +444,7 @@ const ReportingDashboard: React.FC = () => {
           },
           {
             key: 'schedule',
+            forceRender: true,
             label: <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Settings size={16} />Report Schedule</div>,
             children: (
               <div style={{ maxWidth: 520 }}>

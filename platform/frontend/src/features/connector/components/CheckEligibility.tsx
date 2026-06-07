@@ -247,7 +247,7 @@ const CheckEligibility: React.FC = () => {
         open={!!selectedLead}
         onCancel={() => setSelectedLead(null)}
         footer={null}
-        destroyOnHidden
+        forceRender
       >
         <Form form={updateForm} layout="vertical" onFinish={handleStatusUpdate} style={{ marginTop: 16 }}>
           <Form.Item name="status" label="New Status" rules={[{ required: true }]}>

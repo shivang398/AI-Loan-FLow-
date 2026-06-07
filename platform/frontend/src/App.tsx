@@ -16,7 +16,8 @@ import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDas
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
 import EmiCalculator from './features/connector/components/EmiCalculator';
-import { CibilCheckPage, BankStatementAnalyzerPage, FoirCalculatorPage } from './features/connector/components/ConnectorTools';
+import { CibilCheckPage, BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
+import CheckEligibility from './features/connector/components/CheckEligibility';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
 import OpsTeamMeetingPage from './features/team-meeting/components/OpsTeamMeetingPage';
 import DocumentLibrary from './features/documents/components/DocumentLibrary';
@@ -110,7 +111,7 @@ const App: React.FC = () => {
                 <Route path="/connector/dashboard"          element={<ConnectorDashboard />} />
                 <Route path="/connector/cibil"              element={<CibilCheckPage />} />
                 <Route path="/connector/bsa"                element={<BankStatementAnalyzerPage />} />
-                <Route path="/connector/foir"               element={<FoirCalculatorPage />} />
+                <Route path="/connector/foir"               element={<CheckEligibility />} />
                 <Route path="/connector/emi-calculator"     element={<EmiCalculator />} />
                 <Route path="/connector/earnings"           element={<CommissionDashboard />} />
                 <Route path="/connector/policies"           element={<PoliciesPage />} />

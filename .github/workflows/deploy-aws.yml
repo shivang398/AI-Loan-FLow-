@@ -47,6 +47,8 @@ jobs:
           path: platform/*/target/surefire-reports/
 
   # ── Build & Push backend Java services ──────────────────────────────────────
+  # Bug 16 fixed: matrix was listing 13 pre-merger service names that no longer
+  # exist as separate Maven modules — updated to the 6 actual merged services
   build-backend:
     needs: test
     name: Build ${{ matrix.service }}
@@ -57,18 +59,11 @@ jobs:
       matrix:
         service:
           - auth-service
-          - connector-service
-          - customer-service
-          - loan-service
-          - eligibility-service
-          - policy-service
-          - sm-routing-service
-          - document-service
-          - notification-service
-          - commission-service
-          - reporting-service
-          - analytics-service
-          - messaging-service
+          - sales-ops-service
+          - customer-document-service
+          - loan-core-service
+          - communications-service
+          - analytics-reporting-service
 
     steps:
       - name: Checkout
@@ -186,6 +181,7 @@ jobs:
           echo "frontend_tg=$(get_output FrontendTargetGroupArn)" >> $GITHUB_OUTPUT
           echo "efs_id=$(get_output EFSFileSystemId)" >> $GITHUB_OUTPUT
 
+      # Bug 17 fixed: added all missing secrets that deploy.sh requires
       - name: Run deploy script
         env:
           IMAGE_TAG: ${{ github.sha }}
@@ -209,12 +205,20 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PII_ENCRYPTION_KEY: ${{ secrets.PII_ENCRYPTION_KEY }}
+          INTERNAL_SERVICE_TOKEN: ${{ secrets.INTERNAL_SERVICE_TOKEN }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
           WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
           WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
           WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
+          TENACIO_CRIF_CLIENT_ID: ${{ secrets.TENACIO_CRIF_CLIENT_ID }}
+          TENACIO_CRIF_API_KEY: ${{ secrets.TENACIO_CRIF_API_KEY }}
+          TENACIO_CRIF_WORKFLOW_ID: ${{ secrets.TENACIO_CRIF_WORKFLOW_ID }}
+          CORS_ALLOWED_ORIGIN: ${{ secrets.CORS_ALLOWED_ORIGIN }}
         run: |
           chmod +x aws/scripts/deploy.sh
           aws/scripts/deploy.sh
@@ -226,6 +230,6 @@ jobs:
             --query "Stacks[0].Outputs[?OutputKey=='ALBDNSName'].OutputValue" \
             --output text)
           echo ""
-          echo "✅ Deployment complete!"
-          echo "🌐 Application URL: http://$ALB_DNS"
+          echo "Deployment complete!"
+          echo "Application URL: http://$ALB_DNS"
           echo ""

@@ -9,6 +9,8 @@ import {
   TrendingUp, Award, FileText, Activity,
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../../store';
 
 /* ── types ──────────────────────────────────────────────────────────────── */
 interface Connector {
@@ -33,6 +35,7 @@ const fmt = (n: number) =>
 
 /* ── component ───────────────────────────────────────────────────────────── */
 const ConnectorTracker: React.FC = () => {
+  const user = useSelector((s: RootState) => s.auth.user);
   const [rmProfile,    setRmProfile]   = useState<Connector | null>(null);
   const [rows,         setRows]        = useState<ConnectorRow[]>([]);
   const [filtered,     setFiltered]    = useState<ConnectorRow[]>([]);

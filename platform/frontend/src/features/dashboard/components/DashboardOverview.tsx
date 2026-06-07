@@ -258,7 +258,7 @@ const DashboardOverview: React.FC = () => {
                 </div>
                 <div style={{ height: 300, minHeight: 300 }}>
                   {chartData.some(d => d.applications > 0) ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={300} debounce={10}>
                       <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="gApps" x1="0" y1="0" x2="0" y2="1">

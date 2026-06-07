@@ -193,7 +193,7 @@ const ConnectorDashboard: React.FC = () => {
 
   const tools = [
     { icon: <ShieldCheck />, label: 'CIBIL Check',        sub: 'Generate bureau PDF report',   accent: '#3b82f6', path: '/connector/cibil' },
-    { icon: <BarChart3 />,   label: 'FOIR Calculator',    sub: 'Bank-specific eligibility',     accent: '#10b981', path: '/connector/foir' },
+    { icon: <BarChart3 />,   label: 'Check Eligibility',  sub: 'Leads from eligibility form',   accent: '#10b981', path: '/connector/foir' },
     { icon: <Calculator />,  label: 'EMI Calculator',      sub: 'All loan types & banks',        accent: '#f59e0b', path: '/connector/emi-calculator' },
     { icon: <FileText />,    label: 'Statement Analyzer',  sub: 'PDF bank statement analysis',  accent: '#8b5cf6', path: '/connector/bsa' },
     { icon: <BookOpen />,    label: 'Policies',            sub: 'Bank & compliance guidelines', accent: '#06b6d4', path: '/connector/policies' },

@@ -271,7 +271,7 @@ const TeamLeaderDashboard: React.FC = () => {
                         showInfo={false}
                         strokeColor={cfg.color}
                         trailColor={`${cfg.color}20`}
-                        strokeWidth={4}
+                        size={['100%', 4]}
                         style={{ marginTop: 8, marginBottom: 0 }}
                       />
                       <div style={{ fontSize: 10, color: cfg.color, fontWeight: 600 }}>{pct}%</div>
@@ -505,7 +505,7 @@ const TeamLeaderDashboard: React.FC = () => {
                         showInfo={false}
                         strokeColor={item.color}
                         trailColor={`${item.color}15`}
-                        strokeWidth={8}
+                        size={['100%', 8]}
                         style={{ marginBottom: 6 }}
                       />
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
