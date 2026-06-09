@@ -155,7 +155,7 @@ const ConnectorDashboard: React.FC = () => {
         const res  = await apiClient.get('/loans', { params });
         const list: Loan[] = res.data?.data || res.data || [];
         setLoans(list.slice(0, 6));
-      } catch { setLoans([]); }
+      } catch (err) { console.error('Failed to fetch loans:', err); setLoans([]); }
       finally   { setLoadingLoans(false); }
     };
     fetchLoans();
@@ -168,7 +168,7 @@ const ConnectorDashboard: React.FC = () => {
         const res  = await apiClient.get(`/transactions/connector/${connectorProfileId}`);
         const list: Earning[] = res.data?.data || res.data || [];
         setEarnings(list);
-      } catch { setEarnings([]); }
+      } catch (err) { console.error('Failed to fetch earnings:', err); setEarnings([]); }
     };
     fetchEarnings();
   }, [connectorProfileId]);
@@ -178,7 +178,7 @@ const ConnectorDashboard: React.FC = () => {
       try {
         const res = await apiClient.get('/eligibility/submissions');
         setLeads((res.data?.data || []).length);
-      } catch { setLeads(0); }
+      } catch (err) { console.error('Failed to fetch leads:', err); setLeads(0); }
     };
     fetchLeads();
   }, []);

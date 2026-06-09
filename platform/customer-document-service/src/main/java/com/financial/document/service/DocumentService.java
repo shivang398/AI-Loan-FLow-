@@ -108,15 +108,24 @@ public class DocumentService {
         if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
             throw new RuntimeException("Invalid file type. Allowed: PDF, JPEG, PNG");
         }
-        byte[] header = file.getBytes();
-        if (!hasValidMagicBytes(header, mimeType)) {
+        byte[] magicHeader = new byte[8];
+        try (java.io.InputStream is = file.getInputStream()) {
+            is.read(magicHeader);
+        }
+        if (!hasValidMagicBytes(magicHeader, mimeType)) {
             throw new RuntimeException("File content does not match declared type");
         }
         String folderPath = "/customers/" + customerId + "/kyc";
         String s3Key = "customers/" + customerId + "/kyc/" + documentType + "/" + UUID.randomUUID();
         s3Client.putObject(
-                PutObjectRequest.builder().bucket(bucket).key(s3Key).contentType(mimeType).build(),
-                RequestBody.fromBytes(header)
+                PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(s3Key)
+                        .contentType(mimeType)
+                        .contentLength(file.getSize())
+                        .build(),
+                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
+                        file.getInputStream(), file.getSize())
         );
         Document document = Document.builder()
                 .ownerId(customerId)

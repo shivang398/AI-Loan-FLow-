@@ -40,6 +40,7 @@ public class LoanEventNotificationConsumer {
             Map<String, Object> payload = objectMapper.convertValue(event.getPayload(), new TypeReference<>() {});
             String status = (String) payload.get("status");
             String loanId = (String) payload.get("loanId");
+            String customerId = (String) payload.get("customerId");
 
             if ("APPROVED".equals(status) || "REJECTED".equals(status) || "DISBURSED".equals(status)) {
                 String idempotencyKey = event.getEventId() + "_notification";
@@ -50,8 +51,12 @@ public class LoanEventNotificationConsumer {
                     return;
                 }
 
+                UUID recipientId = (customerId != null && !customerId.isBlank())
+                        ? UUID.fromString(customerId)
+                        : null;
+
                 Notification notification = Notification.builder()
-                        .recipientId(UUID.randomUUID()) // derive from customer in production
+                        .recipientId(recipientId)
                         .channel("EMAIL")
                         .type(status)
                         .status("SENT")

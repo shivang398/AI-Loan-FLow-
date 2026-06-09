@@ -922,7 +922,11 @@ public class TransactionAnalyserService {
             .sorted()
             .collect(Collectors.toList());
 
-        BigDecimal median = sortedAmts.get(sortedAmts.size() / 2);
+        int n = sortedAmts.size();
+        BigDecimal median = (n % 2 == 1)
+                ? sortedAmts.get(n / 2)
+                : sortedAmts.get(n / 2 - 1).add(sortedAmts.get(n / 2))
+                            .divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
 
         // Cluster transactions within 10% of the median
         List<Transaction> cluster = allLargeCredits.stream()

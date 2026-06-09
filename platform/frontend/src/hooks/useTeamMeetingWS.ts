@@ -6,17 +6,12 @@ import {
 import type { TeamMessage, TeamRoom, WSConnectionStatus } from '../store/slices/teamMeetingSlice';
 import { RootState } from '../store';
 
-// Token helpers — check both storage keys used by the app
 function getAuthToken(): string | null {
-  return (
-    sessionStorage.getItem('token') ||
-    localStorage.getItem('token') ||
-    null
-  );
+  try { return sessionStorage.getItem('token'); } catch { return null; }
 }
 
-// Max consecutive connection attempts before giving up and staying in simulation mode
 const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 1000;
 
 export function useTeamMeetingWS() {
   const dispatch    = useDispatch();
@@ -67,11 +62,13 @@ export function useTeamMeetingWS() {
     }
   }, [dispatch]);
 
-  // ─── Send helper (queues if not open) ─────────────────────────────────
-  const sendFrame = useCallback((payload: object) => {
+  // ─── Send helper — returns false if the socket is not open ────────────
+  const sendFrame = useCallback((payload: object): boolean => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(payload));
+      return true;
     }
+    return false;
   }, []);
 
   // ─── Connect ──────────────────────────────────────────────────────────
@@ -113,7 +110,8 @@ export function useTeamMeetingWS() {
         return;
       }
       setStatus('DISCONNECTED');
-      setTimeout(connect, 3000);
+      const delay = BASE_RETRY_DELAY_MS * Math.pow(2, retriesRef.current - 1);
+      setTimeout(connect, Math.min(delay, 30_000));
     };
   }, [user?.id, setStatus, handleFrame]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -145,8 +143,8 @@ export function useTeamMeetingWS() {
   const sendChatMessage = useCallback((
     msgPayload: Omit<TeamMessage, 'id' | 'status'>,
     room: TeamRoom,
-  ) => {
-    sendFrame({
+  ): boolean => {
+    return sendFrame({
       type:    'SEND_MESSAGE',
       roomId:  room.id,
       payload: { ...msgPayload },

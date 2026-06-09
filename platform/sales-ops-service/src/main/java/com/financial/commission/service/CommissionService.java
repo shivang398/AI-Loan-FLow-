@@ -23,6 +23,9 @@ public class CommissionService {
 
     @Transactional
     public CommissionTransaction calculateAndRecord(UUID loanId, UUID connectorId, BigDecimal loanAmount) {
+        if (loanAmount == null || loanAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Loan amount must be greater than zero");
+        }
         BigDecimal connectorCommission = loanAmount.multiply(DEFAULT_CONNECTOR_RATE);
         BigDecimal tlOverride          = loanAmount.multiply(DEFAULT_TL_OVERRIDE);
         BigDecimal rmOverride          = loanAmount.multiply(DEFAULT_RM_OVERRIDE);

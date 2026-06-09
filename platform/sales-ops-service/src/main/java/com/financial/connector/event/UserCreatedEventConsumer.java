@@ -13,8 +13,8 @@ import org.springframework.amqp.rabbit.annotation.QueueBinding;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -38,7 +38,7 @@ public class UserCreatedEventConsumer {
             String userIdStr = (String) payload.get("userId");
             String email = (String) payload.get("email");
             @SuppressWarnings("unchecked")
-            Set<String> roles = (Set<String>) payload.get("roles");
+            Collection<String> roles = (Collection<String>) payload.get("roles");
             
             if (userIdStr != null && roles != null && !roles.isEmpty()) {
                 UUID userId = UUID.fromString(userIdStr);

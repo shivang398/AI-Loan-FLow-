@@ -275,6 +275,13 @@ const TeamMeeting: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isTyping, activeRoomId]);
 
+  // Clear typing timer on unmount to prevent state updates after unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+  }, []);
+
   // Join room on WS + load message history whenever active room changes
   useEffect(() => {
     if (!activeRoomId) return;
@@ -289,7 +296,7 @@ const TeamMeeting: React.FC = () => {
             roomId:         m.roomKey,
             senderId:       m.senderId,
             senderName:     m.senderName,
-            senderRole:     m.senderRole as any,
+            senderRole:     (ROLE_MAP[m.senderRole] ?? 'CONNECTOR') as UserRole,
             senderInitials: m.senderInitials || '',
             body:           m.body,
             timestamp:      m.createdAt || new Date().toISOString(),

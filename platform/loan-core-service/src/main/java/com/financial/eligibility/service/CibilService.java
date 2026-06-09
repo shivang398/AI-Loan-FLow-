@@ -188,7 +188,11 @@ public class CibilService {
                 crifUrl, new HttpEntity<>(payload, headers), String.class);
             log.info("Tenacio CRIF API — status={}", response.getStatusCode());
 
-            JsonNode root = objectMapper.readTree(response.getBody());
+            String responseBody = response.getBody();
+            if (responseBody == null) {
+                throw new RuntimeException("Empty response body from CRIF API");
+            }
+            JsonNode root = objectMapper.readTree(responseBody);
 
             String apiStatus = root.path("status").asText("");
             if ("error".equalsIgnoreCase(apiStatus)) {
@@ -1305,9 +1309,14 @@ public class CibilService {
         try {
             java.net.URI uri = java.net.URI.create(url);
             String host = uri.getHost();
-            if (!ALLOWED_TENACIO_HOSTS.contains(host)) {
+            if (host == null || !ALLOWED_TENACIO_HOSTS.contains(host)) {
                 throw new IllegalStateException(
                     "Blocked outbound API call to unexpected host: " + host);
+            }
+            int port = uri.getPort();
+            if (port != -1 && port != 443 && port != 8443) {
+                throw new IllegalStateException(
+                    "Blocked non-standard port in API URL: " + port);
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Invalid API URL configured", e);

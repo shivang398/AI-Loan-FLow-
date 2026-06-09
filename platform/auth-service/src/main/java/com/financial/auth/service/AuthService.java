@@ -59,7 +59,7 @@ public class AuthService {
 
     private void validateEmailDomain(String email) {
         int atIndex = email.lastIndexOf('@');
-        if (atIndex < 0) throw new RuntimeException("Invalid email address");
+        if (atIndex <= 0) throw new RuntimeException("Invalid email address");
         String domain = email.substring(atIndex + 1).toLowerCase(java.util.Locale.ROOT);
         if (!ALLOWED_DOMAINS.contains(domain)) {
             SecurityAuditLog.registrationBlocked(email, "domain-not-allowed:" + domain);

@@ -7,7 +7,7 @@ server:
 
 spring:
   main:
-    lazy-initialization: true
+    lazy-initialization: false
   application:
     name: communications-service
   datasource:
@@ -38,14 +38,12 @@ spring:
     password: ${RABBITMQ_PASS}
     listener:
       simple:
-        auto-startup: false
         retry:
           enabled: true
           initial-interval: 1000
           max-attempts: 3
           multiplier: 2.0
-      direct:
-        auto-startup: false
+      direct: {}
   data:
     redis:
       host: ${REDIS_HOST:localhost}

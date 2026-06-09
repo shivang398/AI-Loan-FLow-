@@ -7,7 +7,7 @@ server:
 
 spring:
   main:
-    lazy-initialization: true
+    lazy-initialization: false
   application:
     name: sales-ops-service
   datasource:
@@ -37,9 +37,17 @@ spring:
     connection-timeout: 1000
     listener:
       simple:
-        auto-startup: false
+        retry:
+          enabled: true
+          initial-interval: 2000
+          max-attempts: 3
+          multiplier: 2.0
       direct:
-        auto-startup: false
+        retry:
+          enabled: true
+          initial-interval: 2000
+          max-attempts: 3
+          multiplier: 2.0
 
 app:
   jwt:

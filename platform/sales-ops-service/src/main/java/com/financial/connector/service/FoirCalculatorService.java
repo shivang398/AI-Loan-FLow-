@@ -35,7 +35,10 @@ public class FoirCalculatorService {
     public FoirResult calculate(FoirRequest req) {
         log.info("FOIR calculation for '{}' ({})", req.applicantName(), req.applicantType());
 
-        BigDecimal netIncome      = req.netMonthlyIncome();
+        BigDecimal netIncome = req.netMonthlyIncome();
+        if (netIncome == null || netIncome.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Net monthly income must be greater than zero");
+        }
         List<LoanObligation> obs  = normalise(req.existingObligations());
         BigDecimal totalObs       = sumObligations(obs);
 
@@ -99,6 +102,9 @@ public class FoirCalculatorService {
     }
 
     public BigDecimal calculateEmi(BigDecimal principal, BigDecimal annualRate, int months) {
+        if (months <= 0) {
+            throw new IllegalArgumentException("Tenure months must be greater than zero");
+        }
         BigDecimal r = annualRate.divide(TWELVE_HUNDRED, CALC_SCALE, ROUND);
         if (r.compareTo(BigDecimal.ZERO) == 0)
             return principal.divide(new BigDecimal(months), 2, ROUND);

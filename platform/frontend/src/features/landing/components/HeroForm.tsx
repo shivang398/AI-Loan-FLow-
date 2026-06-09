@@ -1,5 +1,8 @@
 import React from 'react';
-import { ClipboardList, User, MapPin, Briefcase, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ClipboardList, User, MapPin, Briefcase, Lock } from 'lucide-react';
+
+const NAVY = '#0B1E3D';
+const GOLD = '#C4993A';
 
 const STEPS = [
   { icon: ClipboardList, label: 'Loan Information',   desc: 'Amount, type & monthly income' },
@@ -15,89 +18,92 @@ const scrollToForm = () => {
 
 const HeroForm: React.FC = () => (
   <div style={{
-    background: '#ffffff',
-    borderRadius: 14,
-    padding: '32px 28px 26px',
-    boxShadow: '0 20px 60px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.08)',
-    border: '1px solid #E5E7EB',
-    position: 'relative',
+    background: '#FFFFFF',
+    borderRadius: 4,
+    padding: '0 0 28px',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(255,255,255,0.12)',
     overflow: 'hidden',
   }}>
-    {/* Navy top accent */}
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: '#0A1F44' }} />
 
-    {/* Header */}
-    <div style={{ marginBottom: 22 }}>
-      <div style={{
-        display: 'inline-block', background: '#EFF6FF', borderRadius: 4,
-        padding: '3px 10px', marginBottom: 12,
-      }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
-          Free · No Obligation
-        </span>
+    {/* Gold top bar */}
+    <div style={{
+      background: `linear-gradient(90deg, ${NAVY} 0%, #1A3A6B 100%)`,
+      padding: '22px 28px',
+      borderBottom: `3px solid ${GOLD}`,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: GOLD, letterSpacing: '0.10em', textTransform: 'uppercase', marginBottom: 8, fontFamily: 'Inter' }}>
+        Free · No Obligation · 5 Minutes
       </div>
       <h3 style={{
         margin: 0,
-        fontFamily: '"Plus Jakarta Sans", sans-serif',
-        fontWeight: 800, fontSize: 20,
-        color: '#0A1F44', lineHeight: 1.25,
+        fontFamily: '"Playfair Display", Georgia, serif',
+        fontWeight: 700, fontSize: 22,
+        color: '#FFFFFF', lineHeight: 1.25,
       }}>
         Apply in 4 Simple Steps
       </h3>
-      <p style={{ margin: '6px 0 0', fontSize: 13, color: '#6B7280', lineHeight: 1.55 }}>
-        Complete once — get matched with the best lender for your profile
+      <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.50)', lineHeight: 1.55, fontFamily: 'Inter' }}>
+        Complete once — matched with the best lender for your profile
       </p>
     </div>
 
     {/* Steps */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
-      {STEPS.map(({ icon: Icon, label, desc }, i) => (
-        <div key={label} style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '10px 12px', borderRadius: 10,
-          background: '#F9FAFB', border: '1px solid #E5E7EB',
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-            background: '#0A1F44',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+    <div style={{ padding: '24px 28px 0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 24 }}>
+        {STEPS.map(({ icon: Icon, label, desc }, i) => (
+          <div key={label} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            padding: '13px 16px',
+            background: i % 2 === 0 ? '#F8FAFD' : '#FFFFFF',
+            borderBottom: '1px solid #EEF2F8',
           }}>
-            <Icon size={15} color="#ffffff" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
-              Step {i + 1} — {label}
+            <div style={{
+              width: 34, height: 34, borderRadius: 3, flexShrink: 0,
+              background: NAVY,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon size={14} color={GOLD} />
             </div>
-            <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>{desc}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: NAVY, lineHeight: 1.2, fontFamily: 'Inter' }}>
+                Step {i + 1} — {label}
+              </div>
+              <div style={{ fontSize: 11, color: '#7A90A8', fontWeight: 400, marginTop: 1, fontFamily: 'Inter' }}>
+                {desc}
+              </div>
+            </div>
           </div>
-          <ArrowRight size={12} color="#D1D5DB" />
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
 
-    {/* CTA */}
-    <button
-      onClick={scrollToForm}
-      style={{
-        width: '100%', padding: '14px 20px', borderRadius: 8, border: 'none',
-        background: '#2563EB',
-        color: '#ffffff', fontSize: 14, fontWeight: 700,
-        cursor: 'pointer', letterSpacing: '0.01em',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        transition: 'background 150ms',
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1D4ED8'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2563EB'; }}
-    >
-      Begin My Application →
-    </button>
+      {/* CTA */}
+      <button
+        onClick={scrollToForm}
+        style={{
+          width: '100%', padding: '15px 20px',
+          borderRadius: 3, border: 'none',
+          background: GOLD,
+          color: '#ffffff', fontSize: 14, fontWeight: 700,
+          cursor: 'pointer', letterSpacing: '0.03em',
+          fontFamily: 'Inter', transition: 'background 150ms',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#B08830'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = GOLD; }}
+      >
+        Begin My Application →
+      </button>
 
-    {/* Trust line */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12 }}>
-      <ShieldCheck size={12} color="#10B981" />
-      <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
-        256-bit encrypted · No spam · Approx. 5 minutes
-      </span>
+      {/* Security note */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        marginTop: 14, paddingTop: 14, borderTop: '1px solid #EEF2F8',
+      }}>
+        <Lock size={11} color="#7A90A8" />
+        <span style={{ fontSize: 11, color: '#7A90A8', fontWeight: 500, fontFamily: 'Inter' }}>
+          256-bit encrypted · No spam · Data never sold
+        </span>
+      </div>
     </div>
   </div>
 );

@@ -20,9 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +48,13 @@ public class CustomerService {
     // Fix 12: shared secret for inter-service calls — must match sales-ops-service
     @Value("${app.internal-token}")
     private String internalToken;
+
+    private final AtomicLong assignCounter = new AtomicLong(0);
+
+    @PostConstruct
+    void initAssignCounter() {
+        assignCounter.set(leadRepository.count());
+    }
 
     @Transactional
     public Customer createCustomer(CustomerRequests.CreateCustomerRequest request) {
@@ -197,13 +206,12 @@ public class CustomerService {
         return fallback.stream().map(String::trim).filter(s -> !s.isBlank() && !s.equals("unassigned")).collect(Collectors.toList());
     }
 
-    private synchronized String assignRoundRobin() {
+    private String assignRoundRobin() {
         List<String> opsEmails = getActiveOpsEmails();
         if (opsEmails.isEmpty()) {
             return "unassigned";
         }
-        long totalLeads = leadRepository.count();
-        int idx = (int) (totalLeads % opsEmails.size());
+        int idx = (int) (assignCounter.getAndIncrement() % opsEmails.size());
         return opsEmails.get(idx);
     }
 

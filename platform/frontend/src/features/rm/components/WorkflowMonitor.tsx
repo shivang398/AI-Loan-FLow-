@@ -9,8 +9,6 @@ import {
   XCircle, AlertTriangle, Loader, FileText, Eye,
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../../store';
 
 /* ── types ──────────────────────────────────────────────────────────────── */
 interface Connector { id: string; firstName: string; lastName: string; email: string; }

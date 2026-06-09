@@ -107,8 +107,7 @@ public class ConnectorController {
                             || a.equals("RM") || a.equals("ROLE_RM"));
         if (!isPrivileged) {
             // Non-privileged users may only view their own hierarchy
-            UUID callerId = UUID.nameUUIDFromBytes(
-                    authentication.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            UUID callerId = connectorService.getMe(authentication.getName()).getId();
             if (!callerId.equals(id)) {
                 throw new org.springframework.security.access.AccessDeniedException(
                         "Cannot view another connector's hierarchy");
@@ -128,8 +127,7 @@ public class ConnectorController {
                             || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER")
                             || a.equals("RM") || a.equals("ROLE_RM"));
         if (!isPrivileged) {
-            UUID callerId = UUID.nameUUIDFromBytes(
-                    authentication.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            UUID callerId = connectorService.getMe(authentication.getName()).getId();
             if (!callerId.equals(id)) {
                 throw new org.springframework.security.access.AccessDeniedException(
                         "Cannot view another connector's reportees");

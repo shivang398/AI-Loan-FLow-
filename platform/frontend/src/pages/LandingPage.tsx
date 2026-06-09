@@ -18,17 +18,30 @@ import '../features/landing/styles/landing.css';
 
 const landingTheme = {
   token: {
-    colorPrimary: '#2563EB',
-    colorLink: '#2563EB',
-    borderRadius: 8,
+    colorPrimary: '#0B1E3D',
+    colorLink: '#1A3A6B',
+    borderRadius: 3,
     fontFamily: 'Inter, sans-serif',
+    colorBgBase: '#FFFFFF',
+    colorTextBase: '#0B1E3D',
+  },
+  components: {
+    Button: {
+      borderRadius: 3,
+    },
+    Input: {
+      borderRadius: 3,
+    },
+    Select: {
+      borderRadius: 3,
+    },
   },
 };
 
 const LandingPage: React.FC = () => (
   <ConfigProvider theme={landingTheme}>
     <AntdApp>
-      <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#F3F6FA', fontFamily: 'Inter, sans-serif' }}>
         <Navbar />
         <Hero />
         <LoanProducts />

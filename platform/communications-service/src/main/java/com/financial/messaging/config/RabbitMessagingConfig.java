@@ -1,11 +1,20 @@
 package com.financial.messaging.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMessagingConfig {
+
+    @Value("${app.rabbitmq.exchange:platform.exchange}")
+    private String platformExchangeName;
+
+    @Bean
+    public TopicExchange platformExchange() {
+        return new TopicExchange(platformExchangeName, true, false);
+    }
 
     public static final String EXCHANGE = "messaging.exchange";
     public static final String QUEUE = "whatsapp.send.queue";

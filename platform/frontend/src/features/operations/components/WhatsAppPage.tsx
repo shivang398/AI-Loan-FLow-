@@ -209,7 +209,11 @@ const WhatsAppPage: React.FC = () => {
     apiClient.get(`/messaging/conversations/${activeConvId}/messages`)
       .then(res => {
         const list: Message[] = res.data?.data || res.data || [];
-        setMessages(list);
+        // Merge with any WS messages already received to avoid losing real-time msgs
+        setMessages(prev => {
+          const historicIds = new Set(list.map((m: Message) => m.id));
+          return [...list, ...prev.filter(m => !historicIds.has(m.id))];
+        });
         const last = list[list.length - 1];
         if (last) {
           setConversations(prev => prev.map(c =>
@@ -217,14 +221,14 @@ const WhatsAppPage: React.FC = () => {
           ));
         }
       })
-      .catch(() => setMessages([]))
+      .catch((err) => { console.error('Failed to load message history:', err); setMessages(prev => prev); })
       .finally(() => setLoadingMsgs(false));
   }, [activeConvId]);
 
   /* ── WebSocket for real-time inbound messages ── */
   useEffect(() => {
     if (!activeConvId) return;
-    const wsToken = localStorage.getItem('token') ?? '';
+    const wsToken = sessionStorage.getItem('token') ?? '';
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${wsProtocol}//${window.location.hostname}:8087/ws-messaging/websocket?token=${encodeURIComponent(wsToken)}`);
     wsRef.current = ws;
