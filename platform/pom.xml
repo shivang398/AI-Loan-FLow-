@@ -40,7 +40,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- Modernized Security & Typesafety -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
@@ -64,14 +63,33 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- Inherited by every module (including common-lib) -->
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!-- Spring Boot 4.x splits Flyway auto-config into spring-boot-starter-flyway;
-             flyway-core alone is not enough to activate it -->
+
+        <!-- Web / Security / Messaging — universal across all modules -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Spring Boot 4.x splits Flyway auto-config into spring-boot-starter-flyway -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
@@ -86,7 +104,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-persistence</artifactId>
         </dependency>
-        <!-- Fix 13: Distributed tracing — every service auto-gets trace/span IDs in logs -->
+
+        <!-- Observability — every service auto-gets trace/span IDs in logs -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
@@ -98,6 +117,18 @@
         <dependency>
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-reporter-brave</artifactId>
+        </dependency>
+
+        <!-- Test infrastructure — universal -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -119,6 +150,13 @@
                         </execution>
                     </executions>
                     <configuration>
+                        <!-- Lombok is compile-only; exclude from fat JARs -->
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
                         <image>
                             <builder>paketobuildpacks/builder-jammy-base:latest</builder>
                         </image>
@@ -178,4 +216,3 @@
     </build>
 
 </project>
-

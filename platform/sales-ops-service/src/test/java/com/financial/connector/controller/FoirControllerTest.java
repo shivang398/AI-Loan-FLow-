@@ -56,7 +56,7 @@ class FoirControllerTest {
     private static final UUID ASSESSMENT_ID = UUID.randomUUID();
 
     @BeforeEach
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("rawtypes")
     void setUp() {
         // PageImpl(List) uses Pageable.unpaged(), whose getPageNumber()/getPageSize()
         // throw UnsupportedOperationException when Jackson tries to serialize the bean.

@@ -51,7 +51,7 @@ public class FoirReportService {
             writer.setPageEvent(new HeaderFooterEvent(r.applicantName()));
             doc.open();
 
-            addTitle(doc, r);
+            addTitle(doc);
             doc.add(Chunk.NEWLINE);
             addApplicantSection(doc, r);
             doc.add(Chunk.NEWLINE);
@@ -76,7 +76,7 @@ public class FoirReportService {
         }
     }
 
-    private void addTitle(Document doc, FoirResult r) throws DocumentException {
+    private void addTitle(Document doc) throws DocumentException {
         Paragraph title = new Paragraph("FOIR Analysis Report", FONT_TITLE);
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(4);

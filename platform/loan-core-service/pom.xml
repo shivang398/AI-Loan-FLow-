@@ -7,33 +7,23 @@
         <artifactId>platform</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
+
     <artifactId>loan-core-service</artifactId>
     <packaging>jar</packaging>
     <name>Loan Core Service (Loan + Eligibility + Policy)</name>
+
+    <!-- web, security, amqp, validation, actuator, lombok, test inherited from parent -->
     <dependencies>
         <dependency><groupId>com.financial</groupId><artifactId>common-lib</artifactId><version>${project.version}</version></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-amqp</artifactId></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
-        <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
-        <!-- Eligibility: CIBIL PDF generation -->
         <dependency><groupId>com.github.librepdf</groupId><artifactId>openpdf</artifactId><version>2.2.2</version></dependency>
-        <!-- Eligibility: Bank Statement PDF parsing -->
         <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.3</version></dependency>
-        <!-- Eligibility: Excel generation -->
         <dependency><groupId>org.apache.poi</groupId><artifactId>poi-ooxml</artifactId><version>5.3.0</version></dependency>
-        <!-- Fix 4: Apache HttpClient 5 for RestTemplate with connect/read timeouts -->
         <dependency><groupId>org.apache.httpcomponents.client5</groupId><artifactId>httpclient5</artifactId></dependency>
-        <!-- MySQL 8.0.44 driver -->
         <dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><scope>runtime</scope></dependency>
-        <!-- Test -->
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-webmvc-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>test</scope></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>

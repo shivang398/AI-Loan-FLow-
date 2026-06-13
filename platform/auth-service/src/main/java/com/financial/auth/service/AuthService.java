@@ -245,7 +245,7 @@ public class AuthService {
         String normalized = email.toLowerCase(Locale.ROOT).trim();
         // Always return success regardless of whether email exists (prevent enumeration)
         userRepository.findByEmail(normalized).ifPresent(u -> {
-            String token = passwordResetService.createResetToken(normalized);
+            passwordResetService.createResetToken(normalized);
             // SECURITY: Never log the raw token — it grants password reset access.
             log.info("[PASSWORD_RESET] Reset token created for user (token withheld from logs)");
             // TODO: integrate email sender — send token via email link, never log it
