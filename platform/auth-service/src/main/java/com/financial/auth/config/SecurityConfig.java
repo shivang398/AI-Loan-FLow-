@@ -86,7 +86,8 @@ public class SecurityConfig {
                 .addHeaderWriter(new StaticHeadersWriter("X-XSS-Protection", "0"))
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/auth/refresh", "/auth/register/partner").permitAll()
+                .requestMatchers("/auth/login", "/auth/refresh", "/auth/register/partner",
+                    "/auth/forgot-password", "/auth/reset-password").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                 .requestMatchers("/auth/register").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "PARTNER_MANAGER", "ROLE_PARTNER_MANAGER")

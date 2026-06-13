@@ -76,12 +76,12 @@ public class AuthExceptionHandler {
             case DisabledException de -> {
                 log.warn("Disabled account [TraceID: {}]: {}", traceId, de.getMessage());
                 yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Account is disabled. Contact administrator.", Collections.emptyList(), traceId));
+                        .body(ApiResponse.error("Invalid email or password.", Collections.emptyList(), traceId));
             }
             case LockedException le -> {
                 log.warn("Locked account [TraceID: {}]: {}", traceId, le.getMessage());
                 yield ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Account is locked. Contact administrator.", Collections.emptyList(), traceId));
+                        .body(ApiResponse.error("Invalid email or password.", Collections.emptyList(), traceId));
             }
             case AuthenticationException ae -> {
                 log.warn("Authentication error [TraceID: {}]: {}", traceId, ae.getClass().getSimpleName());

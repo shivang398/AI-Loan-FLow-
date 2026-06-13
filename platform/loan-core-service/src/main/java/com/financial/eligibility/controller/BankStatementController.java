@@ -65,7 +65,7 @@ public class BankStatementController {
                     "Only PDF files are supported. Please upload a valid bank statement PDF.");
 
         if (file.getSize() > MAX_FILE_SIZE_BYTES)
-            return error(HttpStatus.PAYLOAD_TOO_LARGE,
+            return error(HttpStatus.CONTENT_TOO_LARGE,
                     "File is too large (" + (file.getSize() / 1024 / 1024) + " MB). Maximum allowed size is 20 MB.");
 
         log.info("Processing bank statement: {} ({} bytes)", filename, file.getSize());
@@ -89,7 +89,7 @@ public class BankStatementController {
 
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.warn("User error processing {}: {}", filename, e.getMessage());
-            return error(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+            return error(HttpStatus.UNPROCESSABLE_CONTENT, e.getMessage());
         } catch (IOException e) {
             log.error("IO error processing {}", filename, e);
             return error(HttpStatus.INTERNAL_SERVER_ERROR,

@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -248,7 +247,7 @@ public class FoirReportService {
 
     private String formatInr(BigDecimal amount) {
         if (amount == null) return "₹0.00";
-        NumberFormat nf = NumberFormat.getNumberInstance(new Locale("en", "IN"));
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.of("en", "IN"));
         nf.setMinimumFractionDigits(2); nf.setMaximumFractionDigits(2);
         return "₹" + nf.format(amount);
     }

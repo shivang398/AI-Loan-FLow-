@@ -1,0 +1,355 @@
+# =============================================================================
+# Real Money Platform — Production Services Compose
+# =============================================================================
+# Usage:
+#   1. Copy .env.example to .env and fill in all values
+#   2. docker compose -f docker-compose.services.yml build
+#   3. docker compose -f docker-compose.services.yml up -d
+#
+# AWS RDS (MySQL) is used for the database — no local MySQL container.
+# AWS S3 is used for file storage — no LocalStack container.
+# RabbitMQ and Redis run as containers locally.
+#
+# Only the frontend (port 80) is exposed to the host.
+# All backend services communicate over the internal `platform-net` network.
+# =============================================================================
+
+name: realmoney-platform
+
+services:
+
+  # ── Message Broker ──────────────────────────────────────────────────────────
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ── Cache ───────────────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ── Backend Services ────────────────────────────────────────────────────────
+  #
+  # Each service is built from the shared platform/Dockerfile using SERVICE_NAME.
+  # Internal port is always 8080 (overrides each service's default).
+  # Backend ports are NOT exposed to the host — all traffic enters via the frontend
+  # nginx reverse proxy on port 80.
+  #
+  # Secrets (DB_PASSWORD, JWT_SECRET, AWS_*) come from .env via env_file.
+  # Infrastructure hostnames (rabbitmq, redis) are overridden explicitly.
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: auth-service
+    image: realmoney/auth-service:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  sales-ops-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: sales-ops-service
+    image: realmoney/sales-ops-service:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+        reservations:
+          memory: 384M
+
+  customer-document-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: customer-document-service
+    image: realmoney/customer-document-service:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  loan-core-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: loan-core-service
+    image: realmoney/loan-core-service:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+        reservations:
+          memory: 384M
+
+  communications-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: communications-service
+    image: realmoney/communications-service:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  analytics-reporting-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: analytics-reporting-service
+    image: realmoney/analytics-reporting-service:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "8080"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ── Frontend (Nginx reverse proxy + React SPA) ──────────────────────────────
+  #
+  # The nginx.conf.template inside the frontend image routes each /api/<prefix>
+  # to the correct backend container. SERVICE_DISCOVERY_SUFFIX="" disables AWS
+  # Cloud Map discovery and uses Docker container names directly.
+  #
+  # Logical name → merged container mapping:
+  #   connector / commission / routing → sales-ops-service
+  #   customer / document             → customer-document-service
+  #   loan / eligibility / policy     → loan-core-service
+  #   messaging                       → communications-service
+  #   reporting / analytics           → analytics-reporting-service
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: realmoney/frontend:${APP_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+    environment:
+      PORT: "8080"
+      SERVICE_DISCOVERY_SUFFIX: ""
+      AUTH_SERVICE_URL: "auth-service:8080"
+      CONNECTOR_SERVICE_URL: "sales-ops-service:8080"
+      COMMISSION_SERVICE_URL: "sales-ops-service:8080"
+      ROUTING_SERVICE_URL: "sales-ops-service:8080"
+      CUSTOMER_SERVICE_URL: "customer-document-service:8080"
+      DOCUMENT_SERVICE_URL: "customer-document-service:8080"
+      LOAN_SERVICE_URL: "loan-core-service:8080"
+      ELIGIBILITY_SERVICE_URL: "loan-core-service:8080"
+      POLICY_SERVICE_URL: "loan-core-service:8080"
+      MESSAGING_SERVICE_URL: "communications-service:8080"
+      REPORTING_SERVICE_URL: "analytics-reporting-service:8080"
+      ANALYTICS_SERVICE_URL: "analytics-reporting-service:8080"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      sales-ops-service:
+        condition: service_healthy
+      customer-document-service:
+        condition: service_healthy
+      loan-core-service:
+        condition: service_healthy
+      communications-service:
+        condition: service_healthy
+      analytics-reporting-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          memory: 64M
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+
+# ── Networks ─────────────────────────────────────────────────────────────────
+
+networks:
+  platform-net:
+    driver: bridge

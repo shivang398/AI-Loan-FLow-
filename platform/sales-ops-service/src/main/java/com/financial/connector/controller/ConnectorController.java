@@ -1,5 +1,6 @@
 package com.financial.connector.controller;
 
+import com.financial.commission.repository.CommissionTransactionRepository;
 import com.financial.common.dto.ApiResponse;
 import com.financial.connector.dto.ConnectorRequests;
 import com.financial.connector.entity.Connector;
@@ -7,20 +8,27 @@ import com.financial.connector.entity.HierarchyMapping;
 import com.financial.connector.service.ConnectorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/connectors")
 @RequiredArgsConstructor
+@Slf4j
 public class ConnectorController {
 
     private final ConnectorService connectorService;
+    private final CommissionTransactionRepository commissionTransactionRepository;
 
     // Fix 1: shared secret for inter-service calls — never exposed to internet
     @Value("${app.internal-token}")
@@ -135,5 +143,44 @@ public class ConnectorController {
         }
         List<HierarchyMapping> reportees = connectorService.getReportees(id);
         return ResponseEntity.ok(ApiResponse.success("Reportees fetched", reportees, UUID.randomUUID().toString()));
+    }
+
+    @GetMapping("/{id}/stats")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER','RM','TEAM_LEADER','CONNECTOR')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getConnectorStats(
+            @PathVariable UUID id, Authentication auth) {
+        // CONNECTORs can only see their own stats
+        boolean isPrivileged = auth.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("PARTNER_MANAGER")
+                            || a.equals("RM") || a.equals("TEAM_LEADER"));
+        if (!isPrivileged) {
+            // SECURITY: CONNECTOR may only view their own stats — enforce ownership.
+            UUID callerId = connectorService.getMe(auth.getName()).getId();
+            if (!callerId.equals(id)) {
+                log.warn("SECURITY: connector {} attempted to access stats for {} — denied", callerId, id);
+                return ResponseEntity.status(403)
+                        .body(ApiResponse.error("Access denied: you may only view your own stats",
+                                java.util.List.of(), java.util.UUID.randomUUID().toString()));
+            }
+        }
+
+        long totalLeads        = commissionTransactionRepository.countByConnectorId(id);
+        long pendingPayouts    = commissionTransactionRepository.countByConnectorIdAndStatus(id, "PENDING");
+        long disbursedLoans    = commissionTransactionRepository.countByConnectorIdAndStatus(id, "PAID");
+        BigDecimal totalVolume = commissionTransactionRepository.sumDisbursedLoanAmountByConnectorId(id);
+        BigDecimal totalEarned = commissionTransactionRepository.sumTotalPayoutByConnectorId(id);
+        BigDecimal paidOut     = commissionTransactionRepository.sumPaidCommissionByConnectorId(id);
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("connectorId",             id);
+        stats.put("totalLeads",              totalLeads);
+        stats.put("disbursedLoans",          disbursedLoans);
+        stats.put("pendingPayouts",          pendingPayouts);
+        stats.put("totalLoanVolume",         totalVolume);
+        stats.put("totalCommissionEarned",   totalEarned);
+        stats.put("commissionPaidOut",       paidOut);
+
+        return ResponseEntity.ok(ApiResponse.success("Connector stats fetched", stats, UUID.randomUUID().toString()));
     }
 }

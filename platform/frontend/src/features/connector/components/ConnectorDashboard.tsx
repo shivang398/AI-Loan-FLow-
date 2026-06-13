@@ -132,6 +132,10 @@ const ConnectorDashboard: React.FC = () => {
   const [leads,              setLeads]              = useState<number>(0);
   const [loadingLoans,       setLoadingLoans]       = useState(true);
   const [connectorProfileId, setConnectorProfileId] = useState<string | null>(null);
+  const [stats, setStats] = useState<{
+    totalLeads: number; disbursedLoans: number; totalCommissionEarned: number;
+    totalLoanVolume: number; pendingPayouts: number;
+  } | null>(null);
 
   // auth user id (UUID) — used for loans query
   const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
@@ -142,7 +146,13 @@ const ConnectorDashboard: React.FC = () => {
     apiClient.get('/connectors/me')
       .then(res => {
         const profile = res.data?.data || res.data;
-        setConnectorProfileId(profile?.id || null);
+        const profileId = profile?.id || null;
+        setConnectorProfileId(profileId);
+        if (profileId) {
+          apiClient.get(`/connectors/${profileId}/stats`)
+            .then(r => setStats(r.data?.data || null))
+            .catch(() => {});
+        }
       })
       .catch(() => setConnectorProfileId(null));
   }, []);
@@ -282,6 +292,25 @@ const ConnectorDashboard: React.FC = () => {
           />
         </Col>
       </Row>
+
+      {/* ── Lifetime scorecard from /connectors/{id}/stats ── */}
+      {stats && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+          {[
+            { label: 'Lifetime Volume',       value: fmtCompact(stats.totalLoanVolume),       color: '#3b82f6', bg: '#eff6ff' },
+            { label: 'Total Commission',      value: fmtCompact(stats.totalCommissionEarned), color: '#10b981', bg: '#ecfdf5' },
+            { label: 'Disbursed Loans',       value: String(stats.disbursedLoans),            color: '#8b5cf6', bg: '#f5f3ff' },
+            { label: 'Pending Payouts',       value: String(stats.pendingPayouts),            color: '#f59e0b', bg: '#fef3c7' },
+          ].map(s => (
+            <Col xs={12} sm={12} md={6} key={s.label}>
+              <div style={{ background: 'white', borderRadius: 16, padding: '16px 20px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,.04)' }}>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>{s.label}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
+              </div>
+            </Col>
+          ))}
+        </Row>
+      )}
 
       {/* ── Earnings hero + Quick actions (2-col on desktop) ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>

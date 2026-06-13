@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -75,8 +76,7 @@ public class DocumentService {
                         .contentType(mimeType)
                         .contentLength(file.getSize())
                         .build(),
-                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
-                        file.getInputStream(), file.getSize())
+                RequestBody.fromInputStream(file.getInputStream(), file.getSize())
         );
 
         Document document = Document.builder()
@@ -124,8 +124,7 @@ public class DocumentService {
                         .contentType(mimeType)
                         .contentLength(file.getSize())
                         .build(),
-                software.amazon.awssdk.core.sync.RequestBody.fromInputStream(
-                        file.getInputStream(), file.getSize())
+                RequestBody.fromInputStream(file.getInputStream(), file.getSize())
         );
         Document document = Document.builder()
                 .ownerId(customerId)
@@ -167,6 +166,23 @@ public class DocumentService {
         );
 
         return presignedRequest.url().toString();
+    }
+
+    @Transactional
+    public Document reviewDocument(UUID documentId, String newStatus, String remarks, UUID reviewerId) {
+        if (!List.of("UNDER_REVIEW", "APPROVED", "REJECTED").contains(newStatus)) {
+            throw new IllegalArgumentException("Invalid review status: " + newStatus);
+        }
+        Document doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+        if ("APPROVED".equals(doc.getStatus()) || "REJECTED".equals(doc.getStatus())) {
+            throw new IllegalStateException("Document has already been reviewed");
+        }
+        doc.setStatus(newStatus);
+        doc.setReviewRemarks(remarks);
+        doc.setReviewerId(reviewerId);
+        doc.setReviewedAt(Instant.now());
+        return documentRepository.save(doc);
     }
 
     private boolean hasValidMagicBytes(byte[] data, String mimeType) {

@@ -1,6 +1,7 @@
 package com.financial.policy.controller;
 
 import com.financial.common.dto.ApiResponse;
+import com.financial.common.security.FileValidator;
 import com.financial.policy.dto.PolicyRequests;
 import com.financial.policy.entity.BankPolicy;
 import com.financial.policy.entity.PolicyDocument;
@@ -26,6 +27,8 @@ import java.util.UUID;
 @RequestMapping("/policies")
 @RequiredArgsConstructor
 public class PolicyController {
+
+    private static final long MAX_POLICY_DOC_BYTES = 10L * 1024 * 1024; // 10 MB
 
     private final PolicyService policyService;
     private final PolicyDocumentRepository policyDocumentRepository;
@@ -69,6 +72,10 @@ public class PolicyController {
             @RequestParam MultipartFile file,
             Authentication auth) throws IOException {
 
+        if (file.getSize() > MAX_POLICY_DOC_BYTES) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("File exceeds 10 MB limit", List.of(), UUID.randomUUID().toString()));
+        }
+        FileValidator.validate(file); // Fix C4: MIME type + magic byte check
         String sanitized = sanitizeCategory(category);
         PolicyDocument doc = new PolicyDocument();
         doc.setTitle(title.trim());
@@ -99,7 +106,7 @@ public class PolicyController {
         String safeFilename = doc.getFileName()
                 .replaceAll("[^a-zA-Z0-9._\\-]", "_");
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFilename + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFilename + "\"")
                 .contentType(MediaType.parseMediaType(doc.getMimeType()))
                 .body(doc.getFileData());
     }

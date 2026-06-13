@@ -56,6 +56,11 @@ public class WhatsAppWebhookController {
             return ResponseEntity.status(401).build();
         }
 
+        if (payload.length() > 500_000) { // 500 KB max
+            log.warn("Webhook payload too large ({} bytes) — rejected", payload.length());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONTENT_TOO_LARGE).build();
+        }
+
         rabbitTemplate.convertAndSend("whatsapp.webhook.queue", payload);
         return ResponseEntity.ok().build();
     }

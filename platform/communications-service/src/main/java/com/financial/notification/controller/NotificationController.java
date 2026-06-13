@@ -22,15 +22,27 @@ public class NotificationController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Notification>>> getNotifications(Authentication auth) {
-        List<Notification> notifications = isAdmin(auth)
-                ? notificationRepository.findTop20ByOrderByCreatedAtDesc()
-                : List.of();
+        List<Notification> notifications;
+        if (isAdmin(auth)) {
+            notifications = notificationRepository.findTop20ByOrderByCreatedAtDesc();
+        } else {
+            UUID callerId = UUID.nameUUIDFromBytes(
+                    auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(callerId);
+        }
         return ResponseEntity.ok(ApiResponse.success("Notifications fetched", notifications, UUID.randomUUID().toString()));
     }
 
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount(Authentication auth) {
-        long count = isAdmin(auth) ? notificationRepository.countByReadFalse() : 0L;
+        long count;
+        if (isAdmin(auth)) {
+            count = notificationRepository.countByReadFalse();
+        } else {
+            UUID callerId = UUID.nameUUIDFromBytes(
+                    auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            count = notificationRepository.countByRecipientIdAndReadFalse(callerId);
+        }
         return ResponseEntity.ok(ApiResponse.success("Unread count", Map.of("count", count), UUID.randomUUID().toString()));
     }
 

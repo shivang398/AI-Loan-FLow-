@@ -27,6 +27,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final PublicEndpointRateLimitFilter publicEndpointRateLimitFilter;
+    private final WriteRateLimitFilter writeRateLimitFilter;
 
     @Value("${cors.allowed-origin:http://localhost:3000}")
     private String allowedOrigin;
@@ -71,7 +73,11 @@ public class SecurityConfig {
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((req, res, e) -> res.sendError(401, "Unauthorized")))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            // Rate limiters and JWT filter — all registered before UPAF using its well-known order.
+            // publicEndpointRateLimitFilter must run first so unauthenticated requests are gated.
+            .addFilterBefore(publicEndpointRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(writeRateLimitFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

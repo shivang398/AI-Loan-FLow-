@@ -7,11 +7,13 @@ import com.financial.document.entity.Document;
 import com.financial.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -78,9 +80,50 @@ public class DocumentController {
     /** Returns all KYC documents for a customer — called by authenticated ops users. */
     @GetMapping("/by-customer/{customerId}")
     public ResponseEntity<ApiResponse<java.util.List<Document>>> getByCustomer(
-            @PathVariable UUID customerId) {
+            @PathVariable UUID customerId,
+            Authentication auth) {
+        if (auth == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Not authenticated");
+        }
+        boolean isPrivileged = auth.getAuthorities().stream()
+                .anyMatch(a -> {
+                    String r = a.getAuthority();
+                    return r.equals("ADMIN") || r.equals("OPERATIONS") || r.equals("PARTNER_MANAGER")
+                            || r.equals("TEAM_LEADER") || r.equals("RM");
+                });
+        if (!isPrivileged) {
+            // CONNECTOR (or any other non-privileged role) may only view documents for
+            // customers that belong to them.  Derive their stable UUID from their login name
+            // the same way resolveUserId() does, then check ownership via the repository.
+            UUID callerId = resolveUserId(auth);
+            boolean owns = customerRepository.existsByIdAndCreatedBy(customerId, callerId);
+            if (!owns) {
+                return ResponseEntity.status(403)
+                        .body(ApiResponse.error("Access denied: customer does not belong to you",
+                                java.util.List.of(), UUID.randomUUID().toString()));
+            }
+        }
         java.util.List<Document> docs = documentService.getDocumentsByCustomerId(customerId);
         return ResponseEntity.ok(ApiResponse.success("Documents fetched", docs, UUID.randomUUID().toString()));
+    }
+
+    @PutMapping("/{id}/review")
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS')")
+    public ResponseEntity<ApiResponse<Document>> reviewDocument(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
+        String status  = body.get("status");
+        String remarks = body.getOrDefault("remarks", "");
+        if (status == null || status.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("status is required (APPROVED or REJECTED)",
+                            java.util.List.of(), UUID.randomUUID().toString()));
+        }
+        UUID reviewerId = resolveUserId(auth);
+        Document doc = documentService.reviewDocument(id, status, remarks, reviewerId);
+        return ResponseEntity.ok(ApiResponse.success("Document " + status.toLowerCase(),
+                doc, UUID.randomUUID().toString()));
     }
 
     private UUID resolveUserId(Authentication auth) {

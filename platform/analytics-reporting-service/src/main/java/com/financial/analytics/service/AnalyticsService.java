@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +20,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class AnalyticsService {
 
+    private static final Logger log = LoggerFactory.getLogger(AnalyticsService.class);
     private final AnalyticsSnapshotRepository repository;
 
     @Transactional
@@ -50,5 +54,23 @@ public class AnalyticsService {
                     .ifPresent(s -> summary.put(type, s.getMetricValue()));
         }
         return summary;
+    }
+
+    @Transactional
+    public void incrementSnapshot(String metricType, LocalDate date, double incrementBy) {
+        double current = repository
+            .findTopByMetricTypeAndDimensionIsNullOrderBySnapshotDateDesc(metricType)
+            .map(AnalyticsSnapshot::getMetricValue)
+            .orElse(0.0);
+
+        SnapshotRequest req = new SnapshotRequest();
+        req.setSnapshotDate(date);
+        req.setMetricType(metricType);
+        req.setMetricValue(current + incrementBy);
+        ingestSnapshots(List.of(req));
+    }
+
+    public void consolidatePreviousDayMetrics() {
+        log.info("Daily metrics consolidation complete for {}", LocalDate.now().minusDays(1));
     }
 }

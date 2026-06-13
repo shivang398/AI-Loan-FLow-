@@ -6,6 +6,7 @@ import com.financial.messaging.repository.TeamMeetingMessageRepository;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ public class TeamMeetingController {
     private final TeamMeetingMessageRepository messageRepository;
 
     /** Load message history for a room (most recent 100, chronological order). */
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','RM','PARTNER_MANAGER','TEAM_LEADER')")
     @GetMapping("/rooms/{roomKey}/messages")
     public ResponseEntity<ApiResponse<List<TeamMeetingMessage>>> getRoomMessages(
             @PathVariable

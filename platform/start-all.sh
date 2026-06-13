@@ -15,6 +15,16 @@ JWT_EXPIRY_MS="${JWT_EXPIRY_MS:-86400000}"
 # CORS — allow the Vite dev server by default
 CORS_ALLOWED_ORIGIN="${CORS_ALLOWED_ORIGIN:-http://localhost:3000}"
 
+# PII encryption key — read by EncryptedStringConverter via System.getenv() (not JVM property).
+# Must be exactly 32 ASCII chars; export so the child JVM process inherits it.
+export PII_ENCRYPTION_KEY="${PII_ENCRYPTION_KEY:-DevEncryptionKey32CharactersLong}"
+
+# AWS credentials — LocalStack accepts any key in local dev.
+# In production set real IAM credentials via env vars before invoking this script.
+export AWS_ACCESS_KEY="${AWS_ACCESS_KEY:-test}"
+export AWS_SECRET_KEY="${AWS_SECRET_KEY:-test}"
+export AWS_REGION="${AWS_REGION:-ap-south-1}"
+
 # 6 merged services (consolidated from 13)
 SERVICES=(
   "auth-service:8081"
@@ -66,7 +76,6 @@ for entry in "${SERVICES[@]}"; do
     -DJWT_SECRET="$JWT_SECRET" \
     -DJWT_EXPIRY_MS="$JWT_EXPIRY_MS" \
     -DINTERNAL_SERVICE_TOKEN="${INTERNAL_SERVICE_TOKEN:-dev-internal-token-for-local-testing}" \
-    -DPII_ENCRYPTION_KEY="${PII_ENCRYPTION_KEY:-DevEncryptionKey32CharactersLong}" \
     -DCORS_ALLOWED_ORIGIN="$CORS_ALLOWED_ORIGIN" \
     -Dmanagement.health.rabbit.enabled=false \
     -Dmanagement.health.redis.enabled=false \

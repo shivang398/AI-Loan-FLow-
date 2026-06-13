@@ -51,6 +51,15 @@ public class Document {
     @Column(nullable = false)
     private String status;
 
+    @Column(name = "reviewer_id")
+    private UUID reviewerId;
+
+    @Column(name = "review_remarks", columnDefinition = "TEXT")
+    private String reviewRemarks;
+
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

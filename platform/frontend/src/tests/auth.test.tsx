@@ -17,7 +17,7 @@ describe('Authentication & RBAC Integration', () => {
     );
 
     expect(screen.getByText(/Welcome Back/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/name@company.com/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/admin@realmoneygroups.in/i)).toBeInTheDocument();
   });
 
   it('handles successful login and redirects', async () => {
@@ -28,9 +28,9 @@ describe('Authentication & RBAC Integration', () => {
     );
 
     // Mock Login
-    const emailInput = screen.getByPlaceholderText(/name@company.com/i);
+    const emailInput = screen.getByPlaceholderText(/admin@realmoneygroups.in/i);
     const passwordInput = screen.getByPlaceholderText(/••••••••/i);
-    const submitButton = screen.getByRole('button', { name: /Sign In/i });
+    const submitButton = screen.getByRole('button', { name: /Sign In to Dashboard/i });
 
     fireEvent.change(emailInput, { target: { value: 'admin@example.com' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });

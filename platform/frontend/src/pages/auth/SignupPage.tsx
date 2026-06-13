@@ -49,8 +49,9 @@ const SignupPage: React.FC = () => {
       message.success('Account created successfully! Please sign in.');
       navigate('/login');
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.error || 'Registration failed. Please try again.';
-      dispatch(setError(msg));
+      const serverMsg = err.response?.data?.message || err.response?.data?.error;
+      const displayMsg = serverMsg && serverMsg.length < 120 ? serverMsg : 'An error occurred. Please try again.';
+      dispatch(setError(displayMsg));
     } finally {
       dispatch(setLoading(false));
     }

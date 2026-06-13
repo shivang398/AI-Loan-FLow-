@@ -21,9 +21,11 @@ import java.time.Duration;
 @Component
 public class AuthRateLimitFilter extends OncePerRequestFilter {
 
-    private static final int  LOGIN_MAX    = 5;
-    private static final int  REGISTER_MAX = 3;
-    private static final long WINDOW_SECS  = 60L;
+    private static final int  LOGIN_MAX          = 5;
+    private static final int  REGISTER_MAX        = 3;
+    private static final int  FORGOT_PASSWORD_MAX = 3;
+    private static final long WINDOW_SECS         = 60L;
+    private static final long FORGOT_PASSWORD_WINDOW_SECS = 15L * 60L; // 15 minutes
 
     @Autowired
     private StringRedisTemplate redis;
@@ -31,7 +33,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return !path.equals("/auth/login") && !path.equals("/auth/register/partner");
+        return !path.equals("/auth/login")
+            && !path.equals("/auth/register/partner")
+            && !path.equals("/auth/forgot-password");
     }
 
     @Override
@@ -40,12 +44,30 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
                                     FilterChain chain) throws ServletException, IOException {
         String ip   = getClientIp(request);
         String path = request.getRequestURI();
-        int    max  = path.equals("/auth/login") ? LOGIN_MAX : REGISTER_MAX;
-        String key  = "ratelimit:" + (path.equals("/auth/login") ? "login" : "register") + ":" + ip;
 
-        Long count = redis.opsForValue().increment(key);
+        // Determine rate-limit bucket parameters per endpoint
+        final int    max;
+        final String bucketName;
+        final long   windowSecs;
+
+        if (path.equals("/auth/login")) {
+            max        = LOGIN_MAX;
+            bucketName = "login";
+            windowSecs = WINDOW_SECS;
+        } else if (path.equals("/auth/forgot-password")) {
+            max        = FORGOT_PASSWORD_MAX;
+            bucketName = "forgot-password";
+            windowSecs = FORGOT_PASSWORD_WINDOW_SECS;
+        } else {
+            max        = REGISTER_MAX;
+            bucketName = "register";
+            windowSecs = WINDOW_SECS;
+        }
+
+        String key   = "ratelimit:" + bucketName + ":" + ip;
+        Long   count = redis.opsForValue().increment(key);
         if (count != null && count == 1) {
-            redis.expire(key, Duration.ofSeconds(WINDOW_SECS));
+            redis.expire(key, Duration.ofSeconds(windowSecs));
         }
 
         if (count != null && count > max) {

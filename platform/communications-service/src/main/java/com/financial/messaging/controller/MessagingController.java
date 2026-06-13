@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
@@ -33,12 +34,14 @@ public class MessagingController {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','RM','PARTNER_MANAGER','TEAM_LEADER','CONNECTOR')")
     @GetMapping("/conversations")
     public ResponseEntity<ApiResponse<List<Conversation>>> getConversations(@RequestParam("type") ConversationType type) {
         List<Conversation> conversations = conversationRepository.findByConversationType(type);
         return ResponseEntity.ok(ApiResponse.success("Conversations fetched", conversations, UUID.randomUUID().toString()));
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','RM','PARTNER_MANAGER','TEAM_LEADER','CONNECTOR')")
     @PostMapping("/conversations")
     public ResponseEntity<ApiResponse<Conversation>> createConversation(@Valid @RequestBody CreateConversationRequest request) {
         Conversation conversation = Conversation.builder()
@@ -55,17 +58,44 @@ public class MessagingController {
         return ResponseEntity.ok(ApiResponse.success("Conversation created", conversation, UUID.randomUUID().toString()));
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','RM','PARTNER_MANAGER')")
     @PostMapping("/status-update")
     public ResponseEntity<ApiResponse<String>> sendStatusUpdate(@Valid @RequestBody StatusUpdateRequest request) {
         messagingService.sendStatusToWhatsApp(request.getLoanId(), request.getStatus(), request.getConnectorPhone());
         return ResponseEntity.ok(ApiResponse.success("Status update sent via WhatsApp", "SENT", UUID.randomUUID().toString()));
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','RM','PARTNER_MANAGER','TEAM_LEADER','CONNECTOR')")
     @GetMapping("/conversations/{id}/messages")
     public ResponseEntity<ApiResponse<List<Message>>> getMessages(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
+            @RequestParam(defaultValue = "50") int size,
+            Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            throw new AccessDeniedException("Authentication required");
+        }
+
+        boolean isPrivileged = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
+                            || a.equals("OPERATIONS") || a.equals("ROLE_OPERATIONS")
+                            || a.equals("RM") || a.equals("PARTNER_MANAGER") || a.equals("TEAM_LEADER"));
+
+        if (!isPrivileged) {
+            // CONNECTOR: validate they are a participant in this conversation
+            UUID callerId = UUID.nameUUIDFromBytes(
+                    auth.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            Conversation conv = conversationRepository.findById(id)
+                    .orElseThrow(() -> new AccessDeniedException("Not authorized to view this conversation"));
+            boolean isParticipant = callerId.equals(conv.getConnectorId())
+                    || callerId.equals(conv.getRmId())
+                    || callerId.equals(conv.getAssignedOpsUserId());
+            if (!isParticipant) {
+                throw new AccessDeniedException("Not authorized to view this conversation");
+            }
+        }
+
         var pageResult = messageRepository.findByConversationIdOrderByCreatedAtDesc(
                 id, PageRequest.of(page, size));
         List<Message> messages = new ArrayList<>(pageResult.getContent());
@@ -109,6 +139,7 @@ public class MessagingController {
     }
 
     /* ── WhatsApp Ops: list conversations ── */
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS')")
     @GetMapping("/whatsapp/conversations")
     public ResponseEntity<ApiResponse<List<Conversation>>> getWhatsAppConversations() {
         List<Conversation> conversations = conversationRepository
@@ -117,6 +148,7 @@ public class MessagingController {
     }
 
     /* ── WhatsApp Ops: create conversation with customer info ── */
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS')")
     @PostMapping("/whatsapp/conversations")
     public ResponseEntity<ApiResponse<Conversation>> createWhatsAppConversation(
             @Valid @RequestBody CreateWhatsAppConversationRequest request) {
@@ -134,6 +166,7 @@ public class MessagingController {
     }
 
     /* ── WhatsApp Ops: message templates ── */
+    @PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS')")
     @GetMapping("/whatsapp/templates")
     public ResponseEntity<ApiResponse<List<java.util.Map<String, String>>>> getWhatsAppTemplates() {
         var templates = List.of(

@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -31,6 +32,7 @@ public class ReportingController {
     private final EmailConfigRepository emailConfigRepository;
     private final EmailService emailService;
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER')")
     @GetMapping("/mis-uploads")
     public ResponseEntity<List<Map<String, Object>>> getMisUploads() {
         List<Map<String, Object>> result = misReportRepository.findAll().stream()
@@ -48,6 +50,7 @@ public class ReportingController {
         return ResponseEntity.ok(result);
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER')")
     @PostMapping("/mis-uploads")
     public ResponseEntity<MisReport> submitMisUpload(@RequestBody Map<String, Object> body) {
         MisReport report = MisReport.builder()
@@ -59,6 +62,7 @@ public class ReportingController {
         return ResponseEntity.ok(misReportRepository.save(report));
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER')")
     @GetMapping("/connector-summary/download")
     public ResponseEntity<byte[]> downloadConnectorReport() throws IOException {
         List<String> headers = List.of("RM Name", "File Name", "Volume (₹)", "Status", "Upload Date");
@@ -82,6 +86,7 @@ public class ReportingController {
                 .body(reportBytes);
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER')")
     @GetMapping("/email-config")
     public ResponseEntity<Map<String, Object>> getEmailConfig() {
         List<EmailConfig> configs = emailConfigRepository.findAll();
@@ -101,16 +106,16 @@ public class ReportingController {
         return ResponseEntity.ok(result);
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER')")
     @PostMapping("/email-config")
     public ResponseEntity<Map<String, Object>> saveEmailConfig(@RequestBody Map<String, Object> body) {
         String frequency = (String) body.getOrDefault("frequency", "weekly");
         Object recipientsRaw = body.get("recipients");
-        String recipients = "";
-        if (recipientsRaw instanceof List<?> list) {
-            recipients = list.stream().map(Object::toString).collect(Collectors.joining(","));
-        } else if (recipientsRaw instanceof String s) {
-            recipients = s;
-        }
+        String recipients = switch (recipientsRaw) {
+            case List<?> list -> list.stream().map(Object::toString).collect(Collectors.joining(","));
+            case String s -> s;
+            default -> "";
+        };
 
         List<EmailConfig> existing = emailConfigRepository.findAll();
         EmailConfig cfg;
@@ -132,15 +137,14 @@ public class ReportingController {
         return ResponseEntity.ok(result);
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN','PARTNER_MANAGER')")
     @PostMapping("/send-test-email")
     public ResponseEntity<Map<String, Object>> sendTestEmail(@RequestBody Map<String, Object> body) {
         Object recipientsRaw = body.get("recipients");
-        List<String> recipients;
-        if (recipientsRaw instanceof List<?> list) {
-            recipients = list.stream().map(Object::toString).toList();
-        } else {
-            recipients = List.of("admin@realmoney.in");
-        }
+        List<String> recipients = switch (recipientsRaw) {
+            case List<?> list -> list.stream().map(Object::toString).toList();
+            default -> List.of("admin@realmoney.in");
+        };
 
         String subject = "Real Money Platform — MIS Report Test";
         String emailBody = "This is a test email from the Real Money Platform reporting system.\n\n"

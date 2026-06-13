@@ -54,7 +54,7 @@ public class SecurityConfig {
             .headers(headers -> headers
                 .contentTypeOptions(ct -> {})
                 .frameOptions(fo -> fo.deny())
-                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000).preload(true))
                 .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .addHeaderWriter(new StaticHeadersWriter(
                     "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))

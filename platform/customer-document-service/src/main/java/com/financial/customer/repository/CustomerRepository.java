@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface CustomerRepository extends JpaRepository<Customer, UUID> {
     Optional<Customer> findByEmail(String email);
     Optional<Customer> findByMobile(String mobile);
+    boolean existsByIdAndCreatedBy(UUID id, UUID createdBy);
 }

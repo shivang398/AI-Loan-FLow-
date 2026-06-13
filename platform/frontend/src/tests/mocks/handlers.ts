@@ -2,23 +2,20 @@ import { http, HttpResponse } from 'msw';
 
 export const handlers = [
   // Auth Mock
-  http.post('*/api/v1/auth/login', () => {
+  http.post('*/api/auth/login', () => {
     return HttpResponse.json({
       success: true,
       data: {
         token: 'mock-jwt-token',
-        refreshToken: 'mock-refresh-token',
-        user: {
-          id: '1',
-          email: 'admin@example.com',
-          role: 'ADMIN'
-        }
+        id: '1',
+        email: 'admin@example.com',
+        role: 'ADMIN',
       }
     });
   }),
 
   // Users Mock
-  http.get('*/api/v1/users', () => {
+  http.get('*/api/auth/users/lookup', () => {
     return HttpResponse.json({
       success: true,
       data: [
@@ -28,7 +25,7 @@ export const handlers = [
   }),
 
   // Analytics Mock
-  http.get('*/api/v1/analytics/stats', () => {
+  http.get('*/api/analytics/stats', () => {
     return HttpResponse.json({
       success: true,
       data: {

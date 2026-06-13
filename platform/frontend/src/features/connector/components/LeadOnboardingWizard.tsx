@@ -1,33 +1,64 @@
 import React, { useState } from 'react';
-import { 
-  Steps, 
-  Button, 
-  Form, 
-  Input, 
-  Card, 
-  Typography, 
-  Result, 
+import {
+  Steps,
+  Button,
+  Form,
+  Input,
+  Card,
+  Typography,
+  Result,
   InputNumber,
-  Tag
+  Tag,
+  App,
 } from 'antd';
-import { 
-  User, 
-  FileText, 
-  IndianRupee, 
-  CheckCircle, 
+import {
+  User,
+  FileText,
+  IndianRupee,
+  CheckCircle,
   Upload as UploadIcon,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import apiClient from '../../../shared/services/apiClient';
 
 const { Title, Text } = Typography;
 
 const LeadOnboardingWizard: React.FC = () => {
   const [current, setCurrent] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [form] = Form.useForm();
+  const { message } = App.useApp();
 
-  const next = () => setCurrent(current + 1);
-  const prev = () => setCurrent(current - 1);
+  const next = () => {
+    form.validateFields().then(() => setCurrent(c => c + 1)).catch(() => {});
+  };
+  const prev = () => setCurrent(c => c - 1);
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      setSubmitting(true);
+      await apiClient.post('/customers', {
+        firstName:        (values.fullName || '').split(' ')[0] || values.fullName,
+        lastName:         (values.fullName || '').split(' ').slice(1).join(' ') || '-',
+        email:            values.email || '',
+        mobile:           (values.mobile || '').replace(/\D/g, '').slice(-10),
+        panNumber:        (values.pan || '').toUpperCase(),
+        loanType:         'PERSONAL',
+        loanAmount:       values.loanAmount || null,
+        netMonthlySalary: values.income || null,
+        companyName:      values.employer || '',
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Submission failed. Please try again.';
+      message.error(String(msg).substring(0, 120));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const steps = [
     {
@@ -105,7 +136,7 @@ const LeadOnboardingWizard: React.FC = () => {
     }
   ];
 
-  if (current === 4) {
+  if (submitted) {
     return (
       <Result
         status="success"
@@ -113,7 +144,7 @@ const LeadOnboardingWizard: React.FC = () => {
         subTitle="The Operations team will review the documents within 4 working hours."
         extra={[
           <Button type="primary" key="dashboard" className="bg-blue-600 rounded-lg">Go to Dashboard</Button>,
-          <Button key="new" onClick={() => setCurrent(0)}>Add Another Lead</Button>,
+          <Button key="new" onClick={() => { setSubmitted(false); setCurrent(0); form.resetFields(); }}>Add Another Lead</Button>,
         ]}
       />
     );
@@ -148,13 +179,14 @@ const LeadOnboardingWizard: React.FC = () => {
           >
             Back
           </Button>
-          <Button 
-            type="primary" 
-            onClick={next}
+          <Button
+            type="primary"
+            onClick={current === steps.length - 1 ? handleSubmit : next}
+            loading={submitting}
             className="rounded-xl bg-blue-600 px-8 flex items-center gap-2"
           >
             {current === steps.length - 1 ? 'Submit Application' : 'Next'}
-            <ChevronRight size={18} />
+            {current < steps.length - 1 && <ChevronRight size={18} />}
           </Button>
         </div>
       </div>

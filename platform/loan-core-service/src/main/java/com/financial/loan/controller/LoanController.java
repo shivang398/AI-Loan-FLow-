@@ -2,6 +2,7 @@ package com.financial.loan.controller;
 
 import com.financial.common.dto.ApiResponse;
 import com.financial.loan.dto.LoanRequests;
+import com.financial.loan.entity.ApplicationStatusHistory;
 import com.financial.loan.entity.LoanApplication;
 import com.financial.loan.service.LoanService;
 import jakarta.validation.Valid;
@@ -22,22 +23,13 @@ public class LoanController {
     private final LoanService loanService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','OPERATIONS','ROLE_OPERATIONS','TEAM_LEADER','ROLE_TEAM_LEADER','PARTNER_MANAGER','ROLE_PARTNER_MANAGER','RM','ROLE_RM','CONNECTOR','ROLE_CONNECTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','OPERATIONS','ROLE_OPERATIONS','TEAM_LEADER','ROLE_TEAM_LEADER','PARTNER_MANAGER','ROLE_PARTNER_MANAGER','RM','ROLE_RM')")
     public ResponseEntity<ApiResponse<List<LoanApplication>>> getLoans(
             @RequestParam(required = false) UUID connectorId,
             Authentication auth) {
-        // CONNECTORs use /loans?connectorId=<own-id> — enforced at service level.
-        // Staff roles (ADMIN, OPS, TL, PM, RM) may query any connector or all.
-        boolean isPrivileged = auth.getAuthorities().stream().map(a -> a.getAuthority())
-                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
-                            || a.equals("OPERATIONS") || a.equals("ROLE_OPERATIONS")
-                            || a.equals("TEAM_LEADER") || a.equals("ROLE_TEAM_LEADER")
-                            || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER")
-                            || a.equals("RM") || a.equals("ROLE_RM"));
-        if (!isPrivileged && connectorId == null) {
-            return ResponseEntity.status(403).body(
-                ApiResponse.error("connectorId is required for non-staff users", java.util.List.of(), UUID.randomUUID().toString()));
-        }
+        // Staff-only endpoint; connector-scoped view is provided by /connectors/{id}/stats.
+        // Removing CONNECTOR from allowed roles prevents IDOR where a connector could
+        // pass an arbitrary connectorId and read another connector's loan pipeline.
         List<LoanApplication> loans = loanService.getLoans(connectorId);
         return ResponseEntity.ok(ApiResponse.success("Loans fetched successfully", loans, UUID.randomUUID().toString()));
     }
@@ -47,6 +39,13 @@ public class LoanController {
     public ResponseEntity<ApiResponse<LoanApplication>> createLoan(@Valid @RequestBody LoanRequests.CreateLoanRequest request) {
         LoanApplication loan = loanService.createLoan(request);
         return ResponseEntity.ok(ApiResponse.success("Loan application created", loan, UUID.randomUUID().toString()));
+    }
+
+    @GetMapping("/{id}/history")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','OPERATIONS','ROLE_OPERATIONS','TEAM_LEADER','ROLE_TEAM_LEADER','PARTNER_MANAGER','ROLE_PARTNER_MANAGER','RM','ROLE_RM')")
+    public ResponseEntity<ApiResponse<List<ApplicationStatusHistory>>> getLoanHistory(@PathVariable UUID id) {
+        List<ApplicationStatusHistory> history = loanService.getLoanHistory(id);
+        return ResponseEntity.ok(ApiResponse.success("Loan history fetched", history, UUID.randomUUID().toString()));
     }
 
     @PutMapping("/{id}/status")

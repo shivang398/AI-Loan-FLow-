@@ -40,14 +40,25 @@ public class DisbursedEventConsumer {
             String status = (String) payload.get("status");
 
             if ("DISBURSED".equals(status)) {
-                String loanId = (String) payload.get("loanId");
-                // In production, fetch connectorId and loanAmount from loan-service via Feign
-                log.info("Triggering commission calculation for loan: {}", loanId);
-                commissionService.calculateAndRecord(
-                        UUID.fromString(loanId),
-                        UUID.randomUUID(), // placeholder
-                        new BigDecimal("500000") // placeholder
-                );
+                String loanIdStr      = (String) payload.get("loanId");
+                String connectorIdStr = (String) payload.get("connectorId");   // may be null for old events
+                Object loanAmtRaw     = payload.get("loanAmount");              // may be null for old events
+
+                if (loanIdStr == null) {
+                    log.warn("Received DISBURSED event with no loanId, skipping");
+                    return;
+                }
+
+                if (connectorIdStr == null || loanAmtRaw == null) {
+                    log.warn("DISBURSED event for loan {} missing connectorId or loanAmount — skipping commission auto-trigger", loanIdStr);
+                    return;
+                }
+
+                UUID connectorId = UUID.fromString(connectorIdStr);
+                BigDecimal loanAmount = new BigDecimal(loanAmtRaw.toString());
+
+                log.info("Auto-triggering commission for loan={} connector={} amount={}", loanIdStr, connectorIdStr, loanAmount);
+                commissionService.calculateAndRecord(UUID.fromString(loanIdStr), connectorId, loanAmount);
             }
         } catch (Exception e) {
             log.error("Failed to process DISBURSED event: {}", event.getEventId(), e);

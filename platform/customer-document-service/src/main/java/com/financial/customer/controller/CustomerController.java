@@ -12,7 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,7 +47,13 @@ public class CustomerController {
             Authentication auth) {
         String newStatus = body.get("status");
         if (newStatus == null || newStatus.isBlank()) {
-            throw new RuntimeException("status is required");
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("status is required", List.of(), UUID.randomUUID().toString()));
+        }
+        if (newStatus.length() > 50 || !newStatus.matches("^[A-Z_]+$")) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid status: must be ≤ 50 characters and contain only uppercase letters and underscores",
+                            List.of(), UUID.randomUUID().toString()));
         }
         String email = auth.getName();
         boolean isAdmin = hasAdminAccess(auth);
@@ -59,7 +67,15 @@ public class CustomerController {
             @RequestBody Map<String, String> body,
             Authentication auth) {
         String notes = body.get("notes");
-        if (notes == null) throw new RuntimeException("notes field is required");
+        if (notes == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("notes field is required", List.of(), UUID.randomUUID().toString()));
+        }
+        if (notes.length() > 2000) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid notes: must be ≤ 2000 characters",
+                            List.of(), UUID.randomUUID().toString()));
+        }
         String email = auth.getName();
         boolean isAdmin = hasAdminAccess(auth);
         Lead updated = customerService.updateLeadNotes(id, notes, email, isAdmin);
@@ -76,7 +92,12 @@ public class CustomerController {
             @RequestBody Map<String, String> body) {
         String fromEmail = body.get("fromEmail");
         if (fromEmail == null || fromEmail.isBlank()) {
-            throw new RuntimeException("fromEmail is required");
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("fromEmail is required", List.of(), UUID.randomUUID().toString()));
+        }
+        if (fromEmail.length() > 254 || !fromEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid fromEmail format", List.of(), UUID.randomUUID().toString()));
         }
         int count = customerService.reassignLeads(fromEmail);
         return ResponseEntity.ok(ApiResponse.success(
@@ -84,6 +105,27 @@ public class CustomerController {
                 Map.of("reassigned", count, "fromEmail", fromEmail),
                 UUID.randomUUID().toString()
         ));
+    }
+
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','OPERATIONS','ROLE_OPERATIONS','PARTNER_MANAGER','ROLE_PARTNER_MANAGER')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> bulkImport(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("File is empty", List.of(), UUID.randomUUID().toString()));
+        }
+        if (file.getSize() > 2L * 1024 * 1024) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("File too large (max 2 MB)", List.of(), UUID.randomUUID().toString()));
+        }
+        String name = file.getOriginalFilename();
+        if (name == null || (!name.toLowerCase().endsWith(".csv"))) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Only CSV files are supported", List.of(), UUID.randomUUID().toString()));
+        }
+        Map<String, Object> result = customerService.bulkImportLeads(file);
+        return ResponseEntity.ok(ApiResponse.success("Bulk import complete", result, UUID.randomUUID().toString()));
     }
 
     private boolean hasAdminAccess(Authentication auth) {

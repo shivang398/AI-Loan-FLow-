@@ -59,10 +59,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        // Fallback for WebSocket upgrade requests — browsers can't send custom headers
-        String queryToken = request.getParameter("token");
-        if (StringUtils.hasText(queryToken)) {
-            return queryToken;
+        // Query-param fallback ONLY for WebSocket upgrade requests.
+        // Browsers cannot send custom headers on WS upgrades, so ?token=<jwt> is required.
+        // Regular HTTP requests MUST use the Authorization header — query params are stored
+        // in server access logs, proxy logs, and browser history, causing token leakage.
+        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
+            String queryToken = request.getParameter("token");
+            if (StringUtils.hasText(queryToken)) {
+                return queryToken;
+            }
         }
         return null;
     }

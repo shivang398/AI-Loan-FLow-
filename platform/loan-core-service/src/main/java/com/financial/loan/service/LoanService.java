@@ -21,6 +21,7 @@ public class LoanService {
     private final LoanApplicationRepository loanApplicationRepository;
     private final ApplicationStatusHistoryRepository historyRepository;
     private final LoanEventPublisher eventPublisher;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public LoanApplication createLoan(LoanRequests.CreateLoanRequest request) {
@@ -58,7 +59,17 @@ public class LoanService {
 
         String remarks = (request.getRemarks() != null ? request.getRemarks() : "") + " [by:" + updatedBy + "]";
         saveHistory(loan, request.getNewStatus(), remarks);
-        eventPublisher.publishStatusUpdatedEvent(loan.getId(), request.getNewStatus());
+        eventPublisher.publishStatusUpdatedEvent(loan.getId(), request.getNewStatus(),
+                loan.getConnectorId(), loan.getAmount());
+        auditLogService.log("LOAN_STATUS_UPDATED", updatedBy, "LOAN", loanId.toString(),
+                "Status changed to: " + request.getNewStatus());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ApplicationStatusHistory> getLoanHistory(UUID loanId) {
+        loanApplicationRepository.findById(loanId)
+                .orElseThrow(() -> new RuntimeException("Loan not found: " + loanId));
+        return historyRepository.findByLoanApplicationIdOrderByChangedAtDesc(loanId);
     }
 
     private void saveHistory(LoanApplication loan, String status, String remarks) {

@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -32,7 +33,7 @@ public class LoanEventPublisher {
         rabbitTemplate.convertAndSend(exchange, "loan.file.created", event);
     }
 
-    public void publishStatusUpdatedEvent(UUID loanId, String newStatus) {
+    public void publishStatusUpdatedEvent(UUID loanId, String newStatus, UUID connectorId, BigDecimal loanAmount) {
         GlobalEvent<Object> event = GlobalEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType("STATUS_UPDATED")
@@ -40,12 +41,12 @@ public class LoanEventPublisher {
                 .timestamp(Instant.now())
                 .traceId(UUID.randomUUID().toString())
                 .payloadVersion("v1")
-                .payload(new StatusUpdatedPayload(loanId, newStatus))
+                .payload(new StatusUpdatedPayload(loanId, newStatus, connectorId, loanAmount))
                 .build();
 
         rabbitTemplate.convertAndSend(exchange, "loan.status.updated", event);
     }
 
     public record FileCreatedPayload(UUID loanId, UUID customerId) {}
-    public record StatusUpdatedPayload(UUID loanId, String status) {}
+    public record StatusUpdatedPayload(UUID loanId, String status, UUID connectorId, BigDecimal loanAmount) {}
 }

@@ -8,7 +8,7 @@ class WebSocketService {
   public connect(url: string, onConnect: () => void) {
     if (this.client?.connected) return;
 
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     this.client = new Client({
       webSocketFactory: () => new SockJS(url),
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
@@ -19,12 +19,16 @@ class WebSocketService {
     });
 
     this.client.onConnect = () => {
-      console.log('STOMP Connected');
+      if (import.meta.env.DEV) {
+        console.log('STOMP Connected');
+      }
       onConnect();
     };
 
     this.client.onStompError = (frame) => {
-      console.error('STOMP Error:', frame.headers['message']);
+      if (import.meta.env.DEV) {
+        console.error('STOMP Error:', frame.headers['message']);
+      }
     };
 
     this.client.activate();
@@ -32,7 +36,9 @@ class WebSocketService {
 
   public subscribe(topic: string, callback: (message: IMessage) => void) {
     if (!this.client?.connected) {
-      console.error('WebSocket not connected');
+      if (import.meta.env.DEV) {
+        console.error('WebSocket not connected');
+      }
       return;
     }
 

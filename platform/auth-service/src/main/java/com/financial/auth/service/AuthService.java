@@ -6,7 +6,10 @@ import com.financial.auth.entity.User;
 import com.financial.auth.event.AuthEventPublisher;
 import com.financial.auth.repository.RoleRepository;
 import com.financial.auth.repository.UserRepository;
+import com.financial.common.security.JwtRevocationService;
 import com.financial.common.security.JwtTokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,12 +23,15 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private static final Set<String> ALLOWED_DOMAINS = Set.of("realmoneygroups.in", "realfinserv.com");
 
@@ -42,19 +48,25 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuthEventPublisher eventPublisher;
+    private final JwtRevocationService revocationService;
+    private final PasswordResetService passwordResetService;
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
                        RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider tokenProvider,
-                       AuthEventPublisher eventPublisher) {
+                       AuthEventPublisher eventPublisher,
+                       JwtRevocationService revocationService,
+                       PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.eventPublisher = eventPublisher;
+        this.revocationService = revocationService;
+        this.passwordResetService = passwordResetService;
     }
 
     private void validateEmailDomain(String email) {
@@ -194,6 +206,16 @@ public class AuthService {
 
         String newToken = tokenProvider.generateTokenForUser(username, roles != null ? roles : "");
         String role = user.getRoles().isEmpty() ? "UNKNOWN" : user.getRoles().iterator().next().getName();
+
+        // Revoke the OLD refresh token so it cannot be reused (rotation)
+        try {
+            String oldJti    = tokenProvider.getJtiFromJWT(token);
+            long   oldExpiry = tokenProvider.getExpiryEpochMs(token);
+            if (oldJti != null) revocationService.revoke(oldJti, oldExpiry);
+        } catch (Exception e) {
+            log.warn("[SECURITY] Could not revoke old refresh token during rotation: {}", e.getMessage());
+        }
+
         return Map.of("token", newToken, "role", role, "email", username);
     }
 
@@ -216,5 +238,31 @@ public class AuthService {
             "role", role,
             "status", user.getStatus()
         );
+    }
+
+    public void forgotPassword(String email) {
+        // Normalize email
+        String normalized = email.toLowerCase(Locale.ROOT).trim();
+        // Always return success regardless of whether email exists (prevent enumeration)
+        userRepository.findByEmail(normalized).ifPresent(u -> {
+            String token = passwordResetService.createResetToken(normalized);
+            // SECURITY: Never log the raw token — it grants password reset access.
+            log.info("[PASSWORD_RESET] Reset token created for user (token withheld from logs)");
+            // TODO: integrate email sender — send token via email link, never log it
+        });
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        String email = passwordResetService.validateAndConsumeToken(token)
+            .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new RuntimeException("Password must be at least 8 characters");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("[PASSWORD_RESET] Password reset successfully for {}", email);
     }
 }

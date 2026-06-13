@@ -220,7 +220,6 @@ public class CibilService {
             return root;
         } catch (HttpStatusCodeException e) {
             log.error("Tenacio CRIF error: {} — RESPONSE REDACTED", e.getStatusCode());
-            String msg = extractErrorMessage(e.getResponseBodyAsString()).toLowerCase();
             // Any 4xx from Tenacio (quota, validation, auth) → demo mode
             if (e.getStatusCode().is4xxClientError()) {
                 log.warn("Tenacio CRIF 4xx ({}) — falling back to demo mode", e.getStatusCode());
@@ -1267,7 +1266,7 @@ public class CibilService {
             case "SMA" -> SCORE_AMBER;
             case "SUB" -> SCORE_ORANGE;
             case "DBT", "LSS" -> SCORE_RED;
-            default -> new Color(180, 180, 180); // XXX / unknown
+            default -> new Color(180, 180, 180); // grey for unknown payment status
         };
     }
 

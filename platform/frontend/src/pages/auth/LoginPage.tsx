@@ -71,7 +71,9 @@ const LoginPage: React.FC = () => {
       };
       navigate(paths[role] ?? '/dashboard', { replace: true });
     } catch (err: any) {
-      dispatch(setError(err.response?.data?.message || 'Invalid email or password. Please try again.'));
+      const serverMsg = err.response?.data?.message;
+      const displayMsg = serverMsg && serverMsg.length < 120 ? serverMsg : 'An error occurred. Please try again.';
+      dispatch(setError(displayMsg));
     } finally {
       dispatch(setLoading(false));
     }

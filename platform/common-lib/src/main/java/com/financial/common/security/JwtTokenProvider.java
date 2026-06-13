@@ -29,7 +29,6 @@ public class JwtTokenProvider {
 
     private Key key;
 
-    // Fix 5: optional revocation checker — wired only in services that configure Redis
     @Autowired(required = false)
     private JwtRevocationService revocationService;
 
@@ -99,14 +98,8 @@ public class JwtTokenProvider {
                 .parseSignedClaims(authToken)
                 .getPayload();
 
-            // Fix 5: check Redis revocation blocklist if available
-            if (revocationService != null) {
-                String jti = claims.getId();
-                if (jti != null && revocationService.isRevoked(jti)) {
-                    return false;
-                }
-            }
-            return true;
+            // Services without a revocation backend still validate signature/expiry.
+            return revocationService == null || !revocationService.isRevoked(claims.getId());
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
             // expired, malformed, unsupported, or tampered
         }

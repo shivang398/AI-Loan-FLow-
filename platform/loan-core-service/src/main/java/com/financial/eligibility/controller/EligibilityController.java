@@ -88,7 +88,7 @@ public class EligibilityController {
 
     /** Update submission status — restricted to privileged roles */
     @PutMapping("/submissions/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'OPERATIONS', 'ROLE_OPERATIONS', 'CONNECTOR', 'ROLE_CONNECTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'OPERATIONS', 'ROLE_OPERATIONS')")
     public ResponseEntity<ApiResponse<String>> updateSubmissionStatus(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body) {

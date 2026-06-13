@@ -13,6 +13,7 @@ import {
   Tooltip,
   Spin,
   Modal,
+  Select,
 } from 'antd';
 import {
   Search,
@@ -26,8 +27,11 @@ import {
   ShieldAlert,
   UserCheck,
   Users,
+  History,
+  ShieldCheck,
 } from 'lucide-react';
 import api from '../../../shared/services/apiClient';
+import LoanTimeline from '../../documents/components/LoanTimeline';
 
 const { Text, Title } = Typography;
 
@@ -85,6 +89,16 @@ interface Lead {
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
+const openSafeUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    if (!['https:', 'http:'].includes(parsed.protocol)) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } catch {
+    // invalid URL — do nothing
+  }
+};
+
 const formatAmount = (amount: number) =>
   amount ? `₹${amount.toLocaleString('en-IN')}` : '—';
 
@@ -114,7 +128,8 @@ const LeadsQueueTable: React.FC<{
   loading: boolean;
   onRefresh: () => void;
   onViewDetail: (lead: Lead) => void;
-}> = ({ leads, loading, onRefresh, onViewDetail }) => {
+  onViewHistory: (lead: Lead) => void;
+}> = ({ leads, loading, onRefresh, onViewDetail, onViewHistory }) => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'ALL' | 'NEW' | 'IN_REVIEW' | 'QUERY_RAISED' | 'RESOLVED'>('ALL');
 
@@ -211,16 +226,26 @@ const LeadsQueueTable: React.FC<{
     {
       title: '',
       key: 'actions',
-      width: 60,
+      width: 80,
       render: (_: any, record: Lead) => (
-        <Tooltip title="View Details">
-          <Button
-            type="text"
-            icon={<Eye size={15} />}
-            onClick={e => { e.stopPropagation(); onViewDetail(record); }}
-            style={{ color: '#94a3b8', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          />
-        </Tooltip>
+        <Space size={4}>
+          <Tooltip title="View Details">
+            <Button
+              type="text"
+              icon={<Eye size={15} />}
+              onClick={e => { e.stopPropagation(); onViewDetail(record); }}
+              style={{ color: '#94a3b8', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </Tooltip>
+          <Tooltip title="Loan History">
+            <Button
+              type="text"
+              icon={<History size={15} />}
+              onClick={e => { e.stopPropagation(); onViewHistory(record); }}
+              style={{ color: '#6366f1', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -312,6 +337,13 @@ const OperationsDashboard: React.FC = () => {
   const [notesValue, setNotesValue] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  // Loan history
+  const [historyLead, setHistoryLead] = useState<Lead | null>(null);
+  // Document review
+  const [reviewTarget, setReviewTarget] = useState<{ docId: string; label: string } | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
+  const [reviewRemarks, setReviewRemarks] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   const fetchLeads = async () => {
     setLoadingLeads(true);
@@ -364,7 +396,7 @@ const OperationsDashboard: React.FC = () => {
     try {
       const res = await api.get(`/documents/${docId}/presigned-url`);
       const url: string = res.data?.data ?? res.data;
-      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      if (url) openSafeUrl(url);
     } catch {
       notification.error({ message: 'Could not open document. Please try again.', style: { borderRadius: 12 } });
     } finally {
@@ -384,6 +416,30 @@ const OperationsDashboard: React.FC = () => {
       // silently fail; user can retry
     } finally {
       setNotesSaving(false);
+    }
+  };
+
+  const handleReviewDoc = async () => {
+    if (!reviewTarget) return;
+    setReviewLoading(true);
+    try {
+      await api.put(`/documents/${reviewTarget.docId}/review`, {
+        status: reviewStatus,
+        remarks: reviewRemarks,
+      });
+      notification.success({
+        message: `Document ${reviewStatus === 'APPROVED' ? 'approved' : 'rejected'} successfully`,
+        style: { borderRadius: 16, border: '1px solid #d1fae5' },
+      });
+      setReviewTarget(null);
+      setReviewRemarks('');
+    } catch (err: any) {
+      notification.error({
+        message: err?.response?.data?.message || 'Failed to review document',
+        style: { borderRadius: 16 },
+      });
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -480,6 +536,7 @@ const OperationsDashboard: React.FC = () => {
           loading={loadingLeads}
           onRefresh={fetchLeads}
           onViewDetail={handleViewDetail}
+          onViewHistory={lead => setHistoryLead(lead)}
         />
       </div>
 
@@ -758,21 +815,100 @@ const OperationsDashboard: React.FC = () => {
                   </div>
                 </div>
                 {doc ? (
-                  <Button
-                    size="small"
-                    icon={<Eye size={12} />}
-                    loading={viewingDoc === doc.id}
-                    onClick={() => handleViewDoc(doc.id)}
-                    style={{ fontWeight: 700, fontSize: 12, borderRadius: 8, height: 32, padding: '0 14px', background: '#4f46e5', color: '#fff', border: 'none' }}
-                  >
-                    Open
-                  </Button>
+                  <Space size={6}>
+                    <Button
+                      size="small"
+                      icon={<Eye size={12} />}
+                      loading={viewingDoc === doc.id}
+                      onClick={() => handleViewDoc(doc.id)}
+                      style={{ fontWeight: 700, fontSize: 12, borderRadius: 8, height: 30, padding: '0 12px', background: '#4f46e5', color: '#fff', border: 'none' }}
+                    >
+                      Open
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<ShieldCheck size={12} />}
+                      onClick={() => { setReviewTarget({ docId: doc.id, label }); setReviewStatus('APPROVED'); setReviewRemarks(''); }}
+                      style={{ fontWeight: 700, fontSize: 12, borderRadius: 8, height: 30, padding: '0 10px', background: '#ecfdf5', color: '#059669', border: '1px solid #bbf7d0' }}
+                    >
+                      Review
+                    </Button>
+                  </Space>
                 ) : (
                   <span style={{ fontSize: 11, color: '#cbd5e1', fontWeight: 600 }}>—</span>
                 )}
               </div>
             );
           })}
+        </div>
+      </Modal>
+
+      {/* Loan History Modal */}
+      {historyLead && (
+        <LoanTimeline
+          loanId={historyLead.id}
+          loanLabel={`${historyLead.firstName} ${historyLead.lastName}`}
+          onClose={() => setHistoryLead(null)}
+        />
+      )}
+
+      {/* Document Review Modal */}
+      <Modal
+        open={!!reviewTarget}
+        onCancel={() => setReviewTarget(null)}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ShieldCheck size={16} color="#059669" />
+            <span style={{ fontWeight: 900, fontSize: 15, color: '#1e293b' }}>
+              Review Document — {reviewTarget?.label}
+            </span>
+          </div>
+        }
+        footer={
+          <Space>
+            <Button onClick={() => setReviewTarget(null)} style={{ borderRadius: 8 }}>Cancel</Button>
+            <Button
+              loading={reviewLoading}
+              onClick={handleReviewDoc}
+              style={{
+                borderRadius: 8,
+                fontWeight: 700,
+                background: reviewStatus === 'APPROVED' ? '#059669' : '#dc2626',
+                color: '#fff',
+                border: 'none',
+              }}
+            >
+              {reviewStatus === 'APPROVED' ? 'Approve Document' : 'Reject Document'}
+            </Button>
+          </Space>
+        }
+        width={440}
+        styles={{ body: { padding: '20px 24px' } }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Decision</div>
+            <Select
+              value={reviewStatus}
+              onChange={v => setReviewStatus(v as 'APPROVED' | 'REJECTED')}
+              style={{ width: '100%' }}
+              size="large"
+              options={[
+                { value: 'APPROVED', label: '✓ Approve — document is valid' },
+                { value: 'REJECTED', label: '✗ Reject — document has issues' },
+              ]}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Remarks (optional)</div>
+            <Input.TextArea
+              value={reviewRemarks}
+              onChange={e => setReviewRemarks(e.target.value)}
+              placeholder="e.g. PAN card is blurry — please re-upload a clearer photo"
+              rows={3}
+              style={{ borderRadius: 10, fontSize: 13 }}
+            />
+          </div>
         </div>
       </Modal>
 

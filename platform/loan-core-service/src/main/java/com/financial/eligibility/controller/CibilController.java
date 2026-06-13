@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RequestMapping("/eligibility/cibil")
 @RequiredArgsConstructor
 @Slf4j
+@PreAuthorize("hasAnyAuthority('ADMIN','OPERATIONS','RM','CONNECTOR','PARTNER_MANAGER','TEAM_LEADER')")
 public class CibilController {
 
     private final CibilService cibilService;
@@ -35,10 +37,10 @@ public class CibilController {
         } catch (Exception e) {
             log.error("CRIF check failed for mobile {}: {}", requestDto.getMobileNumber(), e.getMessage());
             // 422 for bureau lookup failures (wrong PAN/mobile, no data) vs 502 for infra errors
-            HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY;
+            HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_CONTENT;
             return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "CIBIL lookup failed"));
+                .body(Map.of("message", "Unable to process CIBIL request. Please try again."));
         }
     }
 
@@ -70,10 +72,10 @@ public class CibilController {
 
         } catch (Exception e) {
             log.error("CRIF report generation failed for mobile {}: {}", requestDto.getMobileNumber(), e.getMessage());
-            HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY;
+            HttpStatus status = isInfraError(e) ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_CONTENT;
             return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "PDF generation failed"));
+                .body(Map.of("message", "Report generation failed. Please try again."));
         }
     }
 }

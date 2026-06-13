@@ -25,6 +25,16 @@ const fileSystem: any = {
   '/Partner Network':                    { type: 'folder', children: [] },
 };
 
+const openSafeUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    if (!['https:', 'http:'].includes(parsed.protocol)) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } catch {
+    // invalid URL — do nothing
+  }
+};
+
 const DocumentLibrary: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>('/');
   const [previewFile, setPreviewFile] = useState<any>(null);
@@ -121,7 +131,7 @@ const DocumentLibrary: React.FC = () => {
       const urlRes = await apiClient.get(`/documents/${previewFile.id}/presigned-url`);
       const downloadUrl = urlRes.data?.data || urlRes.data;
       if (downloadUrl) {
-        window.open(downloadUrl, '_blank');
+        openSafeUrl(downloadUrl);
         message.success('Download link generated successfully.');
       } else {
         throw new Error('No URL returned');

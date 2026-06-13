@@ -15,16 +15,16 @@ import java.net.URI;
 @Configuration
 public class S3Config {
 
-    @Value("${spring.cloud.aws.credentials.access-key:test}")
+    @Value("${aws.access-key:test}")
     private String accessKey;
 
-    @Value("${spring.cloud.aws.credentials.secret-key:test}")
+    @Value("${aws.secret-key:test}")
     private String secretKey;
 
-    @Value("${spring.cloud.aws.s3.region:${spring.cloud.aws.region:us-east-1}}")
+    @Value("${aws.region:us-east-1}")
     private String region;
 
-    @Value("${spring.cloud.aws.s3.endpoint:http://localhost:4566}")
+    @Value("${aws.s3.endpoint:http://localhost:4566}")
     private String endpoint;
 
     private StaticCredentialsProvider credentials() {

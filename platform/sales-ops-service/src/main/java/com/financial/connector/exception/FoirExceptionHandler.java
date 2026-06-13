@@ -35,7 +35,7 @@ public class FoirExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleInsufficientData(InsufficientIncomeDataException ex) {
         log.warn("Insufficient income data for FOIR assessment: {}", ex.getMessage());
         return ResponseEntity
-                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .status(HttpStatus.UNPROCESSABLE_CONTENT)
                 .body(ApiResponse.error(ex.getMessage(), Collections.emptyList(), UUID.randomUUID().toString()));
     }
 

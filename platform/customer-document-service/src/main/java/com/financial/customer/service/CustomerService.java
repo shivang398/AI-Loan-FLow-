@@ -20,7 +20,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.annotation.PostConstruct;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -247,5 +257,75 @@ public class CustomerService {
         leadRepository.saveAll(affected);
         log.info("Reassigned {} lead(s) from {} to pool {}", affected.size(), fromEmail, pool);
         return affected.size();
+    }
+
+    @Transactional
+    public Map<String, Object> bulkImportLeads(MultipartFile file) throws IOException {
+        int created = 0;
+        int failed = 0;
+        List<String> errors = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                Map<String, Object> empty = new LinkedHashMap<>();
+                empty.put("created", 0); empty.put("failed", 0); empty.put("errors", List.of("File is empty"));
+                return empty;
+            }
+            String[] headers = splitCsv(headerLine);
+            Map<String, Integer> colIndex = new HashMap<>();
+            for (int i = 0; i < headers.length; i++) {
+                colIndex.put(headers[i].trim(), i);
+            }
+
+            String line;
+            int rowNum = 1;
+            while ((line = reader.readLine()) != null && rowNum <= 500) {
+                rowNum++;
+                if (line.isBlank()) continue;
+                try {
+                    String[] cols = splitCsv(line);
+                    CustomerRequests.CreateCustomerRequest req = new CustomerRequests.CreateCustomerRequest();
+                    req.setFirstName(col(cols, colIndex, "firstName"));
+                    req.setLastName(col(cols, colIndex, "lastName"));
+                    req.setEmail(col(cols, colIndex, "email"));
+                    req.setMobile(col(cols, colIndex, "mobile"));
+                    req.setPanNumber(col(cols, colIndex, "panNumber"));
+                    String lt = col(cols, colIndex, "loanType");
+                    req.setLoanType(lt.isBlank() ? "PERSONAL" : lt);
+                    String amt = col(cols, colIndex, "loanAmount");
+                    if (!amt.isBlank()) req.setLoanAmount(new BigDecimal(amt));
+
+                    if (req.getFirstName().isBlank() || req.getMobile().isBlank()) {
+                        errors.add("Row " + rowNum + ": firstName and mobile are required");
+                        failed++;
+                        continue;
+                    }
+                    createCustomer(req);
+                    created++;
+                } catch (Exception e) {
+                    errors.add("Row " + rowNum + ": " + e.getMessage());
+                    failed++;
+                }
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("created", created);
+        result.put("failed", failed);
+        result.put("errors", errors.subList(0, Math.min(errors.size(), 20)));
+        return result;
+    }
+
+    private static String[] splitCsv(String line) {
+        return line.split(",", -1);
+    }
+
+    private static String col(String[] cols, Map<String, Integer> idx, String name) {
+        Integer i = idx.get(name);
+        if (i == null || i >= cols.length) return "";
+        return cols[i].trim();
     }
 }

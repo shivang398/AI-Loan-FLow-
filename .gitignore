@@ -47,3 +47,6 @@ test-results/
 
 # Service PID tracking
 .service-pids
+
+# Claude Code internal worktrees (never commit)
+.claude/worktrees/

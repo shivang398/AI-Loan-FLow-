@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -131,6 +132,31 @@ public class AuthController {
             @Valid @RequestBody AuthRequests.UpdateStatusRequest request) {
         authService.updateUserStatus(id, request.status());
         return ResponseEntity.ok(ApiResponse.success("User status updated", "SUCCESS", UUID.randomUUID().toString()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("email is required", List.of(), UUID.randomUUID().toString()));
+        }
+        authService.forgotPassword(email);
+        // Always return 200 to prevent email enumeration
+        return ResponseEntity.ok(ApiResponse.success(
+            "If that email exists, a reset link has been sent.", "OK", UUID.randomUUID().toString()));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("newPassword");
+        if (token == null || token.isBlank() || newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("token and newPassword are required", List.of(), UUID.randomUUID().toString()));
+        }
+        authService.resetPassword(token, newPassword);
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully.", "OK", UUID.randomUUID().toString()));
     }
 
     private void addRefreshCookie(HttpServletResponse response, String token) {

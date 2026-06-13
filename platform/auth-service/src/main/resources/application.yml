@@ -14,7 +14,7 @@ spring:
   application:
     name: auth-service
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/platform_auth?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/platform_auth?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=${DB_USE_SSL:false}&requireSSL=${DB_REQUIRE_SSL:false}&createDatabaseIfNotExist=true
     username: ${DB_USER:root}
     password: ${DB_PASSWORD}
   jpa:

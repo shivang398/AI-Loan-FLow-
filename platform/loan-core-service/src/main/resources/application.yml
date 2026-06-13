@@ -11,7 +11,7 @@ spring:
   application:
     name: loan-core-service
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/platform_loan_core?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/platform_loan_core?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=${DB_USE_SSL:false}&requireSSL=${DB_REQUIRE_SSL:false}&createDatabaseIfNotExist=true
     username: ${DB_USER:root}
     password: ${DB_PASSWORD}
   jpa:
@@ -44,8 +44,8 @@ spring:
 tenacio:
   crif:
     url: ${TENACIO_CRIF_URL:https://testapi.tenacio.io/api/v1/services/crif-soft-pull}
-    client-id: ${TENACIO_CRIF_CLIENT_ID:realf_52498}
-    key: ${TENACIO_CRIF_API_KEY:tnc_test_4c3c25777c1fe7a228808dcb127591408d3bb563}
+    client-id: ${TENACIO_CRIF_CLIENT_ID}
+    key: ${TENACIO_CRIF_API_KEY}
     workflow-id: ${TENACIO_CRIF_WORKFLOW_ID:c001aecc-e992-42d6-a3fe-b55810d21a02}
 
 app:
