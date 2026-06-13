@@ -846,7 +846,7 @@ const OperationsDashboard: React.FC = () => {
       {/* Loan History Modal */}
       {historyLead && (
         <LoanTimeline
-          loanId={historyLead.id}
+          customerId={historyLead.customerId}
           loanLabel={`${historyLead.firstName} ${historyLead.lastName}`}
           onClose={() => setHistoryLead(null)}
         />

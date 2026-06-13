@@ -31,7 +31,6 @@ class AuthControllerTest {
     final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
-    @SuppressWarnings("unused") // called reflectively by JUnit 5
     void setup() { mvc = MockMvcBuilders.standaloneSetup(controller).build(); }
 
     @Test

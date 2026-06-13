@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Checkbox, Form, Alert } from 'antd';
-import { Lock, Mail, ShieldCheck, TrendingUp, Users, Zap } from 'lucide-react';
+import { Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginSchema, LoginFormValues } from '../../schemas/authSchemas';
@@ -10,27 +10,34 @@ import { setCredentials, setLoading, setError } from '../../store/slices/authSli
 import api from '../../shared/services/apiClient';
 import { RootState } from '../../store';
 
-const RM_RED   = '#CC1B1B';
-const RM_BLUE  = '#0F2B9F';
-const RM_NAVY  = '#071560';
+const NAVY = '#0B1E3D';
+const GOLD = '#C4993A';
 
-/* Brand globe mark — inline SVG, no external dependency */
-const GlobeMark: React.FC<{ size?: number }> = ({ size = 64 }) => (
-  <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="32" cy="32" r="30" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-    {/* Blue arc top-left */}
-    <path d="M10 32 C10 18 20 8 32 8 C44 8 54 18 54 32" stroke={RM_BLUE} strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.9" />
-    {/* Red arc bottom-right */}
-    <path d="M10 32 C10 46 20 56 32 56 C44 56 54 46 54 32" stroke={RM_RED} strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.9" />
-    {/* Horizontal swoosh lines */}
-    <path d="M7 26 Q32 33 57 26" stroke="rgba(255,255,255,0.55)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-    <path d="M7 38 Q32 31 57 38" stroke="rgba(255,255,255,0.55)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-    {/* R */}
-    <text x="20" y="30" fontFamily="Arial Black, Arial" fontWeight="900" fontSize="12" fill="white">R</text>
-    {/* M */}
-    <text x="31" y="43" fontFamily="Arial Black, Arial" fontWeight="900" fontSize="12" fill="white">M</text>
-  </svg>
+/* Typographic brand mark */
+const BrandMark: React.FC = () => (
+  <div style={{
+    width: 72, height: 72,
+    background: 'rgba(196,153,58,0.10)',
+    border: '1px solid rgba(196,153,58,0.30)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    marginBottom: 28,
+  }}>
+    <span style={{
+      fontFamily: '"Playfair Display", Georgia, serif',
+      fontWeight: 700, fontSize: 28,
+      color: GOLD, letterSpacing: '-0.04em',
+      lineHeight: 1,
+    }}>
+      RM
+    </span>
+  </div>
 );
+
+const TRUST_STATS = [
+  { value: '22+', label: 'Years of Trust' },
+  { value: '₹10Cr+', label: 'Monthly Business' },
+  { value: '50+', label: 'Lender Partners' },
+];
 
 const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -57,11 +64,11 @@ const LoginPage: React.FC = () => {
     dispatch(setLoading(true));
     dispatch(setError(null));
     try {
-      const response   = await api.post('auth/login', formData);
-      const data       = response.data?.data;
-      const token      = data?.token;
-      const role       = data?.role;
-      const email      = data?.email || formData.email;
+      const response = await api.post('auth/login', formData);
+      const data  = response.data?.data;
+      const token = data?.token;
+      const role  = data?.role;
+      const email = data?.email || formData.email;
       if (!token || !role) throw new Error('Invalid login response from server');
       dispatch(setCredentials({ user: { id: data?.id || email, email, role }, token }));
       const paths: Record<string, string> = {
@@ -79,130 +86,179 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const features = [
-    { icon: TrendingUp, text: 'Real-time credit distribution analytics' },
-    { icon: Users,      text: 'Hierarchical multi-role access management' },
-    { icon: Zap,        text: 'Automated eligibility & compliance checks' },
-  ];
-
   return (
     <div className="login-page">
 
-      {/* ── Left Panel ── */}
+      {/* ── Left panel — brand authority ── */}
       <div className="login-page-illustration">
-        {/* Extra swoosh arcs behind content */}
-        <svg style={{ position: 'absolute', top: '10%', right: '-80px', opacity: 0.08, pointerEvents: 'none' }} width="400" height="400" viewBox="0 0 400 400" fill="none">
-          <ellipse cx="300" cy="200" rx="200" ry="180" stroke="white" strokeWidth="50" />
-        </svg>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 400 }}>
 
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 420 }}>
-          {/* Logo mark */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-            <div style={{
-              width: 88, height: 88, borderRadius: 24,
-              background: 'rgba(255,255,255,0.10)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.30)',
-            }}>
-              <GlobeMark size={64} />
-            </div>
-          </div>
+          {/* Brand mark */}
+          <BrandMark />
 
           {/* Brand name */}
-          <div style={{ marginBottom: 8 }}>
-            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em', color: 'white' }}>
-              REAL{' '}
-            </span>
-            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 900, fontSize: 30, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.70)' }}>
-              MONEY
+          <div style={{ marginBottom: 6 }}>
+            <span style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontWeight: 800, fontSize: 32,
+              color: '#FFFFFF', letterSpacing: '-0.01em',
+            }}>
+              Real Money
             </span>
           </div>
 
-          <p style={{
-            color: 'rgba(255,255,255,0.48)', fontSize: '0.9rem',
-            lineHeight: 1.7, margin: '0 0 44px', fontWeight: 400,
-            letterSpacing: '0.04em', textTransform: 'uppercase',
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.30)',
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            fontFamily: 'Inter, sans-serif', marginBottom: 40,
           }}>
             Advisory Platform
-          </p>
+          </div>
 
-          {/* Feature cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
-            {features.map(({ icon: Icon, text }, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: 14, padding: '13px 18px',
+          {/* Quote / value prop */}
+          <div style={{
+            paddingLeft: 16,
+            borderLeft: `3px solid rgba(196,153,58,0.50)`,
+            marginBottom: 44,
+          }}>
+            <p style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontWeight: 600, fontSize: 18,
+              color: 'rgba(255,255,255,0.75)',
+              lineHeight: 1.6, margin: 0,
+              fontStyle: 'italic',
+            }}>
+              "Simplifying personal loans<br />
+              for India's professionals."
+            </p>
+          </div>
+
+          {/* Stats row */}
+          <div style={{
+            display: 'flex', gap: 0,
+            border: '1px solid rgba(196,153,58,0.18)',
+            background: 'rgba(196,153,58,0.04)',
+            marginBottom: 44,
+          }}>
+            {TRUST_STATS.map((s, i) => (
+              <div key={s.label} style={{
+                flex: 1, padding: '18px 0', textAlign: 'center',
+                borderRight: i < 2 ? '1px solid rgba(196,153,58,0.14)' : 'none',
               }}>
                 <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: 'rgba(204,27,27,0.22)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontWeight: 700, fontSize: 20,
+                  color: GOLD, lineHeight: 1,
                 }}>
-                  <Icon size={18} color="#FFAAAA" />
+                  {s.value}
                 </div>
-                <span style={{ color: 'rgba(255,255,255,0.78)', fontSize: '0.9375rem', fontWeight: 500 }}>
-                  {text}
-                </span>
+                <div style={{
+                  fontSize: 9.5, fontWeight: 600,
+                  color: 'rgba(255,255,255,0.28)',
+                  textTransform: 'uppercase', letterSpacing: '0.09em',
+                  marginTop: 6, fontFamily: 'Inter, sans-serif',
+                }}>
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Status badge */}
-          <div style={{
-            marginTop: 44,
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            borderRadius: 100, padding: '8px 18px',
-          }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
-            <span style={{ color: 'rgba(255,255,255,0.50)', fontSize: '0.8125rem', fontWeight: 500 }}>
-              All systems operational · 99.98% uptime
+          {/* Trust items */}
+          {[
+            'RBI-Compliant Corporate DSA',
+            'Zero advisory fees — always',
+            'Authorised partner of 50+ banks & NBFCs',
+          ].map(item => (
+            <div key={item} style={{
+              display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+            }}>
+              <div style={{
+                width: 16, height: 16,
+                background: 'rgba(196,153,58,0.14)',
+                border: '1px solid rgba(196,153,58,0.28)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <div style={{ width: 6, height: 1, background: GOLD }} />
+              </div>
+              <span style={{
+                fontSize: 13, color: 'rgba(255,255,255,0.50)',
+                fontFamily: 'Inter, sans-serif', fontWeight: 400,
+              }}>
+                {item}
+              </span>
+            </div>
+          ))}
+
+          {/* Status indicator */}
+          <div style={{ marginTop: 40, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 6, height: 6,
+              borderRadius: '50%',
+              background: '#1A7A4A',
+              boxShadow: '0 0 0 3px rgba(26,122,74,0.20)',
+            }} />
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'Inter, sans-serif' }}>
+              All systems operational
             </span>
           </div>
         </div>
       </div>
 
-      {/* ── Right Panel ── */}
+      {/* ── Right panel — sign-in form ── */}
       <div className="login-form-panel">
         <div style={{ width: '100%', maxWidth: 400 }}>
 
-          {/* Header */}
-          <div style={{ marginBottom: 36 }}>
+          {/* Form header */}
+          <div style={{ marginBottom: 32 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: '#F0F2FA', borderRadius: 100,
-              padding: '5px 14px', marginBottom: 20,
+              background: '#EBF0F7',
+              padding: '4px 12px', marginBottom: 20,
+              borderLeft: `3px solid ${NAVY}`,
             }}>
-              <ShieldCheck size={13} color={RM_BLUE} />
-              <span style={{ color: RM_BLUE, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                Secure Access
+              <ShieldCheck size={12} color={NAVY} />
+              <span style={{
+                color: NAVY, fontSize: 10.5, fontWeight: 700,
+                letterSpacing: '0.07em', textTransform: 'uppercase',
+                fontFamily: 'Inter, sans-serif',
+              }}>
+                Secure Staff Portal
               </span>
             </div>
 
             <h1 style={{
-              fontSize: '2rem', fontWeight: 800,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.025em', margin: '0 0 8px', lineHeight: 1.2,
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontSize: '2rem', fontWeight: 700,
+              color: NAVY, letterSpacing: '-0.02em',
+              margin: '0 0 8px', lineHeight: 1.2,
             }}>
               Welcome back
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', margin: 0, fontWeight: 400 }}>
-              Sign in to your Real Money dashboard
+            <p style={{
+              color: 'var(--text-muted)', fontSize: 14,
+              margin: 0, fontWeight: 400,
+              fontFamily: 'Inter, sans-serif',
+            }}>
+              Sign in to access the platform.
             </p>
           </div>
 
-          {/* Error */}
+          {/* Error alert */}
           {error && (
             <Alert
               message={error}
               type="error"
               showIcon
               closable
-              style={{ borderRadius: 12, marginBottom: 24, border: 'none', background: '#fef2f2' }}
+              style={{
+                marginBottom: 20,
+                borderRadius: 0,
+                border: 'none',
+                borderLeft: '3px solid #8B1A1A',
+                background: '#FEF2F2',
+              }}
             />
           )}
 
@@ -220,10 +276,10 @@ const LoginPage: React.FC = () => {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    prefix={<Mail size={16} style={{ color: 'var(--text-muted)', marginRight: 6 }} />}
+                    prefix={<Mail size={15} style={{ color: 'var(--text-muted)', marginRight: 6 }} />}
                     placeholder="admin@realmoneygroups.in"
                     autoComplete="off"
-                    style={{ height: 48, borderRadius: 12 }}
+                    style={{ height: 46, borderRadius: 2 }}
                   />
                 )}
               />
@@ -233,7 +289,7 @@ const LoginPage: React.FC = () => {
               label="Password"
               validateStatus={errors.password ? 'error' : ''}
               help={errors.password?.message}
-              style={{ marginBottom: 12 }}
+              style={{ marginBottom: 14 }}
             >
               <Controller
                 name="password"
@@ -241,25 +297,37 @@ const LoginPage: React.FC = () => {
                 render={({ field }) => (
                   <Input.Password
                     {...field}
-                    prefix={<Lock size={16} style={{ color: 'var(--text-muted)', marginRight: 6 }} />}
+                    prefix={<Lock size={15} style={{ color: 'var(--text-muted)', marginRight: 6 }} />}
                     placeholder="••••••••"
-                    style={{ height: 48, borderRadius: 12 }}
+                    style={{ height: 46, borderRadius: 2 }}
                   />
                 )}
               />
             </Form.Item>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 24,
+            }}>
               <Controller
                 name="remember"
                 control={control}
                 render={({ field: { value, onChange } }) => (
-                  <Checkbox checked={value} onChange={onChange} style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                  <Checkbox
+                    checked={value}
+                    onChange={onChange}
+                    style={{ color: 'var(--text-secondary)', fontSize: 13 }}
+                  >
                     Remember me
                   </Checkbox>
                 )}
               />
-              <a href="/forgot-password" style={{ color: RM_RED, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              <a href="/forgot-password" style={{
+                color: NAVY, fontSize: 13, fontWeight: 600,
+                textDecoration: 'none', letterSpacing: '0.01em',
+              }}>
                 Forgot password?
               </a>
             </div>
@@ -270,38 +338,52 @@ const LoginPage: React.FC = () => {
               block
               loading={loading}
               style={{
-                height: 50, borderRadius: 12, fontWeight: 700, fontSize: 15,
-                letterSpacing: '0.01em',
-                background: `linear-gradient(135deg, ${RM_NAVY}, ${RM_BLUE} 50%, ${RM_RED})`,
-                border: 'none',
-                boxShadow: `0 4px 18px rgba(15,43,159,0.35)`,
+                height: 48,
+                borderRadius: 2,
+                fontWeight: 700,
+                fontSize: 14,
+                letterSpacing: '0.03em',
+                background: NAVY,
+                border: `1px solid ${NAVY}`,
+                boxShadow: 'none',
+                fontFamily: 'Inter, sans-serif',
               }}
             >
               Sign In to Dashboard
             </Button>
           </Form>
 
-          {/* Footer */}
-          <div style={{ marginTop: 28, textAlign: 'center' }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', margin: 0 }}>
+          {/* Contact note */}
+          <div style={{ marginTop: 24, textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: 12.5, margin: 0 }}>
               Don't have access?{' '}
-              <a href="mailto:admin@realmoneygroups.in" style={{ color: RM_BLUE, fontWeight: 600, textDecoration: 'none' }}>
-                Contact administrator
+              <a
+                href="mailto:admin@realmoneygroups.in"
+                style={{ color: NAVY, fontWeight: 600, textDecoration: 'none' }}
+              >
+                Contact your administrator
               </a>
             </p>
           </div>
 
-          {/* Trust badges */}
+          {/* Compliance strip */}
           <div style={{
-            marginTop: 36, paddingTop: 22,
+            marginTop: 32,
+            paddingTop: 20,
             borderTop: '1px solid var(--surface-3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 24,
           }}>
-            {['ISO 27001', 'SOC 2', '256-bit TLS'].map(badge => (
+            {['ISO 27001', 'SOC 2 Type II', '256-bit TLS'].map(badge => (
               <span key={badge} style={{
-                fontSize: '0.6875rem', fontWeight: 700,
+                fontSize: 10,
+                fontWeight: 700,
                 color: 'var(--text-muted)',
-                textTransform: 'uppercase', letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                fontFamily: 'Inter, sans-serif',
               }}>
                 {badge}
               </span>

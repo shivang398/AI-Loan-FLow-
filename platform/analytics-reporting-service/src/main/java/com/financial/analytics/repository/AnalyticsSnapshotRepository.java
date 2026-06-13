@@ -21,10 +21,16 @@ public interface AnalyticsSnapshotRepository extends JpaRepository<AnalyticsSnap
 
     Optional<AnalyticsSnapshot> findTopByMetricTypeAndDimensionIsNullOrderBySnapshotDateDesc(String metricType);
 
-    // Direct JPQL DELETE to avoid entity-lifecycle tracking causing OptimisticLockingFailureException
-    // on concurrent calls (e.g. React strict-mode double-effect fire).
-    @Modifying
-    @Query("DELETE FROM AnalyticsSnapshot a WHERE a.snapshotDate = :date AND a.metricType = :metricType AND (:dimension IS NULL AND a.dimension IS NULL OR a.dimension = :dimension)")
+    // Direct JPQL DELETE — two variants to avoid Hibernate 6 rejecting null bound to '='
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM AnalyticsSnapshot a WHERE a.snapshotDate = :date AND a.metricType = :metricType AND a.dimension IS NULL")
+    void deleteBySnapshotDateAndMetricTypeAndDimensionIsNull(
+        @Param("date") LocalDate date,
+        @Param("metricType") String metricType
+    );
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM AnalyticsSnapshot a WHERE a.snapshotDate = :date AND a.metricType = :metricType AND a.dimension = :dimension")
     void deleteBySnapshotDateAndMetricTypeAndDimension(
         @Param("date") LocalDate date,
         @Param("metricType") String metricType,

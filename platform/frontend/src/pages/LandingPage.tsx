@@ -18,23 +18,24 @@ import '../features/landing/styles/landing.css';
 
 const landingTheme = {
   token: {
-    colorPrimary: '#0B1E3D',
-    colorLink: '#1A3A6B',
-    borderRadius: 3,
-    fontFamily: 'Inter, sans-serif',
-    colorBgBase: '#FFFFFF',
-    colorTextBase: '#0B1E3D',
+    colorPrimary:    '#0B1E3D',
+    colorLink:       '#0B1E3D',
+    colorSuccess:    '#1A7A4A',
+    colorWarning:    '#C4993A',
+    colorError:      '#8B1A1A',
+    borderRadius:    2,
+    borderRadiusSM:  2,
+    borderRadiusLG:  3,
+    fontFamily:      'Inter, -apple-system, sans-serif',
+    colorBgBase:     '#FFFFFF',
+    colorTextBase:   '#0B1E3D',
+    colorBorder:     '#D3DCE8',
   },
   components: {
-    Button: {
-      borderRadius: 3,
-    },
-    Input: {
-      borderRadius: 3,
-    },
-    Select: {
-      borderRadius: 3,
-    },
+    Button: { borderRadius: 2 },
+    Input:  { borderRadius: 2 },
+    Select: { borderRadius: 2 },
+    Modal:  { borderRadiusLG: 3 },
   },
 };
 

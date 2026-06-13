@@ -1,5 +1,5 @@
 import React from 'react';
-import { App as AntApp } from 'antd';
+import { App as AntApp, ConfigProvider } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LandingPage from './pages/LandingPage';
@@ -50,9 +50,41 @@ const SmartRedirect: React.FC = () => {
   return <Navigate to={roleHome[user.role] ?? '/dashboard'} replace />;
 };
 
+/* Formal Ant Design theme — navy primary, minimal radius */
+const formalTheme = {
+  token: {
+    colorPrimary:    '#0B1E3D',
+    colorLink:       '#0B1E3D',
+    colorSuccess:    '#1A7A4A',
+    colorWarning:    '#A87C3A',
+    colorError:      '#8B1A1A',
+    borderRadius:    2,
+    borderRadiusSM:  2,
+    borderRadiusLG:  3,
+    fontFamily:      'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    colorBgBase:     '#FFFFFF',
+    colorTextBase:   '#0B1E3D',
+    colorBorder:     '#D3DCE8',
+    colorBgContainer:'#FFFFFF',
+    colorBgLayout:   '#F5F4F1',
+    colorFillAlter:  '#F5F4F1',
+  },
+  components: {
+    Button:    { borderRadius: 2, borderRadiusSM: 2, borderRadiusLG: 3 },
+    Input:     { borderRadius: 2, borderRadiusSM: 2, borderRadiusLG: 3 },
+    Select:    { borderRadius: 2, borderRadiusSM: 2, borderRadiusLG: 3 },
+    Modal:     { borderRadiusLG: 3 },
+    Card:      { borderRadiusLG: 4 },
+    Table:     { borderRadiusLG: 4, borderRadius: 4 },
+    Tag:       { borderRadiusSM: 2 },
+    Drawer:    { borderRadiusOuter: 0 },
+  },
+};
+
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
+      <ConfigProvider theme={formalTheme}>
       <AntApp>
       <BrowserRouter>
         <Routes>
@@ -134,6 +166,7 @@ const App: React.FC = () => {
         </Routes>
       </BrowserRouter>
       </AntApp>
+      </ConfigProvider>
     </QueryClientProvider>
   );
 };

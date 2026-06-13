@@ -42,7 +42,10 @@ public class LoanService {
         return loan;
     }
 
-    public List<LoanApplication> getLoans(UUID connectorId) {
+    public List<LoanApplication> getLoans(UUID connectorId, UUID customerId) {
+        if (customerId != null) {
+            return loanApplicationRepository.findByCustomerId(customerId);
+        }
         if (connectorId != null) {
             return loanApplicationRepository.findByConnectorId(connectorId);
         }

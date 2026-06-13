@@ -36,7 +36,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@SuppressWarnings("unused")
 class FoirServiceTest {
 
     @Mock FoirAssessmentRepository  assessmentRepository;

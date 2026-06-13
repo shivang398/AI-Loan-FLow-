@@ -22,21 +22,32 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 interface Props {
-  loanId: string;
+  customerId: string;
   loanLabel?: string;
   onClose: () => void;
 }
 
-const LoanTimeline: React.FC<Props> = ({ loanId, loanLabel, onClose }) => {
+const LoanTimeline: React.FC<Props> = ({ customerId, loanLabel, onClose }) => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [noLoan, setNoLoan] = useState(false);
 
   useEffect(() => {
-    apiClient.get(`/loans/${loanId}/history`)
-      .then(res => setHistory(res.data?.data || []))
+    apiClient.get(`/loans?customerId=${customerId}`)
+      .then(res => {
+        const loans: { id: string }[] = res.data?.data || [];
+        if (loans.length === 0) {
+          setNoLoan(true);
+          return;
+        }
+        return apiClient.get(`/loans/${loans[0].id}/history`);
+      })
+      .then(res => {
+        if (res) setHistory(res.data?.data || []);
+      })
       .catch(() => setHistory([]))
       .finally(() => setLoading(false));
-  }, [loanId]);
+  }, [customerId]);
 
   return (
     <Modal
@@ -48,6 +59,8 @@ const LoanTimeline: React.FC<Props> = ({ loanId, loanLabel, onClose }) => {
     >
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
+      ) : noLoan ? (
+        <Empty description="No loan application found for this customer" />
       ) : history.length === 0 ? (
         <Empty description="No history available yet" />
       ) : (

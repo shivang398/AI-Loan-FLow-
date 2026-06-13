@@ -28,10 +28,13 @@ public class AnalyticsService {
         LocalDate today = LocalDate.now();
         for (SnapshotRequest req : requests) {
             LocalDate date = req.getSnapshotDate() != null ? req.getSnapshotDate() : today;
-            // Upsert: delete existing snapshot for same date + metricType + dimension
-            repository.deleteBySnapshotDateAndMetricTypeAndDimension(
-                date, req.getMetricType(), req.getDimension()
-            );
+            // Upsert: delete existing snapshot for same date + metricType + dimension.
+            // Two separate queries because Hibernate 6 rejects null bound to '=' in JPQL.
+            if (req.getDimension() == null) {
+                repository.deleteBySnapshotDateAndMetricTypeAndDimensionIsNull(date, req.getMetricType());
+            } else {
+                repository.deleteBySnapshotDateAndMetricTypeAndDimension(date, req.getMetricType(), req.getDimension());
+            }
             AnalyticsSnapshot snapshot = AnalyticsSnapshot.builder()
                     .snapshotDate(date)
                     .metricType(req.getMetricType())

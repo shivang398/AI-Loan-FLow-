@@ -26,11 +26,9 @@ public class LoanController {
     @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','OPERATIONS','ROLE_OPERATIONS','TEAM_LEADER','ROLE_TEAM_LEADER','PARTNER_MANAGER','ROLE_PARTNER_MANAGER','RM','ROLE_RM')")
     public ResponseEntity<ApiResponse<List<LoanApplication>>> getLoans(
             @RequestParam(required = false) UUID connectorId,
+            @RequestParam(required = false) UUID customerId,
             Authentication auth) {
-        // Staff-only endpoint; connector-scoped view is provided by /connectors/{id}/stats.
-        // Removing CONNECTOR from allowed roles prevents IDOR where a connector could
-        // pass an arbitrary connectorId and read another connector's loan pipeline.
-        List<LoanApplication> loans = loanService.getLoans(connectorId);
+        List<LoanApplication> loans = loanService.getLoans(connectorId, customerId);
         return ResponseEntity.ok(ApiResponse.success("Loans fetched successfully", loans, UUID.randomUUID().toString()));
     }
 

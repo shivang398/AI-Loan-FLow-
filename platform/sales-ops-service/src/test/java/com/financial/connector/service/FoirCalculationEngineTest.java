@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SuppressWarnings("unused")
 class FoirCalculationEngineTest {
 
     private FoirCalculationEngine engine;
