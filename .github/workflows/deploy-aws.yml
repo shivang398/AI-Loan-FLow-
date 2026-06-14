@@ -1,73 +1,35 @@
-name: Deploy to AWS ECS
+name: Build and Deploy to AWS EC2
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
-      services:
-        description: 'Comma-separated services to deploy (leave empty for all)'
+      skip_build:
+        description: 'Skip Docker build and only redeploy (use existing images)'
         required: false
-        default: ''
+        default: 'false'
 
 env:
-  AWS_REGION: us-east-1
-  ECS_CLUSTER: platform-cluster
+  AWS_REGION: ${{ secrets.AWS_REGION || 'ap-south-1' }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION || 'ap-south-1' }}.amazonaws.com
 
 jobs:
-  # ── Run tests — must pass before any Docker build proceeds ──────────────────
-  test:
-    name: Test all services
+  # ── Build & Push Docker images to ECR ──────────────────────────────────────
+  build:
+    name: Build Docker images
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_build != 'true' }}
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 25 (Temurin)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '25'
-          cache: maven
-
-      - name: Run all tests
-        working-directory: platform
-        run: |
-          mvn verify \
-            -Dmaven.repo.local=~/.m2/repository \
-            -Denforcer.skip=true \
-            -Dsurefire.failIfNoSpecifiedTests=false \
-            --batch-mode --no-transfer-progress
-
-      - name: Publish test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: platform/*/target/surefire-reports/
-
-  # ── Build & Push backend Java services ──────────────────────────────────────
-  # Bug 16 fixed: matrix was listing 13 pre-merger service names that no longer
-  # exist as separate Maven modules — updated to the 6 actual merged services
-  build-backend:
-    needs: test
-    name: Build ${{ matrix.service }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 6
-      matrix:
-        service:
-          - auth-service
-          - sales-ops-service
-          - customer-document-service
-          - loan-core-service
-          - communications-service
-          - analytics-reporting-service
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Set image tag
+        id: meta
+        run: echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -77,159 +39,122 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create ECR repositories if missing
+        run: |
+          for repo in realmoney-backend realmoney-frontend; do
+            aws ecr describe-repositories --repository-names "$repo" --region "$AWS_REGION" 2>/dev/null \
+              || aws ecr create-repository --repository-name "$repo" --region "$AWS_REGION" \
+                   --image-scanning-configuration scanOnPush=true \
+                   --image-tag-mutability MUTABLE
+          done
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
-          context: ./platform
-          file: ./platform/Dockerfile
+          context: platform/backend
+          file: platform/backend/Dockerfile
           push: true
-          build-args: SERVICE_NAME=${{ matrix.service }}
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:latest
-          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:cache
-          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-${{ matrix.service }}:cache,mode=max
-
-  # ── Build & Push frontend ────────────────────────────────────────────────────
-  build-frontend:
-    name: Build frontend
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            ${{ env.ECR_REGISTRY }}/realmoney-backend:${{ steps.meta.outputs.tag }}
+            ${{ env.ECR_REGISTRY }}/realmoney-backend:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./platform/frontend
-          file: ./platform/frontend/Dockerfile
+          context: platform/frontend
+          file: platform/frontend/Dockerfile
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/platform-frontend:${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/platform-frontend:latest
-          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-frontend:cache
-          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/platform-frontend:cache,mode=max
+            ${{ env.ECR_REGISTRY }}/realmoney-frontend:${{ steps.meta.outputs.tag }}
+            ${{ env.ECR_REGISTRY }}/realmoney-frontend:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
-  # ── Deploy to ECS ────────────────────────────────────────────────────────────
+  # ── Deploy to EC2 ───────────────────────────────────────────────────────────
   deploy:
-    name: Deploy to ECS
+    name: Deploy to EC2
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend]
-    environment: production
+    needs: build
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Set image tag
+        id: meta
+        run: |
+          if [ "${{ github.event.inputs.skip_build }}" = "true" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 300s
+          envs: ECR_REGISTRY,AWS_REGION
+          script: |
+            set -euo pipefail
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+            export ECR_REGISTRY="${{ env.ECR_REGISTRY }}"
+            export APP_VERSION="${{ steps.meta.outputs.tag }}"
+            export AWS_REGION="${{ env.AWS_REGION }}"
 
-      - name: Fetch infrastructure stack outputs
-        id: stack
-        run: |
-          STACK_NAME=platform-infrastructure
-          get_output() {
-            aws cloudformation describe-stacks \
-              --stack-name "$STACK_NAME" \
-              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" \
-              --output text
-          }
-          echo "rds_endpoint=$(get_output RDSEndpoint)" >> $GITHUB_OUTPUT
-          echo "redis_endpoint=$(get_output RedisEndpoint)" >> $GITHUB_OUTPUT
-          echo "ecs_cluster=$(get_output ECSClusterName)" >> $GITHUB_OUTPUT
-          echo "execution_role=$(get_output ECSTaskExecutionRoleArn)" >> $GITHUB_OUTPUT
-          echo "task_role=$(get_output ECSTaskRoleArn)" >> $GITHUB_OUTPUT
-          echo "s3_bucket=$(get_output DocumentsBucketName)" >> $GITHUB_OUTPUT
-          echo "cloudmap_ns=$(get_output CloudMapNamespaceId)" >> $GITHUB_OUTPUT
-          echo "private_subnet1=$(get_output PrivateSubnet1Id)" >> $GITHUB_OUTPUT
-          echo "private_subnet2=$(get_output PrivateSubnet2Id)" >> $GITHUB_OUTPUT
-          echo "public_subnet1=$(get_output PublicSubnet1Id)" >> $GITHUB_OUTPUT
-          echo "public_subnet2=$(get_output PublicSubnet2Id)" >> $GITHUB_OUTPUT
-          echo "backend_sg=$(get_output BackendSecurityGroupId)" >> $GITHUB_OUTPUT
-          echo "frontend_sg=$(get_output FrontendSecurityGroupId)" >> $GITHUB_OUTPUT
-          echo "rabbitmq_sg=$(get_output RabbitMQSecurityGroupId)" >> $GITHUB_OUTPUT
-          echo "frontend_tg=$(get_output FrontendTargetGroupArn)" >> $GITHUB_OUTPUT
-          echo "efs_id=$(get_output EFSFileSystemId)" >> $GITHUB_OUTPUT
+            cd /opt/realmoney
 
-      # Bug 17 fixed: added all missing secrets that deploy.sh requires
-      - name: Run deploy script
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          RDS_ENDPOINT: ${{ steps.stack.outputs.rds_endpoint }}
-          REDIS_ENDPOINT: ${{ steps.stack.outputs.redis_endpoint }}
-          ECS_CLUSTER: ${{ steps.stack.outputs.ecs_cluster }}
-          EXECUTION_ROLE_ARN: ${{ steps.stack.outputs.execution_role }}
-          TASK_ROLE_ARN: ${{ steps.stack.outputs.task_role }}
-          S3_BUCKET: ${{ steps.stack.outputs.s3_bucket }}
-          CLOUDMAP_NS_ID: ${{ steps.stack.outputs.cloudmap_ns }}
-          PRIVATE_SUBNET_1: ${{ steps.stack.outputs.private_subnet1 }}
-          PRIVATE_SUBNET_2: ${{ steps.stack.outputs.private_subnet2 }}
-          PUBLIC_SUBNET_1: ${{ steps.stack.outputs.public_subnet1 }}
-          PUBLIC_SUBNET_2: ${{ steps.stack.outputs.public_subnet2 }}
-          BACKEND_SG: ${{ steps.stack.outputs.backend_sg }}
-          FRONTEND_SG: ${{ steps.stack.outputs.frontend_sg }}
-          RABBITMQ_SG: ${{ steps.stack.outputs.rabbitmq_sg }}
-          FRONTEND_TG_ARN: ${{ steps.stack.outputs.frontend_tg }}
-          EFS_ID: ${{ steps.stack.outputs.efs_id }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          PII_ENCRYPTION_KEY: ${{ secrets.PII_ENCRYPTION_KEY }}
-          INTERNAL_SERVICE_TOKEN: ${{ secrets.INTERNAL_SERVICE_TOKEN }}
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
-          WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
-          WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
-          WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
-          TENACIO_CRIF_CLIENT_ID: ${{ secrets.TENACIO_CRIF_CLIENT_ID }}
-          TENACIO_CRIF_API_KEY: ${{ secrets.TENACIO_CRIF_API_KEY }}
-          TENACIO_CRIF_WORKFLOW_ID: ${{ secrets.TENACIO_CRIF_WORKFLOW_ID }}
-          CORS_ALLOWED_ORIGIN: ${{ secrets.CORS_ALLOWED_ORIGIN }}
-        run: |
-          chmod +x aws/scripts/deploy.sh
-          aws/scripts/deploy.sh
+            echo "==> Pulling latest code"
+            git pull --ff-only
 
-      - name: Print application URL
-        run: |
-          ALB_DNS=$(aws cloudformation describe-stacks \
-            --stack-name platform-infrastructure \
-            --query "Stacks[0].Outputs[?OutputKey=='ALBDNSName'].OutputValue" \
-            --output text)
-          echo ""
-          echo "Deployment complete!"
-          echo "Application URL: http://$ALB_DNS"
-          echo ""
+            echo "==> Logging in to ECR"
+            aws ecr get-login-password --region "$AWS_REGION" \
+              | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+            echo "==> Pulling new images (tag: $APP_VERSION)"
+            cd /opt/realmoney/platform
+            ECR_REGISTRY="$ECR_REGISTRY" APP_VERSION="$APP_VERSION" \
+              docker compose -f docker-compose.prod.yml pull backend frontend
+
+            echo "==> Rolling update"
+            ECR_REGISTRY="$ECR_REGISTRY" APP_VERSION="$APP_VERSION" \
+              docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "==> Waiting for health checks (max 90s)"
+            for i in $(seq 1 18); do
+              sleep 5
+              status=$(docker inspect --format='{{.State.Health.Status}}' \
+                $(docker compose -f docker-compose.prod.yml ps -q backend) 2>/dev/null || echo "unknown")
+              echo "   backend: $status (${i}/18)"
+              [ "$status" = "healthy" ] && break
+              if [ "$i" -eq 18 ]; then
+                echo "ERROR: backend did not become healthy"
+                docker compose -f docker-compose.prod.yml logs --tail=60 backend
+                exit 1
+              fi
+            done
+
+            echo "==> Pruning old images"
+            docker image prune -f --filter "until=24h"
+
+            echo "Deploy successful: $APP_VERSION"
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            curl -sf http://localhost/api/health | jq . || \
+              (echo "Health check failed!" && exit 1)

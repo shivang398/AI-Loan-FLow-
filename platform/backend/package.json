@@ -31,6 +31,7 @@
     "@aws-sdk/client-s3": "^3.600.0",
     "@aws-sdk/s3-request-presigner": "^3.600.0",
     "@prisma/client": "^5.15.0",
+    "@types/pdfkit": "^0.17.6",
     "amqplib": "^0.10.4",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
@@ -44,6 +45,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.19.1",
     "socket.io": "^4.7.5",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"

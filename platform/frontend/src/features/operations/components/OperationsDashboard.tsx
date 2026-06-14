@@ -349,8 +349,10 @@ const OperationsDashboard: React.FC = () => {
     setLoadingLeads(true);
     try {
       const res = await api.get('/customers/leads');
-      const data = res.data?.data ?? res.data ?? [];
-      setLeads(Array.isArray(data) ? data : []);
+      const data = res.data?.data ?? res.data ?? {};
+      // API returns paginated { items, total, page, size } — unwrap items
+      const list = Array.isArray(data) ? data : (data.items ?? []);
+      setLeads(list);
     } catch {
       // silently fail; table shows empty state
     } finally {
@@ -360,7 +362,7 @@ const OperationsDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchLeads();
-    const interval = setInterval(fetchLeads, 30000);
+    const interval = setInterval(fetchLeads, 60000);
     return () => clearInterval(interval);
   }, []);
 

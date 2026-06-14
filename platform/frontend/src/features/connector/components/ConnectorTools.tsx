@@ -112,15 +112,14 @@ export const CibilCheckPage: React.FC = () => {
   };
 
   const handleDownloadPdf = async () => {
-    if (!lastValues) return;
+    if (!lastValues || !summary) return;
     setPdfLoading(true);
     try {
       const response = await apiClient.post(
         '/eligibility/cibil/report',
         {
           mobileNumber: lastValues.mobileNumber,
-          name: lastValues.name,
-          consent: lastValues.consent,
+          reportData: summary,   // pass full CIBIL data so backend can render it without a second API call
         },
         { responseType: 'blob', timeout: 120000 }
       );
@@ -128,7 +127,8 @@ export const CibilCheckPage: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `CIBIL_Report_${lastValues.mobileNumber}.pdf`);
+      const safeName = (summary.fullName || 'Customer').replace(/\s+/g, '_');
+      link.setAttribute('download', `CRIF_CreditReport_${safeName}_${lastValues.mobileNumber}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -291,7 +291,12 @@ export const CibilCheckPage: React.FC = () => {
                     { label: 'Total Accounts', value: summary.totalAccounts, color: '#6366f1', bg: '#ede9fe' },
                     { label: 'Active', value: summary.activeAccounts, color: '#0891b2', bg: '#ecfeff' },
                     { label: 'Closed', value: summary.closedAccounts, color: '#64748b', bg: '#f1f5f9' },
-                    { label: 'Overdue', value: summary.overdueAccounts, color: '#dc2626', bg: '#fee2e2' },
+                    {
+                      label: 'Overdue',
+                      value: summary.overdueAccounts,
+                      color: summary.overdueAccounts > 0 ? '#dc2626' : '#15803d',
+                      bg:    summary.overdueAccounts > 0 ? '#fee2e2' : '#f0fdf4',
+                    },
                   ].map(({ label, value, color, bg }) => (
                     <div key={label} style={{ padding: '8px 16px', borderRadius: 12, background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80 }}>
                       <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
@@ -335,7 +340,7 @@ export const CibilCheckPage: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#0f172a' }}>
-                      {['Lender', 'Type', 'Account No.', 'Opened', 'Balance', 'Overdue', 'Status'].map(h => (
+                      {['Lender', 'Type', 'Account No.', 'Opened', 'Outstanding', 'Overdue', 'Status'].map(h => (
                         <th key={h} style={{ color: '#fff', padding: '10px 12px', textAlign: 'left', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -343,15 +348,16 @@ export const CibilCheckPage: React.FC = () => {
                   <tbody>
                     {summary.accounts.map((acct: any, i: number) => {
                       const isOverdue = acct.amountOverdue > 0;
+                      const inr = (v: number) => v ? `₹${Number(v).toLocaleString('en-IN')}` : '—';
                       return (
                         <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#fff' }}>
-                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1e293b' }}>{acct.memberName}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>{acct.memberName}</td>
                           <td style={{ padding: '10px 12px', color: '#475569' }}>{acct.accountType}</td>
                           <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#64748b' }}>{acct.accountNumber}</td>
-                          <td style={{ padding: '10px 12px', color: '#64748b' }}>{acct.dateOpened || '—'}</td>
-                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>₹{Number(acct.currentBalance).toLocaleString('en-IN')}</td>
+                          <td style={{ padding: '10px 12px', color: '#64748b', whiteSpace: 'nowrap' }}>{acct.dateOpened || '—'}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{inr(acct.currentBalance)}</td>
                           <td style={{ padding: '10px 12px', fontWeight: 700, color: isOverdue ? '#dc2626' : '#15803d' }}>
-                            {isOverdue ? `₹${Number(acct.amountOverdue).toLocaleString('en-IN')}` : 'NIL'}
+                            {isOverdue ? inr(acct.amountOverdue) : 'NIL'}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
                             <span style={{

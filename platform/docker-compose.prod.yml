@@ -1,0 +1,159 @@
+# Production Docker Compose — EC2 deployment
+# Uses RDS for MySQL and real AWS S3. No LocalStack. No exposed internal ports.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml ps
+#   docker compose -f docker-compose.prod.yml logs -f backend
+
+name: realmoney-prod
+
+services:
+
+  # ── Message Broker ──────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?RABBITMQ_PASS is required}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ── Cache ───────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - platform-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ── Backend (Node.js / Express) ─────────────────────────────────────────────
+  # Connects to RDS MySQL (URLs in backend/.env), Redis and RabbitMQ via Docker network.
+  # Health endpoint: GET /health
+  backend:
+    image: ${ECR_REGISTRY:-realmoney}/backend:${APP_VERSION:-latest}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    env_file: ./backend/.env
+    environment:
+      PORT: "8080"
+      NODE_ENV: production
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672"
+      RABBITMQ_EXCHANGE: platform.exchange
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost}"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - platform-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # ── Frontend (Nginx + React SPA) ────────────────────────────────────────────
+  frontend:
+    image: ${ECR_REGISTRY:-realmoney}/frontend:${APP_VERSION:-latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+    environment:
+      PORT: "8080"
+      SERVICE_DISCOVERY_SUFFIX: ""
+      AUTH_SERVICE_URL: "backend:8080"
+      CONNECTOR_SERVICE_URL: "backend:8080"
+      COMMISSION_SERVICE_URL: "backend:8080"
+      ROUTING_SERVICE_URL: "backend:8080"
+      CUSTOMER_SERVICE_URL: "backend:8080"
+      DOCUMENT_SERVICE_URL: "backend:8080"
+      LOAN_SERVICE_URL: "backend:8080"
+      ELIGIBILITY_SERVICE_URL: "backend:8080"
+      POLICY_SERVICE_URL: "backend:8080"
+      MESSAGING_SERVICE_URL: "backend:8080"
+      REPORTING_SERVICE_URL: "backend:8080"
+      ANALYTICS_SERVICE_URL: "backend:8080"
+      # Set NAMESERVER to the Docker embedded DNS resolver
+      NAMESERVER: "127.0.0.11"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - platform-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          memory: 64M
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  rabbitmq_data:
+  redis_data:
+
+# ── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  platform-net:
+    driver: bridge

@@ -23,7 +23,12 @@ export async function revokeToken(jti: string, expiryMs: number) {
 }
 
 export async function isTokenRevoked(jti: string): Promise<boolean> {
-  return (await redis.exists(`revoked:${jti}`)) === 1;
+  try {
+    return (await redis.exists(`revoked:${jti}`)) === 1;
+  } catch {
+    // Redis unavailable — fail open (allow the request) rather than rejecting valid tokens
+    return false;
+  }
 }
 
 export async function setPasswordResetToken(token: string, email: string) {

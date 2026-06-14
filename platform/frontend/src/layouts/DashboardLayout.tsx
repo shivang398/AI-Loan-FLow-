@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography, Drawer, List, Spin } from 'antd';
 import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
@@ -66,19 +66,29 @@ const DashboardLayout: React.FC = () => {
 
   useEffect(() => { setMobileDrawerOpen(false); }, [location.pathname]);
 
+  // Use a ref so the interval closure always reads the latest value of notifServiceDown
+  // without recreating the interval every time the flag changes
+  const notifServiceDownRef = useRef(notifServiceDown);
+  useEffect(() => { notifServiceDownRef.current = notifServiceDown; }, [notifServiceDown]);
+
   const fetchUnreadCount = useCallback(async () => {
-    if (notifServiceDown) return;
+    if (notifServiceDownRef.current) return;
     try {
-      const res = await api.get('/notifications/unread-count');
-      setUnreadCount(res.data?.data?.count ?? 0);
+      // validateStatus prevents axios from throwing on 401/4xx so the global
+      // refresh interceptor isn't triggered by a transient Redis blip
+      const res = await api.get('/notifications/unread-count', {
+        validateStatus: (s) => s < 500,
+      });
+      if (res.status === 200) setUnreadCount(res.data?.data?.count ?? 0);
     } catch (err: any) {
       if (err?.response?.status >= 500) setNotifServiceDown(true);
     }
-  }, [notifServiceDown]);
+  }, []); // stable — no deps that change
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
+    // Poll every 2 minutes — notifications don't need sub-minute freshness
+    const interval = setInterval(fetchUnreadCount, 120000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
