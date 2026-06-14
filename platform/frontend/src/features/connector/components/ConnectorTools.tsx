@@ -95,7 +95,6 @@ export const CibilCheckPage: React.FC = () => {
     const payload = {
       mobileNumber: values.mobileNumber,
       name: values.name,
-      panNumber: values.panNumber,
       consent: values.consent,
     };
     try {
@@ -118,7 +117,6 @@ export const CibilCheckPage: React.FC = () => {
         {
           mobileNumber: lastValues.mobileNumber,
           name: lastValues.name,
-          panNumber: lastValues.panNumber,
           consent: lastValues.consent,
         },
         { responseType: 'blob', timeout: 120000 }
@@ -127,7 +125,7 @@ export const CibilCheckPage: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `CIBIL_Report_${lastValues.panNumber}.pdf`);
+      link.setAttribute('download', `CIBIL_Report_${lastValues.mobileNumber}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -169,21 +167,12 @@ export const CibilCheckPage: React.FC = () => {
       {!summary && (
         <Card className="rounded-[2.5rem] border-none shadow-2xl shadow-slate-100 p-8">
           <Form layout="vertical" onFinish={handleCibilCheck} className="custom-form-premium">
-            <Row gutter={24}>
-              <Col span={12}>
-                <Form.Item name="name" label="Legal Full Name (As per PAN)" rules={[{ required: true, message: 'Please enter legal name' }]}>
-                  <Input size="large" placeholder="Rahul Sunil Sharma" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="panNumber" label="Permanent Account Number (PAN)" rules={[{ required: true, message: 'Please enter PAN' }]}>
-                  <Input size="large" placeholder="ABCDE1234F" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-black tracking-widest uppercase" />
-                </Form.Item>
-              </Col>
-            </Row>
+            <Form.Item name="name" label="Customer Full Name" rules={[{ required: true, message: 'Please enter customer name' }]}>
+              <Input size="large" placeholder="Rahul Sunil Sharma" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
+            </Form.Item>
 
-            <Form.Item name="mobileNumber" label="Mobile Number (Linked to PAN/Aadhaar)" rules={[{ required: true, message: 'Please enter mobile number' }]}>
-              <Input size="large" placeholder="+91 98765 43210" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
+            <Form.Item name="mobileNumber" label="Mobile Number" rules={[{ required: true, message: 'Please enter mobile number' }]}>
+              <Input size="large" placeholder="9876543210" className="h-16 rounded-2xl border-slate-100 bg-slate-50 font-bold" />
             </Form.Item>
 
             <Alert

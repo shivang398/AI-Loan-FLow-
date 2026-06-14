@@ -40,15 +40,23 @@ const CommissionDashboard: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
+  const [connectorProfileId, setConnectorProfileId] = useState<string | null>(null);
+  const [profileResolved, setProfileResolved] = useState(!isConnector);
 
-  const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-  const connectorId = isConnector && user?.id && isUUID(user.id) ? user.id : null;
+  useEffect(() => {
+    if (!isConnector) return;
+    apiClient.get('/connectors/me')
+      .then(r => setConnectorProfileId(r.data?.data?.id || r.data?.id || null))
+      .catch(() => setConnectorProfileId(null))
+      .finally(() => setProfileResolved(true));
+  }, [isConnector]);
 
   const fetchTransactions = async () => {
+    if (!profileResolved) return;
     setLoading(true);
     try {
-      const endpoint = connectorId
-        ? `/commissions/transactions/connector/${connectorId}`
+      const endpoint = connectorProfileId
+        ? `/commissions/transactions/connector/${connectorProfileId}`
         : '/commissions/transactions';
       const res = await apiClient.get(endpoint);
       const list: Transaction[] = (res.data?.data || res.data || []).map((t: any) => ({
@@ -68,7 +76,7 @@ const CommissionDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchTransactions(); }, [connectorId]);
+  useEffect(() => { fetchTransactions(); }, [profileResolved, connectorProfileId]);
 
   const totalEarned = transactions.reduce((s, t) => s + t.amountPaid, 0);
   const totalPending = transactions.filter(t => t.status === 'PENDING').reduce((s, t) => s + t.totalAmount, 0);

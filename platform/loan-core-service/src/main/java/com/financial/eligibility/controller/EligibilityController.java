@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -86,17 +88,22 @@ public class EligibilityController {
         return ResponseEntity.ok(ApiResponse.success("Submissions fetched", result, UUID.randomUUID().toString()));
     }
 
-    /** Update submission status — restricted to privileged roles */
+    /** Update submission status — privileged roles + CONNECTOR (own leads only; no connectorId reassignment) */
     @PutMapping("/submissions/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'OPERATIONS', 'ROLE_OPERATIONS')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'PARTNER_MANAGER', 'ROLE_PARTNER_MANAGER', 'OPERATIONS', 'ROLE_OPERATIONS', 'CONNECTOR', 'ROLE_CONNECTOR')")
     public ResponseEntity<ApiResponse<String>> updateSubmissionStatus(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
         String newStatus = body.getOrDefault("status", "CONTACTED").toUpperCase();
+        boolean canReassign = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ADMIN") || a.equals("ROLE_ADMIN")
+                            || a.equals("PARTNER_MANAGER") || a.equals("ROLE_PARTNER_MANAGER")
+                            || a.equals("OPERATIONS") || a.equals("ROLE_OPERATIONS"));
         submissionRepository.findById(id).ifPresent(s -> {
             s.setStatus(newStatus);
-            // connectorId reassignment is admin/PM only — validate it is a non-null UUID; no free-form string accepted
-            if (body.containsKey("connectorId") && body.get("connectorId") != null) {
+            // connectorId reassignment is admin/PM/OPS only — CONNECTORs cannot re-route leads
+            if (canReassign && body.containsKey("connectorId") && body.get("connectorId") != null) {
                 try {
                     UUID newConnectorId = UUID.fromString(body.get("connectorId"));
                     s.setAssignedConnectorId(newConnectorId);

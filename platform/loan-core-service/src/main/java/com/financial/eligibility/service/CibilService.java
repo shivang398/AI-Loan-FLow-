@@ -193,6 +193,10 @@ public class CibilService {
                 throw new RuntimeException("Empty response body from CRIF API");
             }
             JsonNode root = objectMapper.readTree(responseBody);
+            // Log root-level keys so we can find where the bureau data lives
+            List<String> rootKeys = new ArrayList<>(); root.fieldNames().forEachRemaining(rootKeys::add);
+            log.info("Tenacio root keys: {}", rootKeys);
+
 
             String apiStatus = root.path("status").asText("");
             if ("error".equalsIgnoreCase(apiStatus)) {
@@ -842,8 +846,8 @@ public class CibilService {
     // ── Real API response parser ───────────────────────────────────────────────
 
     private CibilData parseApiResponse(CibilRequestDto dto, JsonNode api) {
-        // Route to CRIF parser when the response carries crifData
-        if (navigate(api, "data/crifData") != null) {
+        // Tenacio wraps the CRIF bureau response under "vendorResponse"
+        if (navigate(api, "vendorResponse") != null) {
             return parseCrifResponse(dto, api);
         }
 
@@ -968,20 +972,64 @@ public class CibilService {
 
     private CibilData parseCrifResponse(CibilRequestDto dto, JsonNode api) {
         CibilData d = new CibilData();
-        String rid = safeText(api, "request_id", "");
-        d.reportId  = rid.isBlank() ? safeText(api, "requestId", "CRIF-" + System.currentTimeMillis() % 100000) : rid;
+        // requestId is at the root level in the Tenacio response
+        String rid = safeText(api, "requestId", "");
+        d.reportId  = rid.isBlank() ? ("CRIF-" + System.currentTimeMillis() % 100000) : rid;
         d.fullName  = dto.getName().toUpperCase();
         d.scoreDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
         d.accounts  = new ArrayList<>();
         d.enquiries = new ArrayList<>();
 
-        // Tenacio normalises CRIF bureau data under CCRResponse
-        JsonNode crifData = navigate(api, "data/crifData/CCRResponse/CIRReportDataLst/0/CIRReportData");
-        if (crifData == null) {
-            crifData = navigate(api, "data/crifData/CCRResponse/CIRReportData");
+        // vendorResponse from Tenacio is an array; first element holds the bureau data
+        JsonNode vr   = navigate(api, "vendorResponse");
+        JsonNode vr0  = navigate(api, "vendorResponse/0");  // first element when array
+
+        // Log structure for debugging (keys only, no PII)
+        if (vr != null) {
+            if (vr.isArray() && vr0 != null) {
+                List<String> k = new ArrayList<>(); vr0.fieldNames().forEachRemaining(k::add);
+                log.info("vendorResponse[0] keys: {}", k);
+            } else if (vr.isObject()) {
+                List<String> k = new ArrayList<>(); vr.fieldNames().forEachRemaining(k::add);
+                log.info("vendorResponse keys: {}", k);
+            }
         }
+        // Log full data structure (dev diagnostic)
+        JsonNode dataNode = api.get("data");
+        if (dataNode != null) {
+            String full = dataNode.toString();
+            int len = full.length();
+            log.info("data FULL chars={} part1: {}", len, full.substring(0, Math.min(2000, len)));
+            if (len > 2000) log.info("data part2: {}", full.substring(2000, Math.min(4000, len)));
+            if (len > 4000) log.info("data part3: {}", full.substring(4000, Math.min(6000, len)));
+        }
+
+        // Try all known Tenacio/CRIF path variations
+        JsonNode crifData = null;
+        String[] candidates = {
+            // vendorResponse is array — most common Tenacio format
+            "vendorResponse/0/CCRResponse/CIRReportDataLst/0/CIRReportData",
+            "vendorResponse/0/CCRResponse/CIRReportDataLst/CIRReportData",
+            "vendorResponse/0/CIRReportDataLst/0/CIRReportData",
+            "vendorResponse/0/CIRReportDataLst/CIRReportData",
+            "vendorResponse/0/result/CCRResponse/CIRReportDataLst/0/CIRReportData",
+            "vendorResponse/0/data/CCRResponse/CIRReportDataLst/0/CIRReportData",
+            // vendorResponse is object (older Tenacio format)
+            "vendorResponse/CCRResponse/CIRReportDataLst/0/CIRReportData",
+            "vendorResponse/CCRResponse/CIRReportDataLst/CIRReportData",
+            "vendorResponse/CCRResponse/CIRReportData",
+            "vendorResponse/CIRReportDataLst/0/CIRReportData",
+            "vendorResponse/CIRReportDataLst/CIRReportData",
+        };
+        for (String path : candidates) {
+            crifData = navigate(api, path);
+            if (crifData != null) { log.info("CIRReportData found at: {}", path); break; }
+        }
+
         if (crifData == null) {
-            log.warn("Could not locate CIRReportData in CRIF response (requestId={})", d.reportId);
+            String vrSnippet = vr != null ? vr.toString().substring(0, Math.min(600, vr.toString().length())) : "null";
+            log.warn("Could not locate CIRReportData (requestId={}). vendorResponse snippet: {}",
+                d.reportId, vrSnippet);
             return d;
         }
 

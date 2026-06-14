@@ -43,9 +43,9 @@ spring:
 
 tenacio:
   crif:
-    url: ${TENACIO_CRIF_URL:https://testapi.tenacio.io/api/v1/services/crif-soft-pull}
-    client-id: ${TENACIO_CRIF_CLIENT_ID}
-    key: ${TENACIO_CRIF_API_KEY}
+    url: ${TENACIO_CRIF_URL:https://api.tenacio.io/api/v1/services/crif-soft-pull}
+    client-id: ${TENACIO_CRIF_CLIENT_ID:}
+    key: ${TENACIO_CRIF_API_KEY:}
     workflow-id: ${TENACIO_CRIF_WORKFLOW_ID:c001aecc-e992-42d6-a3fe-b55810d21a02}
 
 app:

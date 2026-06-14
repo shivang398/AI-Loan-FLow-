@@ -23,7 +23,7 @@ public class LoanController {
     private final LoanService loanService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','OPERATIONS','ROLE_OPERATIONS','TEAM_LEADER','ROLE_TEAM_LEADER','PARTNER_MANAGER','ROLE_PARTNER_MANAGER','RM','ROLE_RM')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ROLE_ADMIN','CONNECTOR','ROLE_CONNECTOR','OPERATIONS','ROLE_OPERATIONS','TEAM_LEADER','ROLE_TEAM_LEADER','PARTNER_MANAGER','ROLE_PARTNER_MANAGER','RM','ROLE_RM')")
     public ResponseEntity<ApiResponse<List<LoanApplication>>> getLoans(
             @RequestParam(required = false) UUID connectorId,
             @RequestParam(required = false) UUID customerId,
