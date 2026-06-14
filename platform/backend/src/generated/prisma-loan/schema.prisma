@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/prisma-loan"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("LOAN_DATABASE_URL")
+}
+
+model LoanApplication {
+  id            String                     @id @db.Char(36)
+  customerId    String                     @map("customer_id") @db.Char(36)
+  connectorId   String?                    @map("connector_id") @db.Char(36)
+  amount        Decimal                    @db.Decimal(15, 2)
+  tenureMonths  Int                        @map("tenure_months")
+  purpose       String?                    @db.VarChar(255)
+  status        String                     @db.VarChar(50)
+  createdAt     DateTime                   @map("created_at")
+  updatedAt     DateTime?                  @map("updated_at")
+  createdBy     String?                    @map("created_by") @db.Char(36)
+  updatedBy     String?                    @map("updated_by") @db.Char(36)
+  statusHistory ApplicationStatusHistory[]
+
+  @@map("loan_applications")
+}
+
+model ApplicationStatusHistory {
+  id        String           @id @db.Char(36)
+  loanId    String?          @map("loan_id") @db.Char(36)
+  status    String           @db.VarChar(50)
+  remarks   String?          @db.Text
+  changedAt DateTime         @map("changed_at")
+  changedBy String?          @map("changed_by") @db.Char(36)
+  loan      LoanApplication? @relation(fields: [loanId], references: [id])
+
+  @@map("application_status_history")
+}
+
+model EligibilityRule {
+  id        String   @id @db.Char(36)
+  ruleType  String   @unique @map("rule_type") @db.VarChar(50)
+  minValue  Decimal? @map("min_value") @db.Decimal(15, 2)
+  maxValue  Decimal? @map("max_value") @db.Decimal(15, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  updatedAt DateTime @map("updated_at")
+  updatedBy String?  @map("updated_by") @db.Char(36)
+
+  @@map("eligibility_rules")
+}
+
+model EligibilitySubmission {
+  id                  String   @id @default(dbgenerated("(UUID())")) @db.Char(36)
+  fullName            String   @map("full_name") @db.VarChar(255)
+  mobileNumber        String   @map("mobile_number") @db.VarChar(15)
+  loanAmount          Decimal? @map("loan_amount") @db.Decimal(15, 2)
+  loanPurpose         String?  @map("loan_purpose") @db.VarChar(100)
+  monthlyIncome       Decimal? @map("monthly_income") @db.Decimal(15, 2)
+  employmentType      String?  @map("employment_type") @db.VarChar(50)
+  city                String?  @db.VarChar(100)
+  panNumber           String?  @map("pan_number") @db.VarChar(512)
+  isEligible          Boolean? @map("is_eligible")
+  maxLoanAmount       Decimal? @map("max_loan_amount") @db.Decimal(15, 2)
+  interestRate        Decimal? @map("interest_rate") @db.Decimal(5, 2)
+  remarks             String?  @db.Text
+  assignedConnectorId String?  @map("assigned_connector_id") @db.Char(36)
+  status              String   @default("NEW") @db.VarChar(50)
+  submittedAt         DateTime @default(now()) @map("submitted_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("eligibility_submissions")
+}
+
+model BankPolicy {
+  id            String       @id @db.Char(36)
+  bankName      String       @map("bank_name") @db.VarChar(100)
+  policyVersion String       @map("policy_version") @db.VarChar(50)
+  effectiveFrom DateTime     @map("effective_from") @db.Date
+  effectiveTo   DateTime?    @map("effective_to") @db.Date
+  status        String       @db.VarChar(50)
+  createdAt     DateTime     @map("created_at")
+  updatedAt     DateTime?    @map("updated_at")
+  createdBy     String?      @map("created_by") @db.Char(36)
+  updatedBy     String?      @map("updated_by") @db.Char(36)
+  rules         PolicyRule[]
+
+  @@unique([bankName, policyVersion], map: "uq_bank_policy")
+  @@map("bank_policies")
+}
+
+model PolicyRule {
+  id           String      @id @db.Char(36)
+  policyId     String?     @map("policy_id") @db.Char(36)
+  ruleCategory String      @map("rule_category") @db.VarChar(50)
+  ruleKey      String      @map("rule_key") @db.VarChar(100)
+  ruleValue    Json        @map("rule_value")
+  policy       BankPolicy? @relation(fields: [policyId], references: [id])
+
+  @@map("policy_rules")
+}
+
+model PolicyDocument {
+  id              String   @id @default(dbgenerated("(UUID())")) @db.Char(36)
+  title           String   @db.VarChar(255)
+  category        String   @db.VarChar(50)
+  fileName        String   @map("file_name") @db.VarChar(255)
+  mimeType        String   @default("application/pdf") @map("mime_type") @db.VarChar(100)
+  fileData        Bytes    @map("file_data")
+  fileSizeBytes   BigInt?  @map("file_size_bytes")
+  uploadedByEmail String?  @map("uploaded_by_email") @db.VarChar(255)
+  isActive        Boolean  @default(true) @map("is_active")
+  uploadedAt      DateTime @default(now()) @map("uploaded_at")
+
+  @@map("policy_documents")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("(UUID())")) @db.Char(36)
+  action     String   @db.VarChar(100)
+  actorEmail String?  @map("actor_email") @db.VarChar(255)
+  entityType String?  @map("entity_type") @db.VarChar(100)
+  entityId   String?  @map("entity_id") @db.VarChar(255)
+  details    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}

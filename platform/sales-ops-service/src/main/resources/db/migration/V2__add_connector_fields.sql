@@ -1,2 +1,0 @@
-ALTER TABLE connectors ADD COLUMN platform_role VARCHAR(50);
-ALTER TABLE connectors MODIFY COLUMN phone VARCHAR(20) NULL;

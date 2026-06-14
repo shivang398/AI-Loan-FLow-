@@ -1,2 +1,0 @@
-ALTER TABLE notifications ADD COLUMN `read`  TINYINT(1)   NOT NULL DEFAULT 0;
-ALTER TABLE notifications ADD COLUMN title   VARCHAR(255);

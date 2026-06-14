@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/prisma-salesops"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("SALESOPS_DATABASE_URL")
+}
+
+model Connector {
+  id             String                  @id @db.Char(36)
+  userId         String                  @unique @map("user_id") @db.Char(36)
+  firstName      String                  @map("first_name") @db.VarChar(100)
+  lastName       String                  @map("last_name") @db.VarChar(100)
+  phone          String?                 @unique @db.VarChar(20)
+  email          String?                 @db.VarChar(255)
+  region         String?                 @db.VarChar(100)
+  status         String                  @db.VarChar(50)
+  platformRole   String?                 @map("platform_role") @db.VarChar(50)
+  createdAt      DateTime                @map("created_at")
+  updatedAt      DateTime?               @map("updated_at")
+  createdBy      String?                 @map("created_by") @db.Char(36)
+  updatedBy      String?                 @map("updated_by") @db.Char(36)
+  hierarchies    HierarchyMapping[]      @relation("ConnectorHierarchies")
+  managed        HierarchyMapping[]      @relation("ManagerHierarchies")
+  statusHistory  ConnectorStatusHistory[]
+  performance    ConnectorPerformance?
+  payoutSlabs    PayoutSlab[]
+  commissions    CommissionTransaction[]
+
+  @@index([email])
+  @@map("connectors")
+}
+
+model HierarchyMapping {
+  id          String    @id @db.Char(36)
+  connectorId String?   @map("connector_id") @db.Char(36)
+  managerId   String?   @map("manager_id") @db.Char(36)
+  role        String    @db.VarChar(50)
+  assignedAt  DateTime  @map("assigned_at")
+  assignedBy  String?   @map("assigned_by") @db.Char(36)
+  connector   Connector? @relation("ConnectorHierarchies", fields: [connectorId], references: [id])
+  manager     Connector? @relation("ManagerHierarchies", fields: [managerId], references: [id])
+
+  @@map("hierarchy_mapping")
+}
+
+model ConnectorStatusHistory {
+  id          String    @id @db.Char(36)
+  connectorId String?   @map("connector_id") @db.Char(36)
+  status      String    @db.VarChar(50)
+  changedAt   DateTime  @map("changed_at")
+  changedBy   String?   @map("changed_by") @db.Char(36)
+  remarks     String?   @db.Text
+  connector   Connector? @relation(fields: [connectorId], references: [id])
+
+  @@map("connector_status_history")
+}
+
+model ConnectorPerformance {
+  id               String    @id @db.Char(36)
+  connectorId      String?   @unique @map("connector_id") @db.Char(36)
+  totalLeads       Int       @default(0) @map("total_leads")
+  convertedLeads   Int       @default(0) @map("converted_leads")
+  totalCommission  Decimal   @default(0) @map("total_commission") @db.Decimal(15, 2)
+  lastCalculatedAt DateTime? @map("last_calculated_at")
+  connector        Connector? @relation(fields: [connectorId], references: [id])
+
+  @@map("connector_performance")
+}
+
+model CommissionRule {
+  id              String  @id @db.Char(36)
+  ruleName        String  @unique @map("rule_name") @db.VarChar(100)
+  connectorRate   Decimal @map("connector_rate") @db.Decimal(5, 4)
+  tlOverrideRate  Decimal @default(0) @map("tl_override_rate") @db.Decimal(5, 4)
+  rmOverrideRate  Decimal @default(0) @map("rm_override_rate") @db.Decimal(5, 4)
+  isActive        Boolean @default(true) @map("is_active")
+
+  @@map("commission_rules")
+}
+
+model CommissionTransaction {
+  id                   String         @id @db.Char(36)
+  loanId               String         @map("loan_id") @db.Char(36)
+  connectorId          String         @map("connector_id") @db.Char(36)
+  loanAmount           Decimal        @map("loan_amount") @db.Decimal(15, 2)
+  connectorRate        Decimal        @map("connector_rate") @db.Decimal(5, 4)
+  connectorCommission  Decimal        @map("connector_commission") @db.Decimal(15, 2)
+  teamLeaderOverride   Decimal?       @map("team_leader_override") @db.Decimal(15, 2)
+  rmOverride           Decimal?       @map("rm_override") @db.Decimal(15, 2)
+  totalPayout          Decimal        @map("total_payout") @db.Decimal(15, 2)
+  status               String         @db.VarChar(50)
+  amountPaid           Decimal        @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  paymentDate          DateTime?      @map("payment_date")
+  createdAt            DateTime       @map("created_at")
+  connector            Connector      @relation(fields: [connectorId], references: [id])
+  payoutHistory        PayoutHistory[]
+
+  @@map("commission_transactions")
+}
+
+model PayoutHistory {
+  id            String               @id @db.Char(36)
+  transactionId String?              @map("transaction_id") @db.Char(36)
+  paidAmount    Decimal              @map("paid_amount") @db.Decimal(15, 2)
+  paidAt        DateTime             @map("paid_at")
+  paidBy        String?              @map("paid_by") @db.Char(36)
+  transaction   CommissionTransaction? @relation(fields: [transactionId], references: [id])
+
+  @@map("payout_history")
+}
+
+model PayoutSlab {
+  id                    String    @id @db.Char(36)
+  connectorId           String?   @map("connector_id") @db.Char(36)
+  bankName              String    @map("bank_name") @db.VarChar(100)
+  productCategory       String    @map("product_category") @db.VarChar(100)
+  payoutRate            Decimal   @map("payout_rate") @db.Decimal(5, 4)
+  minDisbursementAmount Decimal?  @map("min_disbursement_amount") @db.Decimal(15, 2)
+  status                String    @db.VarChar(50)
+  createdAt             DateTime  @map("created_at")
+  updatedAt             DateTime? @map("updated_at")
+  connector             Connector? @relation(fields: [connectorId], references: [id])
+
+  @@map("payout_slabs")
+}
+
+model SalesManager {
+  id              String           @id @db.Char(36)
+  userId          String           @unique @map("user_id") @db.Char(36)
+  branchId        String?          @map("branch_id") @db.VarChar(50)
+  approvalRate    Decimal          @default(0.0) @map("approval_rate") @db.Decimal(5, 2)
+  tatScore        Decimal          @default(0.0) @map("tat_score") @db.Decimal(5, 2)
+  currentCapacity Int              @default(0) @map("current_capacity")
+  maxCapacity     Int              @default(100) @map("max_capacity")
+  experienceScore Decimal          @default(0.0) @map("experience_score") @db.Decimal(5, 2)
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @map("created_at")
+  updatedAt       DateTime?        @map("updated_at")
+  routingHistory  RoutingHistory[]
+
+  @@map("sales_managers")
+}
+
+model RoutingHistory {
+  id           String        @id @db.Char(36)
+  loanId       String        @map("loan_id") @db.Char(36)
+  assignedSmId String?       @map("assigned_sm_id") @db.Char(36)
+  routingScore Decimal?      @map("routing_score") @db.Decimal(10, 4)
+  assignedAt   DateTime      @map("assigned_at")
+  manager      SalesManager? @relation(fields: [assignedSmId], references: [id])
+
+  @@map("routing_history")
+}
+
+model FoirAssessment {
+  id                          String   @id @db.Char(36)
+  userId                      String   @map("user_id") @db.Char(36)
+  loanType                    String   @map("loan_type") @db.VarChar(50)
+  grossMonthlyIncome          Decimal  @map("gross_monthly_income") @db.Decimal(15, 2)
+  existingMonthlyObligations  Decimal  @map("existing_monthly_obligations") @db.Decimal(15, 2)
+  requestedLoanAmount         Decimal  @map("requested_loan_amount") @db.Decimal(15, 2)
+  requestedTenureMonths       Int      @map("requested_tenure_months")
+  annualInterestRate          Decimal  @map("annual_interest_rate") @db.Decimal(5, 2)
+  calculatedFoirPercentage    Decimal  @map("calculated_foir_percentage") @db.Decimal(5, 2)
+  maxEligibleEmi              Decimal  @map("max_eligible_emi") @db.Decimal(15, 2)
+  maxEligibleLoanAmount       Decimal  @map("max_eligible_loan_amount") @db.Decimal(15, 2)
+  postLoanFoirPercentage      Decimal  @map("post_loan_foir_percentage") @db.Decimal(5, 2)
+  eligibilityStatus           String   @map("eligibility_status") @db.VarChar(20)
+  foirLimitApplied            Decimal  @map("foir_limit_applied") @db.Decimal(5, 2)
+  incomeSource                String   @map("income_source") @db.VarChar(50)
+  assessmentNotes             String?  @map("assessment_notes") @db.Text
+  createdAt                   DateTime @map("created_at")
+  updatedAt                   DateTime @map("updated_at")
+
+  @@index([userId])
+  @@index([loanType])
+  @@index([eligibilityStatus])
+  @@index([createdAt])
+  @@map("foir_assessments")
+}

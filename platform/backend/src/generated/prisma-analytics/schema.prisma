@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/prisma-analytics"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("ANALYTICS_DATABASE_URL")
+}
+
+model AnalyticsSnapshot {
+  id             String   @id @db.Char(36)
+  snapshotDate   DateTime @map("snapshot_date") @db.Date
+  metricType     String   @map("metric_type") @db.VarChar(100)
+  metricValue    Float    @map("metric_value")
+  dimension      String?  @db.VarChar(50)
+  dimensionValue String?  @map("dimension_value") @db.VarChar(100)
+  createdAt      DateTime @map("created_at")
+
+  @@index([snapshotDate])
+  @@index([metricType, dimension])
+  @@map("analytics_snapshots")
+}
+
+model AggregationLog {
+  id               String    @id @db.Char(36)
+  jobType          String    @map("job_type") @db.VarChar(100)
+  startedAt        DateTime  @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  recordsProcessed Int       @default(0) @map("records_processed")
+  status           String    @db.VarChar(50)
+
+  @@map("aggregation_logs")
+}
+
+model ReportJob {
+  id          String    @id @db.Char(36)
+  reportType  String    @map("report_type") @db.VarChar(100)
+  status      String    @db.VarChar(50)
+  requestedBy String?   @map("requested_by") @db.Char(36)
+  filePath    String?   @map("file_path") @db.VarChar(500)
+  requestedAt DateTime  @map("requested_at")
+  completedAt DateTime? @map("completed_at")
+
+  @@map("report_jobs")
+}
+
+model MisReport {
+  id         String   @id @default(dbgenerated("(UUID())")) @db.Char(36)
+  rmName     String   @map("rm_name") @db.VarChar(255)
+  fileName   String?  @map("file_name") @db.VarChar(500)
+  volume     Decimal  @default(0) @db.Decimal(18, 2)
+  status     String   @default("PENDING_REVIEW") @db.VarChar(50)
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  @@map("mis_reports")
+}
+
+model EmailConfig {
+  id         String   @id @default(dbgenerated("(UUID())")) @db.Char(36)
+  frequency  String   @default("weekly") @db.VarChar(50)
+  recipients String   @db.VarChar(5000)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("email_configs")
+}

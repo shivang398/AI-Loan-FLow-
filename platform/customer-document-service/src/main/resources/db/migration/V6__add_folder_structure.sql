@@ -1,3 +1,0 @@
-ALTER TABLE documents MODIFY COLUMN loan_id CHAR(36) NULL;
-ALTER TABLE documents ADD COLUMN owner_id    CHAR(36);
-ALTER TABLE documents ADD COLUMN folder_path VARCHAR(255) DEFAULT '/';

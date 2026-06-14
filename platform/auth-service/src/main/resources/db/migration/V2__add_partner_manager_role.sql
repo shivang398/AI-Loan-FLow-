@@ -1,1 +1,0 @@
-INSERT IGNORE INTO roles (id, name) VALUES (UUID(), 'PARTNER_MANAGER');

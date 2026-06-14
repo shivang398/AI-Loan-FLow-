@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/prisma-customer"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("CUSTOMER_DATABASE_URL")
+}
+
+model Customer {
+  id          String             @id @db.Char(36)
+  firstName   String             @map("first_name") @db.VarChar(100)
+  lastName    String             @map("last_name") @db.VarChar(100)
+  email       String             @unique @db.VarChar(255)
+  mobile      String             @unique @db.VarChar(20)
+  createdAt   DateTime           @map("created_at")
+  updatedAt   DateTime?          @map("updated_at")
+  createdBy   String?            @map("created_by") @db.Char(36)
+  updatedBy   String?            @map("updated_by") @db.Char(36)
+  kyc         CustomerKyc?
+  addresses   CustomerAddress[]
+  history     CustomerHistory[]
+  leads       Lead[]
+
+  @@map("customers")
+}
+
+model CustomerKyc {
+  id            String    @id @db.Char(36)
+  customerId    String?   @unique @map("customer_id") @db.Char(36)
+  panNumber     String    @unique @map("pan_number") @db.VarChar(512)
+  aadhaarNumber String?   @unique @map("aadhaar_number") @db.VarChar(512)
+  kycStatus     String    @map("kyc_status") @db.VarChar(50)
+  verifiedAt    DateTime? @map("verified_at")
+  customer      Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("customer_kyc")
+}
+
+model CustomerAddress {
+  id          String   @id @db.Char(36)
+  customerId  String?  @map("customer_id") @db.Char(36)
+  addressType String   @map("address_type") @db.VarChar(50)
+  street      String   @db.VarChar(255)
+  city        String   @db.VarChar(100)
+  state       String   @db.VarChar(100)
+  pincode     String   @db.VarChar(20)
+  isPrimary   Boolean  @default(false) @map("is_primary")
+  customer    Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("customer_addresses")
+}
+
+model CustomerHistory {
+  id          String   @id @db.Char(36)
+  customerId  String?  @map("customer_id") @db.Char(36)
+  action      String   @db.VarChar(100)
+  description String?  @db.Text
+  actionAt    DateTime @map("action_at")
+  actionBy    String?  @map("action_by") @db.Char(36)
+  customer    Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("customer_history")
+}
+
+model Lead {
+  id                   String    @id @db.Char(36)
+  firstName            String    @map("first_name") @db.VarChar(100)
+  lastName             String    @map("last_name") @db.VarChar(100)
+  email                String    @db.VarChar(255)
+  mobile               String    @db.VarChar(20)
+  panNumber            String    @map("pan_number") @db.VarChar(512)
+  loanType             String?   @map("loan_type") @db.VarChar(50)
+  loanAmount           Decimal?  @map("loan_amount") @db.Decimal(15, 2)
+  assignedTo           String?   @map("assigned_to") @db.VarChar(255)
+  status               String    @default("NEW") @db.VarChar(50)
+  customerId           String?   @map("customer_id") @db.Char(36)
+  createdAt            DateTime  @map("created_at")
+  profession           String?   @db.VarChar(50)
+  netMonthlySalary     Decimal?  @map("net_monthly_salary") @db.Decimal(15, 2)
+  gender               String?   @db.VarChar(20)
+  maritalStatus        String?   @map("marital_status") @db.VarChar(30)
+  dob                  String?   @db.VarChar(20)
+  alternateContact     String?   @map("alternate_contact") @db.VarChar(20)
+  whatsappNo           String?   @map("whatsapp_no") @db.VarChar(20)
+  officialEmail        String?   @map("official_email") @db.VarChar(255)
+  currentAddressLine1  String?   @map("current_address_line1") @db.VarChar(255)
+  currentAddressLine2  String?   @map("current_address_line2") @db.VarChar(255)
+  currentState         String?   @map("current_state") @db.VarChar(100)
+  currentDistrict      String?   @map("current_district") @db.VarChar(100)
+  currentCity          String?   @map("current_city") @db.VarChar(100)
+  currentPincode       String?   @map("current_pincode") @db.VarChar(10)
+  residenceType        String?   @map("residence_type") @db.VarChar(50)
+  permanentAddressLine1 String?  @map("permanent_address_line1") @db.VarChar(255)
+  permanentAddressLine2 String?  @map("permanent_address_line2") @db.VarChar(255)
+  permanentState       String?   @map("permanent_state") @db.VarChar(100)
+  permanentDistrict    String?   @map("permanent_district") @db.VarChar(100)
+  permanentCity        String?   @map("permanent_city") @db.VarChar(100)
+  permanentPincode     String?   @map("permanent_pincode") @db.VarChar(10)
+  jobType              String?   @map("job_type") @db.VarChar(50)
+  designation          String?   @db.VarChar(100)
+  modeOfSalary         String?   @map("mode_of_salary") @db.VarChar(50)
+  officeAddress        String?   @map("office_address") @db.VarChar(500)
+  officeState          String?   @map("office_state") @db.VarChar(100)
+  officeDistrict       String?   @map("office_district") @db.VarChar(100)
+  officeCity           String?   @map("office_city") @db.VarChar(100)
+  officePincode        String?   @map("office_pincode") @db.VarChar(10)
+  existingEmi          Decimal?  @map("existing_emi") @db.Decimal(15, 2)
+  hasPriorPersonalLoan Boolean?  @default(false) @map("has_prior_personal_loan")
+  opsNotes             String?   @map("ops_notes") @db.Text
+  companyName          String?   @map("company_name") @db.VarChar(255)
+  customer             Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("leads")
+}
+
+model Document {
+  id             String            @id @db.Char(36)
+  loanId         String?           @map("loan_id") @db.Char(36)
+  uploadedBy     String            @map("uploaded_by") @db.Char(36)
+  documentType   String            @map("document_type") @db.VarChar(100)
+  s3Key          String            @map("s3_key") @db.VarChar(500)
+  fileName       String            @map("file_name") @db.VarChar(255)
+  mimeType       String            @map("mime_type") @db.VarChar(100)
+  fileSizeBytes  BigInt?           @map("file_size_bytes")
+  status         String            @db.VarChar(50)
+  createdAt      DateTime          @map("created_at")
+  updatedAt      DateTime?         @map("updated_at")
+  ownerId        String?           @map("owner_id") @db.Char(36)
+  folderPath     String            @default("/") @map("folder_path") @db.VarChar(255)
+  reviewerId     String?           @map("reviewer_id") @db.Char(36)
+  reviewRemarks  String?           @map("review_remarks") @db.Text
+  reviewedAt     DateTime?         @map("reviewed_at")
+  versions       DocumentVersion[]
+  accessLogs     DocumentAccessLog[]
+
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id            String    @id @db.Char(36)
+  documentId    String?   @map("document_id") @db.Char(36)
+  versionNumber Int       @map("version_number")
+  s3Key         String    @map("s3_key") @db.VarChar(500)
+  uploadedAt    DateTime  @map("uploaded_at")
+  uploadedBy    String?   @map("uploaded_by") @db.Char(36)
+  document      Document? @relation(fields: [documentId], references: [id])
+
+  @@map("document_versions")
+}
+
+model DocumentAccessLog {
+  id          String    @id @db.Char(36)
+  documentId  String?   @map("document_id") @db.Char(36)
+  accessedBy  String    @map("accessed_by") @db.Char(36)
+  accessType  String    @map("access_type") @db.VarChar(50)
+  accessedAt  DateTime  @map("accessed_at")
+  document    Document? @relation(fields: [documentId], references: [id])
+
+  @@map("document_access_logs")
+}

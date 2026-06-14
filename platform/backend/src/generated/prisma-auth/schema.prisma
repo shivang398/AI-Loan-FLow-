@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/prisma-auth"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("AUTH_DATABASE_URL")
+}
+
+model User {
+  id                  String         @id @db.Char(36)
+  email               String         @unique @db.VarChar(255)
+  passwordHash        String         @map("password_hash") @db.VarChar(255)
+  status              String         @db.VarChar(50)
+  failedLoginAttempts Int            @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?      @map("locked_until")
+  createdAt           DateTime       @map("created_at")
+  updatedAt           DateTime?      @map("updated_at")
+  createdBy           String?        @map("created_by") @db.Char(36)
+  updatedBy           String?        @map("updated_by") @db.Char(36)
+  userRoles           UserRole[]
+  refreshTokens       RefreshToken[]
+  auditLogs           AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id        String     @id @db.Char(36)
+  name      String     @unique @db.VarChar(50)
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.Char(36)
+  roleId String @map("role_id") @db.Char(36)
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RefreshToken {
+  id        String    @id @db.Char(36)
+  userId    String    @map("user_id") @db.Char(36)
+  token     String    @unique @db.VarChar(500)
+  expiresAt DateTime  @map("expires_at")
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime? @map("updated_at")
+  createdBy String?   @map("created_by") @db.Char(36)
+  updatedBy String?   @map("updated_by") @db.Char(36)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String   @id @db.Char(36)
+  userId    String?  @map("user_id") @db.Char(36)
+  action    String   @db.VarChar(255)
+  details   Json?
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  createdAt DateTime @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
