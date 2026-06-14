@@ -208,7 +208,7 @@ const WhatsAppTab: React.FC = () => {
   useEffect(() => {
     setLoadingConvs(true);
     apiClient.get('/messaging/whatsapp/conversations')
-      .then(r => setConversations(r.data?.data ?? []))
+      .then(r => setConversations(r.data?.data?.items ?? r.data?.data ?? []))
       .catch(() => {})
       .finally(() => setLoadingConvs(false));
   }, []);
@@ -219,7 +219,7 @@ const WhatsAppTab: React.FC = () => {
     setLoadingMsgs(true);
     apiClient.get(`/messaging/conversations/${activeId}/messages`)
       .then(r => {
-        const raw: any[] = r.data?.data ?? [];
+        const raw: any[] = r.data?.data?.items ?? r.data?.data ?? [];
         setMessages(raw.map(m => ({
           id:     m.id,
           body:   m.messageBody,
@@ -554,7 +554,7 @@ const TeamMeetingTab: React.FC = () => {
     const myEmail = user.email;
     const myRole_ = (user.role ?? 'OPERATIONS') as UserRole;
     apiClient.get('/connectors').then(res => {
-      const members: any[] = res.data?.data || res.data || [];
+      const members: any[] = res.data?.data?.items ?? res.data?.data ?? [];
       const myParticipant = buildParticipant(myEmail, myEmail.split('@')[0], myRole_);
       const builtRooms: TeamRoom[] = members
         .filter((m: any) => m.email && m.email !== myEmail)
@@ -583,9 +583,9 @@ const TeamMeetingTab: React.FC = () => {
   useEffect(() => {
     if (!activeRoomId) return;
     joinRoom(activeRoomId);
-    apiClient.get(`/messaging/team-meeting/rooms/${encodeURIComponent(activeRoomId)}/messages`)
+    apiClient.get(`/messaging/team-meetings/rooms/${encodeURIComponent(activeRoomId)}/messages`)
       .then(res => {
-        const serverMsgs: any[] = res.data?.data || [];
+        const serverMsgs: any[] = res.data?.data?.items ?? res.data?.data ?? [];
         serverMsgs.forEach((m: any) => {
           dispatch(receiveMessage({
             id:             m.id,

@@ -27,7 +27,8 @@ router.use(authenticate);
 
 // ── Conversations ─────────────────────────────────────────────────────────────
 router.post('/conversations', async (req: Request, res: Response) => {
-  res.status(201).json(ok('Conversation created', await commsService.createConversation(req.body)));
+  const { connectorId, rmId, loanApplicationId, assignedOpsUserId, conversationType, customerName, customerPhone } = req.body;
+  res.status(201).json(ok('Conversation created', await commsService.createConversation({ connectorId, rmId, loanApplicationId, assignedOpsUserId, conversationType, customerName, customerPhone })));
 });
 
 router.get('/conversations', async (req: Request, res: Response) => {
@@ -75,6 +76,13 @@ router.get('/messages/:conversationId', async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '50');
   res.json(ok('Messages fetched', await commsService.getMessages(req.params.conversationId, page, size)));
+});
+
+// Alias: /conversations/:id/messages (some frontend components use this pattern)
+router.get('/conversations/:id/messages', async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string ?? '0');
+  const size = parseInt(req.query.size as string ?? '50');
+  res.json(ok('Messages fetched', await commsService.getMessages(req.params.id, page, size)));
 });
 
 // ── Attachments ───────────────────────────────────────────────────────────────

@@ -86,7 +86,7 @@ const ConnectorHub: React.FC = () => {
   const fetchRMs = async () => {
     try {
       const response = await apiClient.get('/connectors?roles=RM');
-      setRms(response.data?.data || []);
+      setRms(response.data?.data?.items ?? response.data?.data ?? []);
     } catch (err) {
       console.error('Failed to fetch RMs', err);
     }
@@ -96,7 +96,7 @@ const ConnectorHub: React.FC = () => {
     setConnectorsLoading(true);
     try {
       const res = await apiClient.get('/connectors?roles=CONNECTOR');
-      const list = res.data?.data || [];
+      const list = res.data?.data?.items ?? res.data?.data ?? [];
       setConnectors(list.map((c: any) => ({
         id: c.id,
         userId: c.userId,
@@ -120,7 +120,7 @@ const ConnectorHub: React.FC = () => {
   const fetchSlabs = async () => {
     try {
       const slabsRes = await apiClient.get('/commissions/slabs');
-      setPayoutSlabs(slabsRes.data || []);
+      setPayoutSlabs(slabsRes.data?.data ?? []);
     } catch (err) {
       console.error('Failed to fetch slabs', err);
     }
@@ -143,9 +143,9 @@ const ConnectorHub: React.FC = () => {
         apiClient.get(`/commissions/slabs/connector/${partner.id}`),
         apiClient.get(`/commissions/transactions/connector/${partner.id}`),
       ]);
-      const slabs = slabsRes.status === 'fulfilled' ? (slabsRes.value.data || []) : [];
+      const slabs = slabsRes.status === 'fulfilled' ? (slabsRes.value.data?.data ?? []) : [];
       setDrawerSlabs(slabs);
-      const txList = txRes.status === 'fulfilled' ? (txRes.value.data?.data || txRes.value.data || []) : [];
+      const txList = txRes.status === 'fulfilled' ? (txRes.value.data?.data?.items ?? txRes.value.data?.data ?? []) : [];
       const chart = buildMonthlyChart(txList);
       setDrawerChartData(chart);
     } finally {
@@ -330,7 +330,7 @@ const ConnectorHub: React.FC = () => {
       });
       message.success(`Payout rate saved for ${drawerPartner.name}`);
       const res = await apiClient.get(`/commissions/slabs/connector/${drawerPartner.id}`);
-      setDrawerSlabs(res.data || []);
+      setDrawerSlabs(res.data?.data ?? []);
       payoutForm.resetFields();
     } catch (err: any) {
       message.error(err.response?.data?.message || 'Failed to save payout rate');

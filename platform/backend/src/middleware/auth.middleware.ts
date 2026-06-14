@@ -5,6 +5,7 @@ import { fail } from '../utils/response';
 
 interface JwtPayload {
   sub: string;
+  id?: string;
   roles: string;
   jti: string;
   exp: number;
@@ -28,7 +29,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     }
 
     req.user = {
-      id: payload.sub,
+      id: payload.id ?? payload.sub,  // payload.id = real UUID; fall back to email for old tokens
       email: payload.sub,
       roles: payload.roles ? payload.roles.split(',').map((r) => r.trim()) : [],
     };

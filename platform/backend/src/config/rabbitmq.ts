@@ -13,6 +13,13 @@ export async function connectRabbitMQ() {
   console.log('[RabbitMQ] Connected, exchange asserted:', EXCHANGE);
 }
 
+export async function disconnectRabbitMQ() {
+  try { await channel?.close(); } catch { /* ignore */ }
+  try { await (connection as any)?.close(); } catch { /* ignore */ }
+  channel = null;
+  connection = null;
+}
+
 export function getChannel(): Channel {
   if (!channel) throw new Error('RabbitMQ channel not initialised');
   return channel;

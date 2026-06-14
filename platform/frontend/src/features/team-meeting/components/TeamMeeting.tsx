@@ -240,7 +240,7 @@ const TeamMeeting: React.FC = () => {
     if (!user) return;
     setLoadingRooms(true);
     apiClient.get('/connectors').then(res => {
-      const members: any[] = res.data?.data || res.data || [];
+      const members: any[] = res.data?.data?.items ?? res.data?.data ?? [];
       const myEmail = user.email!;
       const myName  = myEmail.split('@')[0] || 'Me';
       const myParticipant = buildParticipant(myEmail, myName, myRole);
@@ -287,9 +287,9 @@ const TeamMeeting: React.FC = () => {
     if (!activeRoomId) return;
     joinRoom(activeRoomId);
     // Load persisted messages from server
-    apiClient.get(`/messaging/team-meeting/rooms/${encodeURIComponent(activeRoomId)}/messages`)
+    apiClient.get(`/messaging/team-meetings/rooms/${encodeURIComponent(activeRoomId)}/messages`)
       .then(res => {
-        const serverMsgs: any[] = res.data?.data || [];
+        const serverMsgs: any[] = res.data?.data?.items ?? res.data?.data ?? [];
         serverMsgs.forEach(m => {
           dispatch(receiveMessage({
             id:             m.id,

@@ -98,6 +98,9 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<DashboardOverview />} />
+
+              {/* CIBIL Check — all authenticated roles */}
+              <Route path="/connector/cibil" element={<CibilCheckPage />} />
               
               {/* Admin Specific Routes — platform config only, no partner access */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
@@ -144,7 +147,6 @@ const App: React.FC = () => {
               {/* Connector Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['CONNECTOR']} />}>
                 <Route path="/connector/dashboard"          element={<ConnectorDashboard />} />
-                <Route path="/connector/cibil"              element={<CibilCheckPage />} />
                 <Route path="/connector/bsa"                element={<BankStatementAnalyzerPage />} />
                 <Route path="/connector/foir"               element={<CheckEligibility />} />
                 <Route path="/connector/emi-calculator"     element={<EmiCalculator />} />

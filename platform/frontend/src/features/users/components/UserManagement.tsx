@@ -33,7 +33,7 @@ const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER'];
 
 function connectorToRow(c: any) {
   const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
-  const role = c.role || 'UNKNOWN';
+  const role = c.platformRole || c.role || 'UNKNOWN';
   const emailPrefix = c.firstName ? `${c.firstName.toLowerCase()}.${(c.lastName || '').toLowerCase()}`.replace(/\s+/g, '') : 'employee';
   return {
     id: c.id,
@@ -66,7 +66,7 @@ const UserManagement: React.FC = () => {
     setLoading(true);
     try {
       const res = await apiClient.get('/connectors', { params: { roles: STAFF_ROLES.join(',') } });
-      const list = res.data?.data || [];
+      const list = res.data?.data?.items ?? res.data?.data ?? [];
       setStaffData(list.map(connectorToRow));
     } catch (err) {
       console.error('Failed to fetch staff', err);
@@ -261,12 +261,11 @@ const UserManagement: React.FC = () => {
       if (editingStaff) {
         const { firstName, lastName } = splitName(values.name);
         await apiClient.put(`/connectors/${editingStaff.id}`, {
-          userId: editingStaff.userId,
           firstName,
           lastName,
           phone: editingStaff.phone || '9999999999',
           region: editingStaff.region || 'NATIONAL',
-          role: values.role,
+          platformRole: values.role,
           email: editingStaff.email,
         });
         message.success(`Employee ${values.name} updated successfully`);
@@ -303,7 +302,7 @@ const UserManagement: React.FC = () => {
           email: values.email,
           phone: '99' + Math.floor(10000000 + Math.random() * 90000000),
           region: 'NATIONAL',
-          role: values.role,
+          platformRole: values.role,
         });
 
         message.success(`Employee ${values.name} onboarded with role ${values.role}`);

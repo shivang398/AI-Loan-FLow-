@@ -89,8 +89,8 @@ const DashboardOverview: React.FC = () => {
         apiClient.get('/loans'),
         apiClient.get('/connectors?roles=CONNECTOR'),
       ]);
-      const loanList = loansRes.status === 'fulfilled' ? (loansRes.value.data?.data || loansRes.value.data || []) : [];
-      const connList = connRes.status === 'fulfilled' ? (connRes.value.data?.data || connRes.value.data || []) : [];
+      const loanList = loansRes.status === 'fulfilled' ? (loansRes.value.data?.data?.items ?? loansRes.value.data?.data ?? []) : [];
+      const connList = connRes.status === 'fulfilled' ? (connRes.value.data?.data?.items ?? connRes.value.data?.data ?? []) : [];
 
       setLoans(Array.isArray(loanList) ? loanList : []);
       setConnectors(Array.isArray(connList) ? connList : []);

@@ -26,11 +26,31 @@ import { errorHandler, notFound } from './middleware/error.middleware';
 
 const app = express();
 
+// Trust the first proxy hop so req.ip reflects the real client IP
+app.set('trust proxy', 1);
+
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*', credentials: true }));
-app.use(morgan('combined'));
+
+// Restrict CORS to known origins — wildcard + credentials is invalid per spec
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : ['http://localhost:3000', 'http://localhost:5173'];
+app.use(cors({ origin: corsOrigins, credentials: true }));
+
+// Strip Authorization header from access logs to prevent JWT token leakage
+morgan.token('redacted-auth', () => '[REDACTED]');
+app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
+
+// Cap pagination size to 100 to prevent DB abuse
+app.use((req, _res, next) => {
+  if (req.query.size) {
+    const s = parseInt(req.query.size as string, 10);
+    if (!isNaN(s) && s > 100) req.query.size = '100';
+  }
+  next();
+});
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'UP', timestamp: new Date().toISOString() }));

@@ -20,9 +20,9 @@ router.get('/', async (req: Request, res: Response) => {
 
 // Leads (before /:id to avoid conflicts)
 router.post('/leads', async (req: Request, res: Response) => {
-  const { firstName, lastName, email, mobile, panNumber } = req.body;
+  const { firstName, lastName, email, mobile, panNumber, loanType, loanAmount, assignedTo } = req.body;
   if (!firstName || !lastName || !email || !mobile || !panNumber) { res.status(400).json(fail('firstName, lastName, email, mobile and panNumber are required')); return; }
-  res.status(201).json(ok('Lead created', await customerService.createLead({ ...req.body, createdBy: req.user!.email })));
+  res.status(201).json(ok('Lead created', await customerService.createLead({ firstName, lastName, email, mobile, panNumber, loanType, loanAmount, assignedTo, createdBy: req.user!.email })));
 });
 
 router.get('/leads', async (req: Request, res: Response) => {
@@ -43,7 +43,12 @@ router.get('/leads/:id', async (req: Request, res: Response) => {
 });
 
 router.put('/leads/:id', async (req: Request, res: Response) => {
-  res.json(ok('Lead updated', await customerService.updateLead(req.params.id, req.body)));
+  // Whitelist updatable fields — prevent mass assignment of id, createdBy, createdAt, etc.
+  const { loanType, loanAmount, status, assignedTo, notes } = req.body;
+  const updateData = Object.fromEntries(
+    Object.entries({ loanType, loanAmount, status, assignedTo, notes }).filter(([, v]) => v !== undefined),
+  );
+  res.json(ok('Lead updated', await customerService.updateLead(req.params.id, updateData)));
 });
 
 router.get('/:id', async (req: Request, res: Response) => {

@@ -3,7 +3,7 @@ services:
     image: mysql:8.0.44
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
       MYSQL_DATABASE: platform_auth
     command: >
       --character-set-server=utf8mb4
@@ -16,7 +16,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./init-mysql-databases.sh:/docker-entrypoint-initdb.d/init-mysql-databases.sh
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppassword"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-password}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -27,8 +27,8 @@ services:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     ports:
       - "5673:5672"
       - "15673:15672"

@@ -58,8 +58,8 @@ const ConnectorTracker: React.FC = () => {
       ]);
 
       const reps: HierarchyMapping[] = repRes.data?.data || [];
-      const allSubs: Submission[] = subRes.data?.data || [];
-      const allTx: Transaction[]  = txRes.data?.data || [];
+      const allSubs: Submission[] = subRes.data?.data?.items ?? subRes.data?.data ?? [];
+      const allTx: Transaction[]  = txRes.data?.data?.items ?? txRes.data?.data ?? [];
 
       setSubmissions(allSubs);
       setTransactions(allTx);

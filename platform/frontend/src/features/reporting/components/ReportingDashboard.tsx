@@ -60,7 +60,7 @@ const ReportingDashboard: React.FC = () => {
 
   useEffect(() => {
     apiClient.get('/connectors?roles=RM').then(res => {
-      setRmList(res.data?.data || []);
+      setRmList(res.data?.data?.items ?? res.data?.data ?? []);
     }).catch(() => {});
 
     fetchReports();
@@ -68,11 +68,13 @@ const ReportingDashboard: React.FC = () => {
 
     if (sessionStorage.getItem('token')) {
       apiClient.get('/reports/email-config').then(res => {
-        const cfg = res.data;
-        emailForm.setFieldsValue({
-          frequency: cfg.frequency || 'weekly',
-          recipients: Array.isArray(cfg.recipients) ? cfg.recipients : [],
-        });
+        const cfg = res.data?.data;
+        if (cfg) {
+          emailForm.setFieldsValue({
+            frequency: cfg.frequency || 'weekly',
+            recipients: Array.isArray(cfg.recipients) ? cfg.recipients : [],
+          });
+        }
       }).catch(() => {});
     }
   }, []);
@@ -81,7 +83,7 @@ const ReportingDashboard: React.FC = () => {
     setLoadingReports(true);
     try {
       const res = await apiClient.get('/reports/mis-uploads');
-      setRmReports(res.data?.data || res.data || []);
+      setRmReports(res.data?.data?.items ?? res.data?.data ?? []);
     } catch {
       setRmReports([]);
     } finally {
@@ -93,7 +95,7 @@ const ReportingDashboard: React.FC = () => {
     setLoadingLeads(true);
     try {
       const res = await apiClient.get('/customers/leads');
-      setLeads(res.data?.data || res.data || []);
+      setLeads(res.data?.data?.items ?? res.data?.data ?? []);
     } catch {
       setLeads([]);
     } finally {

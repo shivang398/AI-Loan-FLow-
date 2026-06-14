@@ -23,6 +23,8 @@ import {
   Download,
   IndianRupee,
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store';
 import apiClient from '../../../shared/services/apiClient';
 
 const { Title, Text } = Typography;
@@ -81,6 +83,7 @@ const ScoreGauge: React.FC<{ score: number }> = ({ score }) => {
 // ── Main CIBIL check page ─────────────────────────────────────────────────────
 
 export const CibilCheckPage: React.FC = () => {
+  const currentUser = useSelector((s: RootState) => s.auth.user);
   const [loading, setCibilLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [summary, setSummary] = useState<any>(null);
@@ -398,15 +401,17 @@ export const CibilCheckPage: React.FC = () => {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 12 }}>
-            <Button
-              type="primary"
-              size="large"
-              loading={pdfLoading}
-              onClick={handleDownloadPdf}
-              style={{ height: 56, borderRadius: 16, background: '#0f172a', border: 'none', fontWeight: 800, fontSize: 14, paddingLeft: 32, paddingRight: 32, display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              {!pdfLoading && <Download size={18} />} Download Full PDF Report
-            </Button>
+            {currentUser?.role === 'ADMIN' && (
+              <Button
+                type="primary"
+                size="large"
+                loading={pdfLoading}
+                onClick={handleDownloadPdf}
+                style={{ height: 56, borderRadius: 16, background: '#0f172a', border: 'none', fontWeight: 800, fontSize: 14, paddingLeft: 32, paddingRight: 32, display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                {!pdfLoading && <Download size={18} />} Download Full PDF Report
+              </Button>
+            )}
             <Button
               size="large"
               onClick={() => { setSummary(null); setLastValues(null); setError(null); }}

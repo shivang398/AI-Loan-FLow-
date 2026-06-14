@@ -49,7 +49,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 // PUT /connectors/:id
 router.put('/:id', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
-  res.json(ok('Connector updated', await salesOpsService.updateConnector(req.params.id, req.body, req.user!.email)));
+  const { firstName, lastName, phone, email, region, platformRole } = req.body;
+  res.json(ok('Connector updated', await salesOpsService.updateConnector(req.params.id, { firstName, lastName, phone, email, region, platformRole }, req.user!.email)));
 });
 
 // PUT /connectors/:id/status

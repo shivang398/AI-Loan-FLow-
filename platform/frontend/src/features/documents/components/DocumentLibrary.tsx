@@ -44,7 +44,7 @@ const DocumentLibrary: React.FC = () => {
   const fetchRealFiles = async (path: string) => {
     try {
       const res = await apiClient.get('/documents/folder', { params: { path } });
-      setRealFiles(res.data?.data || []);
+      setRealFiles(res.data?.data?.items ?? res.data?.data ?? []);
     } catch (err) {
       console.error('Failed to load live documents', err);
     }

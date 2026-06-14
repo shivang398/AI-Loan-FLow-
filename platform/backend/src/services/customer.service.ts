@@ -73,7 +73,7 @@ export async function getLeadById(id: string) {
   return lead;
 }
 
-export async function updateLead(id: string, data: Record<string, unknown>) {
+export async function updateLead(id: string, data: Partial<{ loanType: string; loanAmount: number; status: string; assignedTo: string; notes: string }>) {
   const lead = await customerDb.lead.findUnique({ where: { id } });
   if (!lead) throw Object.assign(new Error('Lead not found'), { status: 404 });
   return customerDb.lead.update({ where: { id }, data });

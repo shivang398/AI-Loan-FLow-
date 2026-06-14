@@ -1,10 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import * as authService from '../services/auth.service';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import { ok, fail } from '../utils/response';
 import { revokeAccessToken } from '../services/auth.service';
+
+// 15 attempts per 15 minutes per IP — prevents brute-force account lockout attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { success: false, message: 'Too many attempts from this IP. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router = Router();
 const REFRESH_COOKIE = 'refreshToken';
@@ -27,10 +37,10 @@ router.post('/register/partner', async (req: Request, res: Response) => {
   res.json(ok('Partner registered successfully', result));
 });
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authLimiter, async (req: Request, res: Response) => {
   const body = LoginSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map((e) => e.message))); return; }
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.ip;
+  const ip = req.ip; // req.ip is correct when trust proxy is enabled in app.ts
   const result = await authService.authenticateUser(body.data.email, body.data.password, ip);
   res.setHeader('Set-Cookie', `${REFRESH_COOKIE}=${result.token}; Path=/api/auth; HttpOnly; Secure; SameSite=Strict; Max-Age=${REFRESH_MAX_AGE}`);
   res.json(ok('Login successful', { token: result.token, role: result.role, email: result.email, id: result.id }));
@@ -72,7 +82,7 @@ router.put('/users/:id/status', authenticate, requireRoles('ADMIN'), async (req:
   res.json(ok('User status updated', 'SUCCESS'));
 });
 
-router.post('/forgot-password', async (req: Request, res: Response) => {
+router.post('/forgot-password', authLimiter, async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) { res.status(400).json(fail('email is required')); return; }
   await authService.forgotPassword(email);

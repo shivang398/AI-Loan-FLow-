@@ -72,10 +72,26 @@ export async function updateEmailConfig(data: { frequency?: string; recipients?:
 }
 
 export async function getDashboardSummary() {
-  const [recentSnapshots, pendingReports, totalMisReports] = await Promise.all([
-    analyticsDb.analyticsSnapshot.findMany({ orderBy: { snapshotDate: 'desc' }, take: 10 }),
-    analyticsDb.reportJob.count({ where: { status: 'PENDING' } }),
-    analyticsDb.misReport.count(),
-  ]);
-  return { recentSnapshots, pendingReports, totalMisReports };
+  // Return flat { metricType: latestValue } map that the frontend KPI cards expect
+  const snapshots = await analyticsDb.analyticsSnapshot.findMany({
+    orderBy: { snapshotDate: 'desc' },
+    take: 200,
+  });
+  const summary: Record<string, number> = {};
+  for (const s of snapshots) {
+    if (!(s.metricType in summary)) {
+      summary[s.metricType] = Number(s.metricValue);
+    }
+  }
+  return summary;
+}
+
+export async function getTrendSnapshots(from?: string, to?: string) {
+  const where = from || to ? {
+    snapshotDate: {
+      ...(from && { gte: new Date(from) }),
+      ...(to   && { lte: new Date(to) }),
+    },
+  } : {};
+  return analyticsDb.analyticsSnapshot.findMany({ where, orderBy: { snapshotDate: 'asc' }, take: 500 });
 }

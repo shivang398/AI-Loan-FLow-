@@ -55,7 +55,7 @@ const CheckEligibility: React.FC = () => {
       const params: Record<string, string> = {};
       if (statusFilter) params.status = statusFilter;
       const res = await apiClient.get('/eligibility/submissions', { params });
-      setLeads(res.data?.data || []);
+      setLeads(res.data?.data?.items ?? res.data?.data ?? []);
     } catch {
       message.error('Failed to load leads');
     } finally {

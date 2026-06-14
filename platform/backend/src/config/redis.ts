@@ -13,6 +13,10 @@ export async function connectRedis() {
   console.log('[Redis] Connected');
 }
 
+export async function disconnectRedis() {
+  await redis.quit();
+}
+
 export async function revokeToken(jti: string, expiryMs: number) {
   const ttlSeconds = Math.ceil((expiryMs - Date.now()) / 1000);
   if (ttlSeconds > 0) await redis.set(`revoked:${jti}`, '1', 'EX', ttlSeconds);

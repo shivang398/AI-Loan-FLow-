@@ -20,11 +20,11 @@ const PayoutTracker: React.FC = () => {
   const fetchPayoutData = async () => {
     try {
       const connectorsRes = await apiClient.get('/connectors?roles=CONNECTOR');
-      const connectorsList = connectorsRes.data?.data || [];
+      const connectorsList = connectorsRes.data?.data?.items ?? connectorsRes.data?.data ?? [];
       const connectorMap = new Map(connectorsList.map((c: any) => [c.id, `${c.firstName || ''} ${c.lastName || ''}`.trim()]));
 
       const txRes = await apiClient.get('/commissions/transactions');
-      const txList = txRes.data?.data || txRes.data || [];
+      const txList = txRes.data?.data?.items ?? txRes.data?.data ?? [];
 
       const statusMap: Record<string, string> = { PAID: 'FULLY_PAID' };
       const mapped = txList.map((t: any) => {

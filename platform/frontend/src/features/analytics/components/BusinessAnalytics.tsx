@@ -153,9 +153,9 @@ const BusinessAnalytics: React.FC = () => {
         apiClient.get('/commissions/transactions'),
       ]);
 
-      const loanList: any[] = loansRes.status === 'fulfilled' ? (loansRes.value.data?.data || loansRes.value.data || []) : [];
-      const connList: any[] = connRes.status  === 'fulfilled' ? (connRes.value.data?.data  || connRes.value.data  || []) : [];
-      const commList: any[] = commRes.status  === 'fulfilled' ? (commRes.value.data?.data  || commRes.value.data  || []) : [];
+      const loanList: any[] = loansRes.status === 'fulfilled' ? (loansRes.value.data?.data?.items ?? loansRes.value.data?.data ?? []) : [];
+      const connList: any[] = connRes.status  === 'fulfilled' ? (connRes.value.data?.data?.items  ?? connRes.value.data?.data  ?? []) : [];
+      const commList: any[] = commRes.status  === 'fulfilled' ? (commRes.value.data?.data?.items  ?? commRes.value.data?.data  ?? []) : [];
 
       setConnectors(connList);
 

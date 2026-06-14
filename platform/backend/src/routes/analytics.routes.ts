@@ -7,13 +7,19 @@ import { ok, fail } from '../utils/response';
 const router = Router();
 router.use(authenticate);
 
-router.get('/dashboard', async (_req: Request, res: Response) => {
-  res.json(ok('Dashboard summary', await analyticsService.getDashboardSummary()));
-});
-
-// Alias for dashboard
+// Flat KPI summary: { TOTAL_LOANS: N, ACTIVE_PARTNERS: N, ... }
+// Used by BusinessAnalytics KPI cards
 router.get('/summary', async (_req: Request, res: Response) => {
   res.json(ok('Analytics summary', await analyticsService.getDashboardSummary()));
+});
+
+// Trend snapshots array — used by BusinessAnalytics trend charts
+router.get('/dashboard', async (req: Request, res: Response) => {
+  const snapshots = await analyticsService.getTrendSnapshots(
+    req.query.from as string,
+    req.query.to as string,
+  );
+  res.json(ok('Dashboard snapshots', snapshots));
 });
 
 router.get('/snapshots', async (req: Request, res: Response) => {
@@ -23,9 +29,15 @@ router.get('/snapshots', async (req: Request, res: Response) => {
 });
 
 router.post('/snapshots', requireRoles('ADMIN', 'RM'), async (req: Request, res: Response) => {
-  const { snapshotDate, metricType, metricValue, dimension, dimensionValue } = req.body;
-  if (!snapshotDate || !metricType || metricValue == null) { res.status(400).json(fail('snapshotDate, metricType and metricValue are required')); return; }
-  res.status(201).json(ok('Snapshot created', await analyticsService.createSnapshot({ snapshotDate, metricType, metricValue, dimension, dimensionValue })));
+  const body = req.body;
+  // Accept both single snapshot and array of snapshots
+  const snapshots = Array.isArray(body) ? body : [body];
+  const results = await Promise.all(snapshots.map(s => {
+    const { snapshotDate, metricType, metricValue, dimension, dimensionValue } = s;
+    if (!snapshotDate || !metricType || metricValue == null) return null;
+    return analyticsService.createSnapshot({ snapshotDate, metricType, metricValue, dimension, dimensionValue });
+  }));
+  res.status(201).json(ok('Snapshots created', results.filter(Boolean)));
 });
 
 export default router;

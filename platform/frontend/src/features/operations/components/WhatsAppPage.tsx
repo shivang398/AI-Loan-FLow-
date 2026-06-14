@@ -187,7 +187,7 @@ const WhatsAppPage: React.FC = () => {
     setLoadingConvs(true);
     try {
       const res = await apiClient.get('/messaging/conversations', { params: { type: 'EXTERNAL_CUSTOMER_OPS' } });
-      const list: Conversation[] = (res.data?.data || res.data || []).map((c: Conversation) => ({
+      const list: Conversation[] = (res.data?.data?.items ?? res.data?.data ?? []).map((c: Conversation) => ({
         ...c,
         _customerName: c._customerName || `Customer ${String(c.id).slice(0, 6).toUpperCase()}`,
       }));
@@ -208,7 +208,7 @@ const WhatsAppPage: React.FC = () => {
     setMessages([]);
     apiClient.get(`/messaging/conversations/${activeConvId}/messages`)
       .then(res => {
-        const list: Message[] = res.data?.data || res.data || [];
+        const list: Message[] = res.data?.data?.items ?? res.data?.data ?? [];
         // Merge with any WS messages already received to avoid losing real-time msgs
         setMessages(prev => {
           const historicIds = new Set(list.map((m: Message) => m.id));

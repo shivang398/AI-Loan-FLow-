@@ -12,7 +12,13 @@ export async function createConnector(data: { userId: string; firstName: string;
 }
 
 export async function getConnectors(filters: { status?: string; region?: string; platformRole?: string; page: number; size: number }) {
-  const where = { ...(filters.status && { status: filters.status }), ...(filters.region && { region: filters.region }), ...(filters.platformRole && { platformRole: filters.platformRole }) };
+  const roles = filters.platformRole ? filters.platformRole.split(',').map((r) => r.trim()).filter(Boolean) : undefined;
+  const roleFilter = roles && roles.length > 0 ? { platformRole: { in: roles } } : {};
+  const where = {
+    ...(filters.status && { status: filters.status }),
+    ...(filters.region && { region: filters.region }),
+    ...roleFilter,
+  };
   const [items, total] = await Promise.all([
     salesOpsDb.connector.findMany({ where, skip: filters.page * filters.size, take: filters.size, include: { performance: true }, orderBy: { createdAt: 'desc' } }),
     salesOpsDb.connector.count({ where }),

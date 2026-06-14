@@ -7,9 +7,9 @@ import { revokeToken, isTokenRevoked, setPasswordResetToken, getPasswordResetEma
 const JWT_SECRET = () => process.env.JWT_SECRET!;
 const JWT_EXPIRY_MS = () => parseInt(process.env.JWT_EXPIRY_MS ?? '900000');
 
-function signToken(email: string, roles: string): string {
+function signToken(userId: string, email: string, roles: string): string {
   const jti = uuidv4();
-  return jwt.sign({ sub: email, roles, jti }, JWT_SECRET(), {
+  return jwt.sign({ sub: email, id: userId, roles, jti }, JWT_SECRET(), {
     expiresIn: Math.floor(JWT_EXPIRY_MS() / 1000),
   });
 }
@@ -65,7 +65,7 @@ export async function authenticateUser(email: string, password: string, ip?: str
   await authDb.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
 
   const roles = user.userRoles.map((ur) => ur.role.name).join(',');
-  const token = signToken(email, roles);
+  const token = signToken(user.id, email, roles);
 
   await authDb.auditLog.create({
     data: { id: uuidv4(), userId: user.id, action: 'LOGIN', ipAddress: ip, createdAt: new Date() },
@@ -102,7 +102,7 @@ export async function refreshToken(existingToken: string) {
     if (!user) throw Object.assign(new Error('User not found'), { status: 401 });
 
     const roles = user.userRoles.map((ur) => ur.role.name).join(',');
-    const newToken = signToken(payload.sub, roles);
+    const newToken = signToken(user.id, payload.sub, roles);
     return { token: newToken, role: user.userRoles[0]?.role.name ?? '', email: payload.sub };
   } catch (err: unknown) {
     if ((err as { status?: number }).status) throw err;

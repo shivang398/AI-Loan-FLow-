@@ -63,12 +63,12 @@ const RegionalDashboard: React.FC = () => {
 
       const connIds = new Set(reps.map(r => r.connector?.id).filter(Boolean));
 
-      const allSubs: Submission[] = subRes.data?.data || [];
+      const allSubs: Submission[] = subRes.data?.data?.items ?? subRes.data?.data ?? [];
       // RM sees submissions from all connectors under them
       // If no connectors yet, show all (admin-like view)
       setSubmissions(connIds.size > 0 ? allSubs : allSubs);
 
-      setTransactions(txRes.data?.data || []);
+      setTransactions(txRes.data?.data?.items ?? txRes.data?.data ?? []);
     } catch {
       /* silently degrade — partial data is better than a crash */
     } finally {

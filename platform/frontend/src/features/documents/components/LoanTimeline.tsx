@@ -35,7 +35,7 @@ const LoanTimeline: React.FC<Props> = ({ customerId, loanLabel, onClose }) => {
   useEffect(() => {
     apiClient.get(`/loans?customerId=${customerId}`)
       .then(res => {
-        const loans: { id: string }[] = res.data?.data || [];
+        const loans: { id: string }[] = res.data?.data?.items ?? res.data?.data ?? [];
         if (loans.length === 0) {
           setNoLoan(true);
           return;

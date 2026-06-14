@@ -101,6 +101,7 @@ const DashboardLayout: React.FC = () => {
   const adminItems = [
     { key: '/dashboard',          icon: <LayoutDashboard size={16} />, label: 'Overview' },
     { key: '/admin/users',        icon: <Users size={16} />,           label: 'User Management' },
+    { key: '/connector/cibil',    icon: <ShieldCheck size={16} />,     label: 'CIBIL Check' },
     { key: '/admin/reports',      icon: <FileText size={16} />,        label: 'MIS Reports' },
     { key: '/admin/documents',    icon: <Files size={16} />,           label: 'Document Library' },
     { key: '/admin/analytics',    icon: <BarChart3 size={16} />,       label: 'Analytics' },
@@ -109,23 +110,26 @@ const DashboardLayout: React.FC = () => {
   ];
 
   const partnerManagerItems = [
-    { key: '/pm/partners',     icon: <Network size={16} />,   label: 'Partner Hub' },
-    { key: '/pm/payouts',      icon: <Wallet size={16} />,    label: 'Payout Tracker' },
-    { key: '/pm/commissions',  icon: <BarChart3 size={16} />, label: 'Commission Slabs' },
-    { key: '/pm/policies',     icon: <BookOpen size={16} />,  label: 'Policies' },
-    { key: '/pm/team-meeting', icon: <UsersRound size={16} />,label: 'Team Meeting' },
+    { key: '/pm/partners',     icon: <Network size={16} />,        label: 'Partner Hub' },
+    { key: '/pm/payouts',      icon: <Wallet size={16} />,         label: 'Payout Tracker' },
+    { key: '/pm/commissions',  icon: <BarChart3 size={16} />,      label: 'Commission Slabs' },
+    { key: '/connector/cibil', icon: <ShieldCheck size={16} />,    label: 'CIBIL Check' },
+    { key: '/pm/policies',     icon: <BookOpen size={16} />,       label: 'Policies' },
+    { key: '/pm/team-meeting', icon: <UsersRound size={16} />,     label: 'Team Meeting' },
   ];
 
   const rmItems = [
     { key: '/rm/dashboard',    icon: <LayoutDashboard size={16} />, label: 'Regional Hub' },
     { key: '/rm/connectors',   icon: <Users size={16} />,           label: 'Connector Tracker' },
     { key: '/rm/workflow',     icon: <ClipboardList size={16} />,   label: 'Workflow Monitor' },
+    { key: '/connector/cibil', icon: <ShieldCheck size={16} />,     label: 'CIBIL Check' },
     { key: '/rm/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
     { key: '/rm/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];
 
   const opsItems = [
     { key: '/ops/dashboard',    icon: <ClipboardList size={16} />, label: 'Ops Queue' },
+    { key: '/connector/cibil',  icon: <ShieldCheck size={16} />,   label: 'CIBIL Check' },
     { key: '/ops/policies',     icon: <BookOpen size={16} />,      label: 'Policies' },
     { key: '/ops/team-meeting', icon: <UsersRound size={16} />,    label: 'Team Meeting' },
   ];
@@ -143,6 +147,7 @@ const DashboardLayout: React.FC = () => {
 
   const tlItems = [
     { key: '/tl/dashboard',    icon: <LayoutDashboard size={16} />, label: 'Team Leader Hub' },
+    { key: '/connector/cibil', icon: <ShieldCheck size={16} />,     label: 'CIBIL Check' },
     { key: '/tl/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
     { key: '/tl/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];

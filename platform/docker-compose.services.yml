@@ -59,14 +59,17 @@ services:
       dockerfile: Dockerfile
     image: realmoney/backend:${APP_VERSION:-latest}
     restart: unless-stopped
-    env_file: .env
+    # backend/.env has all DB URLs, JWT_SECRET, AWS keys, SMTP, WhatsApp, CRIF
+    env_file: ./backend/.env
     environment:
       PORT: "8080"
       NODE_ENV: production
+      # Override connection strings to use Docker service names instead of localhost
       RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672"
       RABBITMQ_EXCHANGE: platform.exchange
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost}"
     depends_on:
       rabbitmq:
         condition: service_healthy

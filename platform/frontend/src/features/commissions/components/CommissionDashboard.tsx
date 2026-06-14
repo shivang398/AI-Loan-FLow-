@@ -59,7 +59,7 @@ const CommissionDashboard: React.FC = () => {
         ? `/commissions/transactions/connector/${connectorProfileId}`
         : '/commissions/transactions';
       const res = await apiClient.get(endpoint);
-      const list: Transaction[] = (res.data?.data || res.data || []).map((t: any) => ({
+      const list: Transaction[] = (res.data?.data?.items ?? res.data?.data ?? []).map((t: any) => ({
         id: t.id,
         status: t.status,
         totalAmount: Number(t.totalAmount || t.commissionAmount || 0),

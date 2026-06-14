@@ -25,6 +25,11 @@ router.get('/audit-logs', requireRoles('ADMIN'), async (req: Request, res: Respo
   res.json(ok('Audit logs fetched', await loanService.getAuditLogs({ entityType: req.query.entityType as string, entityId: req.query.entityId as string, page, size })));
 });
 
+router.get('/:id/history', async (req: Request, res: Response) => {
+  const loan = await loanService.getLoanById(req.params.id);
+  res.json(ok('Loan history fetched', loan.statusHistory ?? []));
+});
+
 router.get('/:id', async (req: Request, res: Response) => {
   res.json(ok('Loan fetched', await loanService.getLoanById(req.params.id)));
 });

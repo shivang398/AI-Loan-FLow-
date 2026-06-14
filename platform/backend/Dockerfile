@@ -12,7 +12,8 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/generated ./src/generated
+# Prisma-generated clients output to src/generated; tsc compiles references to dist/generated
+COPY --from=builder /app/src/generated ./dist/generated
 COPY prisma ./prisma
 
 EXPOSE 8080

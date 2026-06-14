@@ -64,7 +64,7 @@ const WorkflowMonitor: React.FC = () => {
       const reps: HierarchyMapping[] = repRes.data?.data || [];
       setReportees(reps);
 
-      const allSubs: Submission[] = subRes.data?.data || [];
+      const allSubs: Submission[] = subRes.data?.data?.items ?? subRes.data?.data ?? [];
       setSubmissions(allSubs);
       setFiltered(allSubs);
     } catch {
