@@ -138,7 +138,7 @@ npm run prisma:migrate:analytics # platform_analytics_reporting
 
 ## Production — AWS EC2 + RDS
 
-Recommended production setup: a single **EC2 t3.medium** runs the full stack via Docker Compose, with **RDS MySQL 8** as a separate managed database.
+Recommended production setup: a single **EC2 t3.medium** (Amazon Linux 2023) runs the full stack via Docker Compose, with **RDS MySQL 8** as a separate managed database.
 
 ### Cost estimate
 
@@ -155,7 +155,7 @@ Recommended production setup: a single **EC2 t3.medium** runs the full stack via
 ```bash
 # 1. Launch an EC2 t3.medium with Amazon Linux 2023 and your key pair
 # 2. Run the setup script over SSH
-ssh ec2-user@YOUR_EC2_IP "bash -s" < deploy/setup-ec2.sh
+ssh ec2-user@YOUR_EC2_IP "bash -s" < ../deploy/setup-ec2.sh
 ```
 
 The script installs Docker, clones the repo to `/opt/realmoney`, and registers a systemd service that starts the platform on every boot.
@@ -170,8 +170,8 @@ mysql -h YOUR_RDS_ENDPOINT -u root -p < /opt/realmoney/platform/init-mysql-datab
 
 # Configure environment
 cd /opt/realmoney/platform
-nano backend/.env   # see env var table below — fill in RDS URLs, JWT_SECRET, AWS keys
-nano .env           # CORS_ORIGIN=https://yourdomain.com, MYSQL_ROOT_PASSWORD (for reference only)
+nano backend/.env   # fill in RDS URLs, JWT_SECRET, AWS keys (see table below)
+nano .env           # set CORS_ORIGIN=https://yourdomain.com and RABBITMQ_USER/PASS
 
 # Build images and start
 docker compose -f docker-compose.prod.yml build
@@ -190,28 +190,26 @@ sudo dnf install -y certbot
 # Amazon Linux 2: sudo amazon-linux-extras install epel -y && sudo yum install -y certbot
 
 # Stop Nginx temporarily to free port 80
-docker compose -f /opt/realmoney/platform/docker-compose.prod.yml stop frontend
+docker compose -f docker-compose.prod.yml stop frontend
 
 # Issue certificate
 sudo certbot certonly --standalone -d yourdomain.com
 
 # Update CORS_ORIGIN in .env
-sed -i 's|CORS_ORIGIN=.*|CORS_ORIGIN=https://yourdomain.com|' /opt/realmoney/platform/.env
+sed -i 's|CORS_ORIGIN=.*|CORS_ORIGIN=https://yourdomain.com|' .env
 
 # Restart
-docker compose -f /opt/realmoney/platform/docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
-
-For automated TLS renewal, add `certbot renew --pre-hook "docker stop frontend" --post-hook "docker start frontend"` to cron.
 
 ---
 
 ## CI/CD — GitHub Actions
 
-Push to `main` triggers [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
+Push to `main` triggers [`.github/workflows/deploy-aws.yml`](../.github/workflows/deploy-aws.yml):
 1. Build backend and frontend Docker images
 2. Push to Amazon ECR
-3. SSH to EC2 and run `deploy/update.sh`
+3. SSH to EC2 and run a rolling update
 
 **Required GitHub Actions secrets:**
 
@@ -277,13 +275,13 @@ Push to `main` triggers [`.github/workflows/deploy.yml`](.github/workflows/deplo
 
 ```bash
 # All container statuses and health
-docker compose -f platform/docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Backend health endpoint
 curl http://localhost/api/health
 
 # Tail backend logs
-docker compose -f platform/docker-compose.prod.yml logs -f backend
+docker compose -f docker-compose.prod.yml logs -f backend
 
 # RabbitMQ management UI — access via SSH tunnel only
 # ssh -L 15672:localhost:15672 ec2-user@YOUR_EC2_IP
@@ -314,7 +312,7 @@ SQL
 
 ### Automatic via GitHub Actions (recommended)
 
-Push to `main` — the CI/CD pipeline builds new images, pushes to ECR, and SSHes into EC2 to run a rolling update. No manual steps needed.
+Push to `main` — the CI/CD pipeline builds new images, pushes to ECR, and SSHes into EC2 to run a rolling update.
 
 ### Manual update on EC2
 
@@ -324,8 +322,6 @@ cd /opt/realmoney
 git pull
 bash deploy/update.sh
 ```
-
-`update.sh` rebuilds only changed images and restarts affected containers with zero downtime for static assets.
 
 ---
 
@@ -342,6 +338,7 @@ bash deploy/update.sh
 | MySQL connection refused | Check `DATABASE_URL` host and port in `backend/.env` |
 | CIBIL shows score 1 | "NH" (No History) from bureau — not a bug |
 | Out of disk on EC2 | `docker system prune -f` clears unused images |
+| Docker permission denied | Log out and SSH back in after running setup script |
 
 ---
 
@@ -355,34 +352,3 @@ bash deploy/update.sh
 | Security misconfiguration | Helmet.js headers; `X-Frame-Options: DENY`; CSP; no stack traces in prod responses |
 | Auth failures | JWT revocation in Redis on logout; Redis fail-open so outage never blocks valid users |
 | JWT in logs | nginx `ws_safe` log format redacts `token=` from WebSocket upgrade requests |
-
----
-
-## Project Structure
-
-```
-Auditor/
-├── platform/
-│   ├── backend/
-│   │   ├── prisma/              # 6 schema files (one per database)
-│   │   ├── src/
-│   │   │   ├── config/          # prisma.ts, redis.ts, rabbitmq.ts, s3.ts
-│   │   │   ├── middleware/      # auth, roles, error
-│   │   │   ├── routes/          # one file per domain
-│   │   │   └── services/        # business logic
-│   │   ├── Dockerfile
-│   │   └── .env.example
-│   ├── frontend/
-│   │   ├── src/features/        # dashboard, connector, loans, analytics, etc.
-│   │   ├── nginx.conf.template
-│   │   └── Dockerfile
-│   ├── docker-compose.yml           # local dev: MySQL, Redis, RabbitMQ, LocalStack
-│   ├── docker-compose.services.yml  # local dev: backend + frontend
-│   ├── docker-compose.prod.yml      # production: RDS + real S3, restart:always
-│   └── init-mysql-databases.sh      # creates 6 databases on first run
-├── deploy/
-│   ├── setup-ec2.sh             # one-command EC2 bootstrap
-│   └── update.sh                # rolling update on EC2
-└── .github/workflows/
-    └── deploy.yml               # CI/CD: build → ECR → deploy on push to main
-```
