@@ -1,15 +1,47 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as documentService from '../services/document.service';
 import { ok, fail } from '../utils/response';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
-// Public upload (no auth required — used during onboarding)
-router.post('/public/upload', upload.single('file'), async (req: Request, res: Response) => {
+const ALLOWED_MIME = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(Object.assign(new Error(`File type not allowed: ${file.mimetype}`), { status: 415 }));
+    }
+  },
+});
+
+// 20 uploads per 10 minutes per IP on the public (unauthenticated) endpoint
+const publicUploadLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: { success: false, message: 'Too many uploads. Please wait before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Public upload (no auth — used during onboarding). Rate-limited and MIME-guarded.
+router.post('/public/upload', publicUploadLimiter, upload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) { res.status(400).json(fail('File is required')); return; }
   const { loanId, ownerId, documentType, folderPath } = req.body;
   if (!documentType) { res.status(400).json(fail('documentType is required')); return; }

@@ -50,3 +50,10 @@ test-results/
 
 # Claude Code internal worktrees (never commit)
 .claude/worktrees/
+
+# SSH / AWS key pairs — NEVER commit private keys
+*.pem
+*.ppk
+*.key
+id_rsa
+id_ed25519

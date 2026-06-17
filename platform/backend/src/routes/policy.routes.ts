@@ -5,8 +5,26 @@ import { requireRoles } from '../middleware/role.middleware';
 import * as loanService from '../services/loan.service';
 import { ok, fail } from '../utils/response';
 
+const POLICY_ALLOWED_MIME = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]);
+
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (POLICY_ALLOWED_MIME.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(Object.assign(new Error(`File type not allowed: ${file.mimetype}`), { status: 415 }));
+    }
+  },
+});
 router.use(authenticate);
 
 router.get('/', async (req: Request, res: Response) => {

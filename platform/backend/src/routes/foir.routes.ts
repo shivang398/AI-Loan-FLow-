@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
+import { requireRoles } from '../middleware/role.middleware';
 import * as salesOpsService from '../services/salesops.service';
 import { ok, fail } from '../utils/response';
 
@@ -15,7 +16,12 @@ router.post('/calculate', async (req: Request, res: Response) => {
 });
 
 router.get('/assessments', async (req: Request, res: Response) => {
-  const userId = req.query.userId as string ?? req.user!.id;
+  const roles = req.user!.roles;
+  const isPrivileged = roles.some((r) => ['ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS'].includes(r));
+  // Privileged roles may query any userId; connectors can only see their own
+  const userId = isPrivileged && req.query.userId
+    ? (req.query.userId as string)
+    : req.user!.id;
   res.json(ok('Assessments fetched', await salesOpsService.getFoirAssessments(userId)));
 });
 

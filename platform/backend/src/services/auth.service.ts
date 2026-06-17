@@ -139,8 +139,8 @@ export async function forgotPassword(email: string) {
   if (!user) return; // silent — prevent email enumeration
   const token = uuidv4();
   await setPasswordResetToken(token, email);
-  // In production: send email with reset link containing the token
-  console.log(`[Auth] Password reset token for ${email}: ${token}`);
+  // TODO: send reset link via SMTP — token must never be logged
+  console.log(`[Auth] Password reset requested for user ${user.id}`);
 }
 
 export async function resetPassword(token: string, newPassword: string) {

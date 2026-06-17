@@ -90,7 +90,7 @@ router.post('/attachments/presigned-url', async (req: Request, res: Response) =>
   const { fileName, contentType } = req.body;
   if (!fileName || !contentType) { res.status(400).json(fail('fileName and contentType are required')); return; }
   const key = `attachments/${req.user!.id}/${Date.now()}-${fileName}`;
-  const url = await getPresignedUrl(process.env.AWS_S3_BUCKET ?? 'platform-documents', key);
+  const url = await getPresignedUrl(key);
   res.json(ok('Presigned URL generated', { url, key }));
 });
 

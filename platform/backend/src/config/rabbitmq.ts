@@ -1,8 +1,8 @@
-import amqplib, { Channel, Connection } from 'amqplib';
+import amqplib, { Channel, ChannelModel } from 'amqplib';
 
 const EXCHANGE = process.env.RABBITMQ_EXCHANGE ?? 'platform.exchange';
 
-let connection: Connection | null = null;
+let connection: ChannelModel | null = null;
 let channel: Channel | null = null;
 
 export async function connectRabbitMQ() {
@@ -15,7 +15,7 @@ export async function connectRabbitMQ() {
 
 export async function disconnectRabbitMQ() {
   try { await channel?.close(); } catch { /* ignore */ }
-  try { await (connection as any)?.close(); } catch { /* ignore */ }
+  try { await connection?.close(); } catch { /* ignore */ }
   channel = null;
   connection = null;
 }
