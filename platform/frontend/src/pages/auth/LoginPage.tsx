@@ -9,34 +9,15 @@ import { loginSchema, LoginFormValues } from '../../schemas/authSchemas';
 import { setCredentials, setLoading, setError } from '../../store/slices/authSlice';
 import api from '../../shared/services/apiClient';
 import { RootState } from '../../store';
+import { RealMoneyMark } from '../../shared/components/RealMoneyLogo';
 
-const NAVY = '#0B1E3D';
-const GOLD = '#C4993A';
-
-/* Typographic brand mark */
-const BrandMark: React.FC = () => (
-  <div style={{
-    width: 72, height: 72,
-    background: 'rgba(196,153,58,0.10)',
-    border: '1px solid rgba(196,153,58,0.30)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    marginBottom: 28,
-  }}>
-    <span style={{
-      fontFamily: '"Playfair Display", Georgia, serif',
-      fontWeight: 700, fontSize: 28,
-      color: GOLD, letterSpacing: '-0.04em',
-      lineHeight: 1,
-    }}>
-      RM
-    </span>
-  </div>
-);
+const BRAND_BLUE = '#0B2DA4';
+const BRAND_RED  = '#CC1A1A';
 
 const TRUST_STATS = [
-  { value: '22+', label: 'Years of Trust' },
+  { value: '22+',   label: 'Years of Trust' },
   { value: '₹10Cr+', label: 'Monthly Business' },
-  { value: '50+', label: 'Lender Partners' },
+  { value: '50+',   label: 'Lender Partners' },
 ];
 
 const LoginPage: React.FC = () => {
@@ -90,20 +71,31 @@ const LoginPage: React.FC = () => {
     <div className="login-page">
 
       {/* ── Left panel — brand authority ── */}
-      <div className="login-page-illustration">
+      <div className="login-page-illustration" style={{ background: BRAND_BLUE }}>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 400 }}>
 
-          {/* Brand mark */}
-          <BrandMark />
+          {/* Real Money logo mark — large */}
+          <div style={{ marginBottom: 28 }}>
+            <RealMoneyMark size={88} id="login-mark" />
+          </div>
 
-          {/* Brand name */}
-          <div style={{ marginBottom: 6 }}>
+          {/* Brand wordmark */}
+          <div style={{ marginBottom: 4, display: 'flex', alignItems: 'baseline', gap: 0 }}>
             <span style={{
               fontFamily: '"Playfair Display", Georgia, serif',
-              fontWeight: 800, fontSize: 32,
-              color: '#FFFFFF', letterSpacing: '-0.01em',
+              fontWeight: 800, fontSize: 34,
+              color: '#FF6B6B',
+              letterSpacing: '-0.01em',
             }}>
-              Real Money
+              REAL&nbsp;
+            </span>
+            <span style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontWeight: 800, fontSize: 34,
+              color: '#FFFFFF',
+              letterSpacing: '-0.01em',
+            }}>
+              MONEY
             </span>
           </div>
 
@@ -115,10 +107,10 @@ const LoginPage: React.FC = () => {
             Advisory Platform
           </div>
 
-          {/* Quote / value prop */}
+          {/* Quote */}
           <div style={{
             paddingLeft: 16,
-            borderLeft: `3px solid rgba(196,153,58,0.50)`,
+            borderLeft: `3px solid rgba(204,26,26,0.55)`,
             marginBottom: 44,
           }}>
             <p style={{
@@ -136,19 +128,19 @@ const LoginPage: React.FC = () => {
           {/* Stats row */}
           <div style={{
             display: 'flex', gap: 0,
-            border: '1px solid rgba(196,153,58,0.18)',
-            background: 'rgba(196,153,58,0.04)',
+            border: '1px solid rgba(204,26,26,0.22)',
+            background: 'rgba(204,26,26,0.05)',
             marginBottom: 44,
           }}>
             {TRUST_STATS.map((s, i) => (
               <div key={s.label} style={{
                 flex: 1, padding: '18px 0', textAlign: 'center',
-                borderRight: i < 2 ? '1px solid rgba(196,153,58,0.14)' : 'none',
+                borderRight: i < 2 ? '1px solid rgba(204,26,26,0.14)' : 'none',
               }}>
                 <div style={{
                   fontFamily: '"Playfair Display", Georgia, serif',
                   fontWeight: 700, fontSize: 20,
-                  color: GOLD, lineHeight: 1,
+                  color: '#FF6B6B', lineHeight: 1,
                 }}>
                   {s.value}
                 </div>
@@ -175,12 +167,12 @@ const LoginPage: React.FC = () => {
             }}>
               <div style={{
                 width: 16, height: 16,
-                background: 'rgba(196,153,58,0.14)',
-                border: '1px solid rgba(196,153,58,0.28)',
+                background: 'rgba(204,26,26,0.14)',
+                border: '1px solid rgba(204,26,26,0.30)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <div style={{ width: 6, height: 1, background: GOLD }} />
+                <div style={{ width: 6, height: 1, background: '#FF6B6B' }} />
               </div>
               <span style={{
                 fontSize: 13, color: 'rgba(255,255,255,0.50)',
@@ -214,13 +206,13 @@ const LoginPage: React.FC = () => {
           <div style={{ marginBottom: 32 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: '#EBF0F7',
+              background: '#EEF2FF',
               padding: '4px 12px', marginBottom: 20,
-              borderLeft: `3px solid ${NAVY}`,
+              borderLeft: `3px solid ${BRAND_BLUE}`,
             }}>
-              <ShieldCheck size={12} color={NAVY} />
+              <ShieldCheck size={12} color={BRAND_BLUE} />
               <span style={{
-                color: NAVY, fontSize: 10.5, fontWeight: 700,
+                color: BRAND_BLUE, fontSize: 10.5, fontWeight: 700,
                 letterSpacing: '0.07em', textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif',
               }}>
@@ -231,7 +223,7 @@ const LoginPage: React.FC = () => {
             <h1 style={{
               fontFamily: '"Playfair Display", Georgia, serif',
               fontSize: '2rem', fontWeight: 700,
-              color: NAVY, letterSpacing: '-0.02em',
+              color: BRAND_BLUE, letterSpacing: '-0.02em',
               margin: '0 0 8px', lineHeight: 1.2,
             }}>
               Welcome back
@@ -256,8 +248,8 @@ const LoginPage: React.FC = () => {
                 marginBottom: 20,
                 borderRadius: 0,
                 border: 'none',
-                borderLeft: '3px solid #8B1A1A',
-                background: '#FEF2F2',
+                borderLeft: `3px solid ${BRAND_RED}`,
+                background: '#FFF0F0',
               }}
             />
           )}
@@ -306,10 +298,8 @@ const LoginPage: React.FC = () => {
             </Form.Item>
 
             <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 24,
+              display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', marginBottom: 24,
             }}>
               <Controller
                 name="remember"
@@ -325,7 +315,7 @@ const LoginPage: React.FC = () => {
                 )}
               />
               <a href="/forgot-password" style={{
-                color: NAVY, fontSize: 13, fontWeight: 600,
+                color: BRAND_BLUE, fontSize: 13, fontWeight: 600,
                 textDecoration: 'none', letterSpacing: '0.01em',
               }}>
                 Forgot password?
@@ -343,8 +333,8 @@ const LoginPage: React.FC = () => {
                 fontWeight: 700,
                 fontSize: 14,
                 letterSpacing: '0.03em',
-                background: NAVY,
-                border: `1px solid ${NAVY}`,
+                background: BRAND_BLUE,
+                borderColor: BRAND_BLUE,
                 boxShadow: 'none',
                 fontFamily: 'Inter, sans-serif',
               }}
@@ -359,7 +349,7 @@ const LoginPage: React.FC = () => {
               Don't have access?{' '}
               <a
                 href="mailto:admin@realmoneygroups.in"
-                style={{ color: NAVY, fontWeight: 600, textDecoration: 'none' }}
+                style={{ color: BRAND_BLUE, fontWeight: 600, textDecoration: 'none' }}
               >
                 Contact your administrator
               </a>
@@ -368,18 +358,14 @@ const LoginPage: React.FC = () => {
 
           {/* Compliance strip */}
           <div style={{
-            marginTop: 32,
-            paddingTop: 20,
+            marginTop: 32, paddingTop: 20,
             borderTop: '1px solid var(--surface-3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 24,
+            display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: 24,
           }}>
             {['ISO 27001', 'SOC 2 Type II', '256-bit TLS'].map(badge => (
               <span key={badge} style={{
-                fontSize: 10,
-                fontWeight: 700,
+                fontSize: 10, fontWeight: 700,
                 color: 'var(--text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',

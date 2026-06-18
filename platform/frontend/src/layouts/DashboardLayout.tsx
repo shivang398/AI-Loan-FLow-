@@ -11,33 +11,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 import { RootState } from '../store';
 import api from '../shared/services/apiClient';
+import { RealMoneyLogoWhite, RealMoneyMark } from '../shared/components/RealMoneyLogo';
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
 
 const MOBILE_BREAKPOINT = 768;
-
-/* Formal brand mark — "RM" typographic monogram */
-const BrandMark: React.FC<{ size?: number }> = ({ size = 40 }) => (
-  <div style={{
-    width: size, height: size,
-    background: 'rgba(196,153,58,0.10)',
-    border: '1px solid rgba(196,153,58,0.30)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  }}>
-    <span style={{
-      fontFamily: '"Playfair Display", Georgia, serif',
-      fontWeight: 700,
-      fontSize: size * 0.36,
-      color: '#C4993A',
-      letterSpacing: '-0.04em',
-      lineHeight: 1,
-    }}>
-      RM
-    </span>
-  </div>
-);
 
 const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed]             = useState(false);
@@ -194,33 +173,20 @@ const DashboardLayout: React.FC = () => {
         height: 72,
         display: 'flex',
         alignItems: 'center',
-        padding: collapsed && !isMobile ? '0 20px' : '0 24px',
-        gap: 14,
+        padding: collapsed && !isMobile ? '0 20px' : '0 18px',
+        gap: 0,
         borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
-        <BrandMark size={38} />
-        {(!collapsed || isMobile) && (
-          <div className="animate-fade-in">
-            <div style={{
-              fontFamily: '"Playfair Display", Georgia, serif',
-              fontWeight: 700, fontSize: 15,
-              color: '#FFFFFF',
-              letterSpacing: '-0.01em',
-              lineHeight: 1.15,
-            }}>
-              Real Money
-            </div>
-            <div style={{
-              color: 'rgba(255,255,255,0.28)',
-              fontSize: 9,
-              fontWeight: 600,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              marginTop: 2,
-              fontFamily: 'Inter, sans-serif',
-            }}>
-              Advisory Platform
-            </div>
+        {collapsed && !isMobile ? (
+          <RealMoneyMark size={38} id="sidebar-collapsed" />
+        ) : (
+          <div className="animate-fade-in" style={{ flex: 1, minWidth: 0 }}>
+            <RealMoneyLogoWhite
+              markSize={36}
+              fontSize={14}
+              subtitle="Advisory Platform"
+              id="sidebar-logo"
+            />
           </div>
         )}
         {isMobile && (
@@ -228,7 +194,7 @@ const DashboardLayout: React.FC = () => {
             type="text"
             icon={<X size={17} color="rgba(255,255,255,0.45)" />}
             onClick={() => setMobileDrawerOpen(false)}
-            style={{ marginLeft: 'auto', border: 'none', background: 'transparent' }}
+            style={{ marginLeft: 'auto', border: 'none', background: 'transparent', flexShrink: 0 }}
           />
         )}
       </div>
@@ -270,14 +236,14 @@ const DashboardLayout: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 34, height: 34,
-              background: 'rgba(196,153,58,0.14)',
-              border: '1px solid rgba(196,153,58,0.30)',
+              background: 'rgba(204,26,26,0.14)',
+              border: '1px solid rgba(204,26,26,0.30)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
+              flexShrink: 0, borderRadius: 2,
             }}>
               <span style={{
                 fontFamily: '"Playfair Display", serif',
-                fontWeight: 700, fontSize: 12, color: '#C4993A',
+                fontWeight: 700, fontSize: 12, color: '#FF6B6B',
               }}>
                 {initials}
               </span>
@@ -291,7 +257,7 @@ const DashboardLayout: React.FC = () => {
                 {displayName}
               </div>
               <div style={{
-                fontSize: 9, fontWeight: 700, color: '#C4993A',
+                fontSize: 9, fontWeight: 700, color: '#FF6B6B',
                 textTransform: 'uppercase', letterSpacing: '0.10em',
                 fontFamily: 'Inter, sans-serif',
               }}>
@@ -422,7 +388,7 @@ const DashboardLayout: React.FC = () => {
           {/* Right: notifications + user */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
             <Tooltip title="Notifications">
-              <Badge count={unreadCount} size="small" offset={[-4, 4]} color="var(--navy)">
+              <Badge count={unreadCount} size="small" offset={[-4, 4]} color="var(--rm-red)">
                 <Button
                   type="text"
                   icon={<Bell size={18} />}
@@ -449,7 +415,7 @@ const DashboardLayout: React.FC = () => {
                       type="text"
                       icon={<CheckCheck size={13} />}
                       onClick={markAllRead}
-                      style={{ fontSize: 12, color: 'var(--navy)', fontWeight: 600 }}
+                      style={{ fontSize: 12, color: 'var(--rm-blue)', fontWeight: 600 }}
                     >
                       Mark all read
                     </Button>
@@ -486,7 +452,7 @@ const DashboardLayout: React.FC = () => {
                         }}
                         style={{
                           padding: '14px 20px',
-                          background: n.read ? 'transparent' : 'var(--gold-pale)',
+                          background: n.read ? 'transparent' : 'var(--rm-red-light)',
                           borderBottom: '1px solid var(--surface-2)',
                           cursor: 'pointer',
                           transition: 'background 0.15s',
@@ -502,7 +468,7 @@ const DashboardLayout: React.FC = () => {
                               <span style={{
                                 width: 6, height: 6,
                                 borderRadius: '50%',
-                                background: 'var(--gold)',
+                                background: 'var(--rm-red)',
                                 flexShrink: 0, marginTop: 5,
                               }} />
                             )}
@@ -540,11 +506,11 @@ const DashboardLayout: React.FC = () => {
                 <Avatar
                   size={32}
                   style={{
-                    background: 'var(--navy)',
+                    background: 'var(--rm-blue)',
                     fontFamily: '"Playfair Display", serif',
                     fontWeight: 700,
                     fontSize: 12,
-                    color: '#C4993A',
+                    color: '#FF6B6B',
                   }}
                 >
                   {initials}
