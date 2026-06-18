@@ -1,23 +1,23 @@
 /* ─── Google Fonts ─── */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* ─── Landing Design Tokens ─── */
+/* ─── Landing Design Tokens — Real Money Brand ─── */
 :root {
-  --navy:        #0B1E3D;
-  --navy-mid:    #152E5A;
-  --navy-light:  #1E3E75;
-  --gold:        #C4993A;
-  --gold-light:  #D9B96A;
-  --gold-pale:   #FBF4E0;
+  --navy:        #0A1E6E;
+  --navy-mid:    #0D2A99;
+  --navy-light:  #1537C0;
+  --gold:        #CC1A1A;
+  --gold-light:  #E02828;
+  --gold-pale:   #FFF0F0;
   --white:       #FFFFFF;
-  --bg:          #F3F6FA;
-  --bg-alt:      #EAEFF6;
-  --border:      #D3DCE8;
-  --border-lite: #E8EDF5;
-  --text-1:      #0B1E3D;
-  --text-2:      #3A506B;
-  --text-3:      #7A90A8;
-  --red-brand:   #8B1A1A;
+  --bg:          #F5F7FC;
+  --bg-alt:      #EEF2FF;
+  --border:      #CDD4EC;
+  --border-lite: #E4E9F7;
+  --text-1:      #0A1E6E;
+  --text-2:      #3A4F80;
+  --text-3:      #7A8FB0;
+  --red-brand:   #CC1A1A;
   --success:     #1A7A4A;
 }
 
@@ -36,7 +36,7 @@ html { scroll-behavior: smooth; }
   gap: 8px;
   padding: 5px 14px;
   background: var(--gold-pale);
-  border: 1px solid rgba(196, 153, 58, 0.28);
+  border: 1px solid rgba(204, 26, 26, 0.22);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -125,14 +125,14 @@ html { scroll-behavior: smooth; }
   margin: 0;
 }
 
-/* ─── Gold shimmer on stat numbers ─── */
+/* ─── Brand red shimmer on stat numbers ─── */
 @keyframes shimmer-gold {
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
 
 .gold-number {
-  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 40%, var(--gold) 80%);
+  background: linear-gradient(90deg, #CC1A1A 0%, #E02828 40%, #CC1A1A 80%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

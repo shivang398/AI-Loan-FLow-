@@ -5,60 +5,64 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Formal Corporate Finance (Navy × Gold)
+   DESIGN TOKENS — Real Money Brand (Royal Blue × Red)
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* ── Brand ── */
-  --navy:          #0B1E3D;
-  --navy-mid:      #152E5A;
-  --navy-light:    #1E3E75;
-  --gold:          #C4993A;
-  --gold-light:    #D9B96A;
-  --gold-pale:     #FBF4E0;
+  /* ── Brand Blue (from logo) ── */
+  --navy:          #0A1E6E;
+  --navy-mid:      #0D2A99;
+  --navy-light:    #1537C0;
+
+  /* ── Brand Red (from logo — replaces gold accent) ── */
+  --gold:          #CC1A1A;
+  --gold-light:    #E02828;
+  --gold-pale:     #FFF0F0;
   --white:         #FFFFFF;
 
-  /* ── Legacy aliases kept so existing dashboard JSX compiles ── */
-  --rm-red:        #8B1A1A;
-  --rm-red-dark:   #6E1414;
-  --rm-red-light:  #F5EAEA;
-  --rm-blue:       #0B1E3D;
-  --rm-blue-dark:  #071432;
-  --rm-blue-light: #E3EAF5;
-  --rm-navy:       #071432;
-  --rm-gradient:   linear-gradient(135deg, #0B1E3D 0%, #152E5A 100%);
-  --rm-gradient-h: linear-gradient(90deg, #0B1E3D 0%, #1E3E75 100%);
+  /* ── Brand palette ── */
+  --rm-red:        #CC1A1A;
+  --rm-red-dark:   #A51414;
+  --rm-red-mid:    #E02828;
+  --rm-red-light:  #FFF0F0;
+  --rm-blue:       #0B2DA4;
+  --rm-blue-dark:  #071F7A;
+  --rm-blue-mid:   #1537C0;
+  --rm-blue-light: #EEF2FF;
+  --rm-navy:       #0A1E6E;
+  --rm-gradient:   linear-gradient(135deg, #0A1E6E 0%, #0D2A99 100%);
+  --rm-gradient-h: linear-gradient(90deg, #0A1E6E 0%, #1537C0 100%);
 
-  --brand-50:      #EBF0F7;
-  --brand-100:     #C5D3E8;
-  --brand-400:     #4A6FA5;
-  --brand-500:     #0B1E3D;
-  --brand-600:     #0A1A35;
-  --brand-700:     #071228;
+  --brand-50:      #EEF2FF;
+  --brand-100:     #C7D2F8;
+  --brand-400:     #4A6FD4;
+  --brand-500:     #0B2DA4;
+  --brand-600:     #0A1E6E;
+  --brand-700:     #071550;
 
-  /* ── Surfaces (warm white) ── */
+  /* ── Surfaces (clean white) ── */
   --surface-0:     #FFFFFF;
-  --surface-1:     #F5F4F1;
-  --surface-2:     #EBE8E3;
-  --surface-3:     #D3CCC2;
+  --surface-1:     #F5F7FC;
+  --surface-2:     #E8ECF7;
+  --surface-3:     #CDD4EC;
 
   /* ── Text ── */
-  --text-primary:   #0B1E3D;
-  --text-secondary: #3A506B;
-  --text-muted:     #7A90A8;
+  --text-primary:   #0A1E6E;
+  --text-secondary: #3A4F80;
+  --text-muted:     #7A8FB0;
 
   /* ── Sidebar ── */
-  --sidebar-bg:      #0B1E3D;
+  --sidebar-bg:      #0A1E6E;
   --sidebar-surface: rgba(255, 255, 255, 0.03);
   --sidebar-border:  rgba(255, 255, 255, 0.07);
   --sidebar-hover:   rgba(255, 255, 255, 0.05);
-  --sidebar-active:  rgba(196, 153, 58, 0.10);
+  --sidebar-active:  rgba(204, 26, 26, 0.10);
 
-  /* ── Shadows (warm, subtle) ── */
-  --shadow-sm: 0 1px 3px rgba(11, 30, 61, 0.06), 0 1px 2px rgba(11, 30, 61, 0.04);
-  --shadow-md: 0 3px 10px rgba(11, 30, 61, 0.08), 0 1px 4px rgba(11, 30, 61, 0.05);
-  --shadow-lg: 0 8px 24px rgba(11, 30, 61, 0.10), 0 3px 8px rgba(11, 30, 61, 0.06);
-  --shadow-xl: 0 16px 48px rgba(11, 30, 61, 0.12), 0 6px 16px rgba(11, 30, 61, 0.07);
-  --shadow-glow: 0 0 0 3px rgba(11, 30, 61, 0.12);
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 3px rgba(10, 30, 110, 0.06), 0 1px 2px rgba(10, 30, 110, 0.04);
+  --shadow-md: 0 3px 10px rgba(10, 30, 110, 0.08), 0 1px 4px rgba(10, 30, 110, 0.05);
+  --shadow-lg: 0 8px 24px rgba(10, 30, 110, 0.10), 0 3px 8px rgba(10, 30, 110, 0.06);
+  --shadow-xl: 0 16px 48px rgba(10, 30, 110, 0.12), 0 6px 16px rgba(10, 30, 110, 0.07);
+  --shadow-glow: 0 0 0 3px rgba(10, 30, 110, 0.12);
 
   /* ── Radius (minimal — formal) ── */
   --radius-sm:  2px;
@@ -130,13 +134,13 @@ body {
 .pro-sider .ant-menu-item:hover {
   background: var(--sidebar-hover) !important;
   color: rgba(255, 255, 255, 0.82) !important;
-  border-left-color: rgba(196, 153, 58, 0.35) !important;
+  border-left-color: rgba(204, 26, 26, 0.40) !important;
 }
 
 .pro-sider .ant-menu-item-selected {
   background: var(--sidebar-active) !important;
-  color: var(--gold) !important;
-  border-left: 3px solid var(--gold) !important;
+  color: #FF4D4D !important;
+  border-left: 3px solid var(--rm-red) !important;
   font-weight: 600 !important;
 }
 
@@ -287,20 +291,20 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(196, 153, 58, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(196, 153, 58, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(204, 26, 26, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(204, 26, 26, 0.06) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
 }
 
-/* Gold bottom accent line */
+/* Red accent line matching logo */
 .login-page-illustration::after {
   content: '';
   position: absolute;
   top: 0; left: 0;
   width: 3px; height: 100%;
-  background: linear-gradient(180deg, transparent, var(--gold) 30%, var(--gold) 70%, transparent);
-  opacity: 0.4;
+  background: linear-gradient(180deg, transparent, var(--rm-red) 30%, var(--rm-red) 70%, transparent);
+  opacity: 0.5;
 }
 
 .login-form-panel {
@@ -323,10 +327,10 @@ body {
    ANT DESIGN OVERRIDES
    ═══════════════════════════════════════════════════════════════ */
 
-/* Primary Button — solid navy, no gradient */
+/* Primary Button — brand blue */
 .ant-btn-primary {
-  background: var(--navy) !important;
-  border-color: var(--navy) !important;
+  background: var(--rm-blue) !important;
+  border-color: var(--rm-blue) !important;
   font-weight: 600 !important;
   letter-spacing: 0.02em !important;
   box-shadow: none !important;
@@ -335,14 +339,14 @@ body {
 }
 
 .ant-btn-primary:hover {
-  background: var(--navy-mid) !important;
-  border-color: var(--navy-mid) !important;
+  background: var(--rm-blue-mid) !important;
+  border-color: var(--rm-blue-mid) !important;
   box-shadow: none !important;
   transform: none !important;
 }
 
 .ant-btn-primary:active {
-  background: var(--navy) !important;
+  background: var(--rm-blue-dark) !important;
 }
 
 /* Inputs */
@@ -357,9 +361,9 @@ body {
 .ant-input:focus,
 .ant-input-affix-wrapper:focus,
 .ant-input-affix-wrapper-focused {
-  border-color: var(--navy) !important;
+  border-color: var(--rm-blue) !important;
   background: white !important;
-  box-shadow: 0 0 0 2px rgba(11, 30, 61, 0.10) !important;
+  box-shadow: 0 0 0 2px rgba(11, 45, 164, 0.10) !important;
 }
 
 /* Select */
@@ -370,8 +374,8 @@ body {
 }
 
 .ant-select-focused .ant-select-selector {
-  border-color: var(--navy) !important;
-  box-shadow: 0 0 0 2px rgba(11, 30, 61, 0.10) !important;
+  border-color: var(--rm-blue) !important;
+  box-shadow: 0 0 0 2px rgba(11, 45, 164, 0.10) !important;
 }
 
 /* Tables */
@@ -463,12 +467,12 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    STATUS BADGES
    ═══════════════════════════════════════════════════════════════ */
-.badge-blue   { background: #EEF4FF; color: #1A3A6B; }
+.badge-blue   { background: #EEF2FF; color: #0B2DA4; }
 .badge-green  { background: #F0FAF4; color: #1A7A4A; }
 .badge-amber  { background: #FBF4E0; color: #8A6020; }
-.badge-red    { background: #FEF2F2; color: #8B1A1A; }
+.badge-red    { background: #FFF0F0; color: #CC1A1A; }
 .badge-purple { background: #F5F0FF; color: #5B2D9E; }
-.badge-indigo { background: #EEF0F8; color: #2D3A8C; }
+.badge-indigo { background: #EEF0F8; color: #0B2DA4; }
 
 /* ═══════════════════════════════════════════════════════════════
    ANIMATIONS
