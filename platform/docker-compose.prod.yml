@@ -55,7 +55,8 @@ services:
           memory: 256M
 
   # ── Backend (Node.js / Express) ─────────────────────────────────────────────
-  # Connects to RDS MySQL (URLs in backend/.env), Redis and RabbitMQ via Docker network.
+  # Connects to RDS MySQL (URLs built from RDS_HOST/RDS_USER/RDS_PASS in .env),
+  # Redis and RabbitMQ via Docker network.
   # Health endpoint: GET /health
   backend:
     image: ${ECR_REGISTRY:-realmoney}/backend:${APP_VERSION:-latest}
@@ -72,6 +73,13 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost}"
+      # RDS DATABASE_URLs — overrides the localhost values in backend/.env
+      AUTH_DATABASE_URL:      "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_auth"
+      LOAN_DATABASE_URL:      "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_loan_core"
+      CUSTOMER_DATABASE_URL:  "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_customer_docs"
+      SALESOPS_DATABASE_URL:  "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_sales_ops"
+      COMMS_DATABASE_URL:     "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_communications"
+      ANALYTICS_DATABASE_URL: "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_analytics_reporting"
     depends_on:
       rabbitmq:
         condition: service_healthy
