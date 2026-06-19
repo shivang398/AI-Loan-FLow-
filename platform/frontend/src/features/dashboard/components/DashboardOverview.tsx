@@ -43,13 +43,13 @@ const HEALTH_PROXIES: Record<number, string> = {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-        <p style={{ fontWeight: 700, color: '#0f172a', margin: '0 0 8px', fontSize: 13 }}>{label}</p>
+      <div style={{ background: 'var(--surface-0)', border: '1px solid var(--surface-3)', padding: '10px 14px', boxShadow: 'var(--shadow-md)', fontFamily: 'Inter, sans-serif' }}>
+        <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: 12 }}>{label}</p>
         {payload.map((p: any) => (
-          <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color }} />
-            <span style={{ color: '#64748b' }}>{p.name}:</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{p.value}</span>
+          <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5 }}>
+            <div style={{ width: 8, height: 8, background: p.color }} />
+            <span style={{ color: 'var(--text-muted)' }}>{p.name}:</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{p.value}</span>
           </div>
         ))}
       </div>
@@ -156,9 +156,9 @@ const DashboardOverview: React.FC = () => {
       trend: approvedLoans > 0 ? `${approvedLoans} approved` : 'No data yet',
       up: true,
       icon: FileText,
-      iconBg: 'linear-gradient(135deg, #dbeafe, #bfdbfe)',
-      iconColor: '#2563eb',
-      accent: 'linear-gradient(90deg, #3b82f6, #2563eb)',
+      iconBg: 'var(--rm-blue-light)',
+      iconColor: '#0B2DA4',
+      accent: 'linear-gradient(90deg, #0B2DA4, #0A1E6E)',
     },
     {
       label: 'Active Partners',
@@ -166,9 +166,9 @@ const DashboardOverview: React.FC = () => {
       trend: `${connectors.length} total onboarded`,
       up: true,
       icon: Users,
-      iconBg: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-      iconColor: '#7c3aed',
-      accent: 'linear-gradient(90deg, #8b5cf6, #6d28d9)',
+      iconBg: '#EEF2FF',
+      iconColor: '#1537C0',
+      accent: 'linear-gradient(90deg, #1537C0, #0B2DA4)',
     },
     {
       label: 'Disbursed Amount',
@@ -176,9 +176,9 @@ const DashboardOverview: React.FC = () => {
       trend: totalDisbursed > 0 ? `${approvedLoans} disbursals` : 'No disbursals yet',
       up: true,
       icon: IndianRupee,
-      iconBg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
-      iconColor: '#059669',
-      accent: 'linear-gradient(90deg, #10b981, #059669)',
+      iconBg: '#F0FAF4',
+      iconColor: '#1A7A4A',
+      accent: 'linear-gradient(90deg, #1A7A4A, #155F3A)',
     },
     {
       label: 'Pending Review',
@@ -186,9 +186,9 @@ const DashboardOverview: React.FC = () => {
       trend: totalLoans > 0 ? `of ${totalLoans} total` : 'No applications',
       up: pendingLoans === 0,
       icon: Clock,
-      iconBg: 'linear-gradient(135deg, #ffedd5, #fed7aa)',
-      iconColor: '#c2410c',
-      accent: 'linear-gradient(90deg, #f97316, #ea580c)',
+      iconBg: '#FFF0F0',
+      iconColor: '#CC1A1A',
+      accent: 'linear-gradient(90deg, #CC1A1A, #A51414)',
     },
   ];
 
@@ -206,13 +206,13 @@ const DashboardOverview: React.FC = () => {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
               onClick={() => { loadData(); checkServiceHealth(); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#475569' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: '1px solid var(--surface-3)', background: 'var(--surface-0)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', borderRadius: 2 }}
             >
-              <RefreshCw size={14} /> Refresh
+              <RefreshCw size={13} /> Refresh
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: '#f0fdf4', borderRadius: 100, border: '1px solid #bbf7d0' }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>Live</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', background: '#F0FAF4', border: '1px solid #A3D9B8' }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1A7A4A' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#1A7A4A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Live</span>
             </div>
           </div>
         </div>
@@ -249,11 +249,11 @@ const DashboardOverview: React.FC = () => {
           <Row gutter={[20, 20]}>
             {/* Area Chart — real weekly loan data */}
             <Col xs={24} lg={16}>
-              <div className="pro-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24 }}>
+              <div className="pro-card" style={{ padding: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>Application Trends</div>
-                    <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>Daily applications vs disbursements · last 7 days</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.01em' }}>Application Trends</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'Inter, sans-serif' }}>Daily applications vs disbursements · last 7 days</div>
                   </div>
                 </div>
                 <div style={{ height: 300, minHeight: 300 }}>
@@ -262,21 +262,21 @@ const DashboardOverview: React.FC = () => {
                       <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="gApps" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#0B2DA4" stopOpacity={0.12} />
+                            <stop offset="95%" stopColor="#0B2DA4" stopOpacity={0} />
                           </linearGradient>
                           <linearGradient id="gDisb" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#1A7A4A" stopOpacity={0.12} />
+                            <stop offset="95%" stopColor="#1A7A4A" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} allowDecimals={false} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--surface-2)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#7A8FB0', fontSize: 11, fontWeight: 500 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#7A8FB0', fontSize: 11 }} allowDecimals={false} />
                         <Tooltip content={<CustomTooltip />} />
-                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
-                        <Area type="monotone" dataKey="applications" name="Applications" stroke="#3b82f6" strokeWidth={2.5} fill="url(#gApps)" dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
-                        <Area type="monotone" dataKey="disbursed" name="Disbursed" stroke="#10b981" strokeWidth={2.5} fill="url(#gDisb)" dot={false} activeDot={{ r: 5, strokeWidth: 0 }} />
+                        <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
+                        <Area type="monotone" dataKey="applications" name="Applications" stroke="#0B2DA4" strokeWidth={2} fill="url(#gApps)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                        <Area type="monotone" dataKey="disbursed" name="Disbursed" stroke="#1A7A4A" strokeWidth={2} fill="url(#gDisb)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
@@ -290,37 +290,37 @@ const DashboardOverview: React.FC = () => {
 
             {/* Service Health Panel */}
             <Col xs={24} lg={8}>
-              <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24, height: '100%' }}>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 4 }}>System Health</div>
-                <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>
+              <div className="pro-card" style={{ padding: 20, height: '100%' }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.01em', marginBottom: 3 }}>System Health</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, fontFamily: 'Inter, sans-serif' }}>
                   {checkedServices > 0
-                    ? <span><span style={{ color: '#16a34a', fontWeight: 700 }}>{upServices}</span> UP · <span style={{ color: downServices > 0 ? '#dc2626' : '#94a3b8', fontWeight: 700 }}>{downServices}</span> DOWN</span>
+                    ? <span><span style={{ color: '#1A7A4A', fontWeight: 700 }}>{upServices}</span> UP &nbsp;·&nbsp; <span style={{ color: downServices > 0 ? '#CC1A1A' : 'var(--text-muted)', fontWeight: 700 }}>{downServices}</span> DOWN</span>
                     : 'Checking services…'}
                 </div>
 
-                {/* RabbitMQ special row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 8, background: '#f0fdf4', marginBottom: 8, border: '1px solid #bbf7d0' }}>
+                {/* RabbitMQ */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: '#F0FAF4', marginBottom: 6, border: '1px solid #A3D9B8' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 5px #22c55e' }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>RabbitMQ</span>
-                    <span style={{ fontSize: 10, color: '#64748b', fontWeight: 500 }}>:5673</span>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1A7A4A' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>RabbitMQ</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>:5673</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a' }}>UP</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#1A7A4A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>UP</span>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 280, overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 280, overflowY: 'auto' }}>
                   {SERVICES.map(svc => {
                     const status = serviceHealth[svc.port];
                     const isUp = status === true;
                     const isDown = status === false;
                     return (
-                      <div key={svc.port} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 8, background: isDown ? '#fef2f2' : '#f8fafc' }}>
+                      <div key={svc.port} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: isDown ? '#FFF0F0' : 'var(--surface-1)', borderBottom: '1px solid var(--surface-2)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {isUp ? <CheckCircle2 size={13} color="#16a34a" /> : isDown ? <XCircle size={13} color="#dc2626" /> : <AlertCircle size={13} color="#f59e0b" />}
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{svc.name}</span>
-                          <span style={{ fontSize: 10, color: '#94a3b8' }}>:{svc.port}</span>
+                          {isUp ? <CheckCircle2 size={12} color="#1A7A4A" /> : isDown ? <XCircle size={12} color="#CC1A1A" /> : <AlertCircle size={12} color="#8A6020" />}
+                          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{svc.name}</span>
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>:{svc.port}</span>
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: isUp ? '#16a34a' : isDown ? '#dc2626' : '#f59e0b' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: isUp ? '#1A7A4A' : isDown ? '#CC1A1A' : '#8A6020', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {status === null ? '…' : isUp ? 'UP' : 'DOWN'}
                         </span>
                       </div>
@@ -332,19 +332,19 @@ const DashboardOverview: React.FC = () => {
           </Row>
 
           {/* Recent Applications */}
-          <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 20, padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--surface-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>Recent Applications</div>
-                <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>Latest loan application activity</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.01em' }}>Recent Applications</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'Inter, sans-serif' }}>Latest loan application activity</div>
               </div>
             </div>
 
             {recentLoans.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr', padding: '10px 16px', background: '#f8fafc', borderRadius: 10, marginBottom: 4 }}>
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr', padding: '9px 20px', background: 'var(--surface-1)', borderBottom: '1px solid var(--surface-3)' }}>
                   {['Application ID', 'Applicant', 'Amount', 'Status', 'Date'].map(h => (
-                    <span key={h} style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</span>
+                    <span key={h} style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Inter, sans-serif' }}>{h}</span>
                   ))}
                 </div>
                 {recentLoans.map((loan, idx) => {
@@ -353,24 +353,26 @@ const DashboardOverview: React.FC = () => {
                   const amt = loan.loanAmount || loan.amount || 0;
                   const date = loan.createdAt ? new Date(loan.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—';
                   return (
-                    <div key={loan.id || idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr', padding: '14px 16px', borderRadius: 10, cursor: 'pointer', transition: 'background 150ms' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    <div key={loan.id || idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr', padding: '13px 20px', borderBottom: '1px solid var(--surface-2)', cursor: 'pointer', transition: 'background 120ms' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-1)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      <span style={{ fontWeight: 600, fontSize: 12, color: '#1d4ed8', fontFamily: 'monospace' }}>{String(loan.id || '').slice(0, 8).toUpperCase()}</span>
-                      <span style={{ fontWeight: 500, fontSize: 13, color: '#334155' }}>{name}</span>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>₹{(amt / 100000).toFixed(1)}L</span>
+                      <span style={{ fontWeight: 600, fontSize: 11.5, color: '#0B2DA4', fontFamily: 'monospace' }}>{String(loan.id || '').slice(0, 8).toUpperCase()}</span>
+                      <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{name}</span>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>₹{(amt / 100000).toFixed(1)}L</span>
                       <div>
-                        <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 100, background: bg, color, fontSize: 11, fontWeight: 700 }}>
+                        <span style={{ display: 'inline-flex', padding: '3px 10px', background: bg, color, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>
                           {loan.status || 'PENDING'}
                         </span>
                       </div>
-                      <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{date}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{date}</span>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span style={{ color: '#94a3b8', fontSize: 13 }}>No loan applications yet. They will appear here once channel partners submit cases.</span>} />
+              <div style={{ padding: 40 }}>
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span style={{ color: 'var(--text-muted)', fontSize: 13 }}>No loan applications yet. They will appear here once channel partners submit cases.</span>} />
+              </div>
             )}
           </div>
         </>
