@@ -73,7 +73,11 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost}"
-      # CIBIL / Tenacio CRIF API — loaded from env_file: ./backend/.env (gitignored on EC2)
+      # CIBIL / Tenacio CRIF API — values come from platform/.env (gitignored)
+      TENACIO_CRIF_URL: "${TENACIO_CRIF_URL}"
+      TENACIO_CRIF_CLIENT_ID: "${TENACIO_CRIF_CLIENT_ID}"
+      TENACIO_CRIF_API_KEY: "${TENACIO_CRIF_API_KEY}"
+      TENACIO_CRIF_WORKFLOW_ID: "${TENACIO_CRIF_WORKFLOW_ID}"
       # RDS DATABASE_URLs — overrides the localhost values in backend/.env
       # ssl=true required: ab_real_money_usr uses sha256_password plugin which needs SSL
       AUTH_DATABASE_URL:      "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_auth?ssl=true"
