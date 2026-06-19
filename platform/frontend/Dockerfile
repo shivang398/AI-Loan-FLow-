@@ -38,6 +38,6 @@ COPY --from=builder /app/dist .
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost/index.html || exit 1
 
-EXPOSE 8080
+EXPOSE 8080 8443
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

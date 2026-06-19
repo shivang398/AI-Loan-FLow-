@@ -31,11 +31,27 @@ http {
     # Use dynamic resolver so hostnames are resolved at request time, not startup
     resolver ${NAMESERVER} valid=30s ipv6=off;
 
+    # ── HTTP → HTTPS redirect ────────────────────────────────────────────────
     server {
         listen ${PORT};
-        server_name _;
+        server_name ${DOMAIN} www.${DOMAIN};
+        return 301 https://$host$request_uri;
+    }
+
+    # ── HTTPS ────────────────────────────────────────────────────────────────
+    server {
+        listen ${HTTPS_PORT} ssl;
+        server_name ${DOMAIN} www.${DOMAIN};
         root /usr/share/nginx/html;
         index index.html;
+
+        ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+        ssl_protocols       TLSv1.2 TLSv1.3;
+        ssl_ciphers         HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+        ssl_session_cache   shared:SSL:10m;
+        ssl_session_timeout 10m;
 
         gzip on;
         gzip_vary on;
@@ -97,8 +113,6 @@ http {
         }
 
         # All API calls — strip /api prefix and forward to backend.
-        # Using rewrite+proxy_pass (no URI in proxy_pass) avoids nginx bug
-        # where $variable in proxy_pass suppresses URI substitution.
         location /api/ {
             set $backend "${AUTH_SERVICE_URL}";
             rewrite ^/api/(.*) /$1 break;
