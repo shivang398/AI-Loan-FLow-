@@ -24,6 +24,8 @@ RUN npm run prisma:generate
 COPY --from=builder /app/dist ./dist
 # Place generated clients where compiled JS expects them (dist/generated/)
 RUN mkdir -p dist/generated && cp -r src/generated/. dist/generated/
+COPY start.sh ./start.sh
+RUN chmod +x start.sh
 
 EXPOSE 8080
-CMD ["node", "dist/server.js"]
+CMD ["sh", "start.sh"]
