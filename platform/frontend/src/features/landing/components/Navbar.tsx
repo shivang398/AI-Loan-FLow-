@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Drawer, Button } from 'antd';
 import { Menu, X, LogIn, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { RealMoneyLogo, RealMoneyMark } from '../../../shared/components/RealMoneyLogo';
+import { RealMoneyLogo } from '../../../shared/components/RealMoneyLogo';
 import '../styles/landing.css';
 
 const BRAND_BLUE = '#0B2DA4';
