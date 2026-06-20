@@ -53,6 +53,11 @@ export type PolicyDocument = $Result.DefaultSelection<Prisma.$PolicyDocumentPayl
  * 
  */
 export type AuditLog = $Result.DefaultSelection<Prisma.$AuditLogPayload>
+/**
+ * Model CibilCheck
+ * 
+ */
+export type CibilCheck = $Result.DefaultSelection<Prisma.$CibilCheckPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -256,6 +261,16 @@ export class PrismaClient<
     * ```
     */
   get auditLog(): Prisma.AuditLogDelegate<ExtArgs>;
+
+  /**
+   * `prisma.cibilCheck`: Exposes CRUD operations for the **CibilCheck** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CibilChecks
+    * const cibilChecks = await prisma.cibilCheck.findMany()
+    * ```
+    */
+  get cibilCheck(): Prisma.CibilCheckDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -704,7 +719,8 @@ export namespace Prisma {
     BankPolicy: 'BankPolicy',
     PolicyRule: 'PolicyRule',
     PolicyDocument: 'PolicyDocument',
-    AuditLog: 'AuditLog'
+    AuditLog: 'AuditLog',
+    CibilCheck: 'CibilCheck'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -720,7 +736,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "loanApplication" | "applicationStatusHistory" | "eligibilityRule" | "eligibilitySubmission" | "bankPolicy" | "policyRule" | "policyDocument" | "auditLog"
+      modelProps: "loanApplication" | "applicationStatusHistory" | "eligibilityRule" | "eligibilitySubmission" | "bankPolicy" | "policyRule" | "policyDocument" | "auditLog" | "cibilCheck"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1249,6 +1265,72 @@ export namespace Prisma {
           count: {
             args: Prisma.AuditLogCountArgs<ExtArgs>
             result: $Utils.Optional<AuditLogCountAggregateOutputType> | number
+          }
+        }
+      }
+      CibilCheck: {
+        payload: Prisma.$CibilCheckPayload<ExtArgs>
+        fields: Prisma.CibilCheckFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CibilCheckFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CibilCheckFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>
+          }
+          findFirst: {
+            args: Prisma.CibilCheckFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CibilCheckFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>
+          }
+          findMany: {
+            args: Prisma.CibilCheckFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>[]
+          }
+          create: {
+            args: Prisma.CibilCheckCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>
+          }
+          createMany: {
+            args: Prisma.CibilCheckCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CibilCheckDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>
+          }
+          update: {
+            args: Prisma.CibilCheckUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>
+          }
+          deleteMany: {
+            args: Prisma.CibilCheckDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CibilCheckUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CibilCheckUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CibilCheckPayload>
+          }
+          aggregate: {
+            args: Prisma.CibilCheckAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCibilCheck>
+          }
+          groupBy: {
+            args: Prisma.CibilCheckGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CibilCheckGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CibilCheckCountArgs<ExtArgs>
+            result: $Utils.Optional<CibilCheckCountAggregateOutputType> | number
           }
         }
       }
@@ -8908,6 +8990,916 @@ export namespace Prisma {
 
 
   /**
+   * Model CibilCheck
+   */
+
+  export type AggregateCibilCheck = {
+    _count: CibilCheckCountAggregateOutputType | null
+    _avg: CibilCheckAvgAggregateOutputType | null
+    _sum: CibilCheckSumAggregateOutputType | null
+    _min: CibilCheckMinAggregateOutputType | null
+    _max: CibilCheckMaxAggregateOutputType | null
+  }
+
+  export type CibilCheckAvgAggregateOutputType = {
+    cibilScore: number | null
+  }
+
+  export type CibilCheckSumAggregateOutputType = {
+    cibilScore: number | null
+  }
+
+  export type CibilCheckMinAggregateOutputType = {
+    id: string | null
+    requestedBy: string | null
+    fullName: string | null
+    mobileNumber: string | null
+    panNumber: string | null
+    cibilScore: number | null
+    scoreBand: string | null
+    demoMode: boolean | null
+    createdAt: Date | null
+  }
+
+  export type CibilCheckMaxAggregateOutputType = {
+    id: string | null
+    requestedBy: string | null
+    fullName: string | null
+    mobileNumber: string | null
+    panNumber: string | null
+    cibilScore: number | null
+    scoreBand: string | null
+    demoMode: boolean | null
+    createdAt: Date | null
+  }
+
+  export type CibilCheckCountAggregateOutputType = {
+    id: number
+    requestedBy: number
+    fullName: number
+    mobileNumber: number
+    panNumber: number
+    cibilScore: number
+    scoreBand: number
+    demoMode: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CibilCheckAvgAggregateInputType = {
+    cibilScore?: true
+  }
+
+  export type CibilCheckSumAggregateInputType = {
+    cibilScore?: true
+  }
+
+  export type CibilCheckMinAggregateInputType = {
+    id?: true
+    requestedBy?: true
+    fullName?: true
+    mobileNumber?: true
+    panNumber?: true
+    cibilScore?: true
+    scoreBand?: true
+    demoMode?: true
+    createdAt?: true
+  }
+
+  export type CibilCheckMaxAggregateInputType = {
+    id?: true
+    requestedBy?: true
+    fullName?: true
+    mobileNumber?: true
+    panNumber?: true
+    cibilScore?: true
+    scoreBand?: true
+    demoMode?: true
+    createdAt?: true
+  }
+
+  export type CibilCheckCountAggregateInputType = {
+    id?: true
+    requestedBy?: true
+    fullName?: true
+    mobileNumber?: true
+    panNumber?: true
+    cibilScore?: true
+    scoreBand?: true
+    demoMode?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CibilCheckAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CibilCheck to aggregate.
+     */
+    where?: CibilCheckWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CibilChecks to fetch.
+     */
+    orderBy?: CibilCheckOrderByWithRelationInput | CibilCheckOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CibilCheckWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CibilChecks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CibilChecks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CibilChecks
+    **/
+    _count?: true | CibilCheckCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CibilCheckAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CibilCheckSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CibilCheckMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CibilCheckMaxAggregateInputType
+  }
+
+  export type GetCibilCheckAggregateType<T extends CibilCheckAggregateArgs> = {
+        [P in keyof T & keyof AggregateCibilCheck]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCibilCheck[P]>
+      : GetScalarType<T[P], AggregateCibilCheck[P]>
+  }
+
+
+
+
+  export type CibilCheckGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CibilCheckWhereInput
+    orderBy?: CibilCheckOrderByWithAggregationInput | CibilCheckOrderByWithAggregationInput[]
+    by: CibilCheckScalarFieldEnum[] | CibilCheckScalarFieldEnum
+    having?: CibilCheckScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CibilCheckCountAggregateInputType | true
+    _avg?: CibilCheckAvgAggregateInputType
+    _sum?: CibilCheckSumAggregateInputType
+    _min?: CibilCheckMinAggregateInputType
+    _max?: CibilCheckMaxAggregateInputType
+  }
+
+  export type CibilCheckGroupByOutputType = {
+    id: string
+    requestedBy: string
+    fullName: string
+    mobileNumber: string
+    panNumber: string | null
+    cibilScore: number
+    scoreBand: string
+    demoMode: boolean
+    createdAt: Date
+    _count: CibilCheckCountAggregateOutputType | null
+    _avg: CibilCheckAvgAggregateOutputType | null
+    _sum: CibilCheckSumAggregateOutputType | null
+    _min: CibilCheckMinAggregateOutputType | null
+    _max: CibilCheckMaxAggregateOutputType | null
+  }
+
+  type GetCibilCheckGroupByPayload<T extends CibilCheckGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CibilCheckGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CibilCheckGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CibilCheckGroupByOutputType[P]>
+            : GetScalarType<T[P], CibilCheckGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CibilCheckSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    requestedBy?: boolean
+    fullName?: boolean
+    mobileNumber?: boolean
+    panNumber?: boolean
+    cibilScore?: boolean
+    scoreBand?: boolean
+    demoMode?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["cibilCheck"]>
+
+
+  export type CibilCheckSelectScalar = {
+    id?: boolean
+    requestedBy?: boolean
+    fullName?: boolean
+    mobileNumber?: boolean
+    panNumber?: boolean
+    cibilScore?: boolean
+    scoreBand?: boolean
+    demoMode?: boolean
+    createdAt?: boolean
+  }
+
+
+  export type $CibilCheckPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CibilCheck"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      requestedBy: string
+      fullName: string
+      mobileNumber: string
+      panNumber: string | null
+      cibilScore: number
+      scoreBand: string
+      demoMode: boolean
+      createdAt: Date
+    }, ExtArgs["result"]["cibilCheck"]>
+    composites: {}
+  }
+
+  type CibilCheckGetPayload<S extends boolean | null | undefined | CibilCheckDefaultArgs> = $Result.GetResult<Prisma.$CibilCheckPayload, S>
+
+  type CibilCheckCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CibilCheckFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CibilCheckCountAggregateInputType | true
+    }
+
+  export interface CibilCheckDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CibilCheck'], meta: { name: 'CibilCheck' } }
+    /**
+     * Find zero or one CibilCheck that matches the filter.
+     * @param {CibilCheckFindUniqueArgs} args - Arguments to find a CibilCheck
+     * @example
+     * // Get one CibilCheck
+     * const cibilCheck = await prisma.cibilCheck.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CibilCheckFindUniqueArgs>(args: SelectSubset<T, CibilCheckFindUniqueArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CibilCheck that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CibilCheckFindUniqueOrThrowArgs} args - Arguments to find a CibilCheck
+     * @example
+     * // Get one CibilCheck
+     * const cibilCheck = await prisma.cibilCheck.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CibilCheckFindUniqueOrThrowArgs>(args: SelectSubset<T, CibilCheckFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CibilCheck that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckFindFirstArgs} args - Arguments to find a CibilCheck
+     * @example
+     * // Get one CibilCheck
+     * const cibilCheck = await prisma.cibilCheck.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CibilCheckFindFirstArgs>(args?: SelectSubset<T, CibilCheckFindFirstArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CibilCheck that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckFindFirstOrThrowArgs} args - Arguments to find a CibilCheck
+     * @example
+     * // Get one CibilCheck
+     * const cibilCheck = await prisma.cibilCheck.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CibilCheckFindFirstOrThrowArgs>(args?: SelectSubset<T, CibilCheckFindFirstOrThrowArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CibilChecks that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CibilChecks
+     * const cibilChecks = await prisma.cibilCheck.findMany()
+     * 
+     * // Get first 10 CibilChecks
+     * const cibilChecks = await prisma.cibilCheck.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const cibilCheckWithIdOnly = await prisma.cibilCheck.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CibilCheckFindManyArgs>(args?: SelectSubset<T, CibilCheckFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CibilCheck.
+     * @param {CibilCheckCreateArgs} args - Arguments to create a CibilCheck.
+     * @example
+     * // Create one CibilCheck
+     * const CibilCheck = await prisma.cibilCheck.create({
+     *   data: {
+     *     // ... data to create a CibilCheck
+     *   }
+     * })
+     * 
+     */
+    create<T extends CibilCheckCreateArgs>(args: SelectSubset<T, CibilCheckCreateArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CibilChecks.
+     * @param {CibilCheckCreateManyArgs} args - Arguments to create many CibilChecks.
+     * @example
+     * // Create many CibilChecks
+     * const cibilCheck = await prisma.cibilCheck.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CibilCheckCreateManyArgs>(args?: SelectSubset<T, CibilCheckCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CibilCheck.
+     * @param {CibilCheckDeleteArgs} args - Arguments to delete one CibilCheck.
+     * @example
+     * // Delete one CibilCheck
+     * const CibilCheck = await prisma.cibilCheck.delete({
+     *   where: {
+     *     // ... filter to delete one CibilCheck
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CibilCheckDeleteArgs>(args: SelectSubset<T, CibilCheckDeleteArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CibilCheck.
+     * @param {CibilCheckUpdateArgs} args - Arguments to update one CibilCheck.
+     * @example
+     * // Update one CibilCheck
+     * const cibilCheck = await prisma.cibilCheck.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CibilCheckUpdateArgs>(args: SelectSubset<T, CibilCheckUpdateArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CibilChecks.
+     * @param {CibilCheckDeleteManyArgs} args - Arguments to filter CibilChecks to delete.
+     * @example
+     * // Delete a few CibilChecks
+     * const { count } = await prisma.cibilCheck.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CibilCheckDeleteManyArgs>(args?: SelectSubset<T, CibilCheckDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CibilChecks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CibilChecks
+     * const cibilCheck = await prisma.cibilCheck.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CibilCheckUpdateManyArgs>(args: SelectSubset<T, CibilCheckUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CibilCheck.
+     * @param {CibilCheckUpsertArgs} args - Arguments to update or create a CibilCheck.
+     * @example
+     * // Update or create a CibilCheck
+     * const cibilCheck = await prisma.cibilCheck.upsert({
+     *   create: {
+     *     // ... data to create a CibilCheck
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CibilCheck we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CibilCheckUpsertArgs>(args: SelectSubset<T, CibilCheckUpsertArgs<ExtArgs>>): Prisma__CibilCheckClient<$Result.GetResult<Prisma.$CibilCheckPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CibilChecks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckCountArgs} args - Arguments to filter CibilChecks to count.
+     * @example
+     * // Count the number of CibilChecks
+     * const count = await prisma.cibilCheck.count({
+     *   where: {
+     *     // ... the filter for the CibilChecks we want to count
+     *   }
+     * })
+    **/
+    count<T extends CibilCheckCountArgs>(
+      args?: Subset<T, CibilCheckCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CibilCheckCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CibilCheck.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CibilCheckAggregateArgs>(args: Subset<T, CibilCheckAggregateArgs>): Prisma.PrismaPromise<GetCibilCheckAggregateType<T>>
+
+    /**
+     * Group by CibilCheck.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CibilCheckGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CibilCheckGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CibilCheckGroupByArgs['orderBy'] }
+        : { orderBy?: CibilCheckGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CibilCheckGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCibilCheckGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CibilCheck model
+   */
+  readonly fields: CibilCheckFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CibilCheck.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CibilCheckClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CibilCheck model
+   */ 
+  interface CibilCheckFieldRefs {
+    readonly id: FieldRef<"CibilCheck", 'String'>
+    readonly requestedBy: FieldRef<"CibilCheck", 'String'>
+    readonly fullName: FieldRef<"CibilCheck", 'String'>
+    readonly mobileNumber: FieldRef<"CibilCheck", 'String'>
+    readonly panNumber: FieldRef<"CibilCheck", 'String'>
+    readonly cibilScore: FieldRef<"CibilCheck", 'Int'>
+    readonly scoreBand: FieldRef<"CibilCheck", 'String'>
+    readonly demoMode: FieldRef<"CibilCheck", 'Boolean'>
+    readonly createdAt: FieldRef<"CibilCheck", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CibilCheck findUnique
+   */
+  export type CibilCheckFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * Filter, which CibilCheck to fetch.
+     */
+    where: CibilCheckWhereUniqueInput
+  }
+
+  /**
+   * CibilCheck findUniqueOrThrow
+   */
+  export type CibilCheckFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * Filter, which CibilCheck to fetch.
+     */
+    where: CibilCheckWhereUniqueInput
+  }
+
+  /**
+   * CibilCheck findFirst
+   */
+  export type CibilCheckFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * Filter, which CibilCheck to fetch.
+     */
+    where?: CibilCheckWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CibilChecks to fetch.
+     */
+    orderBy?: CibilCheckOrderByWithRelationInput | CibilCheckOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CibilChecks.
+     */
+    cursor?: CibilCheckWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CibilChecks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CibilChecks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CibilChecks.
+     */
+    distinct?: CibilCheckScalarFieldEnum | CibilCheckScalarFieldEnum[]
+  }
+
+  /**
+   * CibilCheck findFirstOrThrow
+   */
+  export type CibilCheckFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * Filter, which CibilCheck to fetch.
+     */
+    where?: CibilCheckWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CibilChecks to fetch.
+     */
+    orderBy?: CibilCheckOrderByWithRelationInput | CibilCheckOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CibilChecks.
+     */
+    cursor?: CibilCheckWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CibilChecks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CibilChecks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CibilChecks.
+     */
+    distinct?: CibilCheckScalarFieldEnum | CibilCheckScalarFieldEnum[]
+  }
+
+  /**
+   * CibilCheck findMany
+   */
+  export type CibilCheckFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * Filter, which CibilChecks to fetch.
+     */
+    where?: CibilCheckWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CibilChecks to fetch.
+     */
+    orderBy?: CibilCheckOrderByWithRelationInput | CibilCheckOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CibilChecks.
+     */
+    cursor?: CibilCheckWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CibilChecks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CibilChecks.
+     */
+    skip?: number
+    distinct?: CibilCheckScalarFieldEnum | CibilCheckScalarFieldEnum[]
+  }
+
+  /**
+   * CibilCheck create
+   */
+  export type CibilCheckCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * The data needed to create a CibilCheck.
+     */
+    data: XOR<CibilCheckCreateInput, CibilCheckUncheckedCreateInput>
+  }
+
+  /**
+   * CibilCheck createMany
+   */
+  export type CibilCheckCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CibilChecks.
+     */
+    data: CibilCheckCreateManyInput | CibilCheckCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CibilCheck update
+   */
+  export type CibilCheckUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * The data needed to update a CibilCheck.
+     */
+    data: XOR<CibilCheckUpdateInput, CibilCheckUncheckedUpdateInput>
+    /**
+     * Choose, which CibilCheck to update.
+     */
+    where: CibilCheckWhereUniqueInput
+  }
+
+  /**
+   * CibilCheck updateMany
+   */
+  export type CibilCheckUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CibilChecks.
+     */
+    data: XOR<CibilCheckUpdateManyMutationInput, CibilCheckUncheckedUpdateManyInput>
+    /**
+     * Filter which CibilChecks to update
+     */
+    where?: CibilCheckWhereInput
+  }
+
+  /**
+   * CibilCheck upsert
+   */
+  export type CibilCheckUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * The filter to search for the CibilCheck to update in case it exists.
+     */
+    where: CibilCheckWhereUniqueInput
+    /**
+     * In case the CibilCheck found by the `where` argument doesn't exist, create a new CibilCheck with this data.
+     */
+    create: XOR<CibilCheckCreateInput, CibilCheckUncheckedCreateInput>
+    /**
+     * In case the CibilCheck was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CibilCheckUpdateInput, CibilCheckUncheckedUpdateInput>
+  }
+
+  /**
+   * CibilCheck delete
+   */
+  export type CibilCheckDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+    /**
+     * Filter which CibilCheck to delete.
+     */
+    where: CibilCheckWhereUniqueInput
+  }
+
+  /**
+   * CibilCheck deleteMany
+   */
+  export type CibilCheckDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CibilChecks to delete
+     */
+    where?: CibilCheckWhereInput
+  }
+
+  /**
+   * CibilCheck without action
+   */
+  export type CibilCheckDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CibilCheck
+     */
+    select?: CibilCheckSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -9040,6 +10032,21 @@ export namespace Prisma {
   };
 
   export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+  export const CibilCheckScalarFieldEnum: {
+    id: 'id',
+    requestedBy: 'requestedBy',
+    fullName: 'fullName',
+    mobileNumber: 'mobileNumber',
+    panNumber: 'panNumber',
+    cibilScore: 'cibilScore',
+    scoreBand: 'scoreBand',
+    demoMode: 'demoMode',
+    createdAt: 'createdAt'
+  };
+
+  export type CibilCheckScalarFieldEnum = (typeof CibilCheckScalarFieldEnum)[keyof typeof CibilCheckScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -9747,6 +10754,80 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
   }
 
+  export type CibilCheckWhereInput = {
+    AND?: CibilCheckWhereInput | CibilCheckWhereInput[]
+    OR?: CibilCheckWhereInput[]
+    NOT?: CibilCheckWhereInput | CibilCheckWhereInput[]
+    id?: StringFilter<"CibilCheck"> | string
+    requestedBy?: StringFilter<"CibilCheck"> | string
+    fullName?: StringFilter<"CibilCheck"> | string
+    mobileNumber?: StringFilter<"CibilCheck"> | string
+    panNumber?: StringNullableFilter<"CibilCheck"> | string | null
+    cibilScore?: IntFilter<"CibilCheck"> | number
+    scoreBand?: StringFilter<"CibilCheck"> | string
+    demoMode?: BoolFilter<"CibilCheck"> | boolean
+    createdAt?: DateTimeFilter<"CibilCheck"> | Date | string
+  }
+
+  export type CibilCheckOrderByWithRelationInput = {
+    id?: SortOrder
+    requestedBy?: SortOrder
+    fullName?: SortOrder
+    mobileNumber?: SortOrder
+    panNumber?: SortOrderInput | SortOrder
+    cibilScore?: SortOrder
+    scoreBand?: SortOrder
+    demoMode?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CibilCheckWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CibilCheckWhereInput | CibilCheckWhereInput[]
+    OR?: CibilCheckWhereInput[]
+    NOT?: CibilCheckWhereInput | CibilCheckWhereInput[]
+    requestedBy?: StringFilter<"CibilCheck"> | string
+    fullName?: StringFilter<"CibilCheck"> | string
+    mobileNumber?: StringFilter<"CibilCheck"> | string
+    panNumber?: StringNullableFilter<"CibilCheck"> | string | null
+    cibilScore?: IntFilter<"CibilCheck"> | number
+    scoreBand?: StringFilter<"CibilCheck"> | string
+    demoMode?: BoolFilter<"CibilCheck"> | boolean
+    createdAt?: DateTimeFilter<"CibilCheck"> | Date | string
+  }, "id">
+
+  export type CibilCheckOrderByWithAggregationInput = {
+    id?: SortOrder
+    requestedBy?: SortOrder
+    fullName?: SortOrder
+    mobileNumber?: SortOrder
+    panNumber?: SortOrderInput | SortOrder
+    cibilScore?: SortOrder
+    scoreBand?: SortOrder
+    demoMode?: SortOrder
+    createdAt?: SortOrder
+    _count?: CibilCheckCountOrderByAggregateInput
+    _avg?: CibilCheckAvgOrderByAggregateInput
+    _max?: CibilCheckMaxOrderByAggregateInput
+    _min?: CibilCheckMinOrderByAggregateInput
+    _sum?: CibilCheckSumOrderByAggregateInput
+  }
+
+  export type CibilCheckScalarWhereWithAggregatesInput = {
+    AND?: CibilCheckScalarWhereWithAggregatesInput | CibilCheckScalarWhereWithAggregatesInput[]
+    OR?: CibilCheckScalarWhereWithAggregatesInput[]
+    NOT?: CibilCheckScalarWhereWithAggregatesInput | CibilCheckScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CibilCheck"> | string
+    requestedBy?: StringWithAggregatesFilter<"CibilCheck"> | string
+    fullName?: StringWithAggregatesFilter<"CibilCheck"> | string
+    mobileNumber?: StringWithAggregatesFilter<"CibilCheck"> | string
+    panNumber?: StringNullableWithAggregatesFilter<"CibilCheck"> | string | null
+    cibilScore?: IntWithAggregatesFilter<"CibilCheck"> | number
+    scoreBand?: StringWithAggregatesFilter<"CibilCheck"> | string
+    demoMode?: BoolWithAggregatesFilter<"CibilCheck"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"CibilCheck"> | Date | string
+  }
+
   export type LoanApplicationCreateInput = {
     id: string
     customerId: string
@@ -10432,6 +11513,90 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CibilCheckCreateInput = {
+    id: string
+    requestedBy: string
+    fullName: string
+    mobileNumber: string
+    panNumber?: string | null
+    cibilScore: number
+    scoreBand: string
+    demoMode?: boolean
+    createdAt?: Date | string
+  }
+
+  export type CibilCheckUncheckedCreateInput = {
+    id: string
+    requestedBy: string
+    fullName: string
+    mobileNumber: string
+    panNumber?: string | null
+    cibilScore: number
+    scoreBand: string
+    demoMode?: boolean
+    createdAt?: Date | string
+  }
+
+  export type CibilCheckUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    mobileNumber?: StringFieldUpdateOperationsInput | string
+    panNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    cibilScore?: IntFieldUpdateOperationsInput | number
+    scoreBand?: StringFieldUpdateOperationsInput | string
+    demoMode?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CibilCheckUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    mobileNumber?: StringFieldUpdateOperationsInput | string
+    panNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    cibilScore?: IntFieldUpdateOperationsInput | number
+    scoreBand?: StringFieldUpdateOperationsInput | string
+    demoMode?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CibilCheckCreateManyInput = {
+    id: string
+    requestedBy: string
+    fullName: string
+    mobileNumber: string
+    panNumber?: string | null
+    cibilScore: number
+    scoreBand: string
+    demoMode?: boolean
+    createdAt?: Date | string
+  }
+
+  export type CibilCheckUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    mobileNumber?: StringFieldUpdateOperationsInput | string
+    panNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    cibilScore?: IntFieldUpdateOperationsInput | number
+    scoreBand?: StringFieldUpdateOperationsInput | string
+    demoMode?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CibilCheckUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    mobileNumber?: StringFieldUpdateOperationsInput | string
+    panNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    cibilScore?: IntFieldUpdateOperationsInput | number
+    scoreBand?: StringFieldUpdateOperationsInput | string
+    demoMode?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -11111,6 +12276,50 @@ export namespace Prisma {
     entityId?: SortOrder
     details?: SortOrder
     createdAt?: SortOrder
+  }
+
+  export type CibilCheckCountOrderByAggregateInput = {
+    id?: SortOrder
+    requestedBy?: SortOrder
+    fullName?: SortOrder
+    mobileNumber?: SortOrder
+    panNumber?: SortOrder
+    cibilScore?: SortOrder
+    scoreBand?: SortOrder
+    demoMode?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CibilCheckAvgOrderByAggregateInput = {
+    cibilScore?: SortOrder
+  }
+
+  export type CibilCheckMaxOrderByAggregateInput = {
+    id?: SortOrder
+    requestedBy?: SortOrder
+    fullName?: SortOrder
+    mobileNumber?: SortOrder
+    panNumber?: SortOrder
+    cibilScore?: SortOrder
+    scoreBand?: SortOrder
+    demoMode?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CibilCheckMinOrderByAggregateInput = {
+    id?: SortOrder
+    requestedBy?: SortOrder
+    fullName?: SortOrder
+    mobileNumber?: SortOrder
+    panNumber?: SortOrder
+    cibilScore?: SortOrder
+    scoreBand?: SortOrder
+    demoMode?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CibilCheckSumOrderByAggregateInput = {
+    cibilScore?: SortOrder
   }
 
   export type ApplicationStatusHistoryCreateNestedManyWithoutLoanInput = {
@@ -11957,6 +13166,10 @@ export namespace Prisma {
      * @deprecated Use AuditLogDefaultArgs instead
      */
     export type AuditLogArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AuditLogDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CibilCheckDefaultArgs instead
+     */
+    export type CibilCheckArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CibilCheckDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

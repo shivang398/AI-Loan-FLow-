@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as loanService from '../services/loan.service';
+import { loanDb } from '../config/prisma';
 import { ok, fail } from '../utils/response';
 
 const router = Router();
@@ -9,6 +11,48 @@ router.use(authenticate);
 
 router.get('/rules', async (_req: Request, res: Response) => {
   res.json(ok('Rules fetched', await loanService.getEligibilityRules()));
+});
+
+// GET /eligibility/cibil/stats — today's CIBIL pull summary for dashboard
+router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (_req: Request, res: Response) => {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [checks, allTime] = await Promise.all([
+    loanDb.cibilCheck.findMany({
+      where: { createdAt: { gte: todayStart } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    loanDb.cibilCheck.count(),
+  ]);
+
+  const totalToday = checks.length;
+  const avgScore = totalToday > 0 ? Math.round(checks.reduce((s, c) => s + c.cibilScore, 0) / totalToday) : 0;
+  const bandCounts = checks.reduce((acc: Record<string, number>, c) => {
+    acc[c.scoreBand] = (acc[c.scoreBand] ?? 0) + 1;
+    return acc;
+  }, {});
+  const liveChecks = checks.filter(c => !c.demoMode).length;
+
+  res.json(ok('CIBIL stats fetched', {
+    totalToday,
+    avgScore,
+    liveChecks,
+    demoChecks: totalToday - liveChecks,
+    allTimeTotal: allTime,
+    bandCounts,
+    recentChecks: checks.slice(0, 10).map(c => ({
+      id: c.id,
+      fullName: c.fullName,
+      mobileNumber: c.mobileNumber.slice(0, 6) + 'XXXX',
+      cibilScore: c.cibilScore,
+      scoreBand: c.scoreBand,
+      demoMode: c.demoMode,
+      requestedBy: c.requestedBy,
+      createdAt: c.createdAt,
+    })),
+  }));
 });
 
 router.post('/submit', async (req: Request, res: Response) => {
@@ -259,7 +303,15 @@ router.post('/cibil/check', async (req: Request, res: Response) => {
         return;
       }
 
-      res.json(ok('CIBIL check complete', mapTenacioResponse(raw, raw.requestId ?? '')));
+      const result = mapTenacioResponse(raw, raw.requestId ?? '') as any;
+      await loanDb.cibilCheck.create({ data: {
+        id: uuidv4(), requestedBy: req.user!.email,
+        fullName: result.fullName ?? (name || ''), mobileNumber,
+        panNumber: req.body.panNumber ?? null,
+        cibilScore: result.cibilScore ?? 0, scoreBand: result.scoreBand ?? 'UNKNOWN',
+        demoMode: false,
+      }});
+      res.json(ok('CIBIL check complete', result));
       return;
     } catch (err: any) {
       console.error('[CIBIL] Tenacio call failed:', err?.message);
@@ -270,7 +322,7 @@ router.post('/cibil/check', async (req: Request, res: Response) => {
   // ── Demo fallback ─────────────────────────────────────────────────────────
   console.warn('[CIBIL] Running in demo mode — Tenacio credentials not configured or unreachable');
   const score = 620 + Math.floor((parseInt(mobileNumber?.slice(-3) ?? '0') % 231));
-  res.json(ok('CIBIL check complete', {
+  const demoResult = {
     demoMode: true,
     cibilScore: score,
     scoreBand: scoreBandFromScore(score),
@@ -288,7 +340,15 @@ router.post('/cibil/check', async (req: Request, res: Response) => {
       { memberName: 'SBI',        accountType: 'Home Loan',     accountNumber: 'XXXX1234', dateOpened: '10/06/2018', currentBalance: 0,      amountOverdue: 0, dateClosed: '15/04/2023' },
       { memberName: 'ICICI BANK', accountType: 'Auto Loan',     accountNumber: 'XXXX5678', dateOpened: '22/09/2019', currentBalance: 0,      amountOverdue: 0, dateClosed: '30/12/2022' },
     ],
-  }));
+  };
+  await loanDb.cibilCheck.create({ data: {
+    id: uuidv4(), requestedBy: req.user!.email,
+    fullName: demoResult.fullName, mobileNumber,
+    panNumber: req.body.panNumber ?? null,
+    cibilScore: score, scoreBand: demoResult.scoreBand,
+    demoMode: true,
+  }});
+  res.json(ok('CIBIL check complete', demoResult));
 });
 
 // POST /cibil/report — ADMIN only — accepts full CIBIL data from frontend

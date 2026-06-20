@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../../src/generated/prisma-loan"
+  provider      = "prisma-client-js"
+  output        = "../../src/generated/prisma-loan"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -124,4 +125,19 @@ model AuditLog {
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@map("audit_logs")
+}
+
+model CibilCheck {
+  id           String   @id @db.Char(36)
+  requestedBy  String   @map("requested_by") @db.VarChar(255)
+  fullName     String   @map("full_name") @db.VarChar(255)
+  mobileNumber String   @map("mobile_number") @db.VarChar(20)
+  panNumber    String?  @map("pan_number") @db.VarChar(20)
+  cibilScore   Int      @map("cibil_score")
+  scoreBand    String   @map("score_band") @db.VarChar(30)
+  demoMode     Boolean  @default(false) @map("demo_mode")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("cibil_checks")
 }
