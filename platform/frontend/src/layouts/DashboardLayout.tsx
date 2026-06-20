@@ -239,14 +239,14 @@ const DashboardLayout: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 34, height: 34,
-              background: 'rgba(204,26,26,0.14)',
-              border: '1px solid rgba(204,26,26,0.30)',
+              background: 'rgba(196,153,58,0.10)',
+              border: '1px solid rgba(196,153,58,0.30)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, borderRadius: 2,
             }}>
               <span style={{
                 fontFamily: '"Playfair Display", serif',
-                fontWeight: 700, fontSize: 12, color: '#FF6B6B',
+                fontWeight: 700, fontSize: 12, color: '#E8C870',
               }}>
                 {initials}
               </span>
@@ -260,7 +260,7 @@ const DashboardLayout: React.FC = () => {
                 {displayName}
               </div>
               <div style={{
-                fontSize: 9, fontWeight: 700, color: '#FF6B6B',
+                fontSize: 9, fontWeight: 700, color: '#C4993A',
                 textTransform: 'uppercase', letterSpacing: '0.10em',
                 fontFamily: 'Inter, sans-serif',
               }}>
@@ -391,7 +391,7 @@ const DashboardLayout: React.FC = () => {
           {/* Right: notifications + user */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10 }}>
             <Tooltip title="Notifications">
-              <Badge count={unreadCount} size="small" offset={[-4, 4]} color="var(--rm-red)">
+              <Badge count={unreadCount} size="small" offset={[-4, 4]} color="var(--gold)">
                 <Button
                   type="text"
                   icon={<Bell size={18} />}
@@ -418,7 +418,7 @@ const DashboardLayout: React.FC = () => {
                       type="text"
                       icon={<CheckCheck size={13} />}
                       onClick={markAllRead}
-                      style={{ fontSize: 12, color: 'var(--rm-blue)', fontWeight: 600 }}
+                      style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 600 }}
                     >
                       Mark all read
                     </Button>
@@ -455,7 +455,7 @@ const DashboardLayout: React.FC = () => {
                         }}
                         style={{
                           padding: '14px 20px',
-                          background: n.read ? 'transparent' : 'var(--rm-red-light)',
+                          background: n.read ? 'transparent' : 'var(--gold-pale)',
                           borderBottom: '1px solid var(--surface-2)',
                           cursor: 'pointer',
                           transition: 'background 0.15s',
@@ -471,7 +471,7 @@ const DashboardLayout: React.FC = () => {
                               <span style={{
                                 width: 6, height: 6,
                                 borderRadius: '50%',
-                                background: 'var(--rm-red)',
+                                background: 'var(--gold)',
                                 flexShrink: 0, marginTop: 5,
                               }} />
                             )}
@@ -509,11 +509,11 @@ const DashboardLayout: React.FC = () => {
                 <Avatar
                   size={32}
                   style={{
-                    background: 'var(--rm-blue)',
+                    background: '#0B1E3D',
                     fontFamily: '"Playfair Display", serif',
                     fontWeight: 700,
                     fontSize: 12,
-                    color: '#FF6B6B',
+                    color: '#E8C870',
                   }}
                 >
                   {initials}

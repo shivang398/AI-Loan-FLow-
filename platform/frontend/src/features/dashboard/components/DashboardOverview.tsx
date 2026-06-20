@@ -162,8 +162,8 @@ const DashboardOverview: React.FC = () => {
       up: true,
       icon: FileText,
       iconBg: 'var(--rm-blue-light)',
-      iconColor: '#0B2DA4',
-      accent: 'linear-gradient(90deg, #0B2DA4, #0A1E6E)',
+      iconColor: '#0B1E3D',
+      accent: 'linear-gradient(90deg, #0B1E3D, #1A3256)',
     },
     {
       label: 'Active Partners',
@@ -172,8 +172,8 @@ const DashboardOverview: React.FC = () => {
       up: true,
       icon: Users,
       iconBg: '#EEF2FF',
-      iconColor: '#1537C0',
-      accent: 'linear-gradient(90deg, #1537C0, #0B2DA4)',
+      iconColor: '#1F3D6B',
+      accent: 'linear-gradient(90deg, #1F3D6B, #0B1E3D)',
     },
     {
       label: 'Disbursed Amount',
@@ -191,9 +191,9 @@ const DashboardOverview: React.FC = () => {
       trend: totalLoans > 0 ? `of ${totalLoans} total` : 'No applications',
       up: pendingLoans === 0,
       icon: Clock,
-      iconBg: '#FFF0F0',
-      iconColor: '#CC1A1A',
-      accent: 'linear-gradient(90deg, #CC1A1A, #A51414)',
+      iconBg: '#FBF5E6',
+      iconColor: '#C4993A',
+      accent: 'linear-gradient(90deg, #C4993A, #A07828)',
     },
   ];
 
@@ -281,13 +281,13 @@ const DashboardOverview: React.FC = () => {
                 {/* Summary numbers */}
                 <Col xs={24} sm={6}>
                   <div style={{ textAlign: 'center', padding: '16px 12px', background: 'var(--surface-1)', borderRadius: 4, border: '1px solid var(--surface-2)' }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: '#0B2DA4', fontFamily: 'Inter, sans-serif' }}>{cibilStats.totalToday}</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: '#0B1E3D', fontFamily: 'Inter, sans-serif' }}>{cibilStats.totalToday}</div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Checks Today</div>
                   </div>
                 </Col>
                 <Col xs={24} sm={6}>
                   <div style={{ textAlign: 'center', padding: '16px 12px', background: 'var(--surface-1)', borderRadius: 4, border: '1px solid var(--surface-2)' }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: cibilStats.avgScore >= 750 ? '#1A7A4A' : cibilStats.avgScore >= 650 ? '#B45309' : '#CC1A1A', fontFamily: 'Inter, sans-serif' }}>{cibilStats.totalToday > 0 ? cibilStats.avgScore : '—'}</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: cibilStats.avgScore >= 750 ? '#1A7A4A' : cibilStats.avgScore >= 650 ? '#B45309' : '#DC2626', fontFamily: 'Inter, sans-serif' }}>{cibilStats.totalToday > 0 ? cibilStats.avgScore : '—'}</div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Avg Score</div>
                   </div>
                 </Col>
@@ -298,7 +298,7 @@ const DashboardOverview: React.FC = () => {
                       { band: 'EXCELLENT', label: 'Excellent', color: '#1A7A4A', bg: '#F0FAF4' },
                       { band: 'GOOD', label: 'Good', color: '#2563EB', bg: '#EFF6FF' },
                       { band: 'FAIR', label: 'Fair', color: '#B45309', bg: '#FFFBEB' },
-                      { band: 'POOR', label: 'Poor / No History', color: '#CC1A1A', bg: '#FEF2F2' },
+                      { band: 'POOR', label: 'Poor / No History', color: '#DC2626', bg: '#FEF2F2' },
                     ].map(({ band, label, color, bg }) => (
                       <div key={band} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: bg, borderRadius: 4 }}>
                         <span style={{ fontSize: 12, fontWeight: 600, color, fontFamily: 'Inter, sans-serif' }}>{label}</span>
@@ -322,7 +322,7 @@ const DashboardOverview: React.FC = () => {
                       ))}
                     </div>
                     {cibilStats.recentChecks.slice(0, 5).map((c: any) => {
-                      const bandColor = c.cibilScore >= 750 ? '#1A7A4A' : c.cibilScore >= 650 ? '#B45309' : '#CC1A1A';
+                      const bandColor = c.cibilScore >= 750 ? '#1A7A4A' : c.cibilScore >= 650 ? '#B45309' : '#DC2626';
                       return (
                         <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr', padding: '11px 14px', borderBottom: '1px solid var(--surface-1)' }}>
                           <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{c.fullName}</span>
@@ -359,8 +359,8 @@ const DashboardOverview: React.FC = () => {
                       <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="gApps" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#0B2DA4" stopOpacity={0.12} />
-                            <stop offset="95%" stopColor="#0B2DA4" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#C4993A" stopOpacity={0.14} />
+                            <stop offset="95%" stopColor="#C4993A" stopOpacity={0} />
                           </linearGradient>
                           <linearGradient id="gDisb" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#1A7A4A" stopOpacity={0.12} />
@@ -372,7 +372,7 @@ const DashboardOverview: React.FC = () => {
                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#7A8FB0', fontSize: 11 }} allowDecimals={false} />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
-                        <Area type="monotone" dataKey="applications" name="Applications" stroke="#0B2DA4" strokeWidth={2} fill="url(#gApps)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                        <Area type="monotone" dataKey="applications" name="Applications" stroke="#C4993A" strokeWidth={2} fill="url(#gApps)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
                         <Area type="monotone" dataKey="disbursed" name="Disbursed" stroke="#1A7A4A" strokeWidth={2} fill="url(#gDisb)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -391,7 +391,7 @@ const DashboardOverview: React.FC = () => {
                 <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.01em', marginBottom: 3 }}>System Health</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, fontFamily: 'Inter, sans-serif' }}>
                   {checkedServices > 0
-                    ? <span><span style={{ color: '#1A7A4A', fontWeight: 700 }}>{upServices}</span> UP &nbsp;·&nbsp; <span style={{ color: downServices > 0 ? '#CC1A1A' : 'var(--text-muted)', fontWeight: 700 }}>{downServices}</span> DOWN</span>
+                    ? <span><span style={{ color: '#1A7A4A', fontWeight: 700 }}>{upServices}</span> UP &nbsp;·&nbsp; <span style={{ color: downServices > 0 ? '#DC2626' : 'var(--text-muted)', fontWeight: 700 }}>{downServices}</span> DOWN</span>
                     : 'Checking services…'}
                 </div>
 
@@ -413,11 +413,11 @@ const DashboardOverview: React.FC = () => {
                     return (
                       <div key={svc.port} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: isDown ? '#FFF0F0' : 'var(--surface-1)', borderBottom: '1px solid var(--surface-2)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {isUp ? <CheckCircle2 size={12} color="#1A7A4A" /> : isDown ? <XCircle size={12} color="#CC1A1A" /> : <AlertCircle size={12} color="#8A6020" />}
+                          {isUp ? <CheckCircle2 size={12} color="#1A7A4A" /> : isDown ? <XCircle size={12} color="#DC2626" /> : <AlertCircle size={12} color="#8A6020" />}
                           <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{svc.name}</span>
                           <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>:{svc.port}</span>
                         </div>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: isUp ? '#1A7A4A' : isDown ? '#CC1A1A' : '#8A6020', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: isUp ? '#1A7A4A' : isDown ? '#DC2626' : '#8A6020', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {status === null ? '…' : isUp ? 'UP' : 'DOWN'}
                         </span>
                       </div>
@@ -453,7 +453,7 @@ const DashboardOverview: React.FC = () => {
                     <div key={loan.id || idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr', padding: '13px 20px', borderBottom: '1px solid var(--surface-2)', cursor: 'pointer', transition: 'background 120ms' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-1)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      <span style={{ fontWeight: 600, fontSize: 11.5, color: '#0B2DA4', fontFamily: 'monospace' }}>{String(loan.id || '').slice(0, 8).toUpperCase()}</span>
+                      <span style={{ fontWeight: 600, fontSize: 11.5, color: '#0B1E3D', fontFamily: 'monospace' }}>{String(loan.id || '').slice(0, 8).toUpperCase()}</span>
                       <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{name}</span>
                       <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>₹{(amt / 100000).toFixed(1)}L</span>
                       <div>

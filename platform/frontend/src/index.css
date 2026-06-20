@@ -295,13 +295,13 @@ body {
   pointer-events: none;
 }
 
-/* Red accent line matching logo */
+/* Gold accent line */
 .login-page-illustration::after {
   content: '';
   position: absolute;
   top: 0; left: 0;
   width: 3px; height: 100%;
-  background: linear-gradient(180deg, transparent, var(--rm-red) 30%, var(--rm-red) 70%, transparent);
+  background: linear-gradient(180deg, transparent, var(--gold) 30%, var(--gold) 70%, transparent);
   opacity: 0.5;
 }
 
@@ -325,10 +325,10 @@ body {
    ANT DESIGN OVERRIDES
    ═══════════════════════════════════════════════════════════════ */
 
-/* Primary Button — brand blue */
+/* Primary Button — brand navy */
 .ant-btn-primary {
-  background: var(--rm-blue) !important;
-  border-color: var(--rm-blue) !important;
+  background: var(--navy) !important;
+  border-color: var(--navy) !important;
   font-weight: 600 !important;
   letter-spacing: 0.02em !important;
   box-shadow: none !important;
@@ -337,14 +337,14 @@ body {
 }
 
 .ant-btn-primary:hover {
-  background: var(--rm-blue-mid) !important;
-  border-color: var(--rm-blue-mid) !important;
+  background: var(--navy-mid) !important;
+  border-color: var(--navy-mid) !important;
   box-shadow: none !important;
   transform: none !important;
 }
 
 .ant-btn-primary:active {
-  background: var(--rm-blue-dark) !important;
+  background: #0B1E3D !important;
 }
 
 /* Inputs */
@@ -359,9 +359,9 @@ body {
 .ant-input:focus,
 .ant-input-affix-wrapper:focus,
 .ant-input-affix-wrapper-focused {
-  border-color: var(--rm-blue) !important;
+  border-color: var(--gold) !important;
   background: white !important;
-  box-shadow: 0 0 0 2px rgba(11, 45, 164, 0.10) !important;
+  box-shadow: 0 0 0 2px rgba(196, 153, 58, 0.12) !important;
 }
 
 /* Select */
@@ -372,8 +372,8 @@ body {
 }
 
 .ant-select-focused .ant-select-selector {
-  border-color: var(--rm-blue) !important;
-  box-shadow: 0 0 0 2px rgba(11, 45, 164, 0.10) !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 2px rgba(196, 153, 58, 0.12) !important;
 }
 
 /* Tables */
@@ -465,12 +465,12 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    STATUS BADGES
    ═══════════════════════════════════════════════════════════════ */
-.badge-blue   { background: #EEF2FF; color: #0B2DA4; }
+.badge-blue   { background: #EEF2FF; color: #0B1E3D; }
 .badge-green  { background: #F0FAF4; color: #1A7A4A; }
 .badge-amber  { background: #FBF4E0; color: #8A6020; }
-.badge-red    { background: #FFF0F0; color: #CC1A1A; }
+.badge-red    { background: #FFF0F0; color: #DC2626; }
 .badge-purple { background: #F5F0FF; color: #5B2D9E; }
-.badge-indigo { background: #EEF0F8; color: #0B2DA4; }
+.badge-indigo { background: #EEF0F8; color: #0B1E3D; }
 
 /* ═══════════════════════════════════════════════════════════════
    ANIMATIONS

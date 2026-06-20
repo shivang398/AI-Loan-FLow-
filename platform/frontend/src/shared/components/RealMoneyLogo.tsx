@@ -156,7 +156,7 @@ export const RealMoneyLogoWhite: React.FC<{
           fontFamily: '"Playfair Display", Georgia, serif',
           fontWeight: 700,
           fontSize,
-          color: '#FF6B6B',
+          color: '#E8C870',
           letterSpacing: '-0.01em',
         }}>
           REAL&nbsp;
