@@ -13,22 +13,25 @@ router.get('/rules', async (_req: Request, res: Response) => {
   res.json(ok('Rules fetched', await loanService.getEligibilityRules()));
 });
 
-// GET /eligibility/cibil/stats — today's CIBIL pull summary for dashboard
-router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (_req: Request, res: Response) => {
+// GET /eligibility/cibil/stats?from=&to= — dashboard summary (defaults to today)
+router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
+  const from = req.query.from ? new Date(req.query.from as string) : todayStart;
+  const to   = req.query.to   ? new Date(req.query.to as string)   : new Date();
+
   const [checks, allTime] = await Promise.all([
     loanDb.cibilCheck.findMany({
-      where: { createdAt: { gte: todayStart } },
+      where: { createdAt: { gte: from, lte: to } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     }),
     loanDb.cibilCheck.count(),
   ]);
 
-  const totalToday = checks.length;
-  const avgScore = totalToday > 0 ? Math.round(checks.reduce((s, c) => s + c.cibilScore, 0) / totalToday) : 0;
+  const total = checks.length;
+  const avgScore = total > 0 ? Math.round(checks.reduce((s, c) => s + c.cibilScore, 0) / total) : 0;
   const bandCounts = checks.reduce((acc: Record<string, number>, c) => {
     acc[c.scoreBand] = (acc[c.scoreBand] ?? 0) + 1;
     return acc;
@@ -36,10 +39,10 @@ router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (_re
   const liveChecks = checks.filter(c => !c.demoMode).length;
 
   res.json(ok('CIBIL stats fetched', {
-    totalToday,
+    totalToday: total,
     avgScore,
     liveChecks,
-    demoChecks: totalToday - liveChecks,
+    demoChecks: total - liveChecks,
     allTimeTotal: allTime,
     bandCounts,
     recentChecks: checks.slice(0, 10).map(c => ({
@@ -52,6 +55,60 @@ router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (_re
       requestedBy: c.requestedBy,
       createdAt: c.createdAt,
     })),
+  }));
+});
+
+// GET /eligibility/cibil/history?from=&to=&page=0&size=20 — full paginated history
+router.get('/cibil/history', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
+  const page = Math.max(0, parseInt(req.query.page as string ?? '0'));
+  const size = Math.min(100, Math.max(1, parseInt(req.query.size as string ?? '20')));
+  const from = req.query.from ? new Date(req.query.from as string) : undefined;
+  const to   = req.query.to   ? new Date(req.query.to   as string) : undefined;
+  const search = (req.query.search as string ?? '').trim().toLowerCase();
+
+  const where: any = {};
+  if (from || to) where.createdAt = { ...(from && { gte: from }), ...(to && { lte: to }) };
+  if (req.query.demoMode !== undefined) where.demoMode = req.query.demoMode === 'true';
+
+  const [items, total] = await Promise.all([
+    loanDb.cibilCheck.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: page * size,
+      take: size,
+    }),
+    loanDb.cibilCheck.count({ where }),
+  ]);
+
+  // score band stats for selected range
+  const allInRange = await loanDb.cibilCheck.findMany({ where, select: { cibilScore: true, scoreBand: true, demoMode: true } });
+  const rangeTotal = allInRange.length;
+  const rangeAvg = rangeTotal > 0 ? Math.round(allInRange.reduce((s, c) => s + c.cibilScore, 0) / rangeTotal) : 0;
+  const bandCounts = allInRange.reduce((acc: Record<string, number>, c) => {
+    acc[c.scoreBand] = (acc[c.scoreBand] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const filteredItems = search
+    ? items.filter(c => c.fullName.toLowerCase().includes(search) || c.requestedBy.toLowerCase().includes(search) || c.mobileNumber.includes(search))
+    : items;
+
+  res.json(ok('CIBIL history fetched', {
+    items: filteredItems.map(c => ({
+      id: c.id,
+      fullName: c.fullName,
+      mobileNumber: c.mobileNumber.slice(0, 6) + 'XXXX',
+      panNumber: c.panNumber ?? '—',
+      cibilScore: c.cibilScore,
+      scoreBand: c.scoreBand,
+      demoMode: c.demoMode,
+      requestedBy: c.requestedBy,
+      createdAt: c.createdAt,
+    })),
+    total,
+    page,
+    size,
+    stats: { total: rangeTotal, avgScore: rangeAvg, bandCounts, liveChecks: allInRange.filter(c => !c.demoMode).length },
   }));
 });
 

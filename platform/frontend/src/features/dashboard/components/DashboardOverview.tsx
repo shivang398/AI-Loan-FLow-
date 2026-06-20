@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Spin, Empty } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, FileText, Users, IndianRupee, Clock, RefreshCw, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -59,6 +60,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const DashboardOverview: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [loans, setLoans] = useState<any[]>([]);
   const [connectors, setConnectors] = useState<any[]>([]);
@@ -260,12 +262,18 @@ const DashboardOverview: React.FC = () => {
                       : `${cibilStats.demoChecks} demo mode · ${cibilStats.allTimeTotal} all time`}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {cibilStats.liveChecks > 0 ? (
                     <span style={{ padding: '3px 10px', background: '#F0FAF4', color: '#1A7A4A', fontSize: 11, fontWeight: 700, border: '1px solid #A3D9B8', letterSpacing: '0.06em' }}>LIVE</span>
                   ) : (
                     <span style={{ padding: '3px 10px', background: '#FFF8E7', color: '#B45309', fontSize: 11, fontWeight: 700, border: '1px solid #F6D86B', letterSpacing: '0.06em' }}>DEMO MODE</span>
                   )}
+                  <button
+                    onClick={() => navigate('/cibil/history')}
+                    style={{ padding: '4px 12px', background: 'transparent', border: '1px solid var(--surface-3)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', borderRadius: 2, fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Full History →
+                  </button>
                 </div>
               </div>
 

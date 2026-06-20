@@ -19,6 +19,7 @@ import OperationsDashboard from './features/operations/components/OperationsDash
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
 import EmiCalculator from './features/connector/components/EmiCalculator';
 import { CibilCheckPage, BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
+import CibilHistoryPage from './features/eligibility/components/CibilHistoryPage';
 import CheckEligibility from './features/connector/components/CheckEligibility';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
 import OpsTeamMeetingPage from './features/team-meeting/components/OpsTeamMeetingPage';
@@ -102,6 +103,11 @@ const App: React.FC = () => {
               {/* CIBIL Check — all authenticated roles */}
               <Route path="/connector/cibil" element={<CibilCheckPage />} />
               
+              {/* CIBIL History — ADMIN, RM, OPERATIONS */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS']} />}>
+                <Route path="/cibil/history" element={<CibilHistoryPage />} />
+              </Route>
+
               {/* Admin Specific Routes — platform config only, no partner access */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="/admin/users"         element={<UserManagement />} />

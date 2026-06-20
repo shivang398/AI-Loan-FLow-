@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Timeline, Typography, Tag, Input, Select, Space, Button, Spin, Empty } from 'antd';
 import { History, Search, Filter, User, ShieldAlert, FileEdit, Settings, ArrowRight } from 'lucide-react';
-import api from '../../../services/api';
+import api from '../../../shared/services/apiClient';
 
 const { Title, Text } = Typography;
 

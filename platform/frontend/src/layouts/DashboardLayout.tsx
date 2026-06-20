@@ -91,6 +91,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/dashboard',          icon: <LayoutDashboard size={16} />, label: 'Overview' },
     { key: '/admin/users',        icon: <Users size={16} />,           label: 'User Management' },
     { key: '/connector/cibil',    icon: <ShieldCheck size={16} />,     label: 'CIBIL Check' },
+    { key: '/cibil/history',      icon: <ClipboardList size={16} />,   label: 'CIBIL History' },
     { key: '/admin/reports',      icon: <FileText size={16} />,        label: 'MIS Reports' },
     { key: '/admin/documents',    icon: <Files size={16} />,           label: 'Document Library' },
     { key: '/admin/analytics',    icon: <BarChart3 size={16} />,       label: 'Analytics' },
@@ -112,6 +113,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/rm/connectors',   icon: <Users size={16} />,           label: 'Connector Tracker' },
     { key: '/rm/workflow',     icon: <ClipboardList size={16} />,   label: 'Workflow Monitor' },
     { key: '/connector/cibil', icon: <ShieldCheck size={16} />,     label: 'CIBIL Check' },
+    { key: '/cibil/history',   icon: <FileText size={16} />,        label: 'CIBIL History' },
     { key: '/rm/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
     { key: '/rm/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];
@@ -119,6 +121,7 @@ const DashboardLayout: React.FC = () => {
   const opsItems = [
     { key: '/ops/dashboard',    icon: <ClipboardList size={16} />, label: 'Ops Queue' },
     { key: '/connector/cibil',  icon: <ShieldCheck size={16} />,   label: 'CIBIL Check' },
+    { key: '/cibil/history',    icon: <FileText size={16} />,      label: 'CIBIL History' },
     { key: '/ops/policies',     icon: <BookOpen size={16} />,      label: 'Policies' },
     { key: '/ops/team-meeting', icon: <UsersRound size={16} />,    label: 'Team Meeting' },
   ];
