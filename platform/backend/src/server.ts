@@ -12,7 +12,11 @@ const PORT = parseInt(process.env.PORT ?? '8080');
 
 async function bootstrap() {
   console.log('[Boot] Connecting to databases...');
-  await connectAllDatabases();
+  try {
+    await connectAllDatabases();
+  } catch (err: any) {
+    console.warn('[Boot] DB pre-connect failed (will retry on first query):', err.message?.slice(0, 120));
+  }
 
   console.log('[Boot] Connecting to Redis...');
   await connectRedis();
