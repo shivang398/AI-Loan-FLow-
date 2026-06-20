@@ -1,6 +1,20 @@
 import { v4 as uuidv4 } from 'uuid';
 import { loanDb } from '../config/prisma';
 import { publish } from '../config/rabbitmq';
+import { createNotification } from './communications.service';
+
+// Valid status transitions — prevents arbitrary state jumps
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  SUBMITTED:             ['ELIGIBILITY_CHECK', 'CANCELLED'],
+  ELIGIBILITY_CHECK:     ['UNDERWRITING', 'REJECTED', 'CANCELLED'],
+  UNDERWRITING:          ['APPROVED', 'REJECTED', 'CANCELLED'],
+  APPROVED:              ['DOCUMENT_REQUEST', 'DISBURSED', 'CANCELLED'],
+  DOCUMENT_REQUEST:      ['DOCUMENT_VERIFICATION', 'CANCELLED'],
+  DOCUMENT_VERIFICATION: ['DISBURSED', 'REJECTED', 'DOCUMENT_REQUEST'],
+  REJECTED:              [],
+  DISBURSED:             [],
+  CANCELLED:             [],
+};
 
 export async function createLoan(data: {
   customerId: string; connectorId?: string; amount: number;
@@ -44,12 +58,35 @@ export async function getLoanById(id: string) {
 export async function updateLoanStatus(id: string, status: string, remarks: string, changedBy: string) {
   const loan = await loanDb.loanApplication.findUnique({ where: { id } });
   if (!loan) throw Object.assign(new Error('Loan not found'), { status: 404 });
+
+  // Validate transition
+  const allowed = VALID_TRANSITIONS[loan.status];
+  if (allowed === undefined) throw Object.assign(new Error(`Unknown current status: ${loan.status}`), { status: 400 });
+  if (!allowed.includes(status)) {
+    throw Object.assign(
+      new Error(`Cannot transition loan from ${loan.status} to ${status}. Allowed: ${allowed.join(', ') || 'none'}`),
+      { status: 422 },
+    );
+  }
+
   await loanDb.loanApplication.update({ where: { id }, data: { status, updatedAt: new Date(), updatedBy: changedBy } });
   await loanDb.applicationStatusHistory.create({
     data: { id: uuidv4(), loanId: id, status, remarks, changedAt: new Date(), changedBy },
   });
   await publish('loan.status.updated', { loanId: id, status });
-  await loanDb.auditLog.create({ data: { action: 'LOAN_STATUS_UPDATED', actorEmail: changedBy, entityType: 'LOAN', entityId: id, details: `Status → ${status}`, createdAt: new Date() } });
+  await loanDb.auditLog.create({ data: { action: 'LOAN_STATUS_UPDATED', actorEmail: changedBy, entityType: 'LOAN', entityId: id, details: `Status → ${status}${remarks ? ` (${remarks})` : ''}`, createdAt: new Date() } });
+
+  // Notify the connector who submitted this loan
+  if (loan.connectorId) {
+    await createNotification({
+      recipientId: loan.connectorId,
+      channel: 'IN_APP',
+      type: 'LOAN_STATUS_CHANGE',
+      title: `Loan ${status.replace(/_/g, ' ')}`,
+      content: `Your loan application (${id.slice(0, 8)}) status changed to ${status}.${remarks ? ` Remarks: ${remarks}` : ''}`,
+      idempotencyKey: `loan-status-${id}-${status}`,
+    });
+  }
 }
 
 export async function getEligibilityRules() {

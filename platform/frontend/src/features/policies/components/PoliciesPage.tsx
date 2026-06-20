@@ -36,7 +36,7 @@ const PoliciesPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [form] = Form.useForm();
-  const [categoryFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -202,6 +202,15 @@ const PoliciesPage: React.FC = () => {
           </Text>
         </div>
         <Space>
+          <Select
+            value={categoryFilter || 'all'}
+            onChange={(v) => setCategoryFilter(v === 'all' ? '' : v)}
+            style={{ width: 160 }}
+          >
+            <Select.Option value="all">All Categories</Select.Option>
+            <Select.Option value="BANK">Bank Policies</Select.Option>
+            <Select.Option value="OFFICE">Office Policies</Select.Option>
+          </Select>
           <Button icon={<RefreshCw size={15} />} onClick={fetchDocs} loading={loading}>Refresh</Button>
           {isAdmin && (
             <Button

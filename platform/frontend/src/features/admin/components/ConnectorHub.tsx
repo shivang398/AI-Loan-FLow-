@@ -304,15 +304,17 @@ const ConnectorHub: React.FC = () => {
 
   const handleSaveSlab = async (values: any) => {
     try {
-      const payload = { ...editingSlab, ...values };
-      const res = await apiClient.post('/commissions/slabs', payload);
       if (editingSlab?.id) {
-        setPayoutSlabs(slabs => slabs.map(s => s.id === editingSlab.id ? res.data : s));
+        const res = await apiClient.put(`/commissions/slabs/${editingSlab.id}`, values);
+        setPayoutSlabs(slabs => slabs.map(s => s.id === editingSlab.id ? (res.data?.data ?? res.data) : s));
+        message.success('Payout slab updated.');
       } else {
-        setPayoutSlabs(prev => [...prev, res.data]);
+        const res = await apiClient.post('/commissions/slabs', values);
+        setPayoutSlabs(prev => [...prev, res.data?.data ?? res.data]);
+        message.success('New payout slab created.');
       }
-      message.success(editingSlab?.id ? 'Payout slab updated.' : 'New payout slab created.');
       setIsSlabModalOpen(false);
+      fetchSlabs();
     } catch {
       message.error('Failed to save slab.');
     }

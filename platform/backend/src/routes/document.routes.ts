@@ -45,7 +45,11 @@ router.post('/public/upload', publicUploadLimiter, upload.single('file'), async 
   if (!req.file) { res.status(400).json(fail('File is required')); return; }
   const { loanId, ownerId, documentType, folderPath } = req.body;
   if (!documentType) { res.status(400).json(fail('documentType is required')); return; }
-  res.status(201).json(ok('Document uploaded', await documentService.uploadDocument({ loanId, ownerId, documentType, folderPath, uploadedBy: ownerId ?? 'anonymous', file: req.file })));
+  if (!ownerId) { res.status(400).json(fail('ownerId is required')); return; }
+  if (!loanId) { res.status(400).json(fail('loanId is required')); return; }
+  const ALLOWED_DOC_TYPES = ['PAN', 'AADHAAR', 'INCOME_PROOF', 'BANK_STATEMENT', 'PHOTO', 'SIGNATURE', 'OTHER'];
+  if (!ALLOWED_DOC_TYPES.includes(documentType)) { res.status(400).json(fail(`documentType must be one of: ${ALLOWED_DOC_TYPES.join(', ')}`)); return; }
+  res.status(201).json(ok('Document uploaded', await documentService.uploadDocument({ loanId, ownerId, documentType, folderPath, uploadedBy: ownerId, file: req.file })));
 });
 
 // All remaining routes require auth

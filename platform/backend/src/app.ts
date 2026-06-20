@@ -1,5 +1,6 @@
 import 'express-async-errors';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 
 // Make BigInt JSON-serializable (Prisma returns BigInt for certain DB columns)
 (BigInt.prototype as any).toJSON = function () { return this.toString(); };
@@ -52,6 +53,24 @@ app.use((req, _res, next) => {
   next();
 });
 
+// General API rate limiter — 200 requests per minute per IP for authenticated routes
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+});
+
+// Stricter limiter for write operations (POST/PUT/DELETE)
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many write requests, please slow down.' },
+});
+
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'UP', timestamp: new Date().toISOString() }));
 
@@ -59,19 +78,19 @@ app.get('/health', (_req, res) => res.json({ status: 'UP', timestamp: new Date()
 app.use('/auth', authRoutes);
 
 // ── Loans & Eligibility & Policies ───────────────────────────────────────────
-app.use('/loans', loanRoutes);
-app.use('/eligibility', eligibilityRoutes);
-app.use('/policies', policyRoutes);
+app.use('/loans', apiLimiter, loanRoutes);
+app.use('/eligibility', apiLimiter, eligibilityRoutes);
+app.use('/policies', apiLimiter, policyRoutes);
 
 // ── Customers & Documents ─────────────────────────────────────────────────────
-app.use('/customers', customerRoutes);
-app.use('/documents', documentRoutes);
+app.use('/customers', apiLimiter, customerRoutes);
+app.use('/documents', apiLimiter, documentRoutes);
 
 // ── Sales Ops (Connectors, Commissions, FOIR, Routing) ───────────────────────
-app.use('/connectors', connectorRoutes);
-app.use('/commissions', commissionRoutes);
-app.use('/foir', foirRoutes);
-app.use('/routing', routingRoutes);
+app.use('/connectors', apiLimiter, connectorRoutes);
+app.use('/commissions', apiLimiter, commissionRoutes);
+app.use('/foir', apiLimiter, foirRoutes);
+app.use('/routing', writeLimiter, routingRoutes);
 
 // ── Communications & Notifications ───────────────────────────────────────────
 app.use('/messaging', commsRoutes);

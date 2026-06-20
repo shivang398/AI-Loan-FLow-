@@ -144,6 +144,18 @@ export async function getSalesManagers(activeOnly = true) {
   return salesOpsDb.salesManager.findMany({ where: { isActive: activeOnly } });
 }
 
+export async function updatePayoutSlab(id: string, data: { bankName?: string; productCategory?: string; payoutRate?: number; minDisbursementAmount?: number; status?: string }) {
+  const slab = await salesOpsDb.payoutSlab.findUnique({ where: { id } });
+  if (!slab) throw Object.assign(new Error('Payout slab not found'), { status: 404 });
+  return salesOpsDb.payoutSlab.update({ where: { id }, data: { ...data, updatedAt: new Date() } });
+}
+
+export async function updateCommissionTransactionStatus(id: string, status: string) {
+  const tx = await salesOpsDb.commissionTransaction.findUnique({ where: { id } });
+  if (!tx) throw Object.assign(new Error('Commission transaction not found'), { status: 404 });
+  return salesOpsDb.commissionTransaction.update({ where: { id }, data: { status, updatedAt: new Date() } });
+}
+
 export async function routeLoan(loanId: string) {
   const managers = await salesOpsDb.salesManager.findMany({ where: { isActive: true } });
   if (managers.length === 0) throw Object.assign(new Error('No active sales managers available'), { status: 503 });

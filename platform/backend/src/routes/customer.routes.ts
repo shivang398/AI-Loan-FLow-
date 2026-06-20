@@ -1,15 +1,54 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import * as customerService from '../services/customer.service';
 import { ok, fail } from '../utils/response';
+
+const PAN_RE     = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const AADHAAR_RE = /^\d{12}$/;
+const MOBILE_RE  = /^[6-9]\d{9}$/;
+const PIN_RE     = /^\d{6}$/;
+
+const customerSchema = z.object({
+  firstName: z.string().min(1).max(100),
+  lastName:  z.string().min(1).max(100),
+  email:     z.string().email('Invalid email'),
+  mobile:    z.string().regex(MOBILE_RE, 'Invalid Indian mobile number (must start with 6-9 and be 10 digits)'),
+});
+
+const leadSchema = z.object({
+  firstName:  z.string().min(1).max(100),
+  lastName:   z.string().min(1).max(100),
+  email:      z.string().email('Invalid email'),
+  mobile:     z.string().regex(MOBILE_RE, 'Invalid Indian mobile number'),
+  panNumber:  z.string().regex(PAN_RE, 'Invalid PAN format (e.g. ABCDE1234F)'),
+  loanType:   z.string().optional(),
+  loanAmount: z.number().positive().optional(),
+  assignedTo: z.string().optional(),
+});
+
+const kycSchema = z.object({
+  panNumber:     z.string().regex(PAN_RE, 'Invalid PAN format (e.g. ABCDE1234F)'),
+  aadhaarNumber: z.string().regex(AADHAAR_RE, 'Aadhaar must be exactly 12 digits').optional(),
+  kycStatus:     z.enum(['PENDING', 'VERIFIED', 'REJECTED']),
+});
+
+const addressSchema = z.object({
+  addressType: z.enum(['PERMANENT', 'CURRENT', 'OFFICE']),
+  street:      z.string().min(1).max(255),
+  city:        z.string().min(1).max(100),
+  state:       z.string().min(1).max(100),
+  pincode:     z.string().regex(PIN_RE, 'Pincode must be 6 digits'),
+  isPrimary:   z.boolean().optional(),
+});
 
 const router = Router();
 router.use(authenticate);
 
 router.post('/', async (req: Request, res: Response) => {
-  const { firstName, lastName, email, mobile } = req.body;
-  if (!firstName || !lastName || !email || !mobile) { res.status(400).json(fail('firstName, lastName, email and mobile are required')); return; }
-  res.status(201).json(ok('Customer created', await customerService.createCustomer({ firstName, lastName, email, mobile, createdBy: req.user!.email })));
+  const parsed = customerSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
+  res.status(201).json(ok('Customer created', await customerService.createCustomer({ ...parsed.data, createdBy: req.user!.email })));
 });
 
 router.get('/', async (req: Request, res: Response) => {
@@ -20,9 +59,9 @@ router.get('/', async (req: Request, res: Response) => {
 
 // Leads (before /:id to avoid conflicts)
 router.post('/leads', async (req: Request, res: Response) => {
-  const { firstName, lastName, email, mobile, panNumber, loanType, loanAmount, assignedTo } = req.body;
-  if (!firstName || !lastName || !email || !mobile || !panNumber) { res.status(400).json(fail('firstName, lastName, email, mobile and panNumber are required')); return; }
-  res.status(201).json(ok('Lead created', await customerService.createLead({ firstName, lastName, email, mobile, panNumber, loanType, loanAmount, assignedTo, createdBy: req.user!.email })));
+  const parsed = leadSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
+  res.status(201).json(ok('Lead created', await customerService.createLead({ ...parsed.data, createdBy: req.user!.email })));
 });
 
 router.get('/leads', async (req: Request, res: Response) => {
@@ -33,7 +72,7 @@ router.get('/leads', async (req: Request, res: Response) => {
 
 router.post('/leads/reassign', async (req: Request, res: Response) => {
   const { leadIds, assignTo } = req.body;
-  if (!leadIds || !assignTo) { res.status(400).json(fail('leadIds and assignTo are required')); return; }
+  if (!Array.isArray(leadIds) || leadIds.length === 0 || !assignTo) { res.status(400).json(fail('leadIds (array) and assignTo are required')); return; }
   const results = await Promise.all((leadIds as string[]).map((id: string) => customerService.updateLead(id, { assignedTo: assignTo })));
   res.json(ok('Leads reassigned', { count: results.length }));
 });
@@ -61,15 +100,15 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 router.put('/:id/kyc', async (req: Request, res: Response) => {
-  const { panNumber, aadhaarNumber, kycStatus } = req.body;
-  if (!panNumber || !kycStatus) { res.status(400).json(fail('panNumber and kycStatus are required')); return; }
-  res.json(ok('KYC updated', await customerService.updateKyc(req.params.id, { panNumber, aadhaarNumber, kycStatus })));
+  const parsed = kycSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
+  res.json(ok('KYC updated', await customerService.updateKyc(req.params.id, parsed.data)));
 });
 
 router.post('/:id/addresses', async (req: Request, res: Response) => {
-  const { addressType, street, city, state, pincode, isPrimary } = req.body;
-  if (!addressType || !street || !city || !state || !pincode) { res.status(400).json(fail('All address fields are required')); return; }
-  res.status(201).json(ok('Address added', await customerService.addAddress(req.params.id, { addressType, street, city, state, pincode, isPrimary })));
+  const parsed = addressSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
+  res.status(201).json(ok('Address added', await customerService.addAddress(req.params.id, parsed.data)));
 });
 
 export default router;

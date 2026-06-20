@@ -16,6 +16,9 @@ const PayoutTracker: React.FC = () => {
   const [form] = Form.useForm();
 
   const [rowData, setRowData] = useState<any[]>([]);
+  const [allRows, setAllRows] = useState<any[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING'>('ALL');
 
   const fetchPayoutData = async () => {
     try {
@@ -46,6 +49,7 @@ const PayoutTracker: React.FC = () => {
             : t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : '—',
         };
       });
+      setAllRows(mapped);
       setRowData(mapped);
     } catch (err) {
       console.error('Failed to load payout data', err);
@@ -55,6 +59,22 @@ const PayoutTracker: React.FC = () => {
   useEffect(() => {
     fetchPayoutData();
   }, []);
+
+  useEffect(() => {
+    let filtered = allRows;
+    if (statusFilter === 'PENDING') {
+      filtered = filtered.filter((r) => r.status === 'PENDING' || r.status === 'PARTIALLY_PAID');
+    }
+    if (searchText.trim()) {
+      const s = searchText.toLowerCase();
+      filtered = filtered.filter((r) =>
+        r.channelPartner?.toLowerCase().includes(s) ||
+        r.id?.toLowerCase().includes(s) ||
+        r.loanId?.toLowerCase().includes(s),
+      );
+    }
+    setRowData(filtered);
+  }, [searchText, statusFilter, allRows]);
 
   const handleUpdateClick = (data: any) => {
     setSelectedPayout(data);
@@ -218,10 +238,27 @@ const PayoutTracker: React.FC = () => {
             placeholder="Search by Channel Partner or Payout ID..."
             prefix={<Search size={18} className="text-slate-400" />}
             style={{ maxWidth: 400, borderRadius: 10 }}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            allowClear
           />
           <Space>
-            <Tag color="blue" className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg border-none">Pending Only</Tag>
-            <Tag className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg bg-slate-100 border-none text-slate-600">All Time</Tag>
+            <Tag
+              color={statusFilter === 'PENDING' ? 'blue' : undefined}
+              className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg border-none"
+              style={statusFilter !== 'PENDING' ? { background: '#f1f5f9', color: '#64748b' } : {}}
+              onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
+            >
+              Pending Only
+            </Tag>
+            <Tag
+              color={statusFilter === 'ALL' ? 'blue' : undefined}
+              className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg border-none"
+              style={statusFilter !== 'ALL' ? { background: '#f1f5f9', color: '#64748b' } : {}}
+              onClick={() => setStatusFilter('ALL')}
+            >
+              All
+            </Tag>
           </Space>
         </div>
         <div className="ag-theme-alpine" style={{ height: 450, width: '100%' }}>

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import http from 'http';
+import jwt from 'jsonwebtoken';
 import { Server as SocketServer } from 'socket.io';
 import app from './app';
 import { connectAllDatabases, disconnectAllDatabases } from './config/prisma';
@@ -31,6 +32,21 @@ async function bootstrap() {
   });
 
   setSocketServer(io);
+
+  // Verify JWT before accepting any WebSocket connection
+  io.use((socket, next) => {
+    const token =
+      (socket.handshake.auth?.token as string) ||
+      (socket.handshake.query?.token as string);
+    if (!token) return next(new Error('Authentication required'));
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string; id?: string; roles: string; jti: string };
+      (socket as any).user = { id: payload.id ?? payload.sub, email: payload.sub, roles: payload.roles?.split(',') ?? [] };
+      next();
+    } catch {
+      next(new Error('Invalid or expired token'));
+    }
+  });
 
   io.on('connection', (socket) => {
     const { conversationId, roomKey } = socket.handshake.query;

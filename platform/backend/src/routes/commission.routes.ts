@@ -22,6 +22,12 @@ router.get('/slabs/connector/:connectorId', async (req: Request, res: Response) 
   res.json(ok('Slabs fetched', await salesOpsService.getPayoutSlabs(req.params.connectorId)));
 });
 
+router.put('/slabs/:id', requireRoles('ADMIN'), async (req: Request, res: Response) => {
+  const { bankName, productCategory, payoutRate, minDisbursementAmount, status } = req.body;
+  const updated = await salesOpsService.updatePayoutSlab(req.params.id, { bankName, productCategory, payoutRate, minDisbursementAmount, status });
+  res.json(ok('Slab updated', updated));
+});
+
 // ── Commission Transactions ───────────────────────────────────────────────────
 router.get('/transactions', requireRoles('ADMIN', 'RM'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
@@ -44,7 +50,10 @@ router.get('/transactions/connector/:connectorId', requireRoles('ADMIN', 'RM', '
 router.put('/transactions/:id/status', requireRoles('ADMIN', 'RM'), async (req: Request, res: Response) => {
   const { status } = req.body;
   if (!status) { res.status(400).json(fail('status is required')); return; }
-  res.json(ok('Status updated', { id: req.params.id, status }));
+  const VALID_STATUSES = ['PENDING', 'APPROVED', 'PAID', 'REJECTED'];
+  if (!VALID_STATUSES.includes(status)) { res.status(400).json(fail(`status must be one of: ${VALID_STATUSES.join(', ')}`)); return; }
+  const updated = await salesOpsService.updateCommissionTransactionStatus(req.params.id, status);
+  res.json(ok('Status updated', updated));
 });
 
 export default router;
