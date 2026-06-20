@@ -3,22 +3,22 @@
 
 /* ─── Landing Design Tokens — Real Money Brand ─── */
 :root {
-  --navy:        #0A1E6E;
-  --navy-mid:    #0D2A99;
-  --navy-light:  #1537C0;
-  --gold:        #CC1A1A;
-  --gold-light:  #E02828;
-  --gold-pale:   #FFF0F0;
+  --navy:        #0B1E3D;
+  --navy-mid:    #1A3256;
+  --navy-light:  #1F3D6B;
+  --gold:        #C4993A;
+  --gold-light:  #E8C870;
+  --gold-pale:   #FBF5E6;
   --white:       #FFFFFF;
-  --bg:          #F5F7FC;
-  --bg-alt:      #EEF2FF;
-  --border:      #CDD4EC;
-  --border-lite: #E4E9F7;
-  --text-1:      #0A1E6E;
-  --text-2:      #3A4F80;
-  --text-3:      #7A8FB0;
-  --red-brand:   #CC1A1A;
-  --success:     #1A7A4A;
+  --bg:          #F5F7FA;
+  --bg-alt:      #EEF4FF;
+  --border:      #D4DCE8;
+  --border-lite: #E6EAF4;
+  --text-1:      #0B1E3D;
+  --text-2:      #3A5278;
+  --text-3:      #7A92B5;
+  --red-brand:   #DC2626;
+  --success:     #15803D;
 }
 
 /* ─── Base ─── */
@@ -36,7 +36,7 @@ html { scroll-behavior: smooth; }
   gap: 8px;
   padding: 5px 14px;
   background: var(--gold-pale);
-  border: 1px solid rgba(204, 26, 26, 0.22);
+  border: 1px solid rgba(196, 153, 58, 0.28);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -116,7 +116,7 @@ html { scroll-behavior: smooth; }
   text-decoration: none;
 }
 
-.btn-gold-formal:hover { background: #B08830; }
+.btn-gold-formal:hover { background: #B08830; border-color: #B08830; }
 
 /* ─── Section divider ─── */
 .section-divider {
@@ -132,7 +132,7 @@ html { scroll-behavior: smooth; }
 }
 
 .gold-number {
-  background: linear-gradient(90deg, #CC1A1A 0%, #E02828 40%, #CC1A1A 80%);
+  background: linear-gradient(90deg, #C4993A 0%, #E8C870 40%, #C4993A 80%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

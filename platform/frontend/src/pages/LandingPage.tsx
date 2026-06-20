@@ -19,17 +19,17 @@ import '../features/landing/styles/landing.css';
 const landingTheme = {
   token: {
     colorPrimary:    '#0B1E3D',
-    colorLink:       '#0B1E3D',
-    colorSuccess:    '#1A7A4A',
+    colorLink:       '#C4993A',
+    colorSuccess:    '#15803D',
     colorWarning:    '#C4993A',
-    colorError:      '#8B1A1A',
+    colorError:      '#DC2626',
     borderRadius:    2,
     borderRadiusSM:  2,
     borderRadiusLG:  3,
     fontFamily:      'Inter, -apple-system, sans-serif',
     colorBgBase:     '#FFFFFF',
     colorTextBase:   '#0B1E3D',
-    colorBorder:     '#D3DCE8',
+    colorBorder:     '#D4DCE8',
   },
   components: {
     Button: { borderRadius: 2 },

@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { RealMoneyLogo } from '../../../shared/components/RealMoneyLogo';
 import '../styles/landing.css';
 
-const BRAND_BLUE = '#0B2DA4';
-const BRAND_RED  = '#CC1A1A';
+const NAVY = '#0B1E3D';
+const GOLD = '#C4993A';
 
 const NAV_LINKS = [
   { label: 'Home',          href: '#hero' },
@@ -37,16 +37,16 @@ const Navbar: React.FC = () => {
     <>
       {/* Announcement bar */}
       <div style={{
-        background: BRAND_BLUE,
+        background: '#060F1E',
         padding: '7px 24px',
         textAlign: 'center',
         fontSize: 11.5,
-        color: 'rgba(255,255,255,0.55)',
+        color: 'rgba(255,255,255,0.45)',
         fontFamily: 'Inter, sans-serif',
         letterSpacing: '0.02em',
-        borderBottom: '1px solid rgba(204,26,26,0.20)',
+        borderBottom: `1px solid rgba(196,153,58,0.15)`,
       }}>
-        <span style={{ color: '#FF6B6B', fontWeight: 700 }}>Authorised Corporate DSA</span>
+        <span style={{ color: GOLD, fontWeight: 700 }}>Authorised Corporate DSA</span>
         {' · '}Personal Loans · Education Loans · Business Loans
         {' · '}
         <a href="tel:+919876543210" style={{
@@ -101,7 +101,7 @@ const Navbar: React.FC = () => {
                   fontFamily: 'Inter, sans-serif', padding: '4px 0',
                   letterSpacing: '0.01em', transition: 'color 0.14s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = BRAND_BLUE)}
+                onMouseEnter={e => (e.currentTarget.style.color = NAVY)}
                 onMouseLeave={e => (e.currentTarget.style.color = '#3A4F80')}
               >
                 {link.label}
@@ -113,9 +113,9 @@ const Navbar: React.FC = () => {
               onClick={() => navigate('/partners/register')}
               style={{
                 background: 'none',
-                border: `1px solid ${BRAND_RED}`,
+                border: `1px solid ${GOLD}`,
                 cursor: 'pointer',
-                color: BRAND_RED, fontWeight: 600,
+                color: GOLD, fontWeight: 600,
                 borderRadius: 2,
                 height: 36, paddingInline: 16,
                 fontSize: 13,
@@ -124,12 +124,12 @@ const Navbar: React.FC = () => {
                 transition: 'all 0.14s',
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = BRAND_RED;
+                (e.currentTarget as HTMLElement).style.background = GOLD;
                 (e.currentTarget as HTMLElement).style.color = '#fff';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.background = 'none';
-                (e.currentTarget as HTMLElement).style.color = BRAND_RED;
+                (e.currentTarget as HTMLElement).style.color = GOLD;
               }}
             >
               Become a Partner
@@ -140,8 +140,8 @@ const Navbar: React.FC = () => {
               onClick={() => navigate('/login')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
-                background: BRAND_BLUE,
-                border: `1px solid ${BRAND_BLUE}`,
+                background: NAVY,
+                border: `1px solid ${NAVY}`,
                 cursor: 'pointer',
                 color: '#fff', fontWeight: 600,
                 borderRadius: 2,
@@ -151,8 +151,8 @@ const Navbar: React.FC = () => {
                 letterSpacing: '0.03em',
                 transition: 'background 0.14s',
               }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#0D2A99')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = BRAND_BLUE)}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#1A3256')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = NAVY)}
             >
               <LogIn size={13} />
               Login
@@ -166,7 +166,7 @@ const Navbar: React.FC = () => {
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}
             aria-label="Open menu"
           >
-            <Menu size={22} color={BRAND_BLUE} />
+            <Menu size={22} color={NAVY} />
           </button>
         </div>
       </header>
@@ -199,7 +199,7 @@ const Navbar: React.FC = () => {
               style={{
                 textAlign: 'left',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 14, fontWeight: 500, color: BRAND_BLUE,
+                fontSize: 14, fontWeight: 500, color: NAVY,
                 padding: '13px 24px',
                 fontFamily: 'Inter, sans-serif',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -219,7 +219,7 @@ const Navbar: React.FC = () => {
               block size="large"
               onClick={() => { navigate('/partners/register'); setDrawerOpen(false); }}
               style={{
-                borderColor: BRAND_RED, color: BRAND_RED, fontWeight: 600,
+                borderColor: GOLD, color: GOLD, fontWeight: 600,
                 borderRadius: 2, letterSpacing: '0.03em',
               }}
             >
@@ -230,7 +230,7 @@ const Navbar: React.FC = () => {
               icon={<LogIn size={13} />}
               onClick={() => { navigate('/login'); setDrawerOpen(false); }}
               style={{
-                background: BRAND_BLUE, borderColor: BRAND_BLUE,
+                background: NAVY, borderColor: NAVY,
                 color: '#ffffff', fontWeight: 600, borderRadius: 2,
               }}
             >

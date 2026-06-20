@@ -5,64 +5,62 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Real Money Brand (Royal Blue × Red)
+   DESIGN TOKENS — Real Money Brand (Deep Navy × True Gold)
    ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* ── Brand Blue (from logo) ── */
-  --navy:          #0A1E6E;
-  --navy-mid:      #0D2A99;
-  --navy-light:    #1537C0;
+  /* ── Brand Navy ── */
+  --navy:          #0B1E3D;
+  --navy-mid:      #1A3256;
+  --navy-light:    #1F3D6B;
 
-  /* ── Brand Red (from logo — replaces gold accent) ── */
-  --gold:          #CC1A1A;
-  --gold-light:    #E02828;
-  --gold-pale:     #FFF0F0;
+  /* ── True Gold accent ── */
+  --gold:          #C4993A;
+  --gold-light:    #E8C870;
+  --gold-pale:     #FBF5E6;
   --white:         #FFFFFF;
 
   /* ── Brand palette ── */
-  --rm-red:        #CC1A1A;
-  --rm-red-dark:   #A51414;
-  --rm-red-mid:    #E02828;
-  --rm-red-light:  #FFF0F0;
-  --rm-blue:       #0B2DA4;
-  --rm-blue-dark:  #071F7A;
-  --rm-blue-mid:   #1537C0;
-  --rm-blue-light: #EEF2FF;
-  --rm-navy:       #0A1E6E;
-  --rm-gradient:   linear-gradient(135deg, #0A1E6E 0%, #0D2A99 100%);
-  --rm-gradient-h: linear-gradient(90deg, #0A1E6E 0%, #1537C0 100%);
+  --rm-gold:       #C4993A;
+  --rm-gold-dark:  #A07828;
+  --rm-gold-mid:   #D4A843;
+  --rm-gold-light: #FBF5E6;
+  --rm-navy:       #0B1E3D;
+  --rm-navy-mid:   #1A3256;
+  --rm-navy-light: #EEF2FF;
+  --rm-gradient:   linear-gradient(135deg, #060F20 0%, #0B1E3D 100%);
+  --rm-gradient-h: linear-gradient(90deg, #0B1E3D 0%, #1F3D6B 100%);
 
-  --brand-50:      #EEF2FF;
-  --brand-100:     #C7D2F8;
-  --brand-400:     #4A6FD4;
-  --brand-500:     #0B2DA4;
-  --brand-600:     #0A1E6E;
-  --brand-700:     #071550;
+  --brand-50:      #FBF5E6;
+  --brand-100:     #F0DFA8;
+  --brand-400:     #D4A843;
+  --brand-500:     #C4993A;
+  --brand-600:     #A07828;
+  --brand-700:     #7A5A1A;
 
-  /* ── Surfaces (clean white) ── */
+  /* ── Surfaces ── */
   --surface-0:     #FFFFFF;
-  --surface-1:     #F5F7FC;
-  --surface-2:     #E8ECF7;
-  --surface-3:     #CDD4EC;
+  --surface-1:     #F5F7FA;
+  --surface-2:     #E8EDF5;
+  --surface-3:     #D4DCE8;
 
   /* ── Text ── */
-  --text-primary:   #0A1E6E;
-  --text-secondary: #3A4F80;
-  --text-muted:     #7A8FB0;
+  --text-primary:   #0B1E3D;
+  --text-secondary: #3A5278;
+  --text-muted:     #7A92B5;
 
   /* ── Sidebar ── */
-  --sidebar-bg:      #0A1E6E;
+  --sidebar-bg:      #0B1E3D;
   --sidebar-surface: rgba(255, 255, 255, 0.03);
   --sidebar-border:  rgba(255, 255, 255, 0.07);
   --sidebar-hover:   rgba(255, 255, 255, 0.05);
-  --sidebar-active:  rgba(204, 26, 26, 0.10);
+  --sidebar-active:  rgba(196, 153, 58, 0.12);
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 3px rgba(10, 30, 110, 0.06), 0 1px 2px rgba(10, 30, 110, 0.04);
-  --shadow-md: 0 3px 10px rgba(10, 30, 110, 0.08), 0 1px 4px rgba(10, 30, 110, 0.05);
-  --shadow-lg: 0 8px 24px rgba(10, 30, 110, 0.10), 0 3px 8px rgba(10, 30, 110, 0.06);
-  --shadow-xl: 0 16px 48px rgba(10, 30, 110, 0.12), 0 6px 16px rgba(10, 30, 110, 0.07);
-  --shadow-glow: 0 0 0 3px rgba(10, 30, 110, 0.12);
+  --shadow-sm: 0 1px 3px rgba(11, 30, 61, 0.06), 0 1px 2px rgba(11, 30, 61, 0.04);
+  --shadow-md: 0 3px 10px rgba(11, 30, 61, 0.08), 0 1px 4px rgba(11, 30, 61, 0.05);
+  --shadow-lg: 0 8px 24px rgba(11, 30, 61, 0.10), 0 3px 8px rgba(11, 30, 61, 0.06);
+  --shadow-xl: 0 16px 48px rgba(11, 30, 61, 0.12), 0 6px 16px rgba(11, 30, 61, 0.07);
+  --shadow-glow: 0 0 0 3px rgba(196, 153, 58, 0.15);
 
   /* ── Radius (minimal — formal) ── */
   --radius-sm:  2px;
@@ -134,13 +132,13 @@ body {
 .pro-sider .ant-menu-item:hover {
   background: var(--sidebar-hover) !important;
   color: rgba(255, 255, 255, 0.82) !important;
-  border-left-color: rgba(204, 26, 26, 0.40) !important;
+  border-left-color: rgba(196, 153, 58, 0.35) !important;
 }
 
 .pro-sider .ant-menu-item-selected {
   background: var(--sidebar-active) !important;
-  color: #FF4D4D !important;
-  border-left: 3px solid var(--rm-red) !important;
+  color: var(--gold-light) !important;
+  border-left: 3px solid var(--gold) !important;
   font-weight: 600 !important;
 }
 

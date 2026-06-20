@@ -11,8 +11,9 @@ import api from '../../shared/services/apiClient';
 import { RootState } from '../../store';
 import { RealMoneyMark } from '../../shared/components/RealMoneyLogo';
 
-const BRAND_BLUE = '#0B2DA4';
-const BRAND_RED  = '#CC1A1A';
+const NAVY = '#0B1E3D';
+const GOLD = '#C4993A';
+const GOLD_L = '#E8C870';
 
 const TRUST_STATS = [
   { value: '22+',   label: 'Years of Trust' },
@@ -71,7 +72,29 @@ const LoginPage: React.FC = () => {
     <div className="login-page">
 
       {/* ── Left panel — brand authority ── */}
-      <div className="login-page-illustration" style={{ background: BRAND_BLUE }}>
+      <div className="login-page-illustration" style={{
+        background: `linear-gradient(160deg, #060F20 0%, ${NAVY} 55%, #0E2545 100%)`,
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Grid pattern */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(196,153,58,0.04) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(196,153,58,0.04) 1px, transparent 1px)`,
+          backgroundSize: '48px 48px',
+        }} />
+        {/* Circle accent */}
+        <div style={{
+          position: 'absolute', top: -120, right: -120,
+          width: 400, height: 400, borderRadius: '50%',
+          border: `1px solid rgba(196,153,58,0.07)`, pointerEvents: 'none',
+        }} />
+        {/* Bottom gold glow */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 1,
+          background: `linear-gradient(90deg, transparent, ${GOLD}40, transparent)`,
+        }} />
+
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 400 }}>
 
           {/* Real Money logo mark — large */}
@@ -84,7 +107,9 @@ const LoginPage: React.FC = () => {
             <span style={{
               fontFamily: '"Playfair Display", Georgia, serif',
               fontWeight: 800, fontSize: 34,
-              color: '#FF6B6B',
+              background: `linear-gradient(90deg, ${GOLD} 0%, ${GOLD_L} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
               letterSpacing: '-0.01em',
             }}>
               REAL&nbsp;
@@ -110,7 +135,7 @@ const LoginPage: React.FC = () => {
           {/* Quote */}
           <div style={{
             paddingLeft: 16,
-            borderLeft: `3px solid rgba(204,26,26,0.55)`,
+            borderLeft: `2px solid ${GOLD}70`,
             marginBottom: 44,
           }}>
             <p style={{
@@ -128,19 +153,19 @@ const LoginPage: React.FC = () => {
           {/* Stats row */}
           <div style={{
             display: 'flex', gap: 0,
-            border: '1px solid rgba(204,26,26,0.22)',
-            background: 'rgba(204,26,26,0.05)',
+            border: `1px solid rgba(196,153,58,0.22)`,
+            background: 'rgba(196,153,58,0.04)',
             marginBottom: 44,
           }}>
             {TRUST_STATS.map((s, i) => (
               <div key={s.label} style={{
                 flex: 1, padding: '18px 0', textAlign: 'center',
-                borderRight: i < 2 ? '1px solid rgba(204,26,26,0.14)' : 'none',
+                borderRight: i < 2 ? `1px solid rgba(196,153,58,0.14)` : 'none',
               }}>
                 <div style={{
                   fontFamily: '"Playfair Display", Georgia, serif',
                   fontWeight: 700, fontSize: 20,
-                  color: '#FF6B6B', lineHeight: 1,
+                  color: GOLD_L, lineHeight: 1,
                 }}>
                   {s.value}
                 </div>
@@ -167,12 +192,12 @@ const LoginPage: React.FC = () => {
             }}>
               <div style={{
                 width: 16, height: 16,
-                background: 'rgba(204,26,26,0.14)',
-                border: '1px solid rgba(204,26,26,0.30)',
+                background: `rgba(196,153,58,0.10)`,
+                border: `1px solid rgba(196,153,58,0.30)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <div style={{ width: 6, height: 1, background: '#FF6B6B' }} />
+                <div style={{ width: 6, height: 1, background: GOLD }} />
               </div>
               <span style={{
                 fontSize: 13, color: 'rgba(255,255,255,0.50)',
@@ -188,8 +213,8 @@ const LoginPage: React.FC = () => {
             <div style={{
               width: 6, height: 6,
               borderRadius: '50%',
-              background: '#1A7A4A',
-              boxShadow: '0 0 0 3px rgba(26,122,74,0.20)',
+              background: '#15803D',
+              boxShadow: '0 0 0 3px rgba(21,128,61,0.22)',
             }} />
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'Inter, sans-serif' }}>
               All systems operational
@@ -208,11 +233,11 @@ const LoginPage: React.FC = () => {
               display: 'inline-flex', alignItems: 'center', gap: 6,
               background: '#EEF2FF',
               padding: '4px 12px', marginBottom: 20,
-              borderLeft: `3px solid ${BRAND_BLUE}`,
+              borderLeft: `3px solid ${NAVY}`,
             }}>
-              <ShieldCheck size={12} color={BRAND_BLUE} />
+              <ShieldCheck size={12} color={NAVY} />
               <span style={{
-                color: BRAND_BLUE, fontSize: 10.5, fontWeight: 700,
+                color: NAVY, fontSize: 10.5, fontWeight: 700,
                 letterSpacing: '0.07em', textTransform: 'uppercase',
                 fontFamily: 'Inter, sans-serif',
               }}>
@@ -223,7 +248,7 @@ const LoginPage: React.FC = () => {
             <h1 style={{
               fontFamily: '"Playfair Display", Georgia, serif',
               fontSize: '2rem', fontWeight: 700,
-              color: BRAND_BLUE, letterSpacing: '-0.02em',
+              color: NAVY, letterSpacing: '-0.02em',
               margin: '0 0 8px', lineHeight: 1.2,
             }}>
               Welcome back
@@ -248,7 +273,7 @@ const LoginPage: React.FC = () => {
                 marginBottom: 20,
                 borderRadius: 0,
                 border: 'none',
-                borderLeft: `3px solid ${BRAND_RED}`,
+                borderLeft: `3px solid ${GOLD}`,
                 background: '#FFF0F0',
               }}
             />
@@ -315,7 +340,7 @@ const LoginPage: React.FC = () => {
                 )}
               />
               <a href="/forgot-password" style={{
-                color: BRAND_BLUE, fontSize: 13, fontWeight: 600,
+                color: NAVY, fontSize: 13, fontWeight: 600,
                 textDecoration: 'none', letterSpacing: '0.01em',
               }}>
                 Forgot password?
@@ -333,8 +358,8 @@ const LoginPage: React.FC = () => {
                 fontWeight: 700,
                 fontSize: 14,
                 letterSpacing: '0.03em',
-                background: BRAND_BLUE,
-                borderColor: BRAND_BLUE,
+                background: NAVY,
+                borderColor: NAVY,
                 boxShadow: 'none',
                 fontFamily: 'Inter, sans-serif',
               }}
@@ -349,7 +374,7 @@ const LoginPage: React.FC = () => {
               Don't have access?{' '}
               <a
                 href="mailto:admin@realmoneygroups.in"
-                style={{ color: BRAND_BLUE, fontWeight: 600, textDecoration: 'none' }}
+                style={{ color: NAVY, fontWeight: 600, textDecoration: 'none' }}
               >
                 Contact your administrator
               </a>
