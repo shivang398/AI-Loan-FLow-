@@ -454,7 +454,7 @@ const CustomerRegistrationSection: React.FC = () => {
             permanentPincode: form.permanentPincode,
           };
 
-      const res = await axios.post('/api/customers', {
+      const res = await axios.post('/api/customers/leads', {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,

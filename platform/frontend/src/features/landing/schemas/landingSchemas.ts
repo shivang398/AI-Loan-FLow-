@@ -2,20 +2,6 @@ import { z } from 'zod';
 
 const indianMobile = /^[6-9]\d{9}$/;
 
-const ALLOWED_DOMAINS = ['realmoneygroups.in', 'realfinserv.com'];
-
-const allowedDomainEmail = z
-  .string()
-  .email('Enter a valid email address')
-  .refine(
-    (email) => {
-      const at = email.lastIndexOf('@');
-      if (at < 0) return false;
-      return ALLOWED_DOMAINS.includes(email.slice(at + 1).toLowerCase());
-    },
-    { message: 'Only @realmoneygroups.in and @realfinserv.com email addresses are permitted' }
-  );
-
 export const heroFormSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
   mobile: z.string().regex(indianMobile, 'Enter a valid 10-digit Indian mobile number'),
@@ -41,7 +27,7 @@ export type EligibilityFormData = z.infer<typeof eligibilitySchema>;
 
 export const partnerRegistrationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: allowedDomainEmail,
+  email: z.string().email('Enter a valid email address'),
   mobile: z.string().regex(indianMobile, 'Enter a valid 10-digit Indian mobile number'),
   businessName: z.string().min(2, 'Business name required'),
   city: z.string().min(2, 'City required'),

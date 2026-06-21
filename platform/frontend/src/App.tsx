@@ -3,7 +3,7 @@ import { App as AntApp, ConfigProvider } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LandingPage from './pages/LandingPage';
-import PartnerRegistration from './pages/PartnerRegistration';
+import CareersPage from './pages/CareersPage';
 import LoginPage from './pages/auth/LoginPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
@@ -165,7 +165,8 @@ const App: React.FC = () => {
 
           {/* Public landing routes */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/partners/register" element={<PartnerRegistration />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/partners/register" element={<Navigate to="/careers" replace />} />
 
           {/* Fallback to dashboard for authenticated users */}
           <Route path="/app" element={<Navigate to="/dashboard" replace />} />

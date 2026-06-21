@@ -40,7 +40,7 @@ const LeadOnboardingWizard: React.FC = () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
-      await apiClient.post('/customers', {
+      await apiClient.post('/customers/leads', {
         firstName:        (values.fullName || '').split(' ')[0] || values.fullName,
         lastName:         (values.fullName || '').split(' ').slice(1).join(' ') || '-',
         email:            values.email || '',
@@ -83,8 +83,11 @@ const LeadOnboardingWizard: React.FC = () => {
       icon: <FileText size={18} />,
       content: (
         <div className="space-y-6">
-          <Form.Item name="pan" label="PAN Number" rules={[{ required: true }]}>
-            <Input size="large" placeholder="ABCDE1234F" className="rounded-xl uppercase" />
+          <Form.Item name="pan" label="PAN Number" rules={[
+            { required: true, message: 'PAN number is required' },
+            { pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Invalid PAN format (e.g. ABCDE1234F)' },
+          ]} normalize={(v: string) => v?.toUpperCase()}>
+            <Input size="large" placeholder="ABCDE1234F" className="rounded-xl" maxLength={10} />
           </Form.Item>
           <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center hover:border-blue-400 transition-colors">
             <UploadIcon size={32} className="mx-auto text-slate-300 mb-2" />

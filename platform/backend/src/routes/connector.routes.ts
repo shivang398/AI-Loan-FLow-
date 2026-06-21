@@ -25,6 +25,18 @@ router.get('/', async (req: Request, res: Response) => {
   })));
 });
 
+// POST /connectors/self-register — used after partner self-signup; any authenticated user can create their own profile
+router.post('/self-register', async (req: Request, res: Response) => {
+  const { firstName, lastName, phone, email, region } = req.body;
+  if (!firstName || !lastName) { res.status(400).json(fail('firstName and lastName are required')); return; }
+  const existing = await salesOpsService.getConnectorByUserId(req.user!.id).catch(() => null);
+  if (existing) { res.json(ok('Connector profile already exists', existing)); return; }
+  res.status(201).json(ok('Connector profile created', await salesOpsService.createConnector({
+    userId: req.user!.id, firstName, lastName, phone, email, region,
+    platformRole: 'CONNECTOR', createdBy: req.user!.email,
+  })));
+});
+
 // POST /connectors
 router.post('/', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const { userId, firstName, lastName, phone, email, region, platformRole } = req.body;

@@ -108,9 +108,9 @@ const Navbar: React.FC = () => {
               </button>
             ))}
 
-            {/* Become a Partner */}
+            {/* Careers */}
             <button
-              onClick={() => navigate('/partners/register')}
+              onClick={() => navigate('/careers')}
               style={{
                 background: 'none',
                 border: `1px solid ${GOLD}`,
@@ -132,7 +132,7 @@ const Navbar: React.FC = () => {
                 (e.currentTarget as HTMLElement).style.color = GOLD;
               }}
             >
-              Become a Partner
+              Careers
             </button>
 
             {/* Login */}
@@ -217,13 +217,13 @@ const Navbar: React.FC = () => {
           <div style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Button
               block size="large"
-              onClick={() => { navigate('/partners/register'); setDrawerOpen(false); }}
+              onClick={() => { navigate('/careers'); setDrawerOpen(false); }}
               style={{
                 borderColor: GOLD, color: GOLD, fontWeight: 600,
                 borderRadius: 2, letterSpacing: '0.03em',
               }}
             >
-              Become a Partner
+              Careers
             </Button>
             <Button
               block size="large"
