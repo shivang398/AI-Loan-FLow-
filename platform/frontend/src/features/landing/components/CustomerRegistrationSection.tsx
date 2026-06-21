@@ -15,7 +15,9 @@ interface FormData {
   lastName: string;
   gender: string;
   maritalStatus: string;
-  dob: string;
+  dobDay: string;
+  dobMonth: string;
+  dobYear: string;
   mobile: string;
   alternateContact: string;
   whatsappSameAsMobile: boolean;
@@ -61,7 +63,7 @@ interface FormData {
 
 const INITIAL: FormData = {
   loanAmount: '', loanType: 'personal', profession: '', netMonthlySalary: '',
-  firstName: '', lastName: '', gender: '', maritalStatus: '', dob: '',
+  firstName: '', lastName: '', gender: '', maritalStatus: '', dobDay: '', dobMonth: '', dobYear: '',
   mobile: '', alternateContact: '',
   whatsappSameAsMobile: false, whatsappNo: '',
   email: '', officialEmail: '',
@@ -193,7 +195,7 @@ const LocationPicker: React.FC<{
             {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </F>
-        <F label="District">
+        <F label="District" required>
           <select value={districtVal} onChange={e => handleDistrictChange(e.target.value)} style={sel}
             disabled={!stateVal}
             onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
@@ -259,8 +261,8 @@ const validateStep = (step: number, f: FormData): string => {
     if (!f.firstName.trim() || !/^[A-Za-z\s]{2,}$/.test(f.firstName.trim())) return 'First name must be at least 2 letters (no numbers).';
     if (!f.lastName.trim() || !/^[A-Za-z\s]{1,}$/.test(f.lastName.trim())) return 'Last name must be letters only.';
     if (!f.gender) return 'Select gender.';
-    if (!f.dob) return 'Date of birth is required.';
-    const dobDate = new Date(f.dob);
+    if (!f.dobDay || !f.dobMonth || !f.dobYear) return 'Date of birth is required — select day, month and year.';
+    const dobDate = new Date(Number(f.dobYear), Number(f.dobMonth) - 1, Number(f.dobDay));
     const today = new Date();
     const age = today.getFullYear() - dobDate.getFullYear() - (today < new Date(today.getFullYear(), dobDate.getMonth(), dobDate.getDate()) ? 1 : 0);
     if (age < 21) return 'Applicant must be at least 21 years old.';
@@ -268,15 +270,25 @@ const validateStep = (step: number, f: FormData): string => {
     if (!/^[6-9][0-9]{9}$/.test(f.mobile)) return 'Mobile must be a valid 10-digit Indian number starting with 6–9.';
     if (f.alternateContact && !/^[6-9][0-9]{9}$/.test(f.alternateContact)) return 'Alternate contact must be a valid 10-digit number.';
     if (!f.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return 'Valid email address is required (e.g. name@gmail.com).';
+    if (!f.officialEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.officialEmail)) return 'Official email is required (e.g. rahul@company.com).';
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(f.panNumber)) return 'Invalid PAN format — must be 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).';
-    if (f.aadhaarNumber && !/^[0-9]{12}$/.test(f.aadhaarNumber.replace(/\s/g, ''))) return 'Aadhaar must be exactly 12 digits.';
+    if (!f.aadhaarNumber || !/^[0-9]{12}$/.test(f.aadhaarNumber.replace(/\s/g, ''))) return 'Aadhaar must be exactly 12 digits.';
   }
   if (step === 2) {
-    if (!f.currentAddressLine1.trim()) return 'Current address is required.';
+    if (!f.currentAddressLine1.trim()) return 'Current address line 1 is required.';
     if (!f.currentState.trim()) return 'State is required.';
+    if (!f.currentDistrict.trim()) return 'District is required.';
     if (!f.currentCity.trim()) return 'City is required.';
     if (f.currentCity === 'Others' && !f.currentCityCustom.trim()) return 'Please specify your city name.';
     if (!/^[0-9]{6}$/.test(f.currentPincode)) return 'Valid 6-digit pincode required.';
+    if (!f.sameAsPermanent) {
+      if (!f.permanentAddressLine1.trim()) return 'Permanent address line 1 is required.';
+      if (!f.permanentState.trim()) return 'Permanent state is required.';
+      if (!f.permanentDistrict.trim()) return 'Permanent district is required.';
+      if (!f.permanentCity.trim()) return 'Permanent city is required.';
+      if (f.permanentCity === 'Others' && !f.permanentCityCustom.trim()) return 'Please specify your permanent city name.';
+      if (!/^[0-9]{6}$/.test(f.permanentPincode)) return 'Valid 6-digit permanent pincode required.';
+    }
   }
   if (step === 3) {
     if (!f.companyType) return 'Select your organisation type.';
@@ -284,8 +296,12 @@ const validateStep = (step: number, f: FormData): string => {
     if (!f.jobType) return 'Select job type.';
     if (!f.designation.trim()) return 'Designation is required.';
     if (!f.modeOfSalary) return 'Select salary mode.';
+    if (!f.officeAddress.trim()) return 'Office address is required.';
+    if (!f.officeState.trim()) return 'Office state is required.';
+    if (!f.officeDistrict.trim()) return 'Office district is required.';
     if (!f.officeCity.trim()) return 'Office city is required.';
     if (f.officeCity === 'Others' && !f.officeCityCustom.trim()) return 'Please specify your office city name.';
+    if (!/^[0-9]{6}$/.test(f.officePincode)) return 'Valid 6-digit office pincode required.';
     if (!f.hasPriorPersonalLoan) return 'Please indicate if you have any running loans/EMIs.';
     if (f.hasPriorPersonalLoan === 'YES' && (!f.existingEmi || isNaN(Number(f.existingEmi))))
       return 'Please enter your existing monthly EMI amount.';
@@ -358,7 +374,7 @@ const CustomerRegistrationSection: React.FC = () => {
         netMonthlySalary: Number(form.netMonthlySalary),
         gender: form.gender,
         maritalStatus: form.maritalStatus || undefined,
-        dob: form.dob,
+        dob: `${form.dobYear}-${form.dobMonth.padStart(2,'0')}-${form.dobDay.padStart(2,'0')}`,
         alternateContact: form.alternateContact || undefined,
         whatsappNo: form.whatsappSameAsMobile ? form.mobile : (form.whatsappNo || undefined),
         officialEmail: form.officialEmail || undefined,
@@ -565,18 +581,32 @@ const CustomerRegistrationSection: React.FC = () => {
                           { value: 'WIDOWED', label: 'Widowed' },
                         ]} />
                       </F>
-                      <F label="Date of Birth *">
-                        <input
-                          type="date" value={form.dob}
-                          onChange={e => set('dob')(e.target.value)}
-                          min={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 60); return d.toISOString().split('T')[0]; })()}
-                          max={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 21); return d.toISOString().split('T')[0]; })()}
-                          style={inp}
-                          onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
-                          onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-                        />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ ...lbl }}>
+                          Date of Birth<span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr 1.2fr', gap: 8 }}>
+                          <Sel value={form.dobDay} onChange={set('dobDay')} options={
+                            Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1).padStart(2, '0') }))
+                          } />
+                          <Sel value={form.dobMonth} onChange={set('dobMonth')} options={[
+                            { value: '1', label: 'January' }, { value: '2', label: 'February' },
+                            { value: '3', label: 'March' },   { value: '4', label: 'April' },
+                            { value: '5', label: 'May' },     { value: '6', label: 'June' },
+                            { value: '7', label: 'July' },    { value: '8', label: 'August' },
+                            { value: '9', label: 'September' },{ value: '10', label: 'October' },
+                            { value: '11', label: 'November' },{ value: '12', label: 'December' },
+                          ]} />
+                          <Sel value={form.dobYear} onChange={set('dobYear')} options={(() => {
+                            const y = new Date().getFullYear();
+                            return Array.from({ length: 40 }, (_, i) => y - 60 + i)
+                              .filter(yr => yr <= y - 21)
+                              .reverse()
+                              .map(yr => ({ value: String(yr), label: String(yr) }));
+                          })()} />
+                        </div>
                         <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Age must be 21–60 years</span>
-                      </F>
+                      </div>
                     </div>
                     <div style={grid2}>
                       <F label="Mobile No." required>
@@ -647,8 +677,9 @@ const CustomerRegistrationSection: React.FC = () => {
                         <Input placeholder="rahul@gmail.com" value={form.email} onChange={set('email')} type="email" />
                         <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Format: name@domain.com</span>
                       </F>
-                      <F label="Official Email">
+                      <F label="Official / Company Email" required>
                         <Input placeholder="rahul@company.com" value={form.officialEmail} onChange={set('officialEmail')} type="email" />
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Format: name@company.com</span>
                       </F>
                     </div>
                     <div style={grid2}>
@@ -661,7 +692,7 @@ const CustomerRegistrationSection: React.FC = () => {
                         />
                         <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>5 letters · 4 digits · 1 letter (e.g. ABCDE1234F)</span>
                       </F>
-                      <F label="Aadhaar Number">
+                      <F label="Aadhaar Number" required>
                         <Input
                           placeholder="1234 5678 9012"
                           value={form.aadhaarNumber}
@@ -728,7 +759,7 @@ const CustomerRegistrationSection: React.FC = () => {
                           Permanent Address
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          <F label="Address Line 1">
+                          <F label="Address Line 1" required>
                             <Input placeholder="House No., Street" value={form.permanentAddressLine1} onChange={set('permanentAddressLine1')} />
                           </F>
                           <F label="Address Line 2">
@@ -744,7 +775,7 @@ const CustomerRegistrationSection: React.FC = () => {
                             onCity={set('permanentCity')}
                             onCityCustom={set('permanentCityCustom')}
                           />
-                          <F label="Pincode">
+                          <F label="Pincode" required>
                             <Input placeholder="440001" value={form.permanentPincode} onChange={set('permanentPincode')} />
                           </F>
                         </div>
@@ -791,7 +822,7 @@ const CustomerRegistrationSection: React.FC = () => {
                         <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Lenders require salary via bank transfer for loan eligibility</span>
                       </F>
                     </div>
-                    <F label="Office Address">
+                    <F label="Office Address" required>
                       <Input placeholder="Building, Street, Area" value={form.officeAddress} onChange={set('officeAddress')} />
                     </F>
                     <LocationPicker
@@ -804,7 +835,7 @@ const CustomerRegistrationSection: React.FC = () => {
                       onCity={set('officeCity')}
                       onCityCustom={set('officeCityCustom')}
                     />
-                    <F label="Office Pincode">
+                    <F label="Office Pincode" required>
                       <Input placeholder="411001" value={form.officePincode} onChange={set('officePincode')} />
                     </F>
 

@@ -5281,6 +5281,7 @@ export namespace Prisma {
     email: string | null
     mobile: string | null
     panNumber: string | null
+    aadhaarNumber: string | null
     loanType: string | null
     loanAmount: Decimal | null
     assignedTo: string | null
@@ -5329,6 +5330,7 @@ export namespace Prisma {
     email: string | null
     mobile: string | null
     panNumber: string | null
+    aadhaarNumber: string | null
     loanType: string | null
     loanAmount: Decimal | null
     assignedTo: string | null
@@ -5377,6 +5379,7 @@ export namespace Prisma {
     email: number
     mobile: number
     panNumber: number
+    aadhaarNumber: number
     loanType: number
     loanAmount: number
     assignedTo: number
@@ -5439,6 +5442,7 @@ export namespace Prisma {
     email?: true
     mobile?: true
     panNumber?: true
+    aadhaarNumber?: true
     loanType?: true
     loanAmount?: true
     assignedTo?: true
@@ -5487,6 +5491,7 @@ export namespace Prisma {
     email?: true
     mobile?: true
     panNumber?: true
+    aadhaarNumber?: true
     loanType?: true
     loanAmount?: true
     assignedTo?: true
@@ -5535,6 +5540,7 @@ export namespace Prisma {
     email?: true
     mobile?: true
     panNumber?: true
+    aadhaarNumber?: true
     loanType?: true
     loanAmount?: true
     assignedTo?: true
@@ -5670,6 +5676,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber: string | null
     loanType: string | null
     loanAmount: Decimal | null
     assignedTo: string | null
@@ -5737,6 +5744,7 @@ export namespace Prisma {
     email?: boolean
     mobile?: boolean
     panNumber?: boolean
+    aadhaarNumber?: boolean
     loanType?: boolean
     loanAmount?: boolean
     assignedTo?: boolean
@@ -5787,6 +5795,7 @@ export namespace Prisma {
     email?: boolean
     mobile?: boolean
     panNumber?: boolean
+    aadhaarNumber?: boolean
     loanType?: boolean
     loanAmount?: boolean
     assignedTo?: boolean
@@ -5844,6 +5853,7 @@ export namespace Prisma {
       email: string
       mobile: string
       panNumber: string
+      aadhaarNumber: string | null
       loanType: string | null
       loanAmount: Prisma.Decimal | null
       assignedTo: string | null
@@ -6259,6 +6269,7 @@ export namespace Prisma {
     readonly email: FieldRef<"Lead", 'String'>
     readonly mobile: FieldRef<"Lead", 'String'>
     readonly panNumber: FieldRef<"Lead", 'String'>
+    readonly aadhaarNumber: FieldRef<"Lead", 'String'>
     readonly loanType: FieldRef<"Lead", 'String'>
     readonly loanAmount: FieldRef<"Lead", 'Decimal'>
     readonly assignedTo: FieldRef<"Lead", 'String'>
@@ -9613,6 +9624,7 @@ export namespace Prisma {
     email: 'email',
     mobile: 'mobile',
     panNumber: 'panNumber',
+    aadhaarNumber: 'aadhaarNumber',
     loanType: 'loanType',
     loanAmount: 'loanAmount',
     assignedTo: 'assignedTo',
@@ -10059,6 +10071,7 @@ export namespace Prisma {
     email?: StringFilter<"Lead"> | string
     mobile?: StringFilter<"Lead"> | string
     panNumber?: StringFilter<"Lead"> | string
+    aadhaarNumber?: StringNullableFilter<"Lead"> | string | null
     loanType?: StringNullableFilter<"Lead"> | string | null
     loanAmount?: DecimalNullableFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableFilter<"Lead"> | string | null
@@ -10108,6 +10121,7 @@ export namespace Prisma {
     email?: SortOrder
     mobile?: SortOrder
     panNumber?: SortOrder
+    aadhaarNumber?: SortOrderInput | SortOrder
     loanType?: SortOrderInput | SortOrder
     loanAmount?: SortOrderInput | SortOrder
     assignedTo?: SortOrderInput | SortOrder
@@ -10160,6 +10174,7 @@ export namespace Prisma {
     email?: StringFilter<"Lead"> | string
     mobile?: StringFilter<"Lead"> | string
     panNumber?: StringFilter<"Lead"> | string
+    aadhaarNumber?: StringNullableFilter<"Lead"> | string | null
     loanType?: StringNullableFilter<"Lead"> | string | null
     loanAmount?: DecimalNullableFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableFilter<"Lead"> | string | null
@@ -10209,6 +10224,7 @@ export namespace Prisma {
     email?: SortOrder
     mobile?: SortOrder
     panNumber?: SortOrder
+    aadhaarNumber?: SortOrderInput | SortOrder
     loanType?: SortOrderInput | SortOrder
     loanAmount?: SortOrderInput | SortOrder
     assignedTo?: SortOrderInput | SortOrder
@@ -10265,6 +10281,7 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"Lead"> | string
     mobile?: StringWithAggregatesFilter<"Lead"> | string
     panNumber?: StringWithAggregatesFilter<"Lead"> | string
+    aadhaarNumber?: StringNullableWithAggregatesFilter<"Lead"> | string | null
     loanType?: StringNullableWithAggregatesFilter<"Lead"> | string | null
     loanAmount?: DecimalNullableWithAggregatesFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableWithAggregatesFilter<"Lead"> | string | null
@@ -10845,6 +10862,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber?: string | null
     loanType?: string | null
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
@@ -10893,6 +10911,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber?: string | null
     loanType?: string | null
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
@@ -10941,6 +10960,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
@@ -10989,6 +11009,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11037,6 +11058,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber?: string | null
     loanType?: string | null
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
@@ -11085,6 +11107,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11132,6 +11155,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11747,6 +11771,7 @@ export namespace Prisma {
     email?: SortOrder
     mobile?: SortOrder
     panNumber?: SortOrder
+    aadhaarNumber?: SortOrder
     loanType?: SortOrder
     loanAmount?: SortOrder
     assignedTo?: SortOrder
@@ -11801,6 +11826,7 @@ export namespace Prisma {
     email?: SortOrder
     mobile?: SortOrder
     panNumber?: SortOrder
+    aadhaarNumber?: SortOrder
     loanType?: SortOrder
     loanAmount?: SortOrder
     assignedTo?: SortOrder
@@ -11849,6 +11875,7 @@ export namespace Prisma {
     email?: SortOrder
     mobile?: SortOrder
     panNumber?: SortOrder
+    aadhaarNumber?: SortOrder
     loanType?: SortOrder
     loanAmount?: SortOrder
     assignedTo?: SortOrder
@@ -12845,6 +12872,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber?: string | null
     loanType?: string | null
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
@@ -12892,6 +12920,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber?: string | null
     loanType?: string | null
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
@@ -13053,6 +13082,7 @@ export namespace Prisma {
     email?: StringFilter<"Lead"> | string
     mobile?: StringFilter<"Lead"> | string
     panNumber?: StringFilter<"Lead"> | string
+    aadhaarNumber?: StringNullableFilter<"Lead"> | string | null
     loanType?: StringNullableFilter<"Lead"> | string | null
     loanAmount?: DecimalNullableFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableFilter<"Lead"> | string | null
@@ -13720,6 +13750,7 @@ export namespace Prisma {
     email: string
     mobile: string
     panNumber: string
+    aadhaarNumber?: string | null
     loanType?: string | null
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
@@ -13821,6 +13852,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13868,6 +13900,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13915,6 +13948,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
     loanType?: NullableStringFieldUpdateOperationsInput | string | null
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null

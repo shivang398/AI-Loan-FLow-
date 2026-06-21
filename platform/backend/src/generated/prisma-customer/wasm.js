@@ -170,6 +170,7 @@ exports.Prisma.LeadScalarFieldEnum = {
   email: 'email',
   mobile: 'mobile',
   panNumber: 'panNumber',
+  aadhaarNumber: 'aadhaarNumber',
   loanType: 'loanType',
   loanAmount: 'loanAmount',
   assignedTo: 'assignedTo',
