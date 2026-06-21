@@ -192,7 +192,6 @@ export const FAQ_ITEMS = [
 
 export const STATS = [
   { label: 'Years in the Industry', value: 22, suffix: '+', prefix: '' },
-  { label: 'Monthly Business Volume', value: 10, suffix: ' Cr+', prefix: '₹' },
   { label: 'Personal Loans Disbursed', value: 7500, suffix: '+', prefix: '' },
   { label: 'Customer Rating', value: 4.8, suffix: '/5', prefix: '' },
   { label: 'Advisory Fee', value: 0, suffix: '', prefix: '₹' },

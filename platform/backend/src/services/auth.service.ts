@@ -18,8 +18,15 @@ export async function registerUser(email: string, password: string, roleName: st
   const existingUser = await authDb.user.findUnique({ where: { email } });
   if (existingUser) throw Object.assign(new Error('Email already registered'), { status: 409 });
 
-  const role = await authDb.role.findUnique({ where: { name: roleName } });
-  if (!role) throw Object.assign(new Error(`Role ${roleName} not found`), { status: 400 });
+  // Upsert role so valid platform roles are auto-created on first use
+  const VALID_ROLES = ['ADMIN', 'PARTNER_MANAGER', 'RM', 'TEAM_LEADER', 'CONNECTOR', 'OPERATIONS'];
+  if (!VALID_ROLES.includes(roleName))
+    throw Object.assign(new Error(`Invalid role: ${roleName}`), { status: 400 });
+  const role = await authDb.role.upsert({
+    where: { name: roleName },
+    update: {},
+    create: { id: uuidv4(), name: roleName },
+  });
 
   const passwordHash = await bcrypt.hash(password, 12);
   const userId = uuidv4();
