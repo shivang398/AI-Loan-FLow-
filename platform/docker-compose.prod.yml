@@ -78,11 +78,12 @@ services:
       TENACIO_CRIF_CLIENT_ID: "${TENACIO_CRIF_CLIENT_ID}"
       TENACIO_CRIF_API_KEY: "${TENACIO_CRIF_API_KEY}"
       TENACIO_CRIF_WORKFLOW_ID: "${TENACIO_CRIF_WORKFLOW_ID}"
-      # AWS S3 — CV and document storage
-      AWS_S3_BUCKET:        "${AWS_S3_BUCKET:-platform-documents}"
-      AWS_REGION:           "${AWS_REGION:-ap-south-1}"
-      AWS_ACCESS_KEY_ID:    "${AWS_ACCESS_KEY_ID}"
+      # AWS S3 — CV and document storage (real S3, no LocalStack in prod)
+      AWS_S3_BUCKET:         "${AWS_S3_BUCKET:-platform-documents}"
+      AWS_REGION:            "${AWS_REGION:-ap-south-1}"
+      AWS_ACCESS_KEY_ID:     "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_S3_ENDPOINT:       ""
       # RDS DATABASE_URLs — overrides the localhost values in backend/.env
       # ssl=true required: ab_real_money_usr uses sha256_password plugin which needs SSL
       AUTH_DATABASE_URL:      "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_auth?ssl=true"
