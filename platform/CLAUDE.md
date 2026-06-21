@@ -12,21 +12,43 @@ A hierarchical multi-bank credit distribution platform (MERN stack). Loan connec
 
 ---
 
+## Environment setup
+
+There is one env file per deployment context — no split brain, no override patchwork.
+
+| Context | File | Loaded by |
+|---|---|---|
+| Local dev (native backend) | `platform/backend/.env` | Node.js / dotenv directly |
+| Local dev (Docker infra) | `platform/.env.local` | `docker compose --env-file .env.local` |
+| Production (EC2) | `platform/.env.production` | `docker compose --env-file .env.production` |
+
+Templates (committed): `.env.local.example`, `.env.production.example`, `backend/.env.example`
+
+**First-time setup:**
+```bash
+# Local dev
+cp platform/.env.local.example platform/.env.local        # fill in or leave defaults
+cp platform/backend/.env.example platform/backend/.env    # already has LocalStack defaults
+
+# Production (EC2 only)
+cp platform/.env.production.example platform/.env.production   # fill in ALL values
+```
+
 ## Commands
 
 ### Infrastructure (required before backend starts)
 
 ```bash
 cd platform
-docker compose up -d          # starts MySQL 8, RabbitMQ 3, Redis 7, LocalStack S3
-docker compose ps             # verify all healthy (~30s)
+docker compose --env-file .env.local up -d   # starts MySQL 8, RabbitMQ 3, Redis 7, LocalStack S3
+docker compose ps                             # verify all healthy (~30s)
 ```
 
 ### Backend
 
 ```bash
 cd platform/backend
-cp .env.example .env          # fill in secrets
+# backend/.env already has correct LocalStack/local defaults — edit if needed
 npm install
 npm run prisma:generate       # generate all 6 Prisma clients (run once after checkout)
 npm run dev                   # dev server on :8080 (tsx watch, hot-reload)
@@ -58,11 +80,17 @@ npm run build      # production build (tsc + vite)
 npm run lint
 ```
 
-### Docker (full production stack)
+### Docker (production — EC2)
 
 ```bash
-cd platform
-docker compose -f docker-compose.yml -f docker-compose.services.yml up -d
+cd /opt/AI-Loan-FLow-/platform
+
+# First deploy or after schema changes:
+sudo docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+sudo docker exec realmoney-prod-backend-1 npx prisma db push --schema=prisma/customer/schema.prisma
+
+# Rebuild only changed services (faster):
+sudo docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --no-deps frontend backend
 ```
 
 ---

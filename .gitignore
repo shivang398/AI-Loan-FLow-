@@ -17,9 +17,10 @@ dist/
 .pnp
 .pnp.js
 
-# Environment
+# Environment — never commit actual secrets, only *.example templates
 .env
 .env.local
+.env.production
 .env.production.local
 *.env
 

@@ -1,10 +1,13 @@
 # Production Docker Compose — EC2 deployment
 # Uses RDS for MySQL and real AWS S3. No LocalStack. No exposed internal ports.
 #
+# Prerequisites:
+#   platform/.env.production must exist (copy from .env.production.example and fill in values)
+#
 # Usage:
-#   docker compose -f docker-compose.prod.yml up -d
-#   docker compose -f docker-compose.prod.yml ps
-#   docker compose -f docker-compose.prod.yml logs -f backend
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+#   docker compose --env-file .env.production -f docker-compose.prod.yml ps
+#   docker compose --env-file .env.production -f docker-compose.prod.yml logs -f backend
 
 name: realmoney-prod
 
@@ -15,8 +18,10 @@ services:
     image: rabbitmq:3.13-management-alpine
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?RABBITMQ_PASS is required}
+      # ${RABBITMQ_USER} and ${RABBITMQ_PASS} are interpolated from .env.production
+      # via --env-file flag on the docker compose command
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required in .env.production}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?RABBITMQ_PASS is required in .env.production}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -55,43 +60,15 @@ services:
           memory: 256M
 
   # ── Backend (Node.js / Express) ─────────────────────────────────────────────
-  # Connects to RDS MySQL (URLs built from RDS_HOST/RDS_USER/RDS_PASS in .env),
-  # Redis and RabbitMQ via Docker network.
-  # Health endpoint: GET /health
   backend:
     image: ${ECR_REGISTRY:-realmoney}/backend:${APP_VERSION:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
-    env_file: ./backend/.env
-    environment:
-      PORT: "8080"
-      NODE_ENV: production
-      RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672"
-      RABBITMQ_EXCHANGE: platform.exchange
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost}"
-      # CIBIL / Tenacio CRIF API — values come from platform/.env (gitignored)
-      TENACIO_CRIF_URL: "${TENACIO_CRIF_URL}"
-      TENACIO_CRIF_CLIENT_ID: "${TENACIO_CRIF_CLIENT_ID}"
-      TENACIO_CRIF_API_KEY: "${TENACIO_CRIF_API_KEY}"
-      TENACIO_CRIF_WORKFLOW_ID: "${TENACIO_CRIF_WORKFLOW_ID}"
-      # AWS S3 — CV and document storage (real S3, no LocalStack in prod)
-      AWS_S3_BUCKET:         "${AWS_S3_BUCKET:-realmoney-document-personal-loan}"
-      AWS_REGION:            "${AWS_REGION:-ap-south-1}"
-      AWS_ACCESS_KEY_ID:     "${AWS_ACCESS_KEY_ID}"
-      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      AWS_S3_ENDPOINT:       ""
-      # RDS DATABASE_URLs — overrides the localhost values in backend/.env
-      # ssl=true required: ab_real_money_usr uses sha256_password plugin which needs SSL
-      AUTH_DATABASE_URL:      "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_auth?ssl=true"
-      LOAN_DATABASE_URL:      "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_loan_core?ssl=true"
-      CUSTOMER_DATABASE_URL:  "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_customer_docs?ssl=true"
-      SALESOPS_DATABASE_URL:  "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_sales_ops?ssl=true"
-      COMMS_DATABASE_URL:     "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_communications?ssl=true"
-      ANALYTICS_DATABASE_URL: "mysql://${RDS_USER}:${RDS_PASS}@${RDS_HOST}:3306/platform_analytics_reporting?ssl=true"
+    # Single source of truth — all runtime config comes from .env.production.
+    # No second env_file, no environment: overrides needed.
+    env_file: .env.production
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -133,8 +110,10 @@ services:
     environment:
       PORT: "8080"
       HTTPS_PORT: "8443"
+      # ${DOMAIN} is interpolated from .env.production via --env-file flag
       DOMAIN: "${DOMAIN:-localhost}"
       SERVICE_DISCOVERY_SUFFIX: ""
+      # Docker-internal service hostnames — all services run as "backend" on platform-net
       AUTH_SERVICE_URL: "backend:8080"
       CONNECTOR_SERVICE_URL: "backend:8080"
       COMMISSION_SERVICE_URL: "backend:8080"
@@ -147,7 +126,6 @@ services:
       MESSAGING_SERVICE_URL: "backend:8080"
       REPORTING_SERVICE_URL: "backend:8080"
       ANALYTICS_SERVICE_URL: "backend:8080"
-      # Set NAMESERVER to the Docker embedded DNS resolver
       NAMESERVER: "127.0.0.11"
     depends_on:
       backend:
