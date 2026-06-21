@@ -76,6 +76,15 @@ const addressSchema = z.object({
 });
 
 const router = Router();
+
+// ── Public: website form submission — no auth required ─────────────────────
+router.post('/leads', async (req: Request, res: Response) => {
+  const parsed = leadSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
+  res.status(201).json(ok('Lead created', await customerService.createLead({ ...parsed.data, createdBy: 'website_form' })));
+});
+
+// ── All routes below require authentication ────────────────────────────────
 router.use(authenticate);
 
 router.post('/', async (req: Request, res: Response) => {
@@ -88,13 +97,6 @@ router.get('/', async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('Customers fetched', await customerService.getCustomers({ search: req.query.search as string, page, size })));
-});
-
-// Leads (before /:id to avoid conflicts)
-router.post('/leads', async (req: Request, res: Response) => {
-  const parsed = leadSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
-  res.status(201).json(ok('Lead created', await customerService.createLead({ ...parsed.data, createdBy: req.user!.email })));
 });
 
 router.get('/leads', async (req: Request, res: Response) => {

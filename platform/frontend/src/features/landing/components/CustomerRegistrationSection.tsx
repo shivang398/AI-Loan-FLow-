@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { INDIA_STATES, getDistricts, getCities } from '../constants/indiaLocations';
 
@@ -46,6 +46,7 @@ interface FormData {
   // Step 4 – Employment
   jobType: string;
   designation: string;
+  companyType: string;
   companyName: string;
   modeOfSalary: string;
   officeAddress: string;
@@ -72,7 +73,7 @@ const INITIAL: FormData = {
   permanentAddressLine1: '', permanentAddressLine2: '',
   permanentState: '', permanentDistrict: '', permanentCity: '', permanentCityCustom: '',
   permanentPincode: '',
-  jobType: '', designation: '', companyName: '', modeOfSalary: 'BANK_TRANSFER',
+  jobType: '', designation: '', companyType: '', companyName: '', modeOfSalary: 'BANK_TRANSFER',
   officeAddress: '',
   officeState: '', officeDistrict: '', officeCity: '', officeCityCustom: '',
   officePincode: '',
@@ -93,9 +94,11 @@ const lbl: React.CSSProperties = {
 const sel: React.CSSProperties = { ...inp, cursor: 'pointer' };
 
 // ── Field helpers ──────────────────────────────────────────────────────────
-const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+const F = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
   <div style={{ display: 'flex', flexDirection: 'column' }}>
-    <label style={lbl}>{label}</label>
+    <label style={lbl}>
+      {label}{required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+    </label>
     {children}
   </div>
 );
@@ -139,138 +142,24 @@ const Sel = ({ value, onChange, options }: {
   </select>
 );
 
-// ── India company list ─────────────────────────────────────────────────────
-const INDIA_COMPANIES: string[] = [
-  // IT & Technology
-  'Accenture India', 'Amazon India', 'Capgemini India', 'Cognizant Technology Solutions',
-  'Flipkart', 'Google India', 'HCL Technologies', 'IBM India', 'Infosys',
-  'Microsoft India', 'MakeMyTrip', 'Mphasis', 'Mindtree', 'NIIT Technologies',
-  'Ola Cabs', 'Paytm (One97 Communications)', 'PhonePe', 'Swiggy', 'Tata Consultancy Services (TCS)',
-  'Tech Mahindra', 'Uber India', 'Wipro', 'Zomato',
-  // Banking & Financial Services
-  'Axis Bank', 'Bajaj Finance', 'Bajaj Finserv', 'Bank of Baroda', 'Bank of India',
-  'Bandhan Bank', 'Canara Bank', 'Central Bank of India', 'City Union Bank',
-  'Federal Bank', 'HDFC Bank', 'HDFC Life Insurance', 'ICICI Bank', 'ICICI Lombard',
-  'ICICI Prudential Life Insurance', 'IDFC First Bank', 'IndusInd Bank', 'Indian Bank',
-  'Kotak Mahindra Bank', 'Karnataka Bank', 'LIC (Life Insurance Corporation)',
-  'Punjab National Bank', 'RBL Bank', 'SBI (State Bank of India)', 'SBI Life Insurance',
-  'South Indian Bank', 'UCO Bank', 'Union Bank of India', 'Yes Bank',
-  // Government & PSUs
-  'Air India', 'BPCL (Bharat Petroleum)', 'BEL (Bharat Electronics)', 'BHEL',
-  'BSNL', 'Coal India', 'GAIL India', 'HAL (Hindustan Aeronautics)', 'HPCL',
-  'IOC (Indian Oil Corporation)', 'IRCON International', 'NMDC', 'NTPC',
-  'ONGC (Oil and Natural Gas Corporation)', 'Power Grid Corporation',
-  'SAIL (Steel Authority of India)', 'Indian Railways', 'India Post',
-  // Defense & Uniformed Services
-  'Indian Army', 'Indian Air Force', 'Indian Navy', 'Indian Coast Guard',
-  'CISF', 'CRPF', 'BSF', 'ITBP', 'SSB',
-  'Central Government (Ministry/Department)', 'State Government Employee', 'Municipal Corporation',
-  // Manufacturing & Industrial
-  'Adani Group', 'Ambuja Cements', 'Bajaj Auto', 'Birla Corporation',
-  'Bosch India', 'Cummins India', 'DLF', 'Eicher Motors', 'Escorts Group',
-  'Godrej Industries', 'Hero MotoCorp', 'Hindustan Zinc', 'Honda India',
-  'Hyundai India', 'JSW Steel', 'L&T (Larsen & Toubro)', 'Mahindra & Mahindra',
-  'Maruti Suzuki', 'Motherson Sumi', 'Reliance Industries', 'Schaeffler India',
-  'Siemens India', 'SKF India', 'Tata Motors', 'Tata Steel', 'TVS Motor Company',
-  'Ultratech Cement', 'Vedanta Limited', 'Voltas',
-  // FMCG & Consumer Goods
-  'Britannia Industries', 'Colgate-Palmolive India', 'Dabur India', 'Emami',
-  'Godrej Consumer Products', 'Hindustan Unilever (HUL)', 'ITC Limited', 'Jyothy Labs',
-  'Marico', 'Nestlé India', 'Procter & Gamble India', 'Tata Consumer Products',
-  // Telecom
-  'Bharti Airtel', 'Reliance Jio', 'Vodafone Idea', 'Tata Communications',
-  // Pharma & Healthcare
-  'Apollo Hospitals', 'Aurobindo Pharma', 'Biocon', 'Cipla', 'Dr. Reddy\'s Laboratories',
-  'Divi\'s Laboratories', 'Fortis Healthcare', 'Lupin', 'Max Healthcare', 'Manipal Hospitals',
-  'Narayana Health', 'Sun Pharmaceuticals', 'Torrent Pharmaceuticals', 'Zydus Lifesciences',
-  // Retail & E-commerce
-  'DMart (Avenue Supermarts)', 'Future Retail', 'Shoppers Stop', 'Titan Company',
-  'Trent Limited', 'Reliance Retail', 'Nykaa',
-  // Real Estate & Infrastructure
-  'Brigade Group', 'DLF Limited', 'Embassy Group', 'Godrej Properties',
-  'Lodha Group (Macrotech)', 'Oberoi Realty', 'Phoenix Mills', 'Prestige Group',
-  'Puravankara', 'Sobha Limited', 'Shapoorji Pallonji', 'Sunteck Realty',
-  // Education
-  'Aakash Educational Services', 'Allen Career Institute', 'Amity University',
-  'Byju\'s', 'FIITJEE', 'Manipal Academy', 'Unacademy', 'Vedantu',
-  // Media & Entertainment
-  'Zee Entertainment', 'Sony Pictures Networks India', 'Star India (Disney)', 'Times of India Group',
-  // Others
-  'Tata Group (Other)', 'Reliance Group (Other)', 'Mahindra Group (Other)',
-].sort();
-
-// ── Company Picker (searchable combobox with "Other" fallback) ─────────────
-const CompanyPicker: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => {
-  const [query, setQuery] = useState(value);
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setQuery(value); }, [value]);
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, []);
-
-  const lower = query.trim().toLowerCase();
-  const matches = lower.length === 0
-    ? []
-    : INDIA_COMPANIES.filter(c => c.toLowerCase().includes(lower)).slice(0, 8);
-  const exactMatch = INDIA_COMPANIES.some(c => c.toLowerCase() === lower);
-  const showOther = lower.length > 0 && !exactMatch;
-
-  const pick = (company: string) => {
-    setQuery(company);
-    onChange(company);
-    setOpen(false);
-  };
-
-  return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
-      <input
-        type="text"
-        value={query}
-        placeholder="Type to search company… (e.g. Infosys, TCS, SBI)"
-        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
-        onFocus={e => { setOpen(true); e.currentTarget.style.borderColor = '#D4AF37'; }}
-        onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-        style={inp}
-      />
-      {open && (matches.length > 0 || showOther) && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
-          background: '#fff', border: '1.5px solid #D4AF37', borderRadius: 10,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.14)', maxHeight: 240, overflowY: 'auto', marginTop: 4,
-        }}>
-          {matches.map(c => (
-            <div
-              key={c}
-              onMouseDown={() => pick(c)}
-              style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, color: '#0f172a', borderBottom: '1px solid #f1f5f9' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.background = '#fef9ec')}
-              onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = '')}
-            >{c}</div>
-          ))}
-          {showOther && (
-            <div
-              onMouseDown={() => pick(query.trim())}
-              style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, color: '#7c3aed', fontWeight: 700, background: '#f5f3ff', borderTop: matches.length > 0 ? '1px solid #e2e8f0' : undefined }}
-              onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.background = '#ede9fe')}
-              onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = '#f5f3ff')}
-            >
-              ✚ Use &quot;{query.trim()}&quot; as company name
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+// ── Indian organisation types ──────────────────────────────────────────────
+const INDIA_ORG_TYPES = [
+  { value: 'PRIVATE_LIMITED', label: 'Private Limited Company (Pvt. Ltd.)' },
+  { value: 'PUBLIC_LIMITED',  label: 'Public Limited Company (Ltd.)' },
+  { value: 'LLP',             label: 'Limited Liability Partnership (LLP)' },
+  { value: 'OPC',             label: 'One Person Company (OPC)' },
+  { value: 'PARTNERSHIP',     label: 'Partnership Firm' },
+  { value: 'PROPRIETORSHIP',  label: 'Sole Proprietorship' },
+  { value: 'CENTRAL_GOVT',    label: 'Central Government' },
+  { value: 'STATE_GOVT',      label: 'State Government' },
+  { value: 'MUNICIPAL',       label: 'Municipal Corporation / Local Body' },
+  { value: 'PSU',             label: 'Public Sector Undertaking (PSU)' },
+  { value: 'DEFENCE',         label: 'Defence / Armed Forces / Paramilitary' },
+  { value: 'SEMI_GOVT',       label: 'Semi-Government / Autonomous Body' },
+  { value: 'NGO',             label: 'NGO / Trust / Society / Section 8' },
+  { value: 'EDUCATION',       label: 'Educational Institution' },
+  { value: 'OTHER',           label: 'Other' },
+];
 
 // ── Location Picker: cascading State → District → City (with "Others" text input) ──
 const LocationPicker: React.FC<{
@@ -390,6 +279,8 @@ const validateStep = (step: number, f: FormData): string => {
     if (!/^[0-9]{6}$/.test(f.currentPincode)) return 'Valid 6-digit pincode required.';
   }
   if (step === 3) {
+    if (!f.companyType) return 'Select your organisation type.';
+    if (f.companyType === 'OTHER' && !f.companyName.trim()) return 'Please enter your company or employer name.';
     if (!f.jobType) return 'Select job type.';
     if (!f.designation.trim()) return 'Designation is required.';
     if (!f.modeOfSalary) return 'Select salary mode.';
@@ -481,7 +372,9 @@ const CustomerRegistrationSection: React.FC = () => {
         ...permanent,
         jobType: form.jobType,
         designation: form.designation,
-        companyName: form.companyName || undefined,
+        companyName: form.companyType === 'OTHER'
+          ? (form.companyName || undefined)
+          : (INDIA_ORG_TYPES.find(o => o.value === form.companyType)?.label || undefined),
         modeOfSalary: form.modeOfSalary,
         officeAddress: form.officeAddress || undefined,
         officeState: form.officeState || undefined,
@@ -610,7 +503,7 @@ const CustomerRegistrationSection: React.FC = () => {
                 {step === 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={grid2}>
-                      <F label="Loan Amount (₹)">
+                      <F label="Loan Amount (₹)" required>
                         <Input placeholder="e.g. 500000" value={form.loanAmount} onChange={set('loanAmount')} />
                       </F>
                       <F label="Loan Type">
@@ -632,13 +525,13 @@ const CustomerRegistrationSection: React.FC = () => {
                       </F>
                     </div>
                     <div style={grid2}>
-                      <F label="Current Profession">
+                      <F label="Current Profession" required>
                         <Sel value={form.profession} onChange={set('profession')} options={[
                           { value: 'SALARIED', label: 'Salaried' },
                           { value: 'SELF_EMPLOYED', label: 'Self-Employed' },
                         ]} />
                       </F>
-                      <F label="Net Monthly Salary (₹)">
+                      <F label="Net Monthly Salary (₹)" required>
                         <Input placeholder="e.g. 50000" value={form.netMonthlySalary} onChange={set('netMonthlySalary')} />
                       </F>
                     </div>
@@ -649,15 +542,15 @@ const CustomerRegistrationSection: React.FC = () => {
                 {step === 1 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={grid2}>
-                      <F label="First Name (as per PAN)">
+                      <F label="First Name (as per PAN)" required>
                         <Input placeholder="Rahul" value={form.firstName} onChange={set('firstName')} />
                       </F>
-                      <F label="Last Name">
+                      <F label="Last Name" required>
                         <Input placeholder="Sharma" value={form.lastName} onChange={set('lastName')} />
                       </F>
                     </div>
                     <div style={grid3}>
-                      <F label="Gender">
+                      <F label="Gender" required>
                         <Sel value={form.gender} onChange={set('gender')} options={[
                           { value: 'MALE', label: 'Male' },
                           { value: 'FEMALE', label: 'Female' },
@@ -686,7 +579,7 @@ const CustomerRegistrationSection: React.FC = () => {
                       </F>
                     </div>
                     <div style={grid2}>
-                      <F label="Mobile No. *">
+                      <F label="Mobile No." required>
                         <Input
                           placeholder="10-digit number (e.g. 9876543210)"
                           value={form.mobile}
@@ -750,22 +643,23 @@ const CustomerRegistrationSection: React.FC = () => {
                     </F>
 
                     <div style={grid2}>
-                      <F label="Email Address">
+                      <F label="Email Address" required>
                         <Input placeholder="rahul@gmail.com" value={form.email} onChange={set('email')} type="email" />
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Format: name@domain.com</span>
                       </F>
                       <F label="Official Email">
                         <Input placeholder="rahul@company.com" value={form.officialEmail} onChange={set('officialEmail')} type="email" />
                       </F>
                     </div>
                     <div style={grid2}>
-                      <F label="PAN Number *">
+                      <F label="PAN Number" required>
                         <Input
                           placeholder="ABCDE1234F"
                           value={form.panNumber}
                           onChange={v => set('panNumber')(transformPan(v))}
                           maxLength={10}
                         />
-                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>5 letters · 4 digits · 1 letter (auto-uppercase)</span>
+                        <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>5 letters · 4 digits · 1 letter (e.g. ABCDE1234F)</span>
                       </F>
                       <F label="Aadhaar Number">
                         <Input
@@ -789,7 +683,7 @@ const CustomerRegistrationSection: React.FC = () => {
                         Current Address
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <F label="Address Line 1">
+                        <F label="Address Line 1" required>
                           <Input placeholder="House No., Street" value={form.currentAddressLine1} onChange={set('currentAddressLine1')} />
                         </F>
                         <F label="Address Line 2">
@@ -806,7 +700,7 @@ const CustomerRegistrationSection: React.FC = () => {
                           onCityCustom={set('currentCityCustom')}
                         />
                         <div style={grid2}>
-                          <F label="Pincode">
+                          <F label="Pincode" required>
                             <Input placeholder="411001" value={form.currentPincode} onChange={set('currentPincode')} />
                           </F>
                           <F label="Residence Type">
@@ -862,12 +756,18 @@ const CustomerRegistrationSection: React.FC = () => {
                 {/* ── Step 3: Employment ── */}
                 {step === 3 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <F label="Company / Employer Name *">
-                      <CompanyPicker value={form.companyName} onChange={set('companyName')} />
-                      <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>Search from list or type your company name if not found</span>
-                    </F>
+                    <div style={grid2}>
+                      <F label="Organisation Type" required>
+                        <Sel value={form.companyType} onChange={v => { set('companyType')(v); if (v !== 'OTHER') set('companyName')(''); }} options={INDIA_ORG_TYPES} />
+                      </F>
+                      {form.companyType === 'OTHER' && (
+                        <F label="Company / Employer Name" required>
+                          <Input placeholder="Enter your company or employer name" value={form.companyName} onChange={set('companyName')} />
+                        </F>
+                      )}
+                    </div>
                     <div style={grid3}>
-                      <F label="Job Type">
+                      <F label="Job Type" required>
                         <Sel value={form.jobType} onChange={set('jobType')} options={[
                           { value: 'FULL_TIME', label: 'Full-Time' },
                           { value: 'PART_TIME', label: 'Part-Time' },
@@ -876,7 +776,7 @@ const CustomerRegistrationSection: React.FC = () => {
                           { value: 'BUSINESS_OWNER', label: 'Business Owner' },
                         ]} />
                       </F>
-                      <F label="Designation">
+                      <F label="Designation" required>
                         <Input placeholder="e.g. Software Engineer" value={form.designation} onChange={set('designation')} />
                       </F>
                       <F label="Mode of Salary">
@@ -913,7 +813,7 @@ const CustomerRegistrationSection: React.FC = () => {
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#0A1F44', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         Existing Loan / EMI Details
                       </p>
-                      <F label="Do you have any existing running loans or EMIs?">
+                      <F label="Do you have any existing running loans or EMIs?" required>
                         <Sel value={form.hasPriorPersonalLoan} onChange={set('hasPriorPersonalLoan')} options={[
                           { value: 'YES', label: 'Yes — I have running EMI(s)' },
                           { value: 'NO', label: 'No — I have no running EMIs' },
