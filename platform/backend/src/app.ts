@@ -23,6 +23,7 @@ import commsRoutes from './routes/communications.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import reportsRoutes from './routes/reports.routes';
+import careersRoutes from './routes/careers.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 const app = express();
@@ -99,6 +100,9 @@ app.use('/notifications', notificationsRoutes);
 // ── Analytics & Reports ───────────────────────────────────────────────────────
 app.use('/analytics', analyticsRoutes);
 app.use('/reports', reportsRoutes);
+
+// ── Careers ───────────────────────────────────────────────────────────────────
+app.use('/careers', careersRoutes);
 
 // ── Error handling ────────────────────────────────────────────────────────────
 app.use(notFound);

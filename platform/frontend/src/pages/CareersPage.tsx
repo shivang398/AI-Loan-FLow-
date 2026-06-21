@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Input, Select, Alert, App as AntdApp, ConfigProvider } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { ArrowLeft, MapPin, Clock, Briefcase, ChevronRight, CheckCircle2, Send } from 'lucide-react';
 import { RealMoneyLogoWhite } from '../shared/components/RealMoneyLogo';
 
@@ -105,9 +106,22 @@ const CareersInner: React.FC = () => {
     if (!form.email.includes('@')) { setErr('Enter a valid email address.'); return; }
     setErr('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
-    setSuccess(true);
+    try {
+      await axios.post('/api/careers/apply', {
+        name:       form.name,
+        email:      form.email,
+        mobile:     form.mobile,
+        role:       form.role || selected?.title || 'General',
+        experience: form.experience || undefined,
+        coverNote:  form.message  || undefined,
+      });
+      setSuccess(true);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Submission failed. Please try again.';
+      setErr(String(msg).substring(0, 160));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -64,6 +64,11 @@ export type SalesManager = $Result.DefaultSelection<Prisma.$SalesManagerPayload>
  */
 export type RoutingHistory = $Result.DefaultSelection<Prisma.$RoutingHistoryPayload>
 /**
+ * Model CareerApplication
+ * 
+ */
+export type CareerApplication = $Result.DefaultSelection<Prisma.$CareerApplicationPayload>
+/**
  * Model FoirAssessment
  * 
  */
@@ -291,6 +296,16 @@ export class PrismaClient<
     * ```
     */
   get routingHistory(): Prisma.RoutingHistoryDelegate<ExtArgs>;
+
+  /**
+   * `prisma.careerApplication`: Exposes CRUD operations for the **CareerApplication** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CareerApplications
+    * const careerApplications = await prisma.careerApplication.findMany()
+    * ```
+    */
+  get careerApplication(): Prisma.CareerApplicationDelegate<ExtArgs>;
 
   /**
    * `prisma.foirAssessment`: Exposes CRUD operations for the **FoirAssessment** model.
@@ -752,6 +767,7 @@ export namespace Prisma {
     PayoutSlab: 'PayoutSlab',
     SalesManager: 'SalesManager',
     RoutingHistory: 'RoutingHistory',
+    CareerApplication: 'CareerApplication',
     FoirAssessment: 'FoirAssessment'
   };
 
@@ -768,7 +784,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "connector" | "hierarchyMapping" | "connectorStatusHistory" | "connectorPerformance" | "commissionRule" | "commissionTransaction" | "payoutHistory" | "payoutSlab" | "salesManager" | "routingHistory" | "foirAssessment"
+      modelProps: "connector" | "hierarchyMapping" | "connectorStatusHistory" | "connectorPerformance" | "commissionRule" | "commissionTransaction" | "payoutHistory" | "payoutSlab" | "salesManager" | "routingHistory" | "careerApplication" | "foirAssessment"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1429,6 +1445,72 @@ export namespace Prisma {
           count: {
             args: Prisma.RoutingHistoryCountArgs<ExtArgs>
             result: $Utils.Optional<RoutingHistoryCountAggregateOutputType> | number
+          }
+        }
+      }
+      CareerApplication: {
+        payload: Prisma.$CareerApplicationPayload<ExtArgs>
+        fields: Prisma.CareerApplicationFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CareerApplicationFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CareerApplicationFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>
+          }
+          findFirst: {
+            args: Prisma.CareerApplicationFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CareerApplicationFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>
+          }
+          findMany: {
+            args: Prisma.CareerApplicationFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>[]
+          }
+          create: {
+            args: Prisma.CareerApplicationCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>
+          }
+          createMany: {
+            args: Prisma.CareerApplicationCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CareerApplicationDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>
+          }
+          update: {
+            args: Prisma.CareerApplicationUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>
+          }
+          deleteMany: {
+            args: Prisma.CareerApplicationDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CareerApplicationUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CareerApplicationUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CareerApplicationPayload>
+          }
+          aggregate: {
+            args: Prisma.CareerApplicationAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCareerApplication>
+          }
+          groupBy: {
+            args: Prisma.CareerApplicationGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CareerApplicationGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CareerApplicationCountArgs<ExtArgs>
+            result: $Utils.Optional<CareerApplicationCountAggregateOutputType> | number
           }
         }
       }
@@ -11453,6 +11535,882 @@ export namespace Prisma {
 
 
   /**
+   * Model CareerApplication
+   */
+
+  export type AggregateCareerApplication = {
+    _count: CareerApplicationCountAggregateOutputType | null
+    _min: CareerApplicationMinAggregateOutputType | null
+    _max: CareerApplicationMaxAggregateOutputType | null
+  }
+
+  export type CareerApplicationMinAggregateOutputType = {
+    id: string | null
+    name: string | null
+    email: string | null
+    mobile: string | null
+    role: string | null
+    experience: string | null
+    coverNote: string | null
+    status: string | null
+    createdAt: Date | null
+  }
+
+  export type CareerApplicationMaxAggregateOutputType = {
+    id: string | null
+    name: string | null
+    email: string | null
+    mobile: string | null
+    role: string | null
+    experience: string | null
+    coverNote: string | null
+    status: string | null
+    createdAt: Date | null
+  }
+
+  export type CareerApplicationCountAggregateOutputType = {
+    id: number
+    name: number
+    email: number
+    mobile: number
+    role: number
+    experience: number
+    coverNote: number
+    status: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CareerApplicationMinAggregateInputType = {
+    id?: true
+    name?: true
+    email?: true
+    mobile?: true
+    role?: true
+    experience?: true
+    coverNote?: true
+    status?: true
+    createdAt?: true
+  }
+
+  export type CareerApplicationMaxAggregateInputType = {
+    id?: true
+    name?: true
+    email?: true
+    mobile?: true
+    role?: true
+    experience?: true
+    coverNote?: true
+    status?: true
+    createdAt?: true
+  }
+
+  export type CareerApplicationCountAggregateInputType = {
+    id?: true
+    name?: true
+    email?: true
+    mobile?: true
+    role?: true
+    experience?: true
+    coverNote?: true
+    status?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CareerApplicationAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CareerApplication to aggregate.
+     */
+    where?: CareerApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CareerApplications to fetch.
+     */
+    orderBy?: CareerApplicationOrderByWithRelationInput | CareerApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CareerApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CareerApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CareerApplications.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CareerApplications
+    **/
+    _count?: true | CareerApplicationCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CareerApplicationMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CareerApplicationMaxAggregateInputType
+  }
+
+  export type GetCareerApplicationAggregateType<T extends CareerApplicationAggregateArgs> = {
+        [P in keyof T & keyof AggregateCareerApplication]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCareerApplication[P]>
+      : GetScalarType<T[P], AggregateCareerApplication[P]>
+  }
+
+
+
+
+  export type CareerApplicationGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CareerApplicationWhereInput
+    orderBy?: CareerApplicationOrderByWithAggregationInput | CareerApplicationOrderByWithAggregationInput[]
+    by: CareerApplicationScalarFieldEnum[] | CareerApplicationScalarFieldEnum
+    having?: CareerApplicationScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CareerApplicationCountAggregateInputType | true
+    _min?: CareerApplicationMinAggregateInputType
+    _max?: CareerApplicationMaxAggregateInputType
+  }
+
+  export type CareerApplicationGroupByOutputType = {
+    id: string
+    name: string
+    email: string
+    mobile: string
+    role: string
+    experience: string | null
+    coverNote: string | null
+    status: string
+    createdAt: Date
+    _count: CareerApplicationCountAggregateOutputType | null
+    _min: CareerApplicationMinAggregateOutputType | null
+    _max: CareerApplicationMaxAggregateOutputType | null
+  }
+
+  type GetCareerApplicationGroupByPayload<T extends CareerApplicationGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CareerApplicationGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CareerApplicationGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CareerApplicationGroupByOutputType[P]>
+            : GetScalarType<T[P], CareerApplicationGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CareerApplicationSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    email?: boolean
+    mobile?: boolean
+    role?: boolean
+    experience?: boolean
+    coverNote?: boolean
+    status?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["careerApplication"]>
+
+
+  export type CareerApplicationSelectScalar = {
+    id?: boolean
+    name?: boolean
+    email?: boolean
+    mobile?: boolean
+    role?: boolean
+    experience?: boolean
+    coverNote?: boolean
+    status?: boolean
+    createdAt?: boolean
+  }
+
+
+  export type $CareerApplicationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CareerApplication"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      name: string
+      email: string
+      mobile: string
+      role: string
+      experience: string | null
+      coverNote: string | null
+      status: string
+      createdAt: Date
+    }, ExtArgs["result"]["careerApplication"]>
+    composites: {}
+  }
+
+  type CareerApplicationGetPayload<S extends boolean | null | undefined | CareerApplicationDefaultArgs> = $Result.GetResult<Prisma.$CareerApplicationPayload, S>
+
+  type CareerApplicationCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CareerApplicationFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CareerApplicationCountAggregateInputType | true
+    }
+
+  export interface CareerApplicationDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CareerApplication'], meta: { name: 'CareerApplication' } }
+    /**
+     * Find zero or one CareerApplication that matches the filter.
+     * @param {CareerApplicationFindUniqueArgs} args - Arguments to find a CareerApplication
+     * @example
+     * // Get one CareerApplication
+     * const careerApplication = await prisma.careerApplication.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CareerApplicationFindUniqueArgs>(args: SelectSubset<T, CareerApplicationFindUniqueArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CareerApplication that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CareerApplicationFindUniqueOrThrowArgs} args - Arguments to find a CareerApplication
+     * @example
+     * // Get one CareerApplication
+     * const careerApplication = await prisma.careerApplication.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CareerApplicationFindUniqueOrThrowArgs>(args: SelectSubset<T, CareerApplicationFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CareerApplication that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationFindFirstArgs} args - Arguments to find a CareerApplication
+     * @example
+     * // Get one CareerApplication
+     * const careerApplication = await prisma.careerApplication.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CareerApplicationFindFirstArgs>(args?: SelectSubset<T, CareerApplicationFindFirstArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CareerApplication that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationFindFirstOrThrowArgs} args - Arguments to find a CareerApplication
+     * @example
+     * // Get one CareerApplication
+     * const careerApplication = await prisma.careerApplication.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CareerApplicationFindFirstOrThrowArgs>(args?: SelectSubset<T, CareerApplicationFindFirstOrThrowArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CareerApplications that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CareerApplications
+     * const careerApplications = await prisma.careerApplication.findMany()
+     * 
+     * // Get first 10 CareerApplications
+     * const careerApplications = await prisma.careerApplication.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const careerApplicationWithIdOnly = await prisma.careerApplication.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CareerApplicationFindManyArgs>(args?: SelectSubset<T, CareerApplicationFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CareerApplication.
+     * @param {CareerApplicationCreateArgs} args - Arguments to create a CareerApplication.
+     * @example
+     * // Create one CareerApplication
+     * const CareerApplication = await prisma.careerApplication.create({
+     *   data: {
+     *     // ... data to create a CareerApplication
+     *   }
+     * })
+     * 
+     */
+    create<T extends CareerApplicationCreateArgs>(args: SelectSubset<T, CareerApplicationCreateArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CareerApplications.
+     * @param {CareerApplicationCreateManyArgs} args - Arguments to create many CareerApplications.
+     * @example
+     * // Create many CareerApplications
+     * const careerApplication = await prisma.careerApplication.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CareerApplicationCreateManyArgs>(args?: SelectSubset<T, CareerApplicationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CareerApplication.
+     * @param {CareerApplicationDeleteArgs} args - Arguments to delete one CareerApplication.
+     * @example
+     * // Delete one CareerApplication
+     * const CareerApplication = await prisma.careerApplication.delete({
+     *   where: {
+     *     // ... filter to delete one CareerApplication
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CareerApplicationDeleteArgs>(args: SelectSubset<T, CareerApplicationDeleteArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CareerApplication.
+     * @param {CareerApplicationUpdateArgs} args - Arguments to update one CareerApplication.
+     * @example
+     * // Update one CareerApplication
+     * const careerApplication = await prisma.careerApplication.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CareerApplicationUpdateArgs>(args: SelectSubset<T, CareerApplicationUpdateArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CareerApplications.
+     * @param {CareerApplicationDeleteManyArgs} args - Arguments to filter CareerApplications to delete.
+     * @example
+     * // Delete a few CareerApplications
+     * const { count } = await prisma.careerApplication.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CareerApplicationDeleteManyArgs>(args?: SelectSubset<T, CareerApplicationDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CareerApplications.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CareerApplications
+     * const careerApplication = await prisma.careerApplication.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CareerApplicationUpdateManyArgs>(args: SelectSubset<T, CareerApplicationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CareerApplication.
+     * @param {CareerApplicationUpsertArgs} args - Arguments to update or create a CareerApplication.
+     * @example
+     * // Update or create a CareerApplication
+     * const careerApplication = await prisma.careerApplication.upsert({
+     *   create: {
+     *     // ... data to create a CareerApplication
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CareerApplication we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CareerApplicationUpsertArgs>(args: SelectSubset<T, CareerApplicationUpsertArgs<ExtArgs>>): Prisma__CareerApplicationClient<$Result.GetResult<Prisma.$CareerApplicationPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CareerApplications.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationCountArgs} args - Arguments to filter CareerApplications to count.
+     * @example
+     * // Count the number of CareerApplications
+     * const count = await prisma.careerApplication.count({
+     *   where: {
+     *     // ... the filter for the CareerApplications we want to count
+     *   }
+     * })
+    **/
+    count<T extends CareerApplicationCountArgs>(
+      args?: Subset<T, CareerApplicationCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CareerApplicationCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CareerApplication.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CareerApplicationAggregateArgs>(args: Subset<T, CareerApplicationAggregateArgs>): Prisma.PrismaPromise<GetCareerApplicationAggregateType<T>>
+
+    /**
+     * Group by CareerApplication.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CareerApplicationGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CareerApplicationGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CareerApplicationGroupByArgs['orderBy'] }
+        : { orderBy?: CareerApplicationGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CareerApplicationGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCareerApplicationGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CareerApplication model
+   */
+  readonly fields: CareerApplicationFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CareerApplication.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CareerApplicationClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CareerApplication model
+   */ 
+  interface CareerApplicationFieldRefs {
+    readonly id: FieldRef<"CareerApplication", 'String'>
+    readonly name: FieldRef<"CareerApplication", 'String'>
+    readonly email: FieldRef<"CareerApplication", 'String'>
+    readonly mobile: FieldRef<"CareerApplication", 'String'>
+    readonly role: FieldRef<"CareerApplication", 'String'>
+    readonly experience: FieldRef<"CareerApplication", 'String'>
+    readonly coverNote: FieldRef<"CareerApplication", 'String'>
+    readonly status: FieldRef<"CareerApplication", 'String'>
+    readonly createdAt: FieldRef<"CareerApplication", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CareerApplication findUnique
+   */
+  export type CareerApplicationFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * Filter, which CareerApplication to fetch.
+     */
+    where: CareerApplicationWhereUniqueInput
+  }
+
+  /**
+   * CareerApplication findUniqueOrThrow
+   */
+  export type CareerApplicationFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * Filter, which CareerApplication to fetch.
+     */
+    where: CareerApplicationWhereUniqueInput
+  }
+
+  /**
+   * CareerApplication findFirst
+   */
+  export type CareerApplicationFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * Filter, which CareerApplication to fetch.
+     */
+    where?: CareerApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CareerApplications to fetch.
+     */
+    orderBy?: CareerApplicationOrderByWithRelationInput | CareerApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CareerApplications.
+     */
+    cursor?: CareerApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CareerApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CareerApplications.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CareerApplications.
+     */
+    distinct?: CareerApplicationScalarFieldEnum | CareerApplicationScalarFieldEnum[]
+  }
+
+  /**
+   * CareerApplication findFirstOrThrow
+   */
+  export type CareerApplicationFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * Filter, which CareerApplication to fetch.
+     */
+    where?: CareerApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CareerApplications to fetch.
+     */
+    orderBy?: CareerApplicationOrderByWithRelationInput | CareerApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CareerApplications.
+     */
+    cursor?: CareerApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CareerApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CareerApplications.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CareerApplications.
+     */
+    distinct?: CareerApplicationScalarFieldEnum | CareerApplicationScalarFieldEnum[]
+  }
+
+  /**
+   * CareerApplication findMany
+   */
+  export type CareerApplicationFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * Filter, which CareerApplications to fetch.
+     */
+    where?: CareerApplicationWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CareerApplications to fetch.
+     */
+    orderBy?: CareerApplicationOrderByWithRelationInput | CareerApplicationOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CareerApplications.
+     */
+    cursor?: CareerApplicationWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CareerApplications from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CareerApplications.
+     */
+    skip?: number
+    distinct?: CareerApplicationScalarFieldEnum | CareerApplicationScalarFieldEnum[]
+  }
+
+  /**
+   * CareerApplication create
+   */
+  export type CareerApplicationCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * The data needed to create a CareerApplication.
+     */
+    data: XOR<CareerApplicationCreateInput, CareerApplicationUncheckedCreateInput>
+  }
+
+  /**
+   * CareerApplication createMany
+   */
+  export type CareerApplicationCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CareerApplications.
+     */
+    data: CareerApplicationCreateManyInput | CareerApplicationCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CareerApplication update
+   */
+  export type CareerApplicationUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * The data needed to update a CareerApplication.
+     */
+    data: XOR<CareerApplicationUpdateInput, CareerApplicationUncheckedUpdateInput>
+    /**
+     * Choose, which CareerApplication to update.
+     */
+    where: CareerApplicationWhereUniqueInput
+  }
+
+  /**
+   * CareerApplication updateMany
+   */
+  export type CareerApplicationUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CareerApplications.
+     */
+    data: XOR<CareerApplicationUpdateManyMutationInput, CareerApplicationUncheckedUpdateManyInput>
+    /**
+     * Filter which CareerApplications to update
+     */
+    where?: CareerApplicationWhereInput
+  }
+
+  /**
+   * CareerApplication upsert
+   */
+  export type CareerApplicationUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * The filter to search for the CareerApplication to update in case it exists.
+     */
+    where: CareerApplicationWhereUniqueInput
+    /**
+     * In case the CareerApplication found by the `where` argument doesn't exist, create a new CareerApplication with this data.
+     */
+    create: XOR<CareerApplicationCreateInput, CareerApplicationUncheckedCreateInput>
+    /**
+     * In case the CareerApplication was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CareerApplicationUpdateInput, CareerApplicationUncheckedUpdateInput>
+  }
+
+  /**
+   * CareerApplication delete
+   */
+  export type CareerApplicationDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+    /**
+     * Filter which CareerApplication to delete.
+     */
+    where: CareerApplicationWhereUniqueInput
+  }
+
+  /**
+   * CareerApplication deleteMany
+   */
+  export type CareerApplicationDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CareerApplications to delete
+     */
+    where?: CareerApplicationWhereInput
+  }
+
+  /**
+   * CareerApplication without action
+   */
+  export type CareerApplicationDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CareerApplication
+     */
+    select?: CareerApplicationSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Model FoirAssessment
    */
 
@@ -12651,6 +13609,21 @@ export namespace Prisma {
   export type RoutingHistoryScalarFieldEnum = (typeof RoutingHistoryScalarFieldEnum)[keyof typeof RoutingHistoryScalarFieldEnum]
 
 
+  export const CareerApplicationScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    email: 'email',
+    mobile: 'mobile',
+    role: 'role',
+    experience: 'experience',
+    coverNote: 'coverNote',
+    status: 'status',
+    createdAt: 'createdAt'
+  };
+
+  export type CareerApplicationScalarFieldEnum = (typeof CareerApplicationScalarFieldEnum)[keyof typeof CareerApplicationScalarFieldEnum]
+
+
   export const FoirAssessmentScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
@@ -13471,6 +14444,78 @@ export namespace Prisma {
     assignedSmId?: StringNullableWithAggregatesFilter<"RoutingHistory"> | string | null
     routingScore?: DecimalNullableWithAggregatesFilter<"RoutingHistory"> | Decimal | DecimalJsLike | number | string | null
     assignedAt?: DateTimeWithAggregatesFilter<"RoutingHistory"> | Date | string
+  }
+
+  export type CareerApplicationWhereInput = {
+    AND?: CareerApplicationWhereInput | CareerApplicationWhereInput[]
+    OR?: CareerApplicationWhereInput[]
+    NOT?: CareerApplicationWhereInput | CareerApplicationWhereInput[]
+    id?: StringFilter<"CareerApplication"> | string
+    name?: StringFilter<"CareerApplication"> | string
+    email?: StringFilter<"CareerApplication"> | string
+    mobile?: StringFilter<"CareerApplication"> | string
+    role?: StringFilter<"CareerApplication"> | string
+    experience?: StringNullableFilter<"CareerApplication"> | string | null
+    coverNote?: StringNullableFilter<"CareerApplication"> | string | null
+    status?: StringFilter<"CareerApplication"> | string
+    createdAt?: DateTimeFilter<"CareerApplication"> | Date | string
+  }
+
+  export type CareerApplicationOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    email?: SortOrder
+    mobile?: SortOrder
+    role?: SortOrder
+    experience?: SortOrderInput | SortOrder
+    coverNote?: SortOrderInput | SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CareerApplicationWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CareerApplicationWhereInput | CareerApplicationWhereInput[]
+    OR?: CareerApplicationWhereInput[]
+    NOT?: CareerApplicationWhereInput | CareerApplicationWhereInput[]
+    name?: StringFilter<"CareerApplication"> | string
+    email?: StringFilter<"CareerApplication"> | string
+    mobile?: StringFilter<"CareerApplication"> | string
+    role?: StringFilter<"CareerApplication"> | string
+    experience?: StringNullableFilter<"CareerApplication"> | string | null
+    coverNote?: StringNullableFilter<"CareerApplication"> | string | null
+    status?: StringFilter<"CareerApplication"> | string
+    createdAt?: DateTimeFilter<"CareerApplication"> | Date | string
+  }, "id">
+
+  export type CareerApplicationOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    email?: SortOrder
+    mobile?: SortOrder
+    role?: SortOrder
+    experience?: SortOrderInput | SortOrder
+    coverNote?: SortOrderInput | SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    _count?: CareerApplicationCountOrderByAggregateInput
+    _max?: CareerApplicationMaxOrderByAggregateInput
+    _min?: CareerApplicationMinOrderByAggregateInput
+  }
+
+  export type CareerApplicationScalarWhereWithAggregatesInput = {
+    AND?: CareerApplicationScalarWhereWithAggregatesInput | CareerApplicationScalarWhereWithAggregatesInput[]
+    OR?: CareerApplicationScalarWhereWithAggregatesInput[]
+    NOT?: CareerApplicationScalarWhereWithAggregatesInput | CareerApplicationScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CareerApplication"> | string
+    name?: StringWithAggregatesFilter<"CareerApplication"> | string
+    email?: StringWithAggregatesFilter<"CareerApplication"> | string
+    mobile?: StringWithAggregatesFilter<"CareerApplication"> | string
+    role?: StringWithAggregatesFilter<"CareerApplication"> | string
+    experience?: StringNullableWithAggregatesFilter<"CareerApplication"> | string | null
+    coverNote?: StringNullableWithAggregatesFilter<"CareerApplication"> | string | null
+    status?: StringWithAggregatesFilter<"CareerApplication"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"CareerApplication"> | Date | string
   }
 
   export type FoirAssessmentWhereInput = {
@@ -14386,6 +15431,90 @@ export namespace Prisma {
     assignedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CareerApplicationCreateInput = {
+    id: string
+    name: string
+    email: string
+    mobile: string
+    role: string
+    experience?: string | null
+    coverNote?: string | null
+    status?: string
+    createdAt: Date | string
+  }
+
+  export type CareerApplicationUncheckedCreateInput = {
+    id: string
+    name: string
+    email: string
+    mobile: string
+    role: string
+    experience?: string | null
+    coverNote?: string | null
+    status?: string
+    createdAt: Date | string
+  }
+
+  export type CareerApplicationUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    experience?: NullableStringFieldUpdateOperationsInput | string | null
+    coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CareerApplicationUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    experience?: NullableStringFieldUpdateOperationsInput | string | null
+    coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CareerApplicationCreateManyInput = {
+    id: string
+    name: string
+    email: string
+    mobile: string
+    role: string
+    experience?: string | null
+    coverNote?: string | null
+    status?: string
+    createdAt: Date | string
+  }
+
+  export type CareerApplicationUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    experience?: NullableStringFieldUpdateOperationsInput | string | null
+    coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CareerApplicationUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    experience?: NullableStringFieldUpdateOperationsInput | string | null
+    coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type FoirAssessmentCreateInput = {
     id: string
     userId: string
@@ -15243,6 +16372,42 @@ export namespace Prisma {
 
   export type RoutingHistorySumOrderByAggregateInput = {
     routingScore?: SortOrder
+  }
+
+  export type CareerApplicationCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    email?: SortOrder
+    mobile?: SortOrder
+    role?: SortOrder
+    experience?: SortOrder
+    coverNote?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CareerApplicationMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    email?: SortOrder
+    mobile?: SortOrder
+    role?: SortOrder
+    experience?: SortOrder
+    coverNote?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CareerApplicationMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    email?: SortOrder
+    mobile?: SortOrder
+    role?: SortOrder
+    experience?: SortOrder
+    coverNote?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type FoirAssessmentCountOrderByAggregateInput = {
@@ -17565,6 +18730,10 @@ export namespace Prisma {
      * @deprecated Use RoutingHistoryDefaultArgs instead
      */
     export type RoutingHistoryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RoutingHistoryDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CareerApplicationDefaultArgs instead
+     */
+    export type CareerApplicationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CareerApplicationDefaultArgs<ExtArgs>
     /**
      * @deprecated Use FoirAssessmentDefaultArgs instead
      */

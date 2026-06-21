@@ -156,6 +156,22 @@ model RoutingHistory {
   @@map("routing_history")
 }
 
+model CareerApplication {
+  id         String    @id @db.Char(36)
+  name       String    @db.VarChar(200)
+  email      String    @db.VarChar(255)
+  mobile     String    @db.VarChar(15)
+  role       String    @db.VarChar(200)
+  experience String?   @db.VarChar(50)
+  coverNote  String?   @map("cover_note") @db.Text
+  status     String    @default("NEW") @db.VarChar(30)
+  createdAt  DateTime  @map("created_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("career_applications")
+}
+
 model FoirAssessment {
   id                          String   @id @db.Char(36)
   userId                      String   @map("user_id") @db.Char(36)

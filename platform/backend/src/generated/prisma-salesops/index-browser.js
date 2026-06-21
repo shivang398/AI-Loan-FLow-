@@ -232,6 +232,18 @@ exports.Prisma.RoutingHistoryScalarFieldEnum = {
   assignedAt: 'assignedAt'
 };
 
+exports.Prisma.CareerApplicationScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  mobile: 'mobile',
+  role: 'role',
+  experience: 'experience',
+  coverNote: 'coverNote',
+  status: 'status',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.FoirAssessmentScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -275,6 +287,7 @@ exports.Prisma.ModelName = {
   PayoutSlab: 'PayoutSlab',
   SalesManager: 'SalesManager',
   RoutingHistory: 'RoutingHistory',
+  CareerApplication: 'CareerApplication',
   FoirAssessment: 'FoirAssessment'
 };
 
