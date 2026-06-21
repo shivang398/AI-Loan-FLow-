@@ -60,10 +60,14 @@ router.post('/apply', applyLimiter, upload.single('cv'), async (req: Request, re
 
   let cvUrl: string | null = null;
   if (req.file) {
-    const ext = req.file.originalname.split('.').pop() ?? 'pdf';
-    const key = `careers/${id}-${Date.now()}.${ext}`;
-    await uploadToS3(key, req.file.buffer, req.file.mimetype);
-    cvUrl = key;
+    try {
+      const ext = req.file.originalname.split('.').pop() ?? 'pdf';
+      const key = `careers/${id}-${Date.now()}.${ext}`;
+      await uploadToS3(key, req.file.buffer, req.file.mimetype);
+      cvUrl = key;
+    } catch (s3Err) {
+      console.error('[careers] CV upload to S3 failed — saving application without CV:', s3Err);
+    }
   }
 
   const application = await salesOpsDb.careerApplication.create({
