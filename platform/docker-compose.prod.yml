@@ -79,7 +79,7 @@ services:
       TENACIO_CRIF_API_KEY: "${TENACIO_CRIF_API_KEY}"
       TENACIO_CRIF_WORKFLOW_ID: "${TENACIO_CRIF_WORKFLOW_ID}"
       # AWS S3 — CV and document storage (real S3, no LocalStack in prod)
-      AWS_S3_BUCKET:         "${AWS_S3_BUCKET:-platform-documents}"
+      AWS_S3_BUCKET:         "${AWS_S3_BUCKET:-realmoney-document-personal-loan}"
       AWS_REGION:            "${AWS_REGION:-ap-south-1}"
       AWS_ACCESS_KEY_ID:     "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
