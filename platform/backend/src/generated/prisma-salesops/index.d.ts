@@ -11552,6 +11552,7 @@ export namespace Prisma {
     role: string | null
     experience: string | null
     coverNote: string | null
+    cvUrl: string | null
     status: string | null
     createdAt: Date | null
   }
@@ -11564,6 +11565,7 @@ export namespace Prisma {
     role: string | null
     experience: string | null
     coverNote: string | null
+    cvUrl: string | null
     status: string | null
     createdAt: Date | null
   }
@@ -11576,6 +11578,7 @@ export namespace Prisma {
     role: number
     experience: number
     coverNote: number
+    cvUrl: number
     status: number
     createdAt: number
     _all: number
@@ -11590,6 +11593,7 @@ export namespace Prisma {
     role?: true
     experience?: true
     coverNote?: true
+    cvUrl?: true
     status?: true
     createdAt?: true
   }
@@ -11602,6 +11606,7 @@ export namespace Prisma {
     role?: true
     experience?: true
     coverNote?: true
+    cvUrl?: true
     status?: true
     createdAt?: true
   }
@@ -11614,6 +11619,7 @@ export namespace Prisma {
     role?: true
     experience?: true
     coverNote?: true
+    cvUrl?: true
     status?: true
     createdAt?: true
     _all?: true
@@ -11699,6 +11705,7 @@ export namespace Prisma {
     role: string
     experience: string | null
     coverNote: string | null
+    cvUrl: string | null
     status: string
     createdAt: Date
     _count: CareerApplicationCountAggregateOutputType | null
@@ -11728,6 +11735,7 @@ export namespace Prisma {
     role?: boolean
     experience?: boolean
     coverNote?: boolean
+    cvUrl?: boolean
     status?: boolean
     createdAt?: boolean
   }, ExtArgs["result"]["careerApplication"]>
@@ -11741,6 +11749,7 @@ export namespace Prisma {
     role?: boolean
     experience?: boolean
     coverNote?: boolean
+    cvUrl?: boolean
     status?: boolean
     createdAt?: boolean
   }
@@ -11757,6 +11766,7 @@ export namespace Prisma {
       role: string
       experience: string | null
       coverNote: string | null
+      cvUrl: string | null
       status: string
       createdAt: Date
     }, ExtArgs["result"]["careerApplication"]>
@@ -12135,6 +12145,7 @@ export namespace Prisma {
     readonly role: FieldRef<"CareerApplication", 'String'>
     readonly experience: FieldRef<"CareerApplication", 'String'>
     readonly coverNote: FieldRef<"CareerApplication", 'String'>
+    readonly cvUrl: FieldRef<"CareerApplication", 'String'>
     readonly status: FieldRef<"CareerApplication", 'String'>
     readonly createdAt: FieldRef<"CareerApplication", 'DateTime'>
   }
@@ -13617,6 +13628,7 @@ export namespace Prisma {
     role: 'role',
     experience: 'experience',
     coverNote: 'coverNote',
+    cvUrl: 'cvUrl',
     status: 'status',
     createdAt: 'createdAt'
   };
@@ -14457,6 +14469,7 @@ export namespace Prisma {
     role?: StringFilter<"CareerApplication"> | string
     experience?: StringNullableFilter<"CareerApplication"> | string | null
     coverNote?: StringNullableFilter<"CareerApplication"> | string | null
+    cvUrl?: StringNullableFilter<"CareerApplication"> | string | null
     status?: StringFilter<"CareerApplication"> | string
     createdAt?: DateTimeFilter<"CareerApplication"> | Date | string
   }
@@ -14469,6 +14482,7 @@ export namespace Prisma {
     role?: SortOrder
     experience?: SortOrderInput | SortOrder
     coverNote?: SortOrderInput | SortOrder
+    cvUrl?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
@@ -14484,6 +14498,7 @@ export namespace Prisma {
     role?: StringFilter<"CareerApplication"> | string
     experience?: StringNullableFilter<"CareerApplication"> | string | null
     coverNote?: StringNullableFilter<"CareerApplication"> | string | null
+    cvUrl?: StringNullableFilter<"CareerApplication"> | string | null
     status?: StringFilter<"CareerApplication"> | string
     createdAt?: DateTimeFilter<"CareerApplication"> | Date | string
   }, "id">
@@ -14496,6 +14511,7 @@ export namespace Prisma {
     role?: SortOrder
     experience?: SortOrderInput | SortOrder
     coverNote?: SortOrderInput | SortOrder
+    cvUrl?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     _count?: CareerApplicationCountOrderByAggregateInput
@@ -14514,6 +14530,7 @@ export namespace Prisma {
     role?: StringWithAggregatesFilter<"CareerApplication"> | string
     experience?: StringNullableWithAggregatesFilter<"CareerApplication"> | string | null
     coverNote?: StringNullableWithAggregatesFilter<"CareerApplication"> | string | null
+    cvUrl?: StringNullableWithAggregatesFilter<"CareerApplication"> | string | null
     status?: StringWithAggregatesFilter<"CareerApplication"> | string
     createdAt?: DateTimeWithAggregatesFilter<"CareerApplication"> | Date | string
   }
@@ -15439,6 +15456,7 @@ export namespace Prisma {
     role: string
     experience?: string | null
     coverNote?: string | null
+    cvUrl?: string | null
     status?: string
     createdAt: Date | string
   }
@@ -15451,6 +15469,7 @@ export namespace Prisma {
     role: string
     experience?: string | null
     coverNote?: string | null
+    cvUrl?: string | null
     status?: string
     createdAt: Date | string
   }
@@ -15463,6 +15482,7 @@ export namespace Prisma {
     role?: StringFieldUpdateOperationsInput | string
     experience?: NullableStringFieldUpdateOperationsInput | string | null
     coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    cvUrl?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -15475,6 +15495,7 @@ export namespace Prisma {
     role?: StringFieldUpdateOperationsInput | string
     experience?: NullableStringFieldUpdateOperationsInput | string | null
     coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    cvUrl?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -15487,6 +15508,7 @@ export namespace Prisma {
     role: string
     experience?: string | null
     coverNote?: string | null
+    cvUrl?: string | null
     status?: string
     createdAt: Date | string
   }
@@ -15499,6 +15521,7 @@ export namespace Prisma {
     role?: StringFieldUpdateOperationsInput | string
     experience?: NullableStringFieldUpdateOperationsInput | string | null
     coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    cvUrl?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -15511,6 +15534,7 @@ export namespace Prisma {
     role?: StringFieldUpdateOperationsInput | string
     experience?: NullableStringFieldUpdateOperationsInput | string | null
     coverNote?: NullableStringFieldUpdateOperationsInput | string | null
+    cvUrl?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -16382,6 +16406,7 @@ export namespace Prisma {
     role?: SortOrder
     experience?: SortOrder
     coverNote?: SortOrder
+    cvUrl?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
@@ -16394,6 +16419,7 @@ export namespace Prisma {
     role?: SortOrder
     experience?: SortOrder
     coverNote?: SortOrder
+    cvUrl?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
@@ -16406,6 +16432,7 @@ export namespace Prisma {
     role?: SortOrder
     experience?: SortOrder
     coverNote?: SortOrder
+    cvUrl?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }

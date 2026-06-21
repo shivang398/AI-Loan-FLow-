@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Input, Select, Alert, App as AntdApp, ConfigProvider } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle2, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Send, Paperclip, X } from 'lucide-react';
 import { RealMoneyLogoWhite } from '../shared/components/RealMoneyLogo';
 
 const NAVY  = '#0B1E3D';
@@ -27,11 +27,24 @@ const EMPTY: AppForm = { name: '', email: '', mobile: '', role: '', experience: 
 const CareersInner: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState<AppForm>(EMPTY);
+  const [cv, setCv] = useState<File | null>(null);
+  const [cvErr, setCvErr] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [err, setErr] = useState('');
 
   const set = (k: keyof AppForm, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleCvSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.type)) { setCvErr('Only PDF, DOC, or DOCX files are accepted.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setCvErr('File must be under 5 MB.'); return; }
+    setCvErr('');
+    setCv(file);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,14 +63,15 @@ const CareersInner: React.FC = () => {
     setErr('');
     setLoading(true);
     try {
-      await axios.post('/api/careers/apply', {
-        name:       form.name.trim(),
-        email:      form.email.trim(),
-        mobile:     form.mobile,
-        role:       form.role.trim() || 'General Application',
-        experience: form.experience || undefined,
-        coverNote:  form.message.trim() || undefined,
-      });
+      const fd = new FormData();
+      fd.append('name',   form.name.trim());
+      fd.append('email',  form.email.trim());
+      fd.append('mobile', form.mobile);
+      fd.append('role',   form.role.trim() || 'General Application');
+      if (form.experience) fd.append('experience', form.experience);
+      if (form.message.trim()) fd.append('coverNote', form.message.trim());
+      if (cv) fd.append('cv', cv);
+      await axios.post('/api/careers/apply', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setSuccess(true);
     } catch (ex: any) {
       const msg = ex?.response?.data?.message || 'Submission failed. Please try again.';
@@ -118,7 +132,7 @@ const CareersInner: React.FC = () => {
               Our HR team will review your profile and reach out within 5 business days.
             </p>
             <button
-              onClick={() => { setSuccess(false); setForm(EMPTY); }}
+              onClick={() => { setSuccess(false); setForm(EMPTY); setCv(null); }}
               style={{ background: 'none', border: `1.5px solid ${NAVY}`, color: NAVY, padding: '10px 28px', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
               Submit Another Application
             </button>
@@ -198,6 +212,41 @@ const CareersInner: React.FC = () => {
                     maxLength={500}
                     style={{ borderRadius: 2, fontFamily: 'Inter, sans-serif', fontSize: 13 }}
                   />
+                </div>
+
+                {/* CV Upload */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#3A5278', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 7 }}>
+                    Upload CV / Resume
+                  </label>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleCvSelect}
+                    style={{ display: 'none' }}
+                  />
+                  {cv ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: `1.5px solid ${GOLD}`, background: 'rgba(196,153,58,0.05)' }}>
+                      <Paperclip size={15} color={GOLD} />
+                      <span style={{ fontSize: 13, color: NAVY, fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cv.name}</span>
+                      <span style={{ fontSize: 11, color: '#7A92B5', flexShrink: 0 }}>({(cv.size / 1024).toFixed(0)} KB)</span>
+                      <button type="button" onClick={() => { setCv(null); if (fileRef.current) fileRef.current.value = ''; }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                        <X size={14} color="#7A92B5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => fileRef.current?.click()}
+                      style={{ width: '100%', padding: '14px', border: `1.5px dashed #D4DCE8`, background: '#FAFBFD', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Inter, sans-serif', transition: 'border-color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = GOLD)}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = '#D4DCE8')}>
+                      <Paperclip size={15} color="#7A92B5" />
+                      <span style={{ fontSize: 13, color: '#7A92B5', fontWeight: 500 }}>Click to attach CV</span>
+                      <span style={{ fontSize: 11, color: '#B0BFCD' }}>PDF, DOC, DOCX · Max 5 MB</span>
+                    </button>
+                  )}
+                  {cvErr && <p style={{ color: '#DC2626', fontSize: 12, margin: '6px 0 0', fontWeight: 500 }}>{cvErr}</p>}
                 </div>
 
                 <button

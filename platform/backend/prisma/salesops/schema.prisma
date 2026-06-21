@@ -164,6 +164,7 @@ model CareerApplication {
   role       String    @db.VarChar(200)
   experience String?   @db.VarChar(50)
   coverNote  String?   @map("cover_note") @db.Text
+  cvUrl      String?   @map("cv_url") @db.VarChar(500)
   status     String    @default("NEW") @db.VarChar(30)
   createdAt  DateTime  @map("created_at")
 

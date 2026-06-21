@@ -240,6 +240,7 @@ exports.Prisma.CareerApplicationScalarFieldEnum = {
   role: 'role',
   experience: 'experience',
   coverNote: 'coverNote',
+  cvUrl: 'cvUrl',
   status: 'status',
   createdAt: 'createdAt'
 };
