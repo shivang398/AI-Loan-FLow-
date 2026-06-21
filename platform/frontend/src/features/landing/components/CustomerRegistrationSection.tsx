@@ -242,10 +242,10 @@ const STEPS = [
 
 // ── Document types required ─────────────────────────────────────────────────
 const DOC_TYPES = [
-  { key: 'AADHAAR_CARD',    label: 'Aadhaar Card',           hint: 'Front & back, clear scan/photo',   required: true },
-  { key: 'PAN_CARD',        label: 'PAN Card',               hint: 'Original PAN card image/scan',      required: true },
-  { key: 'BANK_STATEMENT',  label: 'Bank Statement (6 months)', hint: 'Last 6 months, all pages',       required: true },
-  { key: 'SALARY_SLIP',     label: 'Salary Slips (3 months)', hint: 'Last 3 months payslips',           required: true },
+  { key: 'AADHAAR',        label: 'Aadhaar Card',             hint: 'Front & back, clear scan/photo',   required: true },
+  { key: 'PAN',            label: 'PAN Card',                 hint: 'Original PAN card image/scan',      required: true },
+  { key: 'BANK_STATEMENT', label: 'Bank Statement (6 months)', hint: 'Last 6 months, all pages',        required: true },
+  { key: 'INCOME_PROOF',   label: 'Salary Slips (3 months)',  hint: 'Last 3 months payslips',            required: true },
 ];
 
 // ── Validation ─────────────────────────────────────────────────────────────
@@ -419,7 +419,7 @@ const CustomerRegistrationSection: React.FC = () => {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('customerId', customerId);
+      fd.append('ownerId', customerId);
       fd.append('documentType', docKey);
       // Do NOT set Content-Type manually — browser must auto-generate boundary
       await axios.post('/api/documents/public/upload', fd);

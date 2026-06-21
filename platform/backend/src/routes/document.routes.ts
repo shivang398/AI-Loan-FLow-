@@ -41,15 +41,17 @@ const publicUploadLimiter = rateLimit({
 });
 
 // Public upload (no auth — used during onboarding). Rate-limited and MIME-guarded.
+// loanId is optional at the lead stage — a loan does not exist yet.
+// Accepts either ownerId or customerId (frontend alias) as the owner identifier.
 router.post('/public/upload', publicUploadLimiter, upload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) { res.status(400).json(fail('File is required')); return; }
-  const { loanId, ownerId, documentType, folderPath } = req.body;
+  const { loanId, ownerId, customerId, documentType, folderPath } = req.body;
+  const resolvedOwner = ownerId || customerId;
   if (!documentType) { res.status(400).json(fail('documentType is required')); return; }
-  if (!ownerId) { res.status(400).json(fail('ownerId is required')); return; }
-  if (!loanId) { res.status(400).json(fail('loanId is required')); return; }
+  if (!resolvedOwner) { res.status(400).json(fail('ownerId is required')); return; }
   const ALLOWED_DOC_TYPES = ['PAN', 'AADHAAR', 'INCOME_PROOF', 'BANK_STATEMENT', 'PHOTO', 'SIGNATURE', 'OTHER'];
   if (!ALLOWED_DOC_TYPES.includes(documentType)) { res.status(400).json(fail(`documentType must be one of: ${ALLOWED_DOC_TYPES.join(', ')}`)); return; }
-  res.status(201).json(ok('Document uploaded', await documentService.uploadDocument({ loanId, ownerId, documentType, folderPath, uploadedBy: ownerId, file: req.file })));
+  res.status(201).json(ok('Document uploaded', await documentService.uploadDocument({ loanId, ownerId: resolvedOwner, documentType, folderPath, uploadedBy: resolvedOwner, file: req.file })));
 });
 
 // All remaining routes require auth
