@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, UsersRound, Network,
-  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck,
+  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -96,6 +96,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/admin/documents',    icon: <Files size={16} />,           label: 'Document Library' },
     { key: '/admin/analytics',    icon: <BarChart3 size={16} />,       label: 'Analytics' },
     { key: '/admin/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
+    { key: '/admin/careers',      icon: <UserCheck size={16} />,       label: 'Career Applications' },
     { key: '/admin/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];
 
@@ -105,6 +106,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/pm/commissions',  icon: <BarChart3 size={16} />,      label: 'Commission Slabs' },
     { key: '/connector/cibil', icon: <ShieldCheck size={16} />,    label: 'CIBIL Check' },
     { key: '/pm/policies',     icon: <BookOpen size={16} />,       label: 'Policies' },
+    { key: '/admin/careers',   icon: <UserCheck size={16} />,      label: 'Career Applications' },
     { key: '/pm/team-meeting', icon: <UsersRound size={16} />,     label: 'Team Meeting' },
   ];
 

@@ -29,6 +29,7 @@ import BusinessAnalytics from './features/analytics/components/BusinessAnalytics
 import ReportingDashboard from './features/reporting/components/ReportingDashboard';
 import ConnectorHub from './features/admin/components/ConnectorHub';
 import PayoutTracker from './features/admin/components/PayoutTracker';
+import CareerApplications from './features/admin/components/CareerApplications';
 import PoliciesPage from './features/policies/components/PoliciesPage';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
@@ -106,6 +107,11 @@ const App: React.FC = () => {
               {/* CIBIL History — ADMIN, RM, OPERATIONS */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS']} />}>
                 <Route path="/cibil/history" element={<CibilHistoryPage />} />
+              </Route>
+
+              {/* Shared ADMIN + PARTNER_MANAGER routes */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PARTNER_MANAGER']} />}>
+                <Route path="/admin/careers" element={<CareerApplications />} />
               </Route>
 
               {/* Admin Specific Routes — platform config only, no partner access */}
