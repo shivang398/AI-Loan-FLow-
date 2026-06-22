@@ -374,11 +374,12 @@ const OperationsDashboard: React.FC = () => {
     setIsDrawerOpen(true);
     setNotesValue(lead.opsNotes || '');
     setNotesSaved(false);
-    // Fetch uploaded documents for this customer
-    if (lead.customerId) {
+    // Fetch uploaded documents — documents are keyed by lead.id (ownerId) when no customer record exists yet
+    const docOwnerId = lead.customerId || lead.id;
+    if (docOwnerId) {
       setLoadingDocs(true);
       try {
-        const res = await api.get(`/documents/by-customer/${lead.customerId}`);
+        const res = await api.get(`/documents/by-customer/${docOwnerId}`);
         const docs: any[] = res.data?.data ?? [];
         const map: Record<string, { id: string; fileName?: string }> = {};
         docs.forEach((d: any) => { if (d.documentType && d.id) map[d.documentType] = { id: d.id, fileName: d.fileName }; });
