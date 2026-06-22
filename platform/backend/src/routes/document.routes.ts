@@ -78,6 +78,12 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(ok('Documents fetched', await documentService.getDocuments({ loanId: req.query.loanId as string, ownerId: req.query.ownerId as string, documentType: req.query.documentType as string, page, size })));
 });
 
+router.get('/by-customer/:customerId', async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string ?? '0');
+  const size = parseInt(req.query.size as string ?? '50');
+  res.json(ok('Documents fetched', await documentService.getDocuments({ ownerId: req.params.customerId, page, size })));
+});
+
 router.get('/:id/presigned-url', async (req: Request, res: Response) => {
   res.json(ok('Document fetched', await documentService.getDocumentById(req.params.id, req.user!.id)));
 });
