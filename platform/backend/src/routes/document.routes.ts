@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import rateLimit from 'express-rate-limit';
-import { fileTypeFromBuffer } from 'file-type';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as documentService from '../services/document.service';
@@ -34,17 +33,35 @@ const upload = multer({
   },
 });
 
-// Verify magic bytes match declared MIME — prevents Content-Type spoofing (CRIT-4)
-async function verifyMagicBytes(buffer: Buffer, declaredMime: string): Promise<boolean> {
-  const detected = await fileTypeFromBuffer(buffer);
-  if (!detected) {
-    // file-type can't detect plain text/XML types; allow only if declared type is also unknown to file-type
-    return !ALLOWED_MIME.has(declaredMime) || declaredMime === 'application/msword';
+// Magic byte signatures for each allowed MIME type (CRIT-4)
+// Prevents Content-Type spoofing — client-supplied headers are not trusted alone.
+function detectMimeFromBytes(buf: Buffer): string | null {
+  if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'application/pdf';
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png';
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'image/webp';
+  // ZIP-based: DOCX and XLSX (Office Open XML)
+  if (buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04) {
+    return 'application/vnd.openxmlformats-officedocument';
   }
-  return detected.mime === declaredMime ||
-    // JPEG and WEBP share image/jpeg magic bytes in some encoders
-    (declaredMime === 'image/webp' && detected.mime === 'image/webp') ||
-    (declaredMime === 'image/jpeg' && detected.mime === 'image/jpeg');
+  // OLE2 compound: legacy DOC and XLS
+  if (buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0) return 'application/msoffice';
+  return null;
+}
+
+function verifyMagicBytes(buffer: Buffer, declaredMime: string): boolean {
+  if (buffer.length < 12) return false;
+  const detected = detectMimeFromBytes(buffer);
+  if (!detected) return false;
+  if (detected === 'application/vnd.openxmlformats-officedocument') {
+    return declaredMime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+           declaredMime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  }
+  if (detected === 'application/msoffice') {
+    return declaredMime === 'application/msword' || declaredMime === 'application/vnd.ms-excel';
+  }
+  return detected === declaredMime;
 }
 
 // Sanitize filename — strip path components, restrict to safe chars (CRIT-5)
@@ -74,7 +91,7 @@ router.post('/public/upload', publicUploadLimiter, upload.single('file'), async 
   if (!ALLOWED_DOC_TYPES.includes(documentType)) { res.status(400).json(fail(`documentType must be one of: ${ALLOWED_DOC_TYPES.join(', ')}`)); return; }
 
   // Magic byte verification (CRIT-4)
-  if (!(await verifyMagicBytes(req.file.buffer, req.file.mimetype))) {
+  if (!verifyMagicBytes(req.file.buffer, req.file.mimetype)) {
     res.status(415).json(fail('File content does not match declared type')); return;
   }
 
@@ -101,7 +118,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
   if (!documentType) { res.status(400).json(fail('documentType is required')); return; }
 
   // Magic byte verification (CRIT-4)
-  if (!(await verifyMagicBytes(req.file.buffer, req.file.mimetype))) {
+  if (!verifyMagicBytes(req.file.buffer, req.file.mimetype)) {
     res.status(415).json(fail('File content does not match declared type')); return;
   }
 
