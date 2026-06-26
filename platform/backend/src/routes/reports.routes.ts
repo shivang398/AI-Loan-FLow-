@@ -7,8 +7,8 @@ import { ok, fail } from '../utils/response';
 const router = Router();
 router.use(authenticate);
 
-// MIS uploads
-router.get('/mis-uploads', async (req: Request, res: Response) => {
+// MIS uploads — restricted (LOW-8)
+router.get('/mis-uploads', requireRoles('ADMIN', 'RM', 'OPERATIONS', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('MIS reports fetched', await analyticsService.getMisReports({ status: req.query.status as string, page, size })));
@@ -30,14 +30,14 @@ router.put('/email-config', requireRoles('ADMIN'), async (req: Request, res: Res
   res.json(ok('Email config updated', await analyticsService.updateEmailConfig({ frequency, recipients })));
 });
 
-// Report jobs
-router.get('/', async (req: Request, res: Response) => {
+// Report jobs — restricted (LOW-5/LOW-8)
+router.get('/', requireRoles('ADMIN', 'RM', 'OPERATIONS', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('Reports fetched', await analyticsService.getReportJobs({ status: req.query.status as string, page, size })));
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireRoles('ADMIN', 'RM', 'OPERATIONS', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const { reportType } = req.body;
   if (!reportType) { res.status(400).json(fail('reportType is required')); return; }
   res.status(201).json(ok('Report job created', await analyticsService.createReportJob(reportType, req.user!.id)));

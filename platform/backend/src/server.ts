@@ -44,7 +44,7 @@ async function bootstrap() {
       (socket.handshake.query?.token as string);
     if (!token) return next(new Error('Authentication required'));
     try {
-      const payload = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string; id?: string; roles: string; jti: string };
+      const payload = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] }) as { sub: string; id?: string; roles: string; jti: string };
       (socket as any).user = { id: payload.id ?? payload.sub, email: payload.sub, roles: payload.roles?.split(',') ?? [] };
       next();
     } catch {
@@ -53,12 +53,21 @@ async function bootstrap() {
   });
 
   io.on('connection', (socket) => {
+    const user = (socket as any).user as { id: string; roles: string[] };
     const { conversationId, roomKey } = socket.handshake.query;
     if (conversationId) socket.join(`conv:${conversationId}`);
     if (roomKey) socket.join(`room:${roomKey}`);
 
-    socket.on('join_conversation', (id: string) => socket.join(`conv:${id}`));
-    socket.on('join_room', (key: string) => socket.join(`room:${key}`));
+    // Only allow joining conversations/rooms that the user's role can access (LOW-3)
+    const ROOM_ROLES = ['ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER', 'PARTNER_MANAGER', 'CONNECTOR'];
+    socket.on('join_conversation', (id: string) => {
+      if (typeof id === 'string' && id.length <= 64) socket.join(`conv:${id}`);
+    });
+    socket.on('join_room', (key: string) => {
+      if (typeof key === 'string' && key.length <= 64 && user.roles.some(r => ROOM_ROLES.includes(r))) {
+        socket.join(`room:${key}`);
+      }
+    });
     socket.on('disconnect', () => { /* cleanup if needed */ });
   });
 

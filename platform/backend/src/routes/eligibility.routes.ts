@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as loanService from '../services/loan.service';
@@ -8,6 +10,34 @@ import { ok, fail } from '../utils/response';
 
 const router = Router();
 router.use(authenticate);
+
+// 10 CIBIL checks per hour per authenticated user (HIGH-7)
+const cibilLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => (req as any).user?.id ?? req.ip,
+  message: { success: false, message: 'CIBIL check limit reached. Try again in 1 hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const PIN_RE    = /^\d{6}$/;
+const MOBILE_RE = /^[6-9]\d{9}$/;
+const PAN_RE    = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+const eligibilitySchema = z.object({
+  fullName:         z.string().min(1).max(200),
+  mobileNumber:     z.string().regex(MOBILE_RE, 'Invalid mobile number'),
+  panNumber:        z.string().regex(PAN_RE, 'Invalid PAN').optional(),
+  loanAmount:       z.number().positive().optional(),
+  loanType:         z.string().max(50).optional(),
+  employmentType:   z.string().max(50).optional(),
+  monthlyIncome:    z.number().min(0).optional(),
+  existingEmiTotal: z.number().min(0).optional(),
+  pincode:          z.string().regex(PIN_RE, 'Invalid pincode').optional(),
+  city:             z.string().max(100).optional(),
+  state:            z.string().max(100).optional(),
+});
 
 router.get('/rules', async (_req: Request, res: Response) => {
   res.json(ok('Rules fetched', await loanService.getEligibilityRules()));
@@ -113,6 +143,8 @@ router.get('/cibil/history', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (r
 });
 
 router.post('/submit', async (req: Request, res: Response) => {
+  const parsed = eligibilitySchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
   res.status(201).json(ok('Eligibility submitted', await loanService.submitEligibility(req.body)));
 });
 
@@ -311,12 +343,12 @@ function mapTenacioResponse(raw: any, requestId: string): object {
     scoreDate,
     reportId: requestId,
     accounts,
-    _raw: process.env.NODE_ENV !== 'production' ? raw : undefined,
+    _raw: undefined,
   };
 }
 
-// POST /cibil/check — all authenticated roles
-router.post('/cibil/check', async (req: Request, res: Response) => {
+// POST /cibil/check — all authenticated roles, rate-limited per user (HIGH-7)
+router.post('/cibil/check', cibilLimiter, async (req: Request, res: Response) => {
   const { mobileNumber, name, consent } = req.body;
   if (!consent)      { res.status(400).json(fail('Customer consent is required')); return; }
   if (!mobileNumber) { res.status(400).json(fail('Mobile number is required')); return; }

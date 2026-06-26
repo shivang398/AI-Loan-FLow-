@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
+import { requireRoles } from '../middleware/role.middleware';
 import * as customerService from '../services/customer.service';
 import { ok, fail } from '../utils/response';
 
@@ -105,7 +106,7 @@ router.get('/leads', async (req: Request, res: Response) => {
   res.json(ok('Leads fetched', await customerService.getLeads({ status: req.query.status as string, assignedTo: req.query.assignedTo as string, page, size })));
 });
 
-router.post('/leads/reassign', async (req: Request, res: Response) => {
+router.post('/leads/reassign', requireRoles('ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const { leadIds, assignTo } = req.body;
   if (!Array.isArray(leadIds) || leadIds.length === 0 || !assignTo) { res.status(400).json(fail('leadIds (array) and assignTo are required')); return; }
   const results = await Promise.all((leadIds as string[]).map((id: string) => customerService.updateLead(id, { assignedTo: assignTo })));
@@ -134,7 +135,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   res.json(ok('Customer updated', await customerService.updateCustomer(req.params.id, { firstName, lastName, email, mobile }, req.user!.email)));
 });
 
-router.put('/:id/kyc', async (req: Request, res: Response) => {
+router.put('/:id/kyc', requireRoles('ADMIN', 'OPERATIONS'), async (req: Request, res: Response) => {
   const parsed = kycSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json(fail(parsed.error.errors[0].message)); return; }
   res.json(ok('KYC updated', await customerService.updateKyc(req.params.id, parsed.data)));

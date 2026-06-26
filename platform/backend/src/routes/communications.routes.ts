@@ -1,8 +1,11 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { authenticate } from '../middleware/auth.middleware';
 import * as commsService from '../services/communications.service';
 import { ok, fail } from '../utils/response';
 import { getPresignedUrl } from '../config/s3';
+
+const ALLOWED_ATTACH_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'video/mp4']);
 
 const router = Router();
 
@@ -17,8 +20,22 @@ router.get('/whatsapp/webhook', (req: Request, res: Response) => {
   res.status(403).send('Forbidden');
 });
 
-router.post('/whatsapp/webhook', async (req: Request, res: Response) => {
-  await commsService.handleWhatsappWebhook(req.body);
+router.post('/whatsapp/webhook', (req: Request, res: Response) => {
+  // Verify Meta HMAC signature to reject spoofed webhook calls (HIGH-8)
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (appSecret) {
+    const sig = req.headers['x-hub-signature-256'] as string | undefined;
+    if (!sig) { res.status(403).send('Missing signature'); return; }
+    const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(JSON.stringify(req.body)).digest('hex');
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+        res.status(403).send('Invalid signature'); return;
+      }
+    } catch {
+      res.status(403).send('Invalid signature'); return;
+    }
+  }
+  commsService.handleWhatsappWebhook(req.body).catch(() => {});
   res.sendStatus(200);
 });
 
@@ -89,7 +106,9 @@ router.get('/conversations/:id/messages', async (req: Request, res: Response) =>
 router.post('/attachments/presigned-url', async (req: Request, res: Response) => {
   const { fileName, contentType } = req.body;
   if (!fileName || !contentType) { res.status(400).json(fail('fileName and contentType are required')); return; }
-  const key = `attachments/${req.user!.id}/${Date.now()}-${fileName}`;
+  if (!ALLOWED_ATTACH_MIME.has(contentType)) { res.status(415).json(fail('Content type not allowed')); return; }
+  const safeName = fileName.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 100);
+  const key = `attachments/${req.user!.id}/${Date.now()}-${safeName}`;
   const url = await getPresignedUrl(key);
   res.json(ok('Presigned URL generated', { url, key }));
 });

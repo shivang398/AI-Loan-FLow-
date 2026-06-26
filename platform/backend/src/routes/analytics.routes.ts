@@ -7,14 +7,15 @@ import { ok, fail } from '../utils/response';
 const router = Router();
 router.use(authenticate);
 
-// Flat KPI summary: { TOTAL_LOANS: N, ACTIVE_PARTNERS: N, ... }
-// Used by BusinessAnalytics KPI cards
-router.get('/summary', async (_req: Request, res: Response) => {
+const ANALYTICS_ROLES = ['ADMIN', 'RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER'] as const;
+
+// Flat KPI summary — restricted to internal roles (MED-11)
+router.get('/summary', requireRoles(...ANALYTICS_ROLES), async (_req: Request, res: Response) => {
   res.json(ok('Analytics summary', await analyticsService.getDashboardSummary()));
 });
 
-// Trend snapshots array — used by BusinessAnalytics trend charts
-router.get('/dashboard', async (req: Request, res: Response) => {
+// Trend snapshots — restricted to internal roles (MED-11)
+router.get('/dashboard', requireRoles(...ANALYTICS_ROLES), async (req: Request, res: Response) => {
   const snapshots = await analyticsService.getTrendSnapshots(
     req.query.from as string,
     req.query.to as string,
@@ -22,7 +23,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
   res.json(ok('Dashboard snapshots', snapshots));
 });
 
-router.get('/snapshots', async (req: Request, res: Response) => {
+router.get('/snapshots', requireRoles(...ANALYTICS_ROLES), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('Snapshots fetched', await analyticsService.getSnapshots({ metricType: req.query.metricType as string, dimension: req.query.dimension as string, fromDate: req.query.fromDate as string, toDate: req.query.toDate as string, page, size })));

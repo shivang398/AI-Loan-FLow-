@@ -31,7 +31,16 @@ const app = express();
 // Trust the first proxy hop so req.ip reflects the real client IP
 app.set('trust proxy', 1);
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+}));
 
 // Restrict CORS to known origins — wildcard + credentials is invalid per spec
 const corsOrigins = process.env.CORS_ORIGIN
@@ -94,12 +103,12 @@ app.use('/foir', apiLimiter, foirRoutes);
 app.use('/routing', writeLimiter, routingRoutes);
 
 // ── Communications & Notifications ───────────────────────────────────────────
-app.use('/messaging', commsRoutes);
-app.use('/notifications', notificationsRoutes);
+app.use('/messaging', apiLimiter, commsRoutes);
+app.use('/notifications', apiLimiter, notificationsRoutes);
 
 // ── Analytics & Reports ───────────────────────────────────────────────────────
-app.use('/analytics', analyticsRoutes);
-app.use('/reports', reportsRoutes);
+app.use('/analytics', apiLimiter, analyticsRoutes);
+app.use('/reports', apiLimiter, reportsRoutes);
 
 // ── Careers ───────────────────────────────────────────────────────────────────
 app.use('/careers', careersRoutes);

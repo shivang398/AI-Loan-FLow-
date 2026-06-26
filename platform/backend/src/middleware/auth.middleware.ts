@@ -21,7 +21,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   const token = header.slice(7);
   try {
     const secret = process.env.JWT_SECRET!;
-    const payload = jwt.verify(token, secret) as JwtPayload;
+    const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as JwtPayload;
 
     if (payload.jti && (await isTokenRevoked(payload.jti))) {
       res.status(401).json(fail('Token has been revoked'));

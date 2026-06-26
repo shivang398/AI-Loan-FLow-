@@ -33,9 +33,13 @@ export async function getDocuments(filters: { loanId?: string; ownerId?: string;
   return { items, total, page: filters.page, size: filters.size };
 }
 
-export async function getDocumentById(id: string, accessedBy: string) {
+export async function getDocumentById(id: string, accessedBy: string, isPrivileged = false) {
   const doc = await customerDb.document.findUnique({ where: { id } });
   if (!doc) throw Object.assign(new Error('Document not found'), { status: 404 });
+  // Ownership check — non-privileged users can only access their own documents (CRIT-1)
+  if (!isPrivileged && doc.ownerId !== accessedBy && doc.uploadedBy !== accessedBy) {
+    throw Object.assign(new Error('Access denied'), { status: 403 });
+  }
   await customerDb.documentAccessLog.create({ data: { id: uuidv4(), documentId: id, accessedBy, accessType: 'VIEW', accessedAt: new Date() } });
   const downloadUrl = await getPresignedUrl(doc.s3Key);
   return { ...doc, downloadUrl };

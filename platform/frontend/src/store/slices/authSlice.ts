@@ -38,7 +38,7 @@ const storedToken = (() => {
 })();
 const storedUser = (() => {
   try {
-    const raw = localStorage.getItem('user');
+    const raw = sessionStorage.getItem('user');
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 })();
@@ -63,7 +63,8 @@ const authSlice = createSlice({
       state.user = user;
       state.token = token;
       state.isAuthenticated = true;
-      localStorage.setItem('user', JSON.stringify(user));
+      // user metadata in sessionStorage (cleared on tab close) — not localStorage (HIGH-3/LOW-4)
+      sessionStorage.setItem('user', JSON.stringify(user));
       sessionStorage.setItem('token', token);
     },
     setToken: (state, action: PayloadAction<string>) => {
@@ -75,7 +76,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
       sessionStorage.removeItem('token');
     },
     setLoading: (state, action: PayloadAction<boolean>) => {

@@ -10,6 +10,7 @@ const JWT_EXPIRY_MS = () => parseInt(process.env.JWT_EXPIRY_MS ?? '900000');
 function signToken(userId: string, email: string, roles: string): string {
   const jti = uuidv4();
   return jwt.sign({ sub: email, id: userId, roles, jti }, JWT_SECRET(), {
+    algorithm: 'HS256',
     expiresIn: Math.floor(JWT_EXPIRY_MS() / 1000),
   });
 }
@@ -86,7 +87,7 @@ export async function refreshToken(existingToken: string) {
     const secret = JWT_SECRET();
     let payload: { sub: string; roles: string; jti: string };
     try {
-      payload = jwt.verify(existingToken, secret) as typeof payload;
+      payload = jwt.verify(existingToken, secret, { algorithms: ['HS256'] }) as typeof payload;
     } catch (err) {
       if ((err as { name: string }).name !== 'TokenExpiredError') throw err;
       payload = jwt.decode(existingToken) as typeof payload;

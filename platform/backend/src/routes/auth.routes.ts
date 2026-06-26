@@ -30,7 +30,7 @@ router.post('/register', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'),
   res.json(ok('User registered successfully', result));
 });
 
-router.post('/register/partner', async (req: Request, res: Response) => {
+router.post('/register/partner', authLimiter, async (req: Request, res: Response) => {
   const body = RegisterSchema.omit({ role: true }).safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map((e) => e.message))); return; }
   const result = await authService.registerUser(body.data.email, body.data.password, 'CONNECTOR');
@@ -89,9 +89,10 @@ router.post('/forgot-password', authLimiter, async (req: Request, res: Response)
   res.json(ok('If that email exists, a reset link has been sent.', 'OK'));
 });
 
-router.post('/reset-password', async (req: Request, res: Response) => {
+router.post('/reset-password', authLimiter, async (req: Request, res: Response) => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword) { res.status(400).json(fail('token and newPassword are required')); return; }
+  if (newPassword.length < 8) { res.status(400).json(fail('Password must be at least 8 characters')); return; }
   await authService.resetPassword(token, newPassword);
   res.json(ok('Password reset successfully.', 'OK'));
 });

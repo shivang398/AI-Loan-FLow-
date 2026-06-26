@@ -5,8 +5,12 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
   const status = (err as { status?: number }).status ?? 500;
 
   if (status >= 500) {
-    // Only log unexpected errors server-side; never send stack to client
-    console.error('[Error]', err.message, err.stack);
+    // Suppress stack traces in production to avoid leaking internal paths (LOW-7)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[Error]', err.message, err.stack);
+    } else {
+      console.error('[Error]', err.message);
+    }
   }
 
   // App-thrown errors (4xx) carry a safe message intended for the client.
