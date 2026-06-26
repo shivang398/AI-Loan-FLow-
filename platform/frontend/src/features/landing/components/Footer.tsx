@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Shield, Award, Users, ArrowUpRight } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from 'antd';
 import '../styles/landing.css';
@@ -68,11 +68,6 @@ const SOCIAL_LINKS = [
   { Icon: YoutubeIcon,  href: 'https://youtube.com/@realmoneygroups',     label: 'YouTube' },
 ];
 
-const TRUST_BADGES = [
-  { icon: Shield, label: '22+ Years', sub: 'Trusted Since 2002' },
-  { icon: Award,  label: '₹10 Cr+',  sub: 'Monthly Business' },
-  { icon: Users,  label: '50+ Banks', sub: '& NBFCs Empanelled' },
-];
 
 const LEGAL_CONTENT: Record<string, string> = {
   'Privacy Policy': 'Real Money respects your privacy. We collect only necessary information to process your loan application. Data is shared only with the specific lender partner you explicitly consent to apply with. You may request deletion of your data at any time by writing to contact@realmoneygroups.in.',
@@ -154,36 +149,6 @@ const Footer: React.FC = () => {
                           linear-gradient(90deg, rgba(196,153,58,0.025) 1px, transparent 1px)`,
         backgroundSize: '56px 56px',
       }} />
-
-      {/* Trust badges strip */}
-      <div style={{ borderBottom: `1px solid rgba(196,153,58,0.14)`, background: 'rgba(196,153,58,0.04)', position: 'relative' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 32px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {TRUST_BADGES.map(({ icon: Icon, label, sub }, i) => (
-            <React.Fragment key={label}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 48px' }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 4,
-                  background: 'rgba(196,153,58,0.10)',
-                  border: '1px solid rgba(196,153,58,0.22)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Icon size={18} color={GOLD} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', lineHeight: 1.1, fontFamily: '"Playfair Display", serif' }}>
-                    {label}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: MUTED, fontWeight: 500, marginTop: 3, fontFamily: 'Inter' }}>{sub}</div>
-                </div>
-              </div>
-              {i < TRUST_BADGES.length - 1 && (
-                <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', alignSelf: 'stretch', margin: '10px 0' }} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
 
       {/* Main footer body */}
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 32px 48px', position: 'relative' }}>
