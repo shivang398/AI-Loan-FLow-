@@ -126,6 +126,19 @@ router.put('/leads/:id', async (req: Request, res: Response) => {
   res.json(ok('Lead updated', await customerService.updateLead(req.params.id, updateData)));
 });
 
+// Sub-routes used by the Ops Dashboard for targeted single-field updates
+router.put('/leads/:id/notes', requireRoles('ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER'), async (req: Request, res: Response) => {
+  const { notes } = req.body;
+  if (notes === undefined) { res.status(400).json(fail('notes is required')); return; }
+  res.json(ok('Notes updated', await customerService.updateLead(req.params.id, { notes })));
+});
+
+router.put('/leads/:id/status', requireRoles('ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+  const { status } = req.body;
+  if (!status) { res.status(400).json(fail('status is required')); return; }
+  res.json(ok('Status updated', await customerService.updateLead(req.params.id, { status })));
+});
+
 router.get('/:id', async (req: Request, res: Response) => {
   res.json(ok('Customer fetched', await customerService.getCustomerById(req.params.id)));
 });

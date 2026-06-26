@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as analyticsService from '../services/analytics.service';
+import * as salesOpsService from '../services/salesops.service';
 import { ok, fail } from '../utils/response';
 
 const router = Router();
@@ -49,7 +50,31 @@ router.post('/send-test-email', requireRoles('ADMIN'), async (_req: Request, res
 });
 
 router.get('/connector-summary/download', requireRoles('ADMIN', 'RM'), async (_req: Request, res: Response) => {
-  res.json(ok('Connector summary', { message: 'CSV export not yet configured', data: [] }));
+  const { items } = await salesOpsService.getConnectors({ page: 0, size: 5000 });
+
+  const escape = (v: unknown) => {
+    const s = v == null ? '' : String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Region', 'Role', 'Status', 'Total Commission Paid', 'Total Transactions', 'Joined'];
+  const rows = await Promise.all(
+    items.map(async (c) => {
+      const stats = await salesOpsService.getConnectorStats(c.id);
+      return [
+        c.id, c.firstName, c.lastName, c.email ?? '', c.phone ?? '',
+        c.region ?? '', c.platformRole ?? '', c.status,
+        stats.totalCommissionPaid.toFixed(2), stats.totalTransactions,
+        c.createdAt ? new Date(c.createdAt).toISOString().slice(0, 10) : '',
+      ].map(escape).join(',');
+    }),
+  );
+
+  const csv = [headers.join(','), ...rows].join('\r\n');
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="connector-summary-${date}.csv"`);
+  res.send(csv);
 });
 
 export default router;
