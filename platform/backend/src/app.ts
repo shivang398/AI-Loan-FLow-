@@ -24,6 +24,7 @@ import notificationsRoutes from './routes/notifications.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import reportsRoutes from './routes/reports.routes';
 import careersRoutes from './routes/careers.routes';
+import callRoutes from './routes/call.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 const app = express();
@@ -112,6 +113,9 @@ app.use('/reports', apiLimiter, reportsRoutes);
 
 // ── Careers ───────────────────────────────────────────────────────────────────
 app.use('/careers', careersRoutes);
+
+// ── Telecalling ───────────────────────────────────────────────────────────────
+app.use('/calls', apiLimiter, callRoutes);
 
 // ── Error handling ────────────────────────────────────────────────────────────
 app.use(notFound);

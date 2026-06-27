@@ -31,6 +31,7 @@ import ConnectorHub from './features/admin/components/ConnectorHub';
 import PayoutTracker from './features/admin/components/PayoutTracker';
 import CareerApplications from './features/admin/components/CareerApplications';
 import PoliciesPage from './features/policies/components/PoliciesPage';
+import TelecallerDashboard from './features/telecaller/components/TelecallerDashboard';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
 import './index.css';
@@ -48,6 +49,7 @@ const SmartRedirect: React.FC = () => {
     OPERATIONS:      '/ops/dashboard',
     CONNECTOR:       '/connector/dashboard',
     PARTNER_MANAGER: '/pm/partners',
+    TELECALLER:      '/telecaller/queue',
   };
   return <Navigate to={roleHome[user.role] ?? '/dashboard'} replace />;
 };
@@ -154,6 +156,11 @@ const App: React.FC = () => {
                 <Route path="/ops/dashboard"    element={<OperationsDashboard />} />
                 <Route path="/ops/policies"     element={<PoliciesPage />} />
                 <Route path="/ops/team-meeting" element={<OpsTeamMeetingPage />} />
+              </Route>
+
+              {/* Telecaller Specific Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['TELECALLER']} />}>
+                <Route path="/telecaller/queue" element={<TelecallerDashboard />} />
               </Route>
 
               {/* Connector Specific Routes */}

@@ -17,7 +17,7 @@ import apiClient from '../../../shared/services/apiClient';
 const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'Admin', RM: 'Relationship Manager',
   OPERATIONS: 'Operations', TEAM_LEADER: 'Team Leader', CONNECTOR: 'Connector',
-  PARTNER_MANAGER: 'Partner Manager',
+  PARTNER_MANAGER: 'Partner Manager', TELECALLER: 'Telecaller',
 };
 
 function fmtTime(iso: string) {
@@ -201,7 +201,7 @@ const Bubble: React.FC<{ msg: TeamMessage; isMine: boolean; showAvatar: boolean 
 
 const ROLE_MAP: Record<string, UserRole> = {
   ADMIN: 'ADMIN', RM: 'RM', OPERATIONS: 'OPERATIONS',
-  TEAM_LEADER: 'TEAM_LEADER', CONNECTOR: 'CONNECTOR', PARTNER_MANAGER: 'PARTNER_MANAGER',
+  TEAM_LEADER: 'TEAM_LEADER', CONNECTOR: 'CONNECTOR', PARTNER_MANAGER: 'PARTNER_MANAGER', TELECALLER: 'TELECALLER',
 };
 
 const TeamMeeting: React.FC = () => {
@@ -365,6 +365,7 @@ const TeamMeeting: React.FC = () => {
     ADMIN:           ['Target updated', 'Review Q2', 'Compliance due', 'Good performance'],
     TEAM_LEADER:     ['Check your target', 'Training Friday', 'Payout processed', 'New product live'],
     PARTNER_MANAGER: ['Onboarding approved', 'Payout released', 'Review connector', 'Slab updated'],
+    TELECALLER:      ['Called customer', 'Callback scheduled', 'Interested lead', 'Not reachable'],
   };
 
   const onlineCount = myRooms.filter(r => r.isOnline).length;

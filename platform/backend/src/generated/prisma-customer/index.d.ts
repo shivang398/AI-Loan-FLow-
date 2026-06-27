@@ -39,6 +39,11 @@ export type CustomerHistory = $Result.DefaultSelection<Prisma.$CustomerHistoryPa
  */
 export type Lead = $Result.DefaultSelection<Prisma.$LeadPayload>
 /**
+ * Model CallLog
+ * 
+ */
+export type CallLog = $Result.DefaultSelection<Prisma.$CallLogPayload>
+/**
  * Model Document
  * 
  */
@@ -226,6 +231,16 @@ export class PrismaClient<
     * ```
     */
   get lead(): Prisma.LeadDelegate<ExtArgs>;
+
+  /**
+   * `prisma.callLog`: Exposes CRUD operations for the **CallLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CallLogs
+    * const callLogs = await prisma.callLog.findMany()
+    * ```
+    */
+  get callLog(): Prisma.CallLogDelegate<ExtArgs>;
 
   /**
    * `prisma.document`: Exposes CRUD operations for the **Document** model.
@@ -702,6 +717,7 @@ export namespace Prisma {
     CustomerAddress: 'CustomerAddress',
     CustomerHistory: 'CustomerHistory',
     Lead: 'Lead',
+    CallLog: 'CallLog',
     Document: 'Document',
     DocumentVersion: 'DocumentVersion',
     DocumentAccessLog: 'DocumentAccessLog'
@@ -720,7 +736,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "customer" | "customerKyc" | "customerAddress" | "customerHistory" | "lead" | "document" | "documentVersion" | "documentAccessLog"
+      modelProps: "customer" | "customerKyc" | "customerAddress" | "customerHistory" | "lead" | "callLog" | "document" | "documentVersion" | "documentAccessLog"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1051,6 +1067,72 @@ export namespace Prisma {
           count: {
             args: Prisma.LeadCountArgs<ExtArgs>
             result: $Utils.Optional<LeadCountAggregateOutputType> | number
+          }
+        }
+      }
+      CallLog: {
+        payload: Prisma.$CallLogPayload<ExtArgs>
+        fields: Prisma.CallLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CallLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CallLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>
+          }
+          findFirst: {
+            args: Prisma.CallLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CallLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>
+          }
+          findMany: {
+            args: Prisma.CallLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>[]
+          }
+          create: {
+            args: Prisma.CallLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>
+          }
+          createMany: {
+            args: Prisma.CallLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CallLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>
+          }
+          update: {
+            args: Prisma.CallLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.CallLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CallLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CallLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CallLogPayload>
+          }
+          aggregate: {
+            args: Prisma.CallLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCallLog>
+          }
+          groupBy: {
+            args: Prisma.CallLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CallLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CallLogCountArgs<ExtArgs>
+            result: $Utils.Optional<CallLogCountAggregateOutputType> | number
           }
         }
       }
@@ -1454,6 +1536,37 @@ export namespace Prisma {
    */
   export type CustomerCountOutputTypeCountLeadsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: LeadWhereInput
+  }
+
+
+  /**
+   * Count Type LeadCountOutputType
+   */
+
+  export type LeadCountOutputType = {
+    callLogs: number
+  }
+
+  export type LeadCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    callLogs?: boolean | LeadCountOutputTypeCountCallLogsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * LeadCountOutputType without action
+   */
+  export type LeadCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LeadCountOutputType
+     */
+    select?: LeadCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * LeadCountOutputType without action
+   */
+  export type LeadCountOutputTypeCountCallLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CallLogWhereInput
   }
 
 
@@ -5266,12 +5379,14 @@ export namespace Prisma {
     loanAmount: Decimal | null
     netMonthlySalary: Decimal | null
     existingEmi: Decimal | null
+    totalAttempts: number | null
   }
 
   export type LeadSumAggregateOutputType = {
     loanAmount: Decimal | null
     netMonthlySalary: Decimal | null
     existingEmi: Decimal | null
+    totalAttempts: number | null
   }
 
   export type LeadMinAggregateOutputType = {
@@ -5321,6 +5436,11 @@ export namespace Prisma {
     hasPriorPersonalLoan: boolean | null
     opsNotes: string | null
     companyName: string | null
+    notes: string | null
+    totalAttempts: number | null
+    lastCalledAt: Date | null
+    nextCallbackAt: Date | null
+    lastDisposition: string | null
   }
 
   export type LeadMaxAggregateOutputType = {
@@ -5370,6 +5490,11 @@ export namespace Prisma {
     hasPriorPersonalLoan: boolean | null
     opsNotes: string | null
     companyName: string | null
+    notes: string | null
+    totalAttempts: number | null
+    lastCalledAt: Date | null
+    nextCallbackAt: Date | null
+    lastDisposition: string | null
   }
 
   export type LeadCountAggregateOutputType = {
@@ -5419,6 +5544,11 @@ export namespace Prisma {
     hasPriorPersonalLoan: number
     opsNotes: number
     companyName: number
+    notes: number
+    totalAttempts: number
+    lastCalledAt: number
+    nextCallbackAt: number
+    lastDisposition: number
     _all: number
   }
 
@@ -5427,12 +5557,14 @@ export namespace Prisma {
     loanAmount?: true
     netMonthlySalary?: true
     existingEmi?: true
+    totalAttempts?: true
   }
 
   export type LeadSumAggregateInputType = {
     loanAmount?: true
     netMonthlySalary?: true
     existingEmi?: true
+    totalAttempts?: true
   }
 
   export type LeadMinAggregateInputType = {
@@ -5482,6 +5614,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: true
     opsNotes?: true
     companyName?: true
+    notes?: true
+    totalAttempts?: true
+    lastCalledAt?: true
+    nextCallbackAt?: true
+    lastDisposition?: true
   }
 
   export type LeadMaxAggregateInputType = {
@@ -5531,6 +5668,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: true
     opsNotes?: true
     companyName?: true
+    notes?: true
+    totalAttempts?: true
+    lastCalledAt?: true
+    nextCallbackAt?: true
+    lastDisposition?: true
   }
 
   export type LeadCountAggregateInputType = {
@@ -5580,6 +5722,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: true
     opsNotes?: true
     companyName?: true
+    notes?: true
+    totalAttempts?: true
+    lastCalledAt?: true
+    nextCallbackAt?: true
+    lastDisposition?: true
     _all?: true
   }
 
@@ -5716,6 +5863,11 @@ export namespace Prisma {
     hasPriorPersonalLoan: boolean | null
     opsNotes: string | null
     companyName: string | null
+    notes: string | null
+    totalAttempts: number
+    lastCalledAt: Date | null
+    nextCallbackAt: Date | null
+    lastDisposition: string | null
     _count: LeadCountAggregateOutputType | null
     _avg: LeadAvgAggregateOutputType | null
     _sum: LeadSumAggregateOutputType | null
@@ -5784,7 +5936,14 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean
     opsNotes?: boolean
     companyName?: boolean
+    notes?: boolean
+    totalAttempts?: boolean
+    lastCalledAt?: boolean
+    nextCallbackAt?: boolean
+    lastDisposition?: boolean
     customer?: boolean | Lead$customerArgs<ExtArgs>
+    callLogs?: boolean | Lead$callLogsArgs<ExtArgs>
+    _count?: boolean | LeadCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["lead"]>
 
 
@@ -5835,16 +5994,24 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean
     opsNotes?: boolean
     companyName?: boolean
+    notes?: boolean
+    totalAttempts?: boolean
+    lastCalledAt?: boolean
+    nextCallbackAt?: boolean
+    lastDisposition?: boolean
   }
 
   export type LeadInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     customer?: boolean | Lead$customerArgs<ExtArgs>
+    callLogs?: boolean | Lead$callLogsArgs<ExtArgs>
+    _count?: boolean | LeadCountOutputTypeDefaultArgs<ExtArgs>
   }
 
   export type $LeadPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Lead"
     objects: {
       customer: Prisma.$CustomerPayload<ExtArgs> | null
+      callLogs: Prisma.$CallLogPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5893,6 +6060,11 @@ export namespace Prisma {
       hasPriorPersonalLoan: boolean | null
       opsNotes: string | null
       companyName: string | null
+      notes: string | null
+      totalAttempts: number
+      lastCalledAt: Date | null
+      nextCallbackAt: Date | null
+      lastDisposition: string | null
     }, ExtArgs["result"]["lead"]>
     composites: {}
   }
@@ -6234,6 +6406,7 @@ export namespace Prisma {
   export interface Prisma__LeadClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     customer<T extends Lead$customerArgs<ExtArgs> = {}>(args?: Subset<T, Lead$customerArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    callLogs<T extends Lead$callLogsArgs<ExtArgs> = {}>(args?: Subset<T, Lead$callLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6309,6 +6482,11 @@ export namespace Prisma {
     readonly hasPriorPersonalLoan: FieldRef<"Lead", 'Boolean'>
     readonly opsNotes: FieldRef<"Lead", 'String'>
     readonly companyName: FieldRef<"Lead", 'String'>
+    readonly notes: FieldRef<"Lead", 'String'>
+    readonly totalAttempts: FieldRef<"Lead", 'Int'>
+    readonly lastCalledAt: FieldRef<"Lead", 'DateTime'>
+    readonly nextCallbackAt: FieldRef<"Lead", 'DateTime'>
+    readonly lastDisposition: FieldRef<"Lead", 'String'>
   }
     
 
@@ -6623,6 +6801,26 @@ export namespace Prisma {
   }
 
   /**
+   * Lead.callLogs
+   */
+  export type Lead$callLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    where?: CallLogWhereInput
+    orderBy?: CallLogOrderByWithRelationInput | CallLogOrderByWithRelationInput[]
+    cursor?: CallLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CallLogScalarFieldEnum | CallLogScalarFieldEnum[]
+  }
+
+  /**
    * Lead without action
    */
   export type LeadDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6634,6 +6832,978 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: LeadInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CallLog
+   */
+
+  export type AggregateCallLog = {
+    _count: CallLogCountAggregateOutputType | null
+    _avg: CallLogAvgAggregateOutputType | null
+    _sum: CallLogSumAggregateOutputType | null
+    _min: CallLogMinAggregateOutputType | null
+    _max: CallLogMaxAggregateOutputType | null
+  }
+
+  export type CallLogAvgAggregateOutputType = {
+    durationSeconds: number | null
+    attemptNumber: number | null
+  }
+
+  export type CallLogSumAggregateOutputType = {
+    durationSeconds: number | null
+    attemptNumber: number | null
+  }
+
+  export type CallLogMinAggregateOutputType = {
+    id: string | null
+    leadId: string | null
+    telecallerId: string | null
+    telecallerEmail: string | null
+    disposition: string | null
+    notes: string | null
+    durationSeconds: number | null
+    attemptNumber: number | null
+    nextCallbackAt: Date | null
+    calledAt: Date | null
+  }
+
+  export type CallLogMaxAggregateOutputType = {
+    id: string | null
+    leadId: string | null
+    telecallerId: string | null
+    telecallerEmail: string | null
+    disposition: string | null
+    notes: string | null
+    durationSeconds: number | null
+    attemptNumber: number | null
+    nextCallbackAt: Date | null
+    calledAt: Date | null
+  }
+
+  export type CallLogCountAggregateOutputType = {
+    id: number
+    leadId: number
+    telecallerId: number
+    telecallerEmail: number
+    disposition: number
+    notes: number
+    durationSeconds: number
+    attemptNumber: number
+    nextCallbackAt: number
+    calledAt: number
+    _all: number
+  }
+
+
+  export type CallLogAvgAggregateInputType = {
+    durationSeconds?: true
+    attemptNumber?: true
+  }
+
+  export type CallLogSumAggregateInputType = {
+    durationSeconds?: true
+    attemptNumber?: true
+  }
+
+  export type CallLogMinAggregateInputType = {
+    id?: true
+    leadId?: true
+    telecallerId?: true
+    telecallerEmail?: true
+    disposition?: true
+    notes?: true
+    durationSeconds?: true
+    attemptNumber?: true
+    nextCallbackAt?: true
+    calledAt?: true
+  }
+
+  export type CallLogMaxAggregateInputType = {
+    id?: true
+    leadId?: true
+    telecallerId?: true
+    telecallerEmail?: true
+    disposition?: true
+    notes?: true
+    durationSeconds?: true
+    attemptNumber?: true
+    nextCallbackAt?: true
+    calledAt?: true
+  }
+
+  export type CallLogCountAggregateInputType = {
+    id?: true
+    leadId?: true
+    telecallerId?: true
+    telecallerEmail?: true
+    disposition?: true
+    notes?: true
+    durationSeconds?: true
+    attemptNumber?: true
+    nextCallbackAt?: true
+    calledAt?: true
+    _all?: true
+  }
+
+  export type CallLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CallLog to aggregate.
+     */
+    where?: CallLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CallLogs to fetch.
+     */
+    orderBy?: CallLogOrderByWithRelationInput | CallLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CallLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CallLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CallLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CallLogs
+    **/
+    _count?: true | CallLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CallLogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CallLogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CallLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CallLogMaxAggregateInputType
+  }
+
+  export type GetCallLogAggregateType<T extends CallLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateCallLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCallLog[P]>
+      : GetScalarType<T[P], AggregateCallLog[P]>
+  }
+
+
+
+
+  export type CallLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CallLogWhereInput
+    orderBy?: CallLogOrderByWithAggregationInput | CallLogOrderByWithAggregationInput[]
+    by: CallLogScalarFieldEnum[] | CallLogScalarFieldEnum
+    having?: CallLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CallLogCountAggregateInputType | true
+    _avg?: CallLogAvgAggregateInputType
+    _sum?: CallLogSumAggregateInputType
+    _min?: CallLogMinAggregateInputType
+    _max?: CallLogMaxAggregateInputType
+  }
+
+  export type CallLogGroupByOutputType = {
+    id: string
+    leadId: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes: string | null
+    durationSeconds: number | null
+    attemptNumber: number
+    nextCallbackAt: Date | null
+    calledAt: Date
+    _count: CallLogCountAggregateOutputType | null
+    _avg: CallLogAvgAggregateOutputType | null
+    _sum: CallLogSumAggregateOutputType | null
+    _min: CallLogMinAggregateOutputType | null
+    _max: CallLogMaxAggregateOutputType | null
+  }
+
+  type GetCallLogGroupByPayload<T extends CallLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CallLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CallLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CallLogGroupByOutputType[P]>
+            : GetScalarType<T[P], CallLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CallLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    leadId?: boolean
+    telecallerId?: boolean
+    telecallerEmail?: boolean
+    disposition?: boolean
+    notes?: boolean
+    durationSeconds?: boolean
+    attemptNumber?: boolean
+    nextCallbackAt?: boolean
+    calledAt?: boolean
+    lead?: boolean | LeadDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["callLog"]>
+
+
+  export type CallLogSelectScalar = {
+    id?: boolean
+    leadId?: boolean
+    telecallerId?: boolean
+    telecallerEmail?: boolean
+    disposition?: boolean
+    notes?: boolean
+    durationSeconds?: boolean
+    attemptNumber?: boolean
+    nextCallbackAt?: boolean
+    calledAt?: boolean
+  }
+
+  export type CallLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    lead?: boolean | LeadDefaultArgs<ExtArgs>
+  }
+
+  export type $CallLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CallLog"
+    objects: {
+      lead: Prisma.$LeadPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      leadId: string
+      telecallerId: string
+      telecallerEmail: string
+      disposition: string
+      notes: string | null
+      durationSeconds: number | null
+      attemptNumber: number
+      nextCallbackAt: Date | null
+      calledAt: Date
+    }, ExtArgs["result"]["callLog"]>
+    composites: {}
+  }
+
+  type CallLogGetPayload<S extends boolean | null | undefined | CallLogDefaultArgs> = $Result.GetResult<Prisma.$CallLogPayload, S>
+
+  type CallLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CallLogFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CallLogCountAggregateInputType | true
+    }
+
+  export interface CallLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CallLog'], meta: { name: 'CallLog' } }
+    /**
+     * Find zero or one CallLog that matches the filter.
+     * @param {CallLogFindUniqueArgs} args - Arguments to find a CallLog
+     * @example
+     * // Get one CallLog
+     * const callLog = await prisma.callLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CallLogFindUniqueArgs>(args: SelectSubset<T, CallLogFindUniqueArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CallLog that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CallLogFindUniqueOrThrowArgs} args - Arguments to find a CallLog
+     * @example
+     * // Get one CallLog
+     * const callLog = await prisma.callLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CallLogFindUniqueOrThrowArgs>(args: SelectSubset<T, CallLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CallLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogFindFirstArgs} args - Arguments to find a CallLog
+     * @example
+     * // Get one CallLog
+     * const callLog = await prisma.callLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CallLogFindFirstArgs>(args?: SelectSubset<T, CallLogFindFirstArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CallLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogFindFirstOrThrowArgs} args - Arguments to find a CallLog
+     * @example
+     * // Get one CallLog
+     * const callLog = await prisma.callLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CallLogFindFirstOrThrowArgs>(args?: SelectSubset<T, CallLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CallLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CallLogs
+     * const callLogs = await prisma.callLog.findMany()
+     * 
+     * // Get first 10 CallLogs
+     * const callLogs = await prisma.callLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const callLogWithIdOnly = await prisma.callLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CallLogFindManyArgs>(args?: SelectSubset<T, CallLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CallLog.
+     * @param {CallLogCreateArgs} args - Arguments to create a CallLog.
+     * @example
+     * // Create one CallLog
+     * const CallLog = await prisma.callLog.create({
+     *   data: {
+     *     // ... data to create a CallLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends CallLogCreateArgs>(args: SelectSubset<T, CallLogCreateArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CallLogs.
+     * @param {CallLogCreateManyArgs} args - Arguments to create many CallLogs.
+     * @example
+     * // Create many CallLogs
+     * const callLog = await prisma.callLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CallLogCreateManyArgs>(args?: SelectSubset<T, CallLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CallLog.
+     * @param {CallLogDeleteArgs} args - Arguments to delete one CallLog.
+     * @example
+     * // Delete one CallLog
+     * const CallLog = await prisma.callLog.delete({
+     *   where: {
+     *     // ... filter to delete one CallLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CallLogDeleteArgs>(args: SelectSubset<T, CallLogDeleteArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CallLog.
+     * @param {CallLogUpdateArgs} args - Arguments to update one CallLog.
+     * @example
+     * // Update one CallLog
+     * const callLog = await prisma.callLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CallLogUpdateArgs>(args: SelectSubset<T, CallLogUpdateArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CallLogs.
+     * @param {CallLogDeleteManyArgs} args - Arguments to filter CallLogs to delete.
+     * @example
+     * // Delete a few CallLogs
+     * const { count } = await prisma.callLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CallLogDeleteManyArgs>(args?: SelectSubset<T, CallLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CallLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CallLogs
+     * const callLog = await prisma.callLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CallLogUpdateManyArgs>(args: SelectSubset<T, CallLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CallLog.
+     * @param {CallLogUpsertArgs} args - Arguments to update or create a CallLog.
+     * @example
+     * // Update or create a CallLog
+     * const callLog = await prisma.callLog.upsert({
+     *   create: {
+     *     // ... data to create a CallLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CallLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CallLogUpsertArgs>(args: SelectSubset<T, CallLogUpsertArgs<ExtArgs>>): Prisma__CallLogClient<$Result.GetResult<Prisma.$CallLogPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CallLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogCountArgs} args - Arguments to filter CallLogs to count.
+     * @example
+     * // Count the number of CallLogs
+     * const count = await prisma.callLog.count({
+     *   where: {
+     *     // ... the filter for the CallLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends CallLogCountArgs>(
+      args?: Subset<T, CallLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CallLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CallLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CallLogAggregateArgs>(args: Subset<T, CallLogAggregateArgs>): Prisma.PrismaPromise<GetCallLogAggregateType<T>>
+
+    /**
+     * Group by CallLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CallLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CallLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CallLogGroupByArgs['orderBy'] }
+        : { orderBy?: CallLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CallLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCallLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CallLog model
+   */
+  readonly fields: CallLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CallLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CallLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    lead<T extends LeadDefaultArgs<ExtArgs> = {}>(args?: Subset<T, LeadDefaultArgs<ExtArgs>>): Prisma__LeadClient<$Result.GetResult<Prisma.$LeadPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CallLog model
+   */ 
+  interface CallLogFieldRefs {
+    readonly id: FieldRef<"CallLog", 'String'>
+    readonly leadId: FieldRef<"CallLog", 'String'>
+    readonly telecallerId: FieldRef<"CallLog", 'String'>
+    readonly telecallerEmail: FieldRef<"CallLog", 'String'>
+    readonly disposition: FieldRef<"CallLog", 'String'>
+    readonly notes: FieldRef<"CallLog", 'String'>
+    readonly durationSeconds: FieldRef<"CallLog", 'Int'>
+    readonly attemptNumber: FieldRef<"CallLog", 'Int'>
+    readonly nextCallbackAt: FieldRef<"CallLog", 'DateTime'>
+    readonly calledAt: FieldRef<"CallLog", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CallLog findUnique
+   */
+  export type CallLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CallLog to fetch.
+     */
+    where: CallLogWhereUniqueInput
+  }
+
+  /**
+   * CallLog findUniqueOrThrow
+   */
+  export type CallLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CallLog to fetch.
+     */
+    where: CallLogWhereUniqueInput
+  }
+
+  /**
+   * CallLog findFirst
+   */
+  export type CallLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CallLog to fetch.
+     */
+    where?: CallLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CallLogs to fetch.
+     */
+    orderBy?: CallLogOrderByWithRelationInput | CallLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CallLogs.
+     */
+    cursor?: CallLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CallLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CallLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CallLogs.
+     */
+    distinct?: CallLogScalarFieldEnum | CallLogScalarFieldEnum[]
+  }
+
+  /**
+   * CallLog findFirstOrThrow
+   */
+  export type CallLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CallLog to fetch.
+     */
+    where?: CallLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CallLogs to fetch.
+     */
+    orderBy?: CallLogOrderByWithRelationInput | CallLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CallLogs.
+     */
+    cursor?: CallLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CallLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CallLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CallLogs.
+     */
+    distinct?: CallLogScalarFieldEnum | CallLogScalarFieldEnum[]
+  }
+
+  /**
+   * CallLog findMany
+   */
+  export type CallLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * Filter, which CallLogs to fetch.
+     */
+    where?: CallLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CallLogs to fetch.
+     */
+    orderBy?: CallLogOrderByWithRelationInput | CallLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CallLogs.
+     */
+    cursor?: CallLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CallLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CallLogs.
+     */
+    skip?: number
+    distinct?: CallLogScalarFieldEnum | CallLogScalarFieldEnum[]
+  }
+
+  /**
+   * CallLog create
+   */
+  export type CallLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CallLog.
+     */
+    data: XOR<CallLogCreateInput, CallLogUncheckedCreateInput>
+  }
+
+  /**
+   * CallLog createMany
+   */
+  export type CallLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CallLogs.
+     */
+    data: CallLogCreateManyInput | CallLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CallLog update
+   */
+  export type CallLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CallLog.
+     */
+    data: XOR<CallLogUpdateInput, CallLogUncheckedUpdateInput>
+    /**
+     * Choose, which CallLog to update.
+     */
+    where: CallLogWhereUniqueInput
+  }
+
+  /**
+   * CallLog updateMany
+   */
+  export type CallLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CallLogs.
+     */
+    data: XOR<CallLogUpdateManyMutationInput, CallLogUncheckedUpdateManyInput>
+    /**
+     * Filter which CallLogs to update
+     */
+    where?: CallLogWhereInput
+  }
+
+  /**
+   * CallLog upsert
+   */
+  export type CallLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CallLog to update in case it exists.
+     */
+    where: CallLogWhereUniqueInput
+    /**
+     * In case the CallLog found by the `where` argument doesn't exist, create a new CallLog with this data.
+     */
+    create: XOR<CallLogCreateInput, CallLogUncheckedCreateInput>
+    /**
+     * In case the CallLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CallLogUpdateInput, CallLogUncheckedUpdateInput>
+  }
+
+  /**
+   * CallLog delete
+   */
+  export type CallLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
+    /**
+     * Filter which CallLog to delete.
+     */
+    where: CallLogWhereUniqueInput
+  }
+
+  /**
+   * CallLog deleteMany
+   */
+  export type CallLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CallLogs to delete
+     */
+    where?: CallLogWhereInput
+  }
+
+  /**
+   * CallLog without action
+   */
+  export type CallLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CallLog
+     */
+    select?: CallLogSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CallLogInclude<ExtArgs> | null
   }
 
 
@@ -9663,10 +10833,31 @@ export namespace Prisma {
     existingEmi: 'existingEmi',
     hasPriorPersonalLoan: 'hasPriorPersonalLoan',
     opsNotes: 'opsNotes',
-    companyName: 'companyName'
+    companyName: 'companyName',
+    notes: 'notes',
+    totalAttempts: 'totalAttempts',
+    lastCalledAt: 'lastCalledAt',
+    nextCallbackAt: 'nextCallbackAt',
+    lastDisposition: 'lastDisposition'
   };
 
   export type LeadScalarFieldEnum = (typeof LeadScalarFieldEnum)[keyof typeof LeadScalarFieldEnum]
+
+
+  export const CallLogScalarFieldEnum: {
+    id: 'id',
+    leadId: 'leadId',
+    telecallerId: 'telecallerId',
+    telecallerEmail: 'telecallerEmail',
+    disposition: 'disposition',
+    notes: 'notes',
+    durationSeconds: 'durationSeconds',
+    attemptNumber: 'attemptNumber',
+    nextCallbackAt: 'nextCallbackAt',
+    calledAt: 'calledAt'
+  };
+
+  export type CallLogScalarFieldEnum = (typeof CallLogScalarFieldEnum)[keyof typeof CallLogScalarFieldEnum]
 
 
   export const DocumentScalarFieldEnum: {
@@ -9764,16 +10955,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'BigInt'
+   * Reference to a field of type 'Int'
    */
-  export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 
   /**
-   * Reference to a field of type 'Int'
+   * Reference to a field of type 'BigInt'
    */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+  export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
     
 
 
@@ -10111,7 +11302,13 @@ export namespace Prisma {
     hasPriorPersonalLoan?: BoolNullableFilter<"Lead"> | boolean | null
     opsNotes?: StringNullableFilter<"Lead"> | string | null
     companyName?: StringNullableFilter<"Lead"> | string | null
+    notes?: StringNullableFilter<"Lead"> | string | null
+    totalAttempts?: IntFilter<"Lead"> | number
+    lastCalledAt?: DateTimeNullableFilter<"Lead"> | Date | string | null
+    nextCallbackAt?: DateTimeNullableFilter<"Lead"> | Date | string | null
+    lastDisposition?: StringNullableFilter<"Lead"> | string | null
     customer?: XOR<CustomerNullableRelationFilter, CustomerWhereInput> | null
+    callLogs?: CallLogListRelationFilter
   }
 
   export type LeadOrderByWithRelationInput = {
@@ -10161,7 +11358,13 @@ export namespace Prisma {
     hasPriorPersonalLoan?: SortOrderInput | SortOrder
     opsNotes?: SortOrderInput | SortOrder
     companyName?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    totalAttempts?: SortOrder
+    lastCalledAt?: SortOrderInput | SortOrder
+    nextCallbackAt?: SortOrderInput | SortOrder
+    lastDisposition?: SortOrderInput | SortOrder
     customer?: CustomerOrderByWithRelationInput
+    callLogs?: CallLogOrderByRelationAggregateInput
   }
 
   export type LeadWhereUniqueInput = Prisma.AtLeast<{
@@ -10214,7 +11417,13 @@ export namespace Prisma {
     hasPriorPersonalLoan?: BoolNullableFilter<"Lead"> | boolean | null
     opsNotes?: StringNullableFilter<"Lead"> | string | null
     companyName?: StringNullableFilter<"Lead"> | string | null
+    notes?: StringNullableFilter<"Lead"> | string | null
+    totalAttempts?: IntFilter<"Lead"> | number
+    lastCalledAt?: DateTimeNullableFilter<"Lead"> | Date | string | null
+    nextCallbackAt?: DateTimeNullableFilter<"Lead"> | Date | string | null
+    lastDisposition?: StringNullableFilter<"Lead"> | string | null
     customer?: XOR<CustomerNullableRelationFilter, CustomerWhereInput> | null
+    callLogs?: CallLogListRelationFilter
   }, "id">
 
   export type LeadOrderByWithAggregationInput = {
@@ -10264,6 +11473,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: SortOrderInput | SortOrder
     opsNotes?: SortOrderInput | SortOrder
     companyName?: SortOrderInput | SortOrder
+    notes?: SortOrderInput | SortOrder
+    totalAttempts?: SortOrder
+    lastCalledAt?: SortOrderInput | SortOrder
+    nextCallbackAt?: SortOrderInput | SortOrder
+    lastDisposition?: SortOrderInput | SortOrder
     _count?: LeadCountOrderByAggregateInput
     _avg?: LeadAvgOrderByAggregateInput
     _max?: LeadMaxOrderByAggregateInput
@@ -10321,6 +11535,93 @@ export namespace Prisma {
     hasPriorPersonalLoan?: BoolNullableWithAggregatesFilter<"Lead"> | boolean | null
     opsNotes?: StringNullableWithAggregatesFilter<"Lead"> | string | null
     companyName?: StringNullableWithAggregatesFilter<"Lead"> | string | null
+    notes?: StringNullableWithAggregatesFilter<"Lead"> | string | null
+    totalAttempts?: IntWithAggregatesFilter<"Lead"> | number
+    lastCalledAt?: DateTimeNullableWithAggregatesFilter<"Lead"> | Date | string | null
+    nextCallbackAt?: DateTimeNullableWithAggregatesFilter<"Lead"> | Date | string | null
+    lastDisposition?: StringNullableWithAggregatesFilter<"Lead"> | string | null
+  }
+
+  export type CallLogWhereInput = {
+    AND?: CallLogWhereInput | CallLogWhereInput[]
+    OR?: CallLogWhereInput[]
+    NOT?: CallLogWhereInput | CallLogWhereInput[]
+    id?: StringFilter<"CallLog"> | string
+    leadId?: StringFilter<"CallLog"> | string
+    telecallerId?: StringFilter<"CallLog"> | string
+    telecallerEmail?: StringFilter<"CallLog"> | string
+    disposition?: StringFilter<"CallLog"> | string
+    notes?: StringNullableFilter<"CallLog"> | string | null
+    durationSeconds?: IntNullableFilter<"CallLog"> | number | null
+    attemptNumber?: IntFilter<"CallLog"> | number
+    nextCallbackAt?: DateTimeNullableFilter<"CallLog"> | Date | string | null
+    calledAt?: DateTimeFilter<"CallLog"> | Date | string
+    lead?: XOR<LeadRelationFilter, LeadWhereInput>
+  }
+
+  export type CallLogOrderByWithRelationInput = {
+    id?: SortOrder
+    leadId?: SortOrder
+    telecallerId?: SortOrder
+    telecallerEmail?: SortOrder
+    disposition?: SortOrder
+    notes?: SortOrderInput | SortOrder
+    durationSeconds?: SortOrderInput | SortOrder
+    attemptNumber?: SortOrder
+    nextCallbackAt?: SortOrderInput | SortOrder
+    calledAt?: SortOrder
+    lead?: LeadOrderByWithRelationInput
+  }
+
+  export type CallLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CallLogWhereInput | CallLogWhereInput[]
+    OR?: CallLogWhereInput[]
+    NOT?: CallLogWhereInput | CallLogWhereInput[]
+    leadId?: StringFilter<"CallLog"> | string
+    telecallerId?: StringFilter<"CallLog"> | string
+    telecallerEmail?: StringFilter<"CallLog"> | string
+    disposition?: StringFilter<"CallLog"> | string
+    notes?: StringNullableFilter<"CallLog"> | string | null
+    durationSeconds?: IntNullableFilter<"CallLog"> | number | null
+    attemptNumber?: IntFilter<"CallLog"> | number
+    nextCallbackAt?: DateTimeNullableFilter<"CallLog"> | Date | string | null
+    calledAt?: DateTimeFilter<"CallLog"> | Date | string
+    lead?: XOR<LeadRelationFilter, LeadWhereInput>
+  }, "id">
+
+  export type CallLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    leadId?: SortOrder
+    telecallerId?: SortOrder
+    telecallerEmail?: SortOrder
+    disposition?: SortOrder
+    notes?: SortOrderInput | SortOrder
+    durationSeconds?: SortOrderInput | SortOrder
+    attemptNumber?: SortOrder
+    nextCallbackAt?: SortOrderInput | SortOrder
+    calledAt?: SortOrder
+    _count?: CallLogCountOrderByAggregateInput
+    _avg?: CallLogAvgOrderByAggregateInput
+    _max?: CallLogMaxOrderByAggregateInput
+    _min?: CallLogMinOrderByAggregateInput
+    _sum?: CallLogSumOrderByAggregateInput
+  }
+
+  export type CallLogScalarWhereWithAggregatesInput = {
+    AND?: CallLogScalarWhereWithAggregatesInput | CallLogScalarWhereWithAggregatesInput[]
+    OR?: CallLogScalarWhereWithAggregatesInput[]
+    NOT?: CallLogScalarWhereWithAggregatesInput | CallLogScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CallLog"> | string
+    leadId?: StringWithAggregatesFilter<"CallLog"> | string
+    telecallerId?: StringWithAggregatesFilter<"CallLog"> | string
+    telecallerEmail?: StringWithAggregatesFilter<"CallLog"> | string
+    disposition?: StringWithAggregatesFilter<"CallLog"> | string
+    notes?: StringNullableWithAggregatesFilter<"CallLog"> | string | null
+    durationSeconds?: IntNullableWithAggregatesFilter<"CallLog"> | number | null
+    attemptNumber?: IntWithAggregatesFilter<"CallLog"> | number
+    nextCallbackAt?: DateTimeNullableWithAggregatesFilter<"CallLog"> | Date | string | null
+    calledAt?: DateTimeWithAggregatesFilter<"CallLog"> | Date | string
   }
 
   export type DocumentWhereInput = {
@@ -10901,7 +12202,13 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean | null
     opsNotes?: string | null
     companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
     customer?: CustomerCreateNestedOneWithoutLeadsInput
+    callLogs?: CallLogCreateNestedManyWithoutLeadInput
   }
 
   export type LeadUncheckedCreateInput = {
@@ -10951,6 +12258,12 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean | null
     opsNotes?: string | null
     companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
+    callLogs?: CallLogUncheckedCreateNestedManyWithoutLeadInput
   }
 
   export type LeadUpdateInput = {
@@ -10999,7 +12312,13 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
     customer?: CustomerUpdateOneWithoutLeadsNestedInput
+    callLogs?: CallLogUpdateManyWithoutLeadNestedInput
   }
 
   export type LeadUncheckedUpdateInput = {
@@ -11049,6 +12368,12 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
+    callLogs?: CallLogUncheckedUpdateManyWithoutLeadNestedInput
   }
 
   export type LeadCreateManyInput = {
@@ -11098,6 +12423,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean | null
     opsNotes?: string | null
     companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
   }
 
   export type LeadUpdateManyMutationInput = {
@@ -11146,6 +12476,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type LeadUncheckedUpdateManyInput = {
@@ -11195,6 +12530,101 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type CallLogCreateInput = {
+    id: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes?: string | null
+    durationSeconds?: number | null
+    attemptNumber: number
+    nextCallbackAt?: Date | string | null
+    calledAt: Date | string
+    lead: LeadCreateNestedOneWithoutCallLogsInput
+  }
+
+  export type CallLogUncheckedCreateInput = {
+    id: string
+    leadId: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes?: string | null
+    durationSeconds?: number | null
+    attemptNumber: number
+    nextCallbackAt?: Date | string | null
+    calledAt: Date | string
+  }
+
+  export type CallLogUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lead?: LeadUpdateOneRequiredWithoutCallLogsNestedInput
+  }
+
+  export type CallLogUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    leadId?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CallLogCreateManyInput = {
+    id: string
+    leadId: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes?: string | null
+    durationSeconds?: number | null
+    attemptNumber: number
+    nextCallbackAt?: Date | string | null
+    calledAt: Date | string
+  }
+
+  export type CallLogUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CallLogUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    leadId?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DocumentCreateInput = {
@@ -11764,6 +13194,27 @@ export namespace Prisma {
     not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
   }
 
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
+  export type CallLogListRelationFilter = {
+    every?: CallLogWhereInput
+    some?: CallLogWhereInput
+    none?: CallLogWhereInput
+  }
+
+  export type CallLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type LeadCountOrderByAggregateInput = {
     id?: SortOrder
     firstName?: SortOrder
@@ -11811,12 +13262,18 @@ export namespace Prisma {
     hasPriorPersonalLoan?: SortOrder
     opsNotes?: SortOrder
     companyName?: SortOrder
+    notes?: SortOrder
+    totalAttempts?: SortOrder
+    lastCalledAt?: SortOrder
+    nextCallbackAt?: SortOrder
+    lastDisposition?: SortOrder
   }
 
   export type LeadAvgOrderByAggregateInput = {
     loanAmount?: SortOrder
     netMonthlySalary?: SortOrder
     existingEmi?: SortOrder
+    totalAttempts?: SortOrder
   }
 
   export type LeadMaxOrderByAggregateInput = {
@@ -11866,6 +13323,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: SortOrder
     opsNotes?: SortOrder
     companyName?: SortOrder
+    notes?: SortOrder
+    totalAttempts?: SortOrder
+    lastCalledAt?: SortOrder
+    nextCallbackAt?: SortOrder
+    lastDisposition?: SortOrder
   }
 
   export type LeadMinOrderByAggregateInput = {
@@ -11915,12 +13377,18 @@ export namespace Prisma {
     hasPriorPersonalLoan?: SortOrder
     opsNotes?: SortOrder
     companyName?: SortOrder
+    notes?: SortOrder
+    totalAttempts?: SortOrder
+    lastCalledAt?: SortOrder
+    nextCallbackAt?: SortOrder
+    lastDisposition?: SortOrder
   }
 
   export type LeadSumOrderByAggregateInput = {
     loanAmount?: SortOrder
     netMonthlySalary?: SortOrder
     existingEmi?: SortOrder
+    totalAttempts?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -11945,6 +13413,103 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBoolNullableFilter<$PrismaModel>
     _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type LeadRelationFilter = {
+    is?: LeadWhereInput
+    isNot?: LeadWhereInput
+  }
+
+  export type CallLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    leadId?: SortOrder
+    telecallerId?: SortOrder
+    telecallerEmail?: SortOrder
+    disposition?: SortOrder
+    notes?: SortOrder
+    durationSeconds?: SortOrder
+    attemptNumber?: SortOrder
+    nextCallbackAt?: SortOrder
+    calledAt?: SortOrder
+  }
+
+  export type CallLogAvgOrderByAggregateInput = {
+    durationSeconds?: SortOrder
+    attemptNumber?: SortOrder
+  }
+
+  export type CallLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    leadId?: SortOrder
+    telecallerId?: SortOrder
+    telecallerEmail?: SortOrder
+    disposition?: SortOrder
+    notes?: SortOrder
+    durationSeconds?: SortOrder
+    attemptNumber?: SortOrder
+    nextCallbackAt?: SortOrder
+    calledAt?: SortOrder
+  }
+
+  export type CallLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    leadId?: SortOrder
+    telecallerId?: SortOrder
+    telecallerEmail?: SortOrder
+    disposition?: SortOrder
+    notes?: SortOrder
+    durationSeconds?: SortOrder
+    attemptNumber?: SortOrder
+    nextCallbackAt?: SortOrder
+    calledAt?: SortOrder
+  }
+
+  export type CallLogSumOrderByAggregateInput = {
+    durationSeconds?: SortOrder
+    attemptNumber?: SortOrder
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type BigIntNullableFilter<$PrismaModel = never> = {
@@ -12059,17 +13624,6 @@ export namespace Prisma {
     _max?: NestedBigIntNullableFilter<$PrismaModel>
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type DocumentNullableRelationFilter = {
     is?: DocumentWhereInput | null
     isNot?: DocumentWhereInput | null
@@ -12108,22 +13662,6 @@ export namespace Prisma {
 
   export type DocumentVersionSumOrderByAggregateInput = {
     versionNumber?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type DocumentAccessLogCountOrderByAggregateInput = {
@@ -12382,6 +13920,20 @@ export namespace Prisma {
     connect?: CustomerWhereUniqueInput
   }
 
+  export type CallLogCreateNestedManyWithoutLeadInput = {
+    create?: XOR<CallLogCreateWithoutLeadInput, CallLogUncheckedCreateWithoutLeadInput> | CallLogCreateWithoutLeadInput[] | CallLogUncheckedCreateWithoutLeadInput[]
+    connectOrCreate?: CallLogCreateOrConnectWithoutLeadInput | CallLogCreateOrConnectWithoutLeadInput[]
+    createMany?: CallLogCreateManyLeadInputEnvelope
+    connect?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+  }
+
+  export type CallLogUncheckedCreateNestedManyWithoutLeadInput = {
+    create?: XOR<CallLogCreateWithoutLeadInput, CallLogUncheckedCreateWithoutLeadInput> | CallLogCreateWithoutLeadInput[] | CallLogUncheckedCreateWithoutLeadInput[]
+    connectOrCreate?: CallLogCreateOrConnectWithoutLeadInput | CallLogCreateOrConnectWithoutLeadInput[]
+    createMany?: CallLogCreateManyLeadInputEnvelope
+    connect?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+  }
+
   export type NullableDecimalFieldUpdateOperationsInput = {
     set?: Decimal | DecimalJsLike | number | string | null
     increment?: Decimal | DecimalJsLike | number | string
@@ -12394,6 +13946,14 @@ export namespace Prisma {
     set?: boolean | null
   }
 
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type CustomerUpdateOneWithoutLeadsNestedInput = {
     create?: XOR<CustomerCreateWithoutLeadsInput, CustomerUncheckedCreateWithoutLeadsInput>
     connectOrCreate?: CustomerCreateOrConnectWithoutLeadsInput
@@ -12402,6 +13962,56 @@ export namespace Prisma {
     delete?: CustomerWhereInput | boolean
     connect?: CustomerWhereUniqueInput
     update?: XOR<XOR<CustomerUpdateToOneWithWhereWithoutLeadsInput, CustomerUpdateWithoutLeadsInput>, CustomerUncheckedUpdateWithoutLeadsInput>
+  }
+
+  export type CallLogUpdateManyWithoutLeadNestedInput = {
+    create?: XOR<CallLogCreateWithoutLeadInput, CallLogUncheckedCreateWithoutLeadInput> | CallLogCreateWithoutLeadInput[] | CallLogUncheckedCreateWithoutLeadInput[]
+    connectOrCreate?: CallLogCreateOrConnectWithoutLeadInput | CallLogCreateOrConnectWithoutLeadInput[]
+    upsert?: CallLogUpsertWithWhereUniqueWithoutLeadInput | CallLogUpsertWithWhereUniqueWithoutLeadInput[]
+    createMany?: CallLogCreateManyLeadInputEnvelope
+    set?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    disconnect?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    delete?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    connect?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    update?: CallLogUpdateWithWhereUniqueWithoutLeadInput | CallLogUpdateWithWhereUniqueWithoutLeadInput[]
+    updateMany?: CallLogUpdateManyWithWhereWithoutLeadInput | CallLogUpdateManyWithWhereWithoutLeadInput[]
+    deleteMany?: CallLogScalarWhereInput | CallLogScalarWhereInput[]
+  }
+
+  export type CallLogUncheckedUpdateManyWithoutLeadNestedInput = {
+    create?: XOR<CallLogCreateWithoutLeadInput, CallLogUncheckedCreateWithoutLeadInput> | CallLogCreateWithoutLeadInput[] | CallLogUncheckedCreateWithoutLeadInput[]
+    connectOrCreate?: CallLogCreateOrConnectWithoutLeadInput | CallLogCreateOrConnectWithoutLeadInput[]
+    upsert?: CallLogUpsertWithWhereUniqueWithoutLeadInput | CallLogUpsertWithWhereUniqueWithoutLeadInput[]
+    createMany?: CallLogCreateManyLeadInputEnvelope
+    set?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    disconnect?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    delete?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    connect?: CallLogWhereUniqueInput | CallLogWhereUniqueInput[]
+    update?: CallLogUpdateWithWhereUniqueWithoutLeadInput | CallLogUpdateWithWhereUniqueWithoutLeadInput[]
+    updateMany?: CallLogUpdateManyWithWhereWithoutLeadInput | CallLogUpdateManyWithWhereWithoutLeadInput[]
+    deleteMany?: CallLogScalarWhereInput | CallLogScalarWhereInput[]
+  }
+
+  export type LeadCreateNestedOneWithoutCallLogsInput = {
+    create?: XOR<LeadCreateWithoutCallLogsInput, LeadUncheckedCreateWithoutCallLogsInput>
+    connectOrCreate?: LeadCreateOrConnectWithoutCallLogsInput
+    connect?: LeadWhereUniqueInput
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type LeadUpdateOneRequiredWithoutCallLogsNestedInput = {
+    create?: XOR<LeadCreateWithoutCallLogsInput, LeadUncheckedCreateWithoutCallLogsInput>
+    connectOrCreate?: LeadCreateOrConnectWithoutCallLogsInput
+    upsert?: LeadUpsertWithoutCallLogsInput
+    connect?: LeadWhereUniqueInput
+    update?: XOR<XOR<LeadUpdateToOneWithWhereWithoutCallLogsInput, LeadUpdateWithoutCallLogsInput>, LeadUncheckedUpdateWithoutCallLogsInput>
   }
 
   export type DocumentVersionCreateNestedManyWithoutDocumentInput = {
@@ -12500,14 +14110,6 @@ export namespace Prisma {
     create?: XOR<DocumentCreateWithoutVersionsInput, DocumentUncheckedCreateWithoutVersionsInput>
     connectOrCreate?: DocumentCreateOrConnectWithoutVersionsInput
     connect?: DocumentWhereUniqueInput
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type DocumentUpdateOneWithoutVersionsNestedInput = {
@@ -12723,44 +14325,6 @@ export namespace Prisma {
     _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
-  export type NestedBigIntNullableFilter<$PrismaModel = never> = {
-    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
-    in?: bigint[] | number[] | null
-    notIn?: bigint[] | number[] | null
-    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    not?: NestedBigIntNullableFilter<$PrismaModel> | bigint | number | null
-  }
-
-  export type NestedBigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
-    in?: bigint[] | number[] | null
-    notIn?: bigint[] | number[] | null
-    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
-    not?: NestedBigIntNullableWithAggregatesFilter<$PrismaModel> | bigint | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedBigIntNullableFilter<$PrismaModel>
-    _min?: NestedBigIntNullableFilter<$PrismaModel>
-    _max?: NestedBigIntNullableFilter<$PrismaModel>
-  }
-
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -12786,6 +14350,60 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedBigIntNullableFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
+    in?: bigint[] | number[] | null
+    notIn?: bigint[] | number[] | null
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntNullableFilter<$PrismaModel> | bigint | number | null
+  }
+
+  export type NestedBigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel> | null
+    in?: bigint[] | number[] | null
+    notIn?: bigint[] | number[] | null
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntNullableWithAggregatesFilter<$PrismaModel> | bigint | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedBigIntNullableFilter<$PrismaModel>
+    _min?: NestedBigIntNullableFilter<$PrismaModel>
+    _max?: NestedBigIntNullableFilter<$PrismaModel>
   }
 
   export type CustomerKycCreateWithoutCustomerInput = {
@@ -12911,6 +14529,12 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean | null
     opsNotes?: string | null
     companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
+    callLogs?: CallLogCreateNestedManyWithoutLeadInput
   }
 
   export type LeadUncheckedCreateWithoutCustomerInput = {
@@ -12959,6 +14583,12 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean | null
     opsNotes?: string | null
     companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
+    callLogs?: CallLogUncheckedCreateNestedManyWithoutLeadInput
   }
 
   export type LeadCreateOrConnectWithoutCustomerInput = {
@@ -13122,6 +14752,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: BoolNullableFilter<"Lead"> | boolean | null
     opsNotes?: StringNullableFilter<"Lead"> | string | null
     companyName?: StringNullableFilter<"Lead"> | string | null
+    notes?: StringNullableFilter<"Lead"> | string | null
+    totalAttempts?: IntFilter<"Lead"> | number
+    lastCalledAt?: DateTimeNullableFilter<"Lead"> | Date | string | null
+    nextCallbackAt?: DateTimeNullableFilter<"Lead"> | Date | string | null
+    lastDisposition?: StringNullableFilter<"Lead"> | string | null
   }
 
   export type CustomerCreateWithoutKycInput = {
@@ -13387,6 +15022,40 @@ export namespace Prisma {
     create: XOR<CustomerCreateWithoutLeadsInput, CustomerUncheckedCreateWithoutLeadsInput>
   }
 
+  export type CallLogCreateWithoutLeadInput = {
+    id: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes?: string | null
+    durationSeconds?: number | null
+    attemptNumber: number
+    nextCallbackAt?: Date | string | null
+    calledAt: Date | string
+  }
+
+  export type CallLogUncheckedCreateWithoutLeadInput = {
+    id: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes?: string | null
+    durationSeconds?: number | null
+    attemptNumber: number
+    nextCallbackAt?: Date | string | null
+    calledAt: Date | string
+  }
+
+  export type CallLogCreateOrConnectWithoutLeadInput = {
+    where: CallLogWhereUniqueInput
+    create: XOR<CallLogCreateWithoutLeadInput, CallLogUncheckedCreateWithoutLeadInput>
+  }
+
+  export type CallLogCreateManyLeadInputEnvelope = {
+    data: CallLogCreateManyLeadInput | CallLogCreateManyLeadInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CustomerUpsertWithoutLeadsInput = {
     update: XOR<CustomerUpdateWithoutLeadsInput, CustomerUncheckedUpdateWithoutLeadsInput>
     create: XOR<CustomerCreateWithoutLeadsInput, CustomerUncheckedCreateWithoutLeadsInput>
@@ -13426,6 +15095,270 @@ export namespace Prisma {
     kyc?: CustomerKycUncheckedUpdateOneWithoutCustomerNestedInput
     addresses?: CustomerAddressUncheckedUpdateManyWithoutCustomerNestedInput
     history?: CustomerHistoryUncheckedUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type CallLogUpsertWithWhereUniqueWithoutLeadInput = {
+    where: CallLogWhereUniqueInput
+    update: XOR<CallLogUpdateWithoutLeadInput, CallLogUncheckedUpdateWithoutLeadInput>
+    create: XOR<CallLogCreateWithoutLeadInput, CallLogUncheckedCreateWithoutLeadInput>
+  }
+
+  export type CallLogUpdateWithWhereUniqueWithoutLeadInput = {
+    where: CallLogWhereUniqueInput
+    data: XOR<CallLogUpdateWithoutLeadInput, CallLogUncheckedUpdateWithoutLeadInput>
+  }
+
+  export type CallLogUpdateManyWithWhereWithoutLeadInput = {
+    where: CallLogScalarWhereInput
+    data: XOR<CallLogUpdateManyMutationInput, CallLogUncheckedUpdateManyWithoutLeadInput>
+  }
+
+  export type CallLogScalarWhereInput = {
+    AND?: CallLogScalarWhereInput | CallLogScalarWhereInput[]
+    OR?: CallLogScalarWhereInput[]
+    NOT?: CallLogScalarWhereInput | CallLogScalarWhereInput[]
+    id?: StringFilter<"CallLog"> | string
+    leadId?: StringFilter<"CallLog"> | string
+    telecallerId?: StringFilter<"CallLog"> | string
+    telecallerEmail?: StringFilter<"CallLog"> | string
+    disposition?: StringFilter<"CallLog"> | string
+    notes?: StringNullableFilter<"CallLog"> | string | null
+    durationSeconds?: IntNullableFilter<"CallLog"> | number | null
+    attemptNumber?: IntFilter<"CallLog"> | number
+    nextCallbackAt?: DateTimeNullableFilter<"CallLog"> | Date | string | null
+    calledAt?: DateTimeFilter<"CallLog"> | Date | string
+  }
+
+  export type LeadCreateWithoutCallLogsInput = {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+    mobile: string
+    panNumber: string
+    aadhaarNumber?: string | null
+    loanType?: string | null
+    loanAmount?: Decimal | DecimalJsLike | number | string | null
+    assignedTo?: string | null
+    status?: string
+    createdAt: Date | string
+    profession?: string | null
+    netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
+    gender?: string | null
+    maritalStatus?: string | null
+    dob?: string | null
+    alternateContact?: string | null
+    whatsappNo?: string | null
+    officialEmail?: string | null
+    currentAddressLine1?: string | null
+    currentAddressLine2?: string | null
+    currentState?: string | null
+    currentDistrict?: string | null
+    currentCity?: string | null
+    currentPincode?: string | null
+    residenceType?: string | null
+    permanentAddressLine1?: string | null
+    permanentAddressLine2?: string | null
+    permanentState?: string | null
+    permanentDistrict?: string | null
+    permanentCity?: string | null
+    permanentPincode?: string | null
+    jobType?: string | null
+    designation?: string | null
+    modeOfSalary?: string | null
+    officeAddress?: string | null
+    officeState?: string | null
+    officeDistrict?: string | null
+    officeCity?: string | null
+    officePincode?: string | null
+    existingEmi?: Decimal | DecimalJsLike | number | string | null
+    hasPriorPersonalLoan?: boolean | null
+    opsNotes?: string | null
+    companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
+    customer?: CustomerCreateNestedOneWithoutLeadsInput
+  }
+
+  export type LeadUncheckedCreateWithoutCallLogsInput = {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+    mobile: string
+    panNumber: string
+    aadhaarNumber?: string | null
+    loanType?: string | null
+    loanAmount?: Decimal | DecimalJsLike | number | string | null
+    assignedTo?: string | null
+    status?: string
+    customerId?: string | null
+    createdAt: Date | string
+    profession?: string | null
+    netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
+    gender?: string | null
+    maritalStatus?: string | null
+    dob?: string | null
+    alternateContact?: string | null
+    whatsappNo?: string | null
+    officialEmail?: string | null
+    currentAddressLine1?: string | null
+    currentAddressLine2?: string | null
+    currentState?: string | null
+    currentDistrict?: string | null
+    currentCity?: string | null
+    currentPincode?: string | null
+    residenceType?: string | null
+    permanentAddressLine1?: string | null
+    permanentAddressLine2?: string | null
+    permanentState?: string | null
+    permanentDistrict?: string | null
+    permanentCity?: string | null
+    permanentPincode?: string | null
+    jobType?: string | null
+    designation?: string | null
+    modeOfSalary?: string | null
+    officeAddress?: string | null
+    officeState?: string | null
+    officeDistrict?: string | null
+    officeCity?: string | null
+    officePincode?: string | null
+    existingEmi?: Decimal | DecimalJsLike | number | string | null
+    hasPriorPersonalLoan?: boolean | null
+    opsNotes?: string | null
+    companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
+  }
+
+  export type LeadCreateOrConnectWithoutCallLogsInput = {
+    where: LeadWhereUniqueInput
+    create: XOR<LeadCreateWithoutCallLogsInput, LeadUncheckedCreateWithoutCallLogsInput>
+  }
+
+  export type LeadUpsertWithoutCallLogsInput = {
+    update: XOR<LeadUpdateWithoutCallLogsInput, LeadUncheckedUpdateWithoutCallLogsInput>
+    create: XOR<LeadCreateWithoutCallLogsInput, LeadUncheckedCreateWithoutCallLogsInput>
+    where?: LeadWhereInput
+  }
+
+  export type LeadUpdateToOneWithWhereWithoutCallLogsInput = {
+    where?: LeadWhereInput
+    data: XOR<LeadUpdateWithoutCallLogsInput, LeadUncheckedUpdateWithoutCallLogsInput>
+  }
+
+  export type LeadUpdateWithoutCallLogsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    loanType?: NullableStringFieldUpdateOperationsInput | string | null
+    loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    profession?: NullableStringFieldUpdateOperationsInput | string | null
+    netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    gender?: NullableStringFieldUpdateOperationsInput | string | null
+    maritalStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableStringFieldUpdateOperationsInput | string | null
+    alternateContact?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappNo?: NullableStringFieldUpdateOperationsInput | string | null
+    officialEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    currentAddressLine1?: NullableStringFieldUpdateOperationsInput | string | null
+    currentAddressLine2?: NullableStringFieldUpdateOperationsInput | string | null
+    currentState?: NullableStringFieldUpdateOperationsInput | string | null
+    currentDistrict?: NullableStringFieldUpdateOperationsInput | string | null
+    currentCity?: NullableStringFieldUpdateOperationsInput | string | null
+    currentPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    residenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentAddressLine1?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentAddressLine2?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentState?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentDistrict?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentCity?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    jobType?: NullableStringFieldUpdateOperationsInput | string | null
+    designation?: NullableStringFieldUpdateOperationsInput | string | null
+    modeOfSalary?: NullableStringFieldUpdateOperationsInput | string | null
+    officeAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    officeState?: NullableStringFieldUpdateOperationsInput | string | null
+    officeDistrict?: NullableStringFieldUpdateOperationsInput | string | null
+    officeCity?: NullableStringFieldUpdateOperationsInput | string | null
+    officePincode?: NullableStringFieldUpdateOperationsInput | string | null
+    existingEmi?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
+    customer?: CustomerUpdateOneWithoutLeadsNestedInput
+  }
+
+  export type LeadUncheckedUpdateWithoutCallLogsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    panNumber?: StringFieldUpdateOperationsInput | string
+    aadhaarNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    loanType?: NullableStringFieldUpdateOperationsInput | string | null
+    loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    profession?: NullableStringFieldUpdateOperationsInput | string | null
+    netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    gender?: NullableStringFieldUpdateOperationsInput | string | null
+    maritalStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    dob?: NullableStringFieldUpdateOperationsInput | string | null
+    alternateContact?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappNo?: NullableStringFieldUpdateOperationsInput | string | null
+    officialEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    currentAddressLine1?: NullableStringFieldUpdateOperationsInput | string | null
+    currentAddressLine2?: NullableStringFieldUpdateOperationsInput | string | null
+    currentState?: NullableStringFieldUpdateOperationsInput | string | null
+    currentDistrict?: NullableStringFieldUpdateOperationsInput | string | null
+    currentCity?: NullableStringFieldUpdateOperationsInput | string | null
+    currentPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    residenceType?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentAddressLine1?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentAddressLine2?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentState?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentDistrict?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentCity?: NullableStringFieldUpdateOperationsInput | string | null
+    permanentPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    jobType?: NullableStringFieldUpdateOperationsInput | string | null
+    designation?: NullableStringFieldUpdateOperationsInput | string | null
+    modeOfSalary?: NullableStringFieldUpdateOperationsInput | string | null
+    officeAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    officeState?: NullableStringFieldUpdateOperationsInput | string | null
+    officeDistrict?: NullableStringFieldUpdateOperationsInput | string | null
+    officeCity?: NullableStringFieldUpdateOperationsInput | string | null
+    officePincode?: NullableStringFieldUpdateOperationsInput | string | null
+    existingEmi?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DocumentVersionCreateWithoutDocumentInput = {
@@ -13789,6 +15722,11 @@ export namespace Prisma {
     hasPriorPersonalLoan?: boolean | null
     opsNotes?: string | null
     companyName?: string | null
+    notes?: string | null
+    totalAttempts?: number
+    lastCalledAt?: Date | string | null
+    nextCallbackAt?: Date | string | null
+    lastDisposition?: string | null
   }
 
   export type CustomerAddressUpdateWithoutCustomerInput = {
@@ -13891,6 +15829,12 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
+    callLogs?: CallLogUpdateManyWithoutLeadNestedInput
   }
 
   export type LeadUncheckedUpdateWithoutCustomerInput = {
@@ -13939,6 +15883,12 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
+    callLogs?: CallLogUncheckedUpdateManyWithoutLeadNestedInput
   }
 
   export type LeadUncheckedUpdateManyWithoutCustomerInput = {
@@ -13987,6 +15937,59 @@ export namespace Prisma {
     hasPriorPersonalLoan?: NullableBoolFieldUpdateOperationsInput | boolean | null
     opsNotes?: NullableStringFieldUpdateOperationsInput | string | null
     companyName?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAttempts?: IntFieldUpdateOperationsInput | number
+    lastCalledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastDisposition?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type CallLogCreateManyLeadInput = {
+    id: string
+    telecallerId: string
+    telecallerEmail: string
+    disposition: string
+    notes?: string | null
+    durationSeconds?: number | null
+    attemptNumber: number
+    nextCallbackAt?: Date | string | null
+    calledAt: Date | string
+  }
+
+  export type CallLogUpdateWithoutLeadInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CallLogUncheckedUpdateWithoutLeadInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CallLogUncheckedUpdateManyWithoutLeadInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    telecallerId?: StringFieldUpdateOperationsInput | string
+    telecallerEmail?: StringFieldUpdateOperationsInput | string
+    disposition?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    durationSeconds?: NullableIntFieldUpdateOperationsInput | number | null
+    attemptNumber?: IntFieldUpdateOperationsInput | number
+    nextCallbackAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    calledAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DocumentVersionCreateManyDocumentInput = {
@@ -14059,6 +16062,10 @@ export namespace Prisma {
      */
     export type CustomerCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CustomerCountOutputTypeDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use LeadCountOutputTypeDefaultArgs instead
+     */
+    export type LeadCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LeadCountOutputTypeDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use DocumentCountOutputTypeDefaultArgs instead
      */
     export type DocumentCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DocumentCountOutputTypeDefaultArgs<ExtArgs>
@@ -14082,6 +16089,10 @@ export namespace Prisma {
      * @deprecated Use LeadDefaultArgs instead
      */
     export type LeadArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LeadDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CallLogDefaultArgs instead
+     */
+    export type CallLogArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CallLogDefaultArgs<ExtArgs>
     /**
      * @deprecated Use DocumentDefaultArgs instead
      */

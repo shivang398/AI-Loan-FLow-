@@ -20,7 +20,7 @@ export async function registerUser(email: string, password: string, roleName: st
   if (existingUser) throw Object.assign(new Error('Email already registered'), { status: 409 });
 
   // Upsert role so valid platform roles are auto-created on first use
-  const VALID_ROLES = ['ADMIN', 'PARTNER_MANAGER', 'RM', 'TEAM_LEADER', 'CONNECTOR', 'OPERATIONS'];
+  const VALID_ROLES = ['ADMIN', 'PARTNER_MANAGER', 'RM', 'TEAM_LEADER', 'CONNECTOR', 'OPERATIONS', 'TELECALLER'];
   if (!VALID_ROLES.includes(roleName))
     throw Object.assign(new Error(`Invalid role: ${roleName}`), { status: 400 });
   const role = await authDb.role.upsert({

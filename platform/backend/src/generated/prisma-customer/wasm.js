@@ -209,7 +209,25 @@ exports.Prisma.LeadScalarFieldEnum = {
   existingEmi: 'existingEmi',
   hasPriorPersonalLoan: 'hasPriorPersonalLoan',
   opsNotes: 'opsNotes',
-  companyName: 'companyName'
+  companyName: 'companyName',
+  notes: 'notes',
+  totalAttempts: 'totalAttempts',
+  lastCalledAt: 'lastCalledAt',
+  nextCallbackAt: 'nextCallbackAt',
+  lastDisposition: 'lastDisposition'
+};
+
+exports.Prisma.CallLogScalarFieldEnum = {
+  id: 'id',
+  leadId: 'leadId',
+  telecallerId: 'telecallerId',
+  telecallerEmail: 'telecallerEmail',
+  disposition: 'disposition',
+  notes: 'notes',
+  durationSeconds: 'durationSeconds',
+  attemptNumber: 'attemptNumber',
+  nextCallbackAt: 'nextCallbackAt',
+  calledAt: 'calledAt'
 };
 
 exports.Prisma.DocumentScalarFieldEnum = {
@@ -265,6 +283,7 @@ exports.Prisma.ModelName = {
   CustomerAddress: 'CustomerAddress',
   CustomerHistory: 'CustomerHistory',
   Lead: 'Lead',
+  CallLog: 'CallLog',
   Document: 'Document',
   DocumentVersion: 'DocumentVersion',
   DocumentAccessLog: 'DocumentAccessLog'

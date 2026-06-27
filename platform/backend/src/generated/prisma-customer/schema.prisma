@@ -112,9 +112,34 @@ model Lead {
   hasPriorPersonalLoan  Boolean?  @default(false) @map("has_prior_personal_loan")
   opsNotes              String?   @map("ops_notes") @db.Text
   companyName           String?   @map("company_name") @db.VarChar(255)
+  notes                 String?   @db.Text
+  totalAttempts         Int       @default(0) @map("total_attempts")
+  lastCalledAt          DateTime? @map("last_called_at")
+  nextCallbackAt        DateTime? @map("next_callback_at")
+  lastDisposition       String?   @map("last_disposition") @db.VarChar(50)
   customer              Customer? @relation(fields: [customerId], references: [id])
+  callLogs              CallLog[]
 
   @@map("leads")
+}
+
+model CallLog {
+  id              String    @id @db.Char(36)
+  leadId          String    @map("lead_id") @db.Char(36)
+  telecallerId    String    @map("telecaller_id") @db.Char(36)
+  telecallerEmail String    @map("telecaller_email") @db.VarChar(255)
+  disposition     String    @db.VarChar(50)
+  notes           String?   @db.Text
+  durationSeconds Int?      @map("duration_seconds")
+  attemptNumber   Int       @map("attempt_number")
+  nextCallbackAt  DateTime? @map("next_callback_at")
+  calledAt        DateTime  @map("called_at")
+  lead            Lead      @relation(fields: [leadId], references: [id])
+
+  @@index([leadId])
+  @@index([telecallerId])
+  @@index([calledAt])
+  @@map("call_logs")
 }
 
 model Document {

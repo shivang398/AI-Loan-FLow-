@@ -18,7 +18,7 @@ import { useTeamMeetingWS } from '../../../hooks/useTeamMeetingWS';
 /* ─── Shared helpers ─── */
 const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'Admin', RM: 'RM', OPERATIONS: 'Operations', TEAM_LEADER: 'Team Leader',
-  CONNECTOR: 'Connector', PARTNER_MANAGER: 'Partner Manager',
+  CONNECTOR: 'Connector', PARTNER_MANAGER: 'Partner Manager', TELECALLER: 'Telecaller',
 };
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });

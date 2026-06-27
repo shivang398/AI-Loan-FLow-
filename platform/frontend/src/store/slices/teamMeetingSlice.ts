@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'TEAM_LEADER' | 'CONNECTOR' | 'PARTNER_MANAGER';
+export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'TEAM_LEADER' | 'CONNECTOR' | 'PARTNER_MANAGER' | 'TELECALLER';
 export type WSConnectionStatus = 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED' | 'SIMULATED';
 
 export interface RoomParticipant {
@@ -58,6 +58,7 @@ const ROLE_COLOR: Record<UserRole, string> = {
   TEAM_LEADER:     '#8b5cf6',
   CONNECTOR:       '#10b981',
   PARTNER_MANAGER: '#ec4899',
+  TELECALLER:      '#06b6d4',
 };
 
 export function buildParticipant(id: string, name: string, role: UserRole): RoomParticipant {

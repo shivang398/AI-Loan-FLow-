@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, UsersRound, Network,
-  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck,
+  BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck, Phone,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -146,6 +146,11 @@ const DashboardLayout: React.FC = () => {
     { key: '/tl/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];
 
+  const telecallerItems = [
+    { key: '/telecaller/queue', icon: <Phone size={16} />,         label: 'My Call Queue' },
+    { key: '/connector/cibil',  icon: <ShieldCheck size={16} />,   label: 'CIBIL Check' },
+  ];
+
   const menuItems = [
     ...(user?.role === 'ADMIN'           ? adminItems          : []),
     ...(user?.role === 'PARTNER_MANAGER' ? partnerManagerItems : []),
@@ -153,6 +158,7 @@ const DashboardLayout: React.FC = () => {
     ...(user?.role === 'TEAM_LEADER'     ? tlItems             : []),
     ...(user?.role === 'OPERATIONS'      ? opsItems            : []),
     ...(user?.role === 'CONNECTOR'       ? connectorItems      : []),
+    ...(user?.role === 'TELECALLER'      ? telecallerItems     : []),
   ];
 
   const handleLogout = () => { dispatch(logout()); navigate('/login'); };
