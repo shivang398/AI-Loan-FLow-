@@ -19,6 +19,7 @@ const ROLE_COLORS: Record<string, string> = {
   OPERATIONS: '#f59e0b',
   TEAM_LEADER: '#ec4899',
   PARTNER_MANAGER: '#8b5cf6',
+  TELECALLER: '#06b6d4',
 };
 
 const DEPT_MAP: Record<string, string> = {
@@ -27,9 +28,10 @@ const DEPT_MAP: Record<string, string> = {
   OPERATIONS: 'Credit Ops',
   TEAM_LEADER: 'Sales & Growth',
   PARTNER_MANAGER: 'Partner Management',
+  TELECALLER: 'Tele Sales',
 };
 
-const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER'];
+const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER', 'TELECALLER'];
 
 function connectorToRow(c: any) {
   const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
@@ -86,6 +88,7 @@ const UserManagement: React.FC = () => {
       const deptValue = deptFilter === 'sales' ? 'Sales & Growth'
         : deptFilter === 'credit' ? 'Credit Ops'
         : deptFilter === 'partner' ? 'Partner Management'
+        : deptFilter === 'telesales' ? 'Tele Sales'
         : null;
       if (deptValue) result = result.filter(s => s.department === deptValue);
     }
@@ -148,6 +151,7 @@ const UserManagement: React.FC = () => {
           'OPERATIONS': { bg: '#fefce8', text: '#a16207' },
           'TEAM_LEADER': { bg: '#fff1f2', text: '#e11d48' },
           'PARTNER_MANAGER': { bg: '#f5f3ff', text: '#7c3aed' },
+          'TELECALLER': { bg: '#ecfeff', text: '#0e7490' },
         };
         const style = roleStyles[params.value] || { bg: '#f1f5f9', text: '#475569' };
         return (
@@ -428,6 +432,7 @@ const UserManagement: React.FC = () => {
               <Option value="sales">Sales &amp; Growth</Option>
               <Option value="credit">Credit Operations</Option>
               <Option value="partner">Partner Management</Option>
+              <Option value="telesales">Tele Sales</Option>
             </Select>
             <Divider type="vertical" />
             <Space.Compact>
@@ -493,6 +498,8 @@ const UserManagement: React.FC = () => {
                 <Select placeholder="Select Department">
                   <Option value="Sales & Growth">Sales & Growth</Option>
                   <Option value="Credit Ops">Credit Operations</Option>
+                  <Option value="Partner Management">Partner Management</Option>
+                  <Option value="Tele Sales">Tele Sales</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -506,6 +513,7 @@ const UserManagement: React.FC = () => {
                       TEAM_LEADER: 'Sales & Growth',
                       OPERATIONS: 'Credit Ops',
                       PARTNER_MANAGER: 'Partner Management',
+                      TELECALLER: 'Tele Sales',
                     };
                     if (deptMap[val]) form.setFieldValue('department', deptMap[val]);
                   }}
@@ -514,6 +522,7 @@ const UserManagement: React.FC = () => {
                   <Option value="OPERATIONS">Operations User</Option>
                   <Option value="TEAM_LEADER">Team Leader</Option>
                   <Option value="PARTNER_MANAGER">Partner Manager</Option>
+                  <Option value="TELECALLER">Telecaller</Option>
                 </Select>
               </Form.Item>
             </Col>
