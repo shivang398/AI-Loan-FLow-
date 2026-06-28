@@ -29,6 +29,7 @@ import {
   Users,
   History,
   ShieldCheck,
+  PhoneCall,
 } from 'lucide-react';
 import api from '../../../shared/services/apiClient';
 import LoanTimeline from '../../documents/components/LoanTimeline';
@@ -129,7 +130,8 @@ const LeadsQueueTable: React.FC<{
   onRefresh: () => void;
   onViewDetail: (lead: Lead) => void;
   onViewHistory: (lead: Lead) => void;
-}> = ({ leads, loading, onRefresh, onViewDetail, onViewHistory }) => {
+  onAssign: (lead: Lead) => void;
+}> = ({ leads, loading, onRefresh, onViewDetail, onViewHistory, onAssign }) => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'ALL' | 'NEW' | 'IN_REVIEW' | 'QUERY_RAISED' | 'RESOLVED'>('ALL');
 
@@ -226,7 +228,7 @@ const LeadsQueueTable: React.FC<{
     {
       title: '',
       key: 'actions',
-      width: 80,
+      width: 110,
       render: (_: any, record: Lead) => (
         <Space size={4}>
           <Tooltip title="View Details">
@@ -243,6 +245,14 @@ const LeadsQueueTable: React.FC<{
               icon={<History size={15} />}
               onClick={e => { e.stopPropagation(); onViewHistory(record); }}
               style={{ color: '#6366f1', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </Tooltip>
+          <Tooltip title="Assign to Telecaller">
+            <Button
+              type="text"
+              icon={<PhoneCall size={15} />}
+              onClick={e => { e.stopPropagation(); onAssign(record); }}
+              style={{ color: '#06b6d4', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             />
           </Tooltip>
         </Space>
@@ -344,6 +354,11 @@ const OperationsDashboard: React.FC = () => {
   const [reviewStatus, setReviewStatus] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
   const [reviewRemarks, setReviewRemarks] = useState('');
   const [reviewLoading, setReviewLoading] = useState(false);
+  // Telecaller assignment
+  const [telecallers, setTelecallers] = useState<{ label: string; value: string }[]>([]);
+  const [assignModalLead, setAssignModalLead] = useState<Lead | null>(null);
+  const [assignEmail, setAssignEmail] = useState<string>('');
+  const [assignLoading, setAssignLoading] = useState(false);
 
   const fetchLeads = async () => {
     setLoadingLeads(true);
@@ -364,6 +379,18 @@ const OperationsDashboard: React.FC = () => {
     fetchLeads();
     const interval = setInterval(fetchLeads, 60000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    api.get('/connectors', { params: { roles: 'TELECALLER', size: 200 } })
+      .then(res => {
+        const items: any[] = res.data?.data?.items ?? res.data?.data ?? [];
+        setTelecallers(items.map(t => ({
+          label: `${t.firstName} ${t.lastName || ''} (${t.email})`.trim(),
+          value: t.email,
+        })));
+      })
+      .catch(() => {});
   }, []);
 
   const newCount = leads.filter(l => l.status === 'NEW').length;
@@ -443,6 +470,23 @@ const OperationsDashboard: React.FC = () => {
       });
     } finally {
       setReviewLoading(false);
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!assignModalLead || !assignEmail) return;
+    setAssignLoading(true);
+    try {
+      await api.put(`/customers/leads/${assignModalLead.id}`, { assignedTo: assignEmail });
+      setLeads(prev => prev.map(l => l.id === assignModalLead.id ? { ...l, assignedTo: assignEmail } : l));
+      if (drawerLead?.id === assignModalLead.id) setDrawerLead(prev => prev ? { ...prev, assignedTo: assignEmail } : null);
+      notification.success({ message: `Lead assigned to ${assignEmail}`, style: { borderRadius: 16, border: '1px solid #d1fae5' } });
+      setAssignModalLead(null);
+      setAssignEmail('');
+    } catch (err: any) {
+      notification.error({ message: err?.response?.data?.message || 'Failed to assign lead', style: { borderRadius: 16 } });
+    } finally {
+      setAssignLoading(false);
     }
   };
 
@@ -540,6 +584,7 @@ const OperationsDashboard: React.FC = () => {
           onRefresh={fetchLeads}
           onViewDetail={handleViewDetail}
           onViewHistory={lead => setHistoryLead(lead)}
+          onAssign={lead => { setAssignModalLead(lead); setAssignEmail(lead.assignedTo || ''); }}
         />
       </div>
 
@@ -726,6 +771,14 @@ const OperationsDashboard: React.FC = () => {
               </Card>
             </div>
             <div style={{ background: '#fff', padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {/* Assign to Telecaller — always available */}
+              <Button
+                icon={<PhoneCall size={15} />}
+                onClick={() => { setAssignModalLead(drawerLead); setAssignEmail(drawerLead.assignedTo || ''); }}
+                style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #a5f3fc', color: '#0e7490', background: '#ecfeff', fontSize: 13, letterSpacing: '0.02em' }}
+              >
+                Assign Telecaller
+              </Button>
               {/* View Documents — always available if any docs exist */}
               {Object.keys(leadDocs).length > 0 && (
                 <Button
@@ -912,6 +965,66 @@ const OperationsDashboard: React.FC = () => {
               style={{ borderRadius: 10, fontSize: 13 }}
             />
           </div>
+        </div>
+      </Modal>
+
+      {/* Assign to Telecaller Modal */}
+      <Modal
+        open={!!assignModalLead}
+        onCancel={() => { setAssignModalLead(null); setAssignEmail(''); }}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <PhoneCall size={16} color="#06b6d4" />
+            <span style={{ fontWeight: 900, fontSize: 15, color: '#1e293b' }}>
+              Assign to Telecaller
+            </span>
+          </div>
+        }
+        footer={
+          <Space>
+            <Button onClick={() => { setAssignModalLead(null); setAssignEmail(''); }} style={{ borderRadius: 8 }}>Cancel</Button>
+            <Button
+              loading={assignLoading}
+              disabled={!assignEmail}
+              onClick={handleAssign}
+              style={{ borderRadius: 8, fontWeight: 700, background: '#06b6d4', color: '#fff', border: 'none' }}
+            >
+              Assign Lead
+            </Button>
+          </Space>
+        }
+        width={440}
+        styles={{ body: { padding: '20px 24px' } }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {assignModalLead && (
+            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#334155' }}>
+              <strong>{assignModalLead.firstName} {assignModalLead.lastName}</strong>
+              <span style={{ color: '#94a3b8', marginLeft: 8 }}>·</span>
+              <span style={{ marginLeft: 8 }}>{formatAmount(assignModalLead.loanAmount)} {formatLoanType(assignModalLead.loanType)}</span>
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Select Telecaller</div>
+            <Select
+              showSearch
+              value={assignEmail || undefined}
+              onChange={v => setAssignEmail(v)}
+              placeholder={telecallers.length === 0 ? 'No telecallers found — add one first' : 'Search by name or email…'}
+              style={{ width: '100%' }}
+              size="large"
+              options={telecallers}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              notFoundContent={telecallers.length === 0 ? 'No telecallers yet. Create one in HR → User Management.' : 'No match'}
+            />
+          </div>
+          {assignModalLead?.assignedTo && (
+            <div style={{ fontSize: 12, color: '#64748b' }}>
+              Currently assigned to: <strong>{assignModalLead.assignedTo}</strong>
+            </div>
+          )}
         </div>
       </Modal>
 
