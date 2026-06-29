@@ -9,7 +9,7 @@ import {
 import {
   Search, Plus, Download,
   UserCheck, Briefcase, Users,
-  Banknote, TrendingUp, Percent, Save, Edit2,
+  Banknote, TrendingUp, Percent, Save, Edit2, MapPin,
 } from 'lucide-react';
 import PartnerProfileDrawer from './PartnerProfileDrawer';
 import apiClient from '../../../shared/services/apiClient';
