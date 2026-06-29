@@ -63,7 +63,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.put('/:id/status', requireRoles('ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS'), async (req: Request, res: Response) => {
   const body = UpdateLoanStatusSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
-  await loanService.updateLoanStatus(req.params.id, body.data.status, body.data.remarks, req.user!.email);
+  await loanService.updateLoanStatus(req.params.id, body.data.status, body.data.remarks ?? '', req.user!.email);
   res.json(ok('Status updated', 'SUCCESS'));
 });
 
