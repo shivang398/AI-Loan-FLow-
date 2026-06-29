@@ -15,7 +15,12 @@ router.use(authenticate);
 const cibilLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => (req as any).user?.id ?? req.ip,
+  keyGenerator: (req) => {
+    const userId = (req as any).user?.id;
+    if (userId) return String(userId);
+    const ip = req.ip ?? '127.0.0.1';
+    return ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+  },
   message: { success: false, message: 'CIBIL check limit reached. Try again in 1 hour.' },
   standardHeaders: true,
   legacyHeaders: false,
