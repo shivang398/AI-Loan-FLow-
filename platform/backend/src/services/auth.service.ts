@@ -148,7 +148,6 @@ export async function forgotPassword(email: string) {
   const token = uuidv4();
   await setPasswordResetToken(token, email);
   // TODO: send reset link via SMTP — token must never be logged
-  console.log(`[Auth] Password reset requested for user ${user.id}`);
 }
 
 export async function resetPassword(token: string, newPassword: string) {

@@ -1,8 +1,37 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as salesOpsService from '../services/salesops.service';
 import { ok, fail } from '../utils/response';
+
+const CreateConnectorSchema = z.object({
+  userId: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  region: z.string().optional(),
+  platformRole: z.string().optional(),
+});
+
+const SelfRegisterSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  region: z.string().optional(),
+});
+
+const UpdateConnectorStatusSchema = z.object({
+  status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING_APPROVAL', 'SUSPENDED']),
+  remarks: z.string().optional(),
+});
+
+const AssignManagerSchema = z.object({
+  managerId: z.string().min(1),
+  role: z.enum(['RM', 'TEAM_LEADER', 'PARTNER_MANAGER']).optional(),
+});
 
 const router = Router();
 router.use(authenticate);
@@ -40,8 +69,9 @@ router.get('/', async (req: Request, res: Response) => {
 
 // POST /connectors/self-register — any authenticated user can create their own profile
 router.post('/self-register', async (req: Request, res: Response) => {
-  const { firstName, lastName, phone, email, region } = req.body;
-  if (!firstName || !lastName) { res.status(400).json(fail('firstName and lastName are required')); return; }
+  const body = SelfRegisterSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  const { firstName, lastName, phone, email, region } = body.data;
   const existing = await salesOpsService.getConnectorByUserId(req.user!.id).catch(() => null);
   if (existing) { res.json(ok('Connector profile already exists', existing)); return; }
   res.status(201).json(ok('Connector profile created', await salesOpsService.createConnector({
@@ -52,8 +82,9 @@ router.post('/self-register', async (req: Request, res: Response) => {
 
 // POST /connectors
 router.post('/', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
-  const { userId, firstName, lastName, phone, email, region, platformRole } = req.body;
-  if (!userId || !firstName || !lastName) { res.status(400).json(fail('userId, firstName and lastName are required')); return; }
+  const body = CreateConnectorSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  const { userId, firstName, lastName, phone, email, region, platformRole } = body.data;
   res.status(201).json(ok('Connector created', await salesOpsService.createConnector({ userId, firstName, lastName, phone, email, region, platformRole, createdBy: req.user!.email })));
 });
 
@@ -92,17 +123,17 @@ router.put('/:id', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request
 
 // PUT /connectors/:id/status
 router.put('/:id/status', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
-  const { status, remarks } = req.body;
-  if (!status) { res.status(400).json(fail('status is required')); return; }
-  await salesOpsService.updateConnectorStatus(req.params.id, status, remarks, req.user!.email);
+  const body = UpdateConnectorStatusSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  await salesOpsService.updateConnectorStatus(req.params.id, body.data.status, body.data.remarks, req.user!.email);
   res.json(ok('Status updated', 'SUCCESS'));
 });
 
 // POST /connectors/:id/assign-manager
 router.post('/:id/assign-manager', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
-  const { managerId, role } = req.body;
-  if (!managerId) { res.status(400).json(fail('managerId is required')); return; }
-  res.json(ok('Manager assigned', await salesOpsService.assignManager(req.params.id, managerId, role ?? 'TEAM_LEADER', req.user!.id)));
+  const body = AssignManagerSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  res.json(ok('Manager assigned', await salesOpsService.assignManager(req.params.id, body.data.managerId, body.data.role ?? 'TEAM_LEADER', req.user!.id)));
 });
 
 export default router;

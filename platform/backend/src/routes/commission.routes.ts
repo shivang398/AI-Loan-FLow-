@@ -1,8 +1,38 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as salesOpsService from '../services/salesops.service';
 import { ok, fail } from '../utils/response';
+
+const CreateSlabSchema = z.object({
+  connectorId: z.string().optional(),
+  bankName: z.string().min(1),
+  productCategory: z.string().min(1),
+  payoutRate: z.number().min(0).max(100),
+  minDisbursementAmount: z.number().min(0).optional(),
+});
+
+const UpdateSlabSchema = z.object({
+  bankName: z.string().min(1).optional(),
+  productCategory: z.string().min(1).optional(),
+  payoutRate: z.number().min(0).max(100).optional(),
+  minDisbursementAmount: z.number().min(0).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+});
+
+const CreateTransactionSchema = z.object({
+  loanId: z.string().min(1),
+  connectorId: z.string().min(1),
+  loanAmount: z.number().positive(),
+  connectorRate: z.number().min(0).max(100),
+  teamLeaderOverride: z.number().min(0).max(100).optional(),
+  rmOverride: z.number().min(0).max(100).optional(),
+});
+
+const UpdateTransactionStatusSchema = z.object({
+  status: z.enum(['PENDING', 'APPROVED', 'PAID', 'REJECTED']),
+});
 
 const router = Router();
 router.use(authenticate);
@@ -13,9 +43,9 @@ router.get('/slabs', async (req: Request, res: Response) => {
 });
 
 router.post('/slabs', requireRoles('ADMIN'), async (req: Request, res: Response) => {
-  const { connectorId, bankName, productCategory, payoutRate, minDisbursementAmount } = req.body;
-  if (!bankName || !productCategory || !payoutRate) { res.status(400).json(fail('bankName, productCategory and payoutRate are required')); return; }
-  res.status(201).json(ok('Slab created', await salesOpsService.createPayoutSlab({ connectorId, bankName, productCategory, payoutRate, minDisbursementAmount })));
+  const body = CreateSlabSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  res.status(201).json(ok('Slab created', await salesOpsService.createPayoutSlab(body.data)));
 });
 
 router.get('/slabs/connector/:connectorId', async (req: Request, res: Response) => {
@@ -23,8 +53,9 @@ router.get('/slabs/connector/:connectorId', async (req: Request, res: Response) 
 });
 
 router.put('/slabs/:id', requireRoles('ADMIN'), async (req: Request, res: Response) => {
-  const { bankName, productCategory, payoutRate, minDisbursementAmount, status } = req.body;
-  const updated = await salesOpsService.updatePayoutSlab(req.params.id, { bankName, productCategory, payoutRate, minDisbursementAmount, status });
+  const body = UpdateSlabSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  const updated = await salesOpsService.updatePayoutSlab(req.params.id, body.data);
   res.json(ok('Slab updated', updated));
 });
 
@@ -36,9 +67,9 @@ router.get('/transactions', requireRoles('ADMIN', 'RM'), async (req: Request, re
 });
 
 router.post('/transactions', requireRoles('ADMIN', 'RM'), async (req: Request, res: Response) => {
-  const { loanId, connectorId, loanAmount, connectorRate, teamLeaderOverride, rmOverride } = req.body;
-  if (!loanId || !connectorId || !loanAmount || !connectorRate) { res.status(400).json(fail('loanId, connectorId, loanAmount and connectorRate are required')); return; }
-  res.status(201).json(ok('Commission created', await salesOpsService.createCommissionTransaction({ loanId, connectorId, loanAmount, connectorRate, teamLeaderOverride, rmOverride })));
+  const body = CreateTransactionSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  res.status(201).json(ok('Commission created', await salesOpsService.createCommissionTransaction(body.data)));
 });
 
 router.get('/transactions/connector/:connectorId', requireRoles('ADMIN', 'RM', 'TEAM_LEADER'), async (req: Request, res: Response) => {
@@ -48,11 +79,9 @@ router.get('/transactions/connector/:connectorId', requireRoles('ADMIN', 'RM', '
 });
 
 router.put('/transactions/:id/status', requireRoles('ADMIN', 'RM'), async (req: Request, res: Response) => {
-  const { status } = req.body;
-  if (!status) { res.status(400).json(fail('status is required')); return; }
-  const VALID_STATUSES = ['PENDING', 'APPROVED', 'PAID', 'REJECTED'];
-  if (!VALID_STATUSES.includes(status)) { res.status(400).json(fail(`status must be one of: ${VALID_STATUSES.join(', ')}`)); return; }
-  const updated = await salesOpsService.updateCommissionTransactionStatus(req.params.id, status);
+  const body = UpdateTransactionStatusSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  const updated = await salesOpsService.updateCommissionTransactionStatus(req.params.id, body.data.status);
   res.json(ok('Status updated', updated));
 });
 

@@ -7,10 +7,19 @@ import { requireRoles } from '../middleware/role.middleware';
 import { ok, fail } from '../utils/response';
 import { revokeAccessToken } from '../services/auth.service';
 
-// 15 attempts per 15 minutes per IP — prevents brute-force account lockout attacks
+// 5 login attempts per 15 minutes per IP — brute-force protection on the auth gate
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'Too many login attempts from this IP. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 10 registration attempts per 15 minutes per IP
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 10,
   message: { success: false, message: 'Too many attempts from this IP. Try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -37,7 +46,7 @@ router.post('/register/partner', authLimiter, async (req: Request, res: Response
   res.json(ok('Partner registered successfully', result));
 });
 
-router.post('/login', authLimiter, async (req: Request, res: Response) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const body = LoginSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map((e) => e.message))); return; }
   const ip = req.ip; // req.ip is correct when trust proxy is enabled in app.ts

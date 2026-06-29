@@ -34,6 +34,7 @@ import PoliciesPage from './features/policies/components/PoliciesPage';
 import TelecallerDashboard from './features/telecaller/components/TelecallerDashboard';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
+import FeatureErrorBoundary from './shared/components/FeatureErrorBoundary';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -101,77 +102,77 @@ const App: React.FC = () => {
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<DashboardOverview />} />
+              <Route path="/dashboard" element={<FeatureErrorBoundary feature="Dashboard"><DashboardOverview /></FeatureErrorBoundary>} />
 
               {/* CIBIL Check — all authenticated roles */}
-              <Route path="/connector/cibil" element={<CibilCheckPage />} />
-              
+              <Route path="/connector/cibil" element={<FeatureErrorBoundary feature="CIBIL Check"><CibilCheckPage /></FeatureErrorBoundary>} />
+
               {/* CIBIL History — ADMIN, RM, OPERATIONS */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS']} />}>
-                <Route path="/cibil/history" element={<CibilHistoryPage />} />
+                <Route path="/cibil/history" element={<FeatureErrorBoundary feature="CIBIL History"><CibilHistoryPage /></FeatureErrorBoundary>} />
               </Route>
 
               {/* Shared ADMIN + PARTNER_MANAGER routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PARTNER_MANAGER']} />}>
-                <Route path="/admin/careers" element={<CareerApplications />} />
+                <Route path="/admin/careers" element={<FeatureErrorBoundary feature="Career Applications"><CareerApplications /></FeatureErrorBoundary>} />
               </Route>
 
-              {/* Admin Specific Routes — platform config only, no partner access */}
+              {/* Admin Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                <Route path="/admin/users"         element={<UserManagement />} />
-                <Route path="/admin/documents"     element={<DocumentLibrary />} />
-                <Route path="/admin/reports"       element={<ReportingDashboard />} />
-                <Route path="/admin/analytics"     element={<BusinessAnalytics />} />
-                <Route path="/admin/policies"      element={<PoliciesPage />} />
-                <Route path="/admin/team-meeting"  element={<TeamMeeting />} />
+                <Route path="/admin/users"        element={<FeatureErrorBoundary feature="User Management"><UserManagement /></FeatureErrorBoundary>} />
+                <Route path="/admin/documents"    element={<FeatureErrorBoundary feature="Document Library"><DocumentLibrary /></FeatureErrorBoundary>} />
+                <Route path="/admin/reports"      element={<FeatureErrorBoundary feature="Reports"><ReportingDashboard /></FeatureErrorBoundary>} />
+                <Route path="/admin/analytics"    element={<FeatureErrorBoundary feature="Analytics"><BusinessAnalytics /></FeatureErrorBoundary>} />
+                <Route path="/admin/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+                <Route path="/admin/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
               </Route>
 
-              {/* Partner Manager Routes — full ownership of partner lifecycle */}
+              {/* Partner Manager Routes */}
               <Route element={<ProtectedRoute allowedRoles={['PARTNER_MANAGER']} />}>
-                <Route path="/pm/partners"     element={<ConnectorHub />} />
-                <Route path="/pm/payouts"      element={<PayoutTracker />} />
-                <Route path="/pm/commissions"  element={<CommissionDashboard />} />
-                <Route path="/pm/policies"     element={<PoliciesPage />} />
-                <Route path="/pm/team-meeting" element={<TeamMeeting />} />
+                <Route path="/pm/partners"     element={<FeatureErrorBoundary feature="Partners"><ConnectorHub /></FeatureErrorBoundary>} />
+                <Route path="/pm/payouts"      element={<FeatureErrorBoundary feature="Payouts"><PayoutTracker /></FeatureErrorBoundary>} />
+                <Route path="/pm/commissions"  element={<FeatureErrorBoundary feature="Commissions"><CommissionDashboard /></FeatureErrorBoundary>} />
+                <Route path="/pm/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+                <Route path="/pm/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
               </Route>
 
               {/* RM Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['RM']} />}>
-                <Route path="/rm/dashboard"    element={<RegionalDashboard />} />
-                <Route path="/rm/connectors"   element={<ConnectorTracker />} />
-                <Route path="/rm/workflow"     element={<WorkflowMonitor />} />
-                <Route path="/rm/policies"     element={<PoliciesPage />} />
-                <Route path="/rm/team-meeting" element={<TeamMeeting />} />
+                <Route path="/rm/dashboard"    element={<FeatureErrorBoundary feature="RM Dashboard"><RegionalDashboard /></FeatureErrorBoundary>} />
+                <Route path="/rm/connectors"   element={<FeatureErrorBoundary feature="Connector Tracker"><ConnectorTracker /></FeatureErrorBoundary>} />
+                <Route path="/rm/workflow"     element={<FeatureErrorBoundary feature="Workflow Monitor"><WorkflowMonitor /></FeatureErrorBoundary>} />
+                <Route path="/rm/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+                <Route path="/rm/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
               </Route>
 
               {/* Team Leader Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['TEAM_LEADER']} />}>
-                <Route path="/tl/dashboard"    element={<TeamLeaderDashboard />} />
-                <Route path="/tl/policies"     element={<PoliciesPage />} />
-                <Route path="/tl/team-meeting" element={<TeamMeeting />} />
+                <Route path="/tl/dashboard"    element={<FeatureErrorBoundary feature="TL Dashboard"><TeamLeaderDashboard /></FeatureErrorBoundary>} />
+                <Route path="/tl/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+                <Route path="/tl/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
               </Route>
 
               {/* Operations Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['OPERATIONS']} />}>
-                <Route path="/ops/dashboard"    element={<OperationsDashboard />} />
-                <Route path="/ops/policies"     element={<PoliciesPage />} />
-                <Route path="/ops/team-meeting" element={<OpsTeamMeetingPage />} />
+                <Route path="/ops/dashboard"    element={<FeatureErrorBoundary feature="Operations Dashboard"><OperationsDashboard /></FeatureErrorBoundary>} />
+                <Route path="/ops/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+                <Route path="/ops/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><OpsTeamMeetingPage /></FeatureErrorBoundary>} />
               </Route>
 
               {/* Telecaller Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['TELECALLER']} />}>
-                <Route path="/telecaller/queue" element={<TelecallerDashboard />} />
+                <Route path="/telecaller/queue" element={<FeatureErrorBoundary feature="Call Queue"><TelecallerDashboard /></FeatureErrorBoundary>} />
               </Route>
 
               {/* Connector Specific Routes */}
               <Route element={<ProtectedRoute allowedRoles={['CONNECTOR']} />}>
-                <Route path="/connector/dashboard"          element={<ConnectorDashboard />} />
-                <Route path="/connector/bsa"                element={<BankStatementAnalyzerPage />} />
-                <Route path="/connector/foir"               element={<CheckEligibility />} />
-                <Route path="/connector/emi-calculator"     element={<EmiCalculator />} />
-                <Route path="/connector/earnings"           element={<CommissionDashboard />} />
-                <Route path="/connector/policies"           element={<PoliciesPage />} />
-                <Route path="/connector/team-meeting"       element={<TeamMeeting />} />
+                <Route path="/connector/dashboard"      element={<FeatureErrorBoundary feature="Connector Dashboard"><ConnectorDashboard /></FeatureErrorBoundary>} />
+                <Route path="/connector/bsa"            element={<FeatureErrorBoundary feature="Bank Statement Analyzer"><BankStatementAnalyzerPage /></FeatureErrorBoundary>} />
+                <Route path="/connector/foir"           element={<FeatureErrorBoundary feature="Check Eligibility"><CheckEligibility /></FeatureErrorBoundary>} />
+                <Route path="/connector/emi-calculator" element={<FeatureErrorBoundary feature="EMI Calculator"><EmiCalculator /></FeatureErrorBoundary>} />
+                <Route path="/connector/earnings"       element={<FeatureErrorBoundary feature="Earnings"><CommissionDashboard /></FeatureErrorBoundary>} />
+                <Route path="/connector/policies"       element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+                <Route path="/connector/team-meeting"   element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
               </Route>
             </Route>
           </Route>

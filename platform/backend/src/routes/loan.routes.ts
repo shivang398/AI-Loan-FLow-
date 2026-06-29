@@ -1,18 +1,31 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as loanService from '../services/loan.service';
 import * as salesOpsService from '../services/salesops.service';
 import { ok, fail } from '../utils/response';
 
+const CreateLoanSchema = z.object({
+  customerId: z.string().min(1),
+  connectorId: z.string().optional(),
+  amount: z.number().positive(),
+  tenureMonths: z.number().int().min(1).max(360),
+  purpose: z.string().optional(),
+});
+
+const UpdateLoanStatusSchema = z.object({
+  status: z.enum(['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'DISBURSED', 'CLOSED']),
+  remarks: z.string().optional(),
+});
+
 const router = Router();
 router.use(authenticate);
 
 router.post('/', async (req: Request, res: Response) => {
-  const { customerId, connectorId, amount, tenureMonths, purpose } = req.body;
-  if (!customerId || !amount || !tenureMonths) { res.status(400).json(fail('customerId, amount and tenureMonths are required')); return; }
-  if (typeof amount !== 'number' || amount <= 0) { res.status(400).json(fail('amount must be a positive number')); return; }
-  if (typeof tenureMonths !== 'number' || tenureMonths <= 0 || tenureMonths > 360) { res.status(400).json(fail('tenureMonths must be between 1 and 360')); return; }
+  const body = CreateLoanSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  const { customerId, connectorId, amount, tenureMonths, purpose } = body.data;
   res.status(201).json(ok('Loan created', await loanService.createLoan({ customerId, connectorId, amount, tenureMonths, purpose, createdBy: req.user!.email })));
 });
 
@@ -48,9 +61,9 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 router.put('/:id/status', requireRoles('ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS'), async (req: Request, res: Response) => {
-  const { status, remarks } = req.body;
-  if (!status) { res.status(400).json(fail('status is required')); return; }
-  await loanService.updateLoanStatus(req.params.id, status, remarks, req.user!.email);
+  const body = UpdateLoanStatusSchema.safeParse(req.body);
+  if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
+  await loanService.updateLoanStatus(req.params.id, body.data.status, body.data.remarks, req.user!.email);
   res.json(ok('Status updated', 'SUCCESS'));
 });
 
