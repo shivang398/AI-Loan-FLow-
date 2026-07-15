@@ -85,6 +85,9 @@ const writeLimiter = rateLimit({
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'UP', timestamp: new Date().toISOString() }));
 
+// Monolith svc-health — all services live in this process, respond UP for each
+app.get('/svc-health/:service', (_req, res) => res.json({ status: 'UP', timestamp: new Date().toISOString() }));
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 app.use('/auth', authRoutes);
 
