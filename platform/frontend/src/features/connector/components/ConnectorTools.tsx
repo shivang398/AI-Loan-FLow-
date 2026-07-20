@@ -588,6 +588,7 @@ export const CibilBureauCheckPage: React.FC = () => {
       const res = await apiClient.post('/eligibility/cibil-bureau/check', {
         mobileNumber: values.mobileNumber,
         name: values.name,
+        panNumber: values.panNumber || undefined,
         consent: values.consent,
       });
       setSummary(res.data?.data || res.data);
@@ -660,6 +661,20 @@ export const CibilBureauCheckPage: React.FC = () => {
               <Col xs={24} md={12}>
                 <Form.Item name="mobileNumber" label="Mobile Number" rules={[{ required: true, message: 'Please enter mobile number' }]}>
                   <Input placeholder="9876543210" style={{ borderRadius: 2, height: 44 }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="panNumber"
+                  label="PAN Number"
+                  rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}
+                >
+                  <Input
+                    placeholder="ABCDE1234F"
+                    maxLength={10}
+                    style={{ borderRadius: 2, height: 44, textTransform: 'uppercase', fontFamily: 'monospace' }}
+                    onChange={(e) => e.target.value = e.target.value.toUpperCase()}
+                  />
                 </Form.Item>
               </Col>
             </Row>

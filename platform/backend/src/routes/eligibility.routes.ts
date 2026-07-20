@@ -460,7 +460,7 @@ router.post('/cibil/check', cibilLimiter, async (req: Request, res: Response) =>
 
 // POST /cibil-bureau/check — CIBIL (TransUnion) bureau check via Tenacio, different workflow
 router.post('/cibil-bureau/check', cibilLimiter, async (req: Request, res: Response) => {
-  const { mobileNumber, name, consent } = req.body;
+  const { mobileNumber, name, panNumber, consent } = req.body;
   if (!consent)      { res.status(400).json(fail('Customer consent is required')); return; }
   if (!mobileNumber) { res.status(400).json(fail('Mobile number is required')); return; }
 
@@ -474,7 +474,7 @@ router.post('/cibil-bureau/check', cibilLimiter, async (req: Request, res: Respo
           'x-api-key':    TENACIO_API_KEY,
           'workflow-id':  TENACIO_CIBIL_WORKFLOW,
         },
-        body: JSON.stringify({ input: { mobileNumber, name, consent } }),
+        body: JSON.stringify({ input: { mobileNumber, name, panNumber, consent } }),
         signal: AbortSignal.timeout(30000),
       });
 
