@@ -502,6 +502,55 @@ export const CrifCheckPage: React.FC = () => {
             </div>
           )}
 
+          {/* Addresses */}
+          {summary.addresses?.length > 0 && (
+            <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--surface-3)', fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>
+                Address(es)
+              </div>
+              {summary.addresses.map((a: any, i: number) => (
+                <div key={i} style={{ padding: '12px 20px', borderBottom: '1px solid var(--surface-2)', background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{a.category || 'Address'}</span>
+                    {a.reportedDate && <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{a.reportedDate}</span>}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{a.address || '—'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Enquiry History */}
+          {summary.enquiries?.length > 0 && (
+            <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--surface-3)', fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>
+                Enquiry Details ({summary.enquiryCount ?? summary.enquiries.length})
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: RM_NAVY }}>
+                      {['#', 'Member Name', 'Date', 'Purpose', 'Amount'].map(h => (
+                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px', textAlign: 'left', fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Inter, sans-serif' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.enquiries.map((eq: any, i: number) => (
+                      <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>{i + 1}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{eq.memberName || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif', fontSize: 12 }}>{eq.date || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{eq.purpose || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{eq.amount > 0 ? `₹${Number(eq.amount).toLocaleString('en-IN')}` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Score range reference */}
           <div className="pro-card" style={{ padding: '18px 20px' }}>
             <div style={{
@@ -723,7 +772,7 @@ export const CibilBureauCheckPage: React.FC = () => {
       )}
 
       {summary && band && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="animate-fade-in-up">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} className="animate-fade-in-up">
           {summary.demoMode && (
             <Alert type="warning" showIcon
               message="Demo Mode — CIBIL Bureau credentials not configured. All data shown below is illustrative only."
@@ -731,59 +780,53 @@ export const CibilBureauCheckPage: React.FC = () => {
             />
           )}
 
-          {/* Score + Consumer Info */}
+          {/* Score hero */}
           <div className="pro-card" style={{ overflow: 'hidden', padding: 0 }}>
             <div style={{ display: 'flex', alignItems: 'stretch' }}>
-              <div style={{ flexShrink: 0, width: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '28px 16px', background: band.bg, borderRight: `1px solid ${band.border}` }}>
+              <div style={{ flexShrink: 0, width: 240, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '28px 20px', background: band.bg, borderRight: `1px solid ${band.border}` }}>
                 {isNH ? (
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 56, fontWeight: 700, color: '#3A4F80', fontFamily: '"Playfair Display", Georgia, serif', lineHeight: 1 }}>NH</div>
-                    <div style={{ fontSize: 9, color: '#7A8FB0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 6 }}>No Credit History</div>
+                    <div style={{ fontSize: 52, fontWeight: 700, color: '#3A4F80', fontFamily: '"Playfair Display", Georgia, serif' }}>NH</div>
+                    <div style={{ fontSize: 9, color: '#7A8FB0', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 4 }}>No Credit History · 300–900</div>
                   </div>
                 ) : (
                   <ScoreGauge score={summary.cibilScore} />
                 )}
-                <div style={{ marginTop: 10, padding: '4px 14px', background: band.color, color: '#fff', fontWeight: 700, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>{band.label}</div>
-                <div style={{ marginTop: 8, fontSize: 9.5, color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
-                  {summary.scoreVersion ?? 'CIBIL TRANSUNION SCORE V3.0'}
-                </div>
+                <div style={{ marginTop: 12, padding: '4px 16px', background: band.color, color: '#fff', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif' }}>{band.label}</div>
               </div>
-
-              <div style={{ flex: 1, padding: '20px 24px' }}>
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'Inter, sans-serif', marginBottom: 3 }}>Consumer Information</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif' }}>{summary.fullName}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'Inter, sans-serif' }}>
+              <div style={{ flex: 1, padding: '24px 28px' }}>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>Customer Profile</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.01em' }}>{summary.fullName}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'Inter, sans-serif' }}>
                     Score Date: {summary.scoreDate} &nbsp;·&nbsp; Report ID: {summary.reportId?.slice(0, 24) || '—'}
                   </div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px 16px', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--surface-2)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px 20px', marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--surface-2)' }}>
                   {[
                     { label: 'Date of Birth', value: summary.dob },
-                    { label: 'Gender', value: summary.gender },
-                    { label: 'Age', value: summary.age },
-                    { label: 'Occupation', value: summary.occupationType },
-                    { label: 'Income', value: summary.income },
-                    { label: 'Total Enquiries', value: `${summary.enquiryCount}` },
+                    { label: 'Gender',        value: summary.gender },
+                    { label: 'Occupation',    value: summary.occupationType },
+                    { label: 'Net Income',    value: summary.income },
+                    { label: 'Enquiries',     value: `${summary.enquiryCount ?? 0}` },
+                    { label: 'Address',       value: summary.address },
                   ].map(({ label, value }) => (
                     <div key={label}>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Inter, sans-serif', marginBottom: 1 }}>{label}</div>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{value || '—'}</div>
+                      <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Inter, sans-serif', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{value || '—'}</div>
                     </div>
                   ))}
                 </div>
-
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[
-                    { label: 'Total', value: summary.totalAccounts ?? 0, color: RM_BLUE, bg: 'var(--rm-blue-light)' },
-                    { label: 'Active', value: summary.activeAccounts ?? 0, color: '#0891B2', bg: '#E0F7FA' },
-                    { label: 'Closed', value: summary.closedAccounts ?? 0, color: '#3A4F80', bg: 'var(--surface-2)' },
-                    { label: 'Overdue', value: summary.overdueAccounts ?? 0, color: (summary.overdueAccounts ?? 0) > 0 ? RM_RED : '#1A7A4A', bg: (summary.overdueAccounts ?? 0) > 0 ? '#FFF0F0' : '#F0FAF4' },
+                    { label: 'Total Accounts', value: summary.totalAccounts  ?? 0, color: RM_BLUE,   bg: 'var(--rm-blue-light)' },
+                    { label: 'Active',         value: summary.activeAccounts ?? 0, color: '#0891B2', bg: '#E0F7FA' },
+                    { label: 'Closed',         value: summary.closedAccounts ?? 0, color: '#3A4F80', bg: 'var(--surface-2)' },
+                    { label: 'Overdue',        value: summary.overdueAccounts ?? 0, color: (summary.overdueAccounts ?? 0) > 0 ? RM_RED : '#1A7A4A', bg: (summary.overdueAccounts ?? 0) > 0 ? '#FFF0F0' : '#F0FAF4' },
                   ].map(({ label, value, color, bg }) => (
-                    <div key={label} style={{ padding: '8px 14px', background: bg, border: `1px solid ${color}22`, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 76 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color, fontFamily: '"Playfair Display", Georgia, serif', lineHeight: 1 }}>{value}</div>
-                      <div style={{ fontSize: 9, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>{label}</div>
+                    <div key={label} style={{ padding: '10px 18px', background: bg, border: `1px solid ${color}22`, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: '"Playfair Display", Georgia, serif', lineHeight: 1 }}>{value}</div>
+                      <div style={{ fontSize: 9.5, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>{label}</div>
                     </div>
                   ))}
                 </div>
@@ -791,117 +834,20 @@ export const CibilBureauCheckPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Identifications */}
-          {summary.identifications?.length > 0 && (
-            <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--surface-3)', background: '#EFF6FF', fontSize: 9, fontWeight: 700, color: RM_NAVY, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Identification(s)</div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-                  <thead>
-                    <tr style={{ background: RM_NAVY }}>
-                      {['ID Type', 'ID Number', 'Reported Date'].map(h => (
-                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.identifications.map((id: any, i: number) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{id.type}</td>
-                        <td style={{ padding: '8px 14px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: 13 }}>{id.value || '—'}</td>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{id.reportedDate || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Phones + Addresses side by side */}
+          {/* Financial summary */}
           <Row gutter={12}>
-            {summary.phones?.length > 0 && (
-              <Col xs={24} md={12}>
-                <div className="pro-card" style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                  <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--surface-3)', background: '#EFF6FF', fontSize: 9, fontWeight: 700, color: RM_NAVY, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Telephone(s)</div>
-                  {summary.phones.map((ph: any, i: number) => (
-                    <div key={i} style={{ padding: '10px 16px', borderBottom: '1px solid var(--surface-2)', display: 'flex', justifyContent: 'space-between', background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)' }}>
-                      <div>
-                        <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', marginBottom: 2 }}>{ph.type}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{ph.number}</div>
-                      </div>
-                      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', alignSelf: 'center' }}>{ph.reportedDate}</div>
-                    </div>
-                  ))}
+            <Col span={12}>
+              <div className="pro-card" style={{ padding: '20px 24px' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif', marginBottom: 6 }}>Total Outstanding Balance</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.02em' }}>
+                  ₹{Number(summary.totalBalance ?? 0).toLocaleString('en-IN')}
                 </div>
-              </Col>
-            )}
-            {summary.addresses?.length > 0 && (
-              <Col xs={24} md={summary.phones?.length > 0 ? 12 : 24}>
-                <div className="pro-card" style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
-                  <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--surface-3)', background: '#EFF6FF', fontSize: 9, fontWeight: 700, color: RM_NAVY, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Address(es)</div>
-                  {summary.addresses.map((a: any, i: number) => (
-                    <div key={i} style={{ padding: '10px 16px', borderBottom: '1px solid var(--surface-2)', background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 9, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{a.category}</span>
-                        <span style={{ fontSize: 9.5, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{a.reportedDate}</span>
-                      </div>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{a.address}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{a.state} – {a.pincode}</div>
-                    </div>
-                  ))}
-                </div>
-              </Col>
-            )}
-          </Row>
-
-          {/* Employment */}
-          {summary.employment?.length > 0 && (
-            <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--surface-3)', background: '#EFF6FF', fontSize: 9, fontWeight: 700, color: RM_NAVY, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Employment Information</div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-                  <thead>
-                    <tr style={{ background: RM_NAVY }}>
-                      {['Account Type', 'Date Reported', 'Occupation', 'Income', 'Frequency'].map(h => (
-                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 14px', textAlign: 'left', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.employment.map((e: any, i: number) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{e.accountType || '—'}</td>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{e.dateReported || '—'}</td>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{e.occupationCode || '—'}</td>
-                        <td style={{ padding: '8px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{e.income || '—'}</td>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{[e.netGrossIndicator, e.monthlyAnnualIndicator].filter(Boolean).join(' / ') || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Balance summary */}
-          <Row gutter={12}>
-            <Col span={8}>
-              <div className="pro-card" style={{ padding: '16px 20px' }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>Total Sanctioned</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: RM_BLUE, fontFamily: '"Playfair Display", Georgia, serif' }}>₹{Number(summary.totalSanctioned ?? 0).toLocaleString('en-IN')}</div>
               </div>
             </Col>
-            <Col span={8}>
-              <div className="pro-card" style={{ padding: '16px 20px' }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>Current Balance</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif' }}>₹{Number(summary.totalBalance ?? 0).toLocaleString('en-IN')}</div>
-              </div>
-            </Col>
-            <Col span={8}>
-              <div className="pro-card" style={{ padding: '16px 20px' }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>Overdue Amount</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: (summary.totalOverdue ?? 0) > 0 ? RM_RED : '#1A7A4A', fontFamily: '"Playfair Display", Georgia, serif' }}>
+            <Col span={12}>
+              <div className="pro-card" style={{ padding: '20px 24px' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif', marginBottom: 6 }}>Total Overdue Amount</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: (summary.totalOverdue ?? 0) > 0 ? RM_RED : '#1A7A4A', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.02em' }}>
                   {(summary.totalOverdue ?? 0) > 0 ? `₹${Number(summary.totalOverdue).toLocaleString('en-IN')}` : 'NIL'}
                 </div>
               </div>
@@ -911,81 +857,34 @@ export const CibilBureauCheckPage: React.FC = () => {
           {/* Account Details table */}
           {summary.accounts?.length > 0 && (
             <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--surface-3)', background: '#EFF6FF', fontSize: 9, fontWeight: 700, color: RM_NAVY, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Account Details</div>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--surface-3)', fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Credit Account Details</div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: RM_NAVY }}>
-                      {['Lender', 'Type', 'Account No.', 'Opened', 'Balance', 'Overdue', 'Sanctioned', 'Rate', 'Status'].map(h => (
-                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{h}</th>
+                      {['Lender', 'Type', 'Account No.', 'Opened', 'Outstanding', 'Overdue', 'Status'].map(h => (
+                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px', textAlign: 'left', fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {summary.accounts.map((acct: any, i: number) => {
                       const isOverdue = (acct.amountOverdue ?? 0) > 0;
-                      const isClosed  = !!acct.dateClosed;
                       const inr = (v: number) => v ? `₹${Number(v).toLocaleString('en-IN')}` : '—';
                       return (
-                        <React.Fragment key={i}>
-                          <tr style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: acct.dpdHistory?.length > 0 ? 'none' : '1px solid var(--surface-2)' }}>
-                            <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{acct.memberName}</td>
-                            <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>{acct.accountType}</td>
-                            <td style={{ padding: '9px 12px', fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: 11 }}>{acct.accountNumber}</td>
-                            <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif', fontSize: 11 }}>{acct.dateOpened || '—'}</td>
-                            <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{inr(acct.currentBalance)}</td>
-                            <td style={{ padding: '9px 12px', fontWeight: 700, color: isOverdue ? RM_RED : '#1A7A4A', fontFamily: 'Inter, sans-serif' }}>{isOverdue ? inr(acct.amountOverdue) : 'NIL'}</td>
-                            <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{inr(acct.sanctionedAmount)}</td>
-                            <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{acct.interestRate ? `${acct.interestRate}%` : '—'}</td>
-                            <td style={{ padding: '9px 12px' }}>
-                              <span style={{ padding: '2px 8px', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: isOverdue ? '#FFF0F0' : isClosed ? 'var(--surface-2)' : '#F0FAF4', color: isOverdue ? RM_RED : isClosed ? '#3A4F80' : '#1A7A4A', fontFamily: 'Inter, sans-serif' }}>
-                                {isOverdue ? 'OVERDUE' : isClosed ? 'CLOSED' : 'ACTIVE'}
-                              </span>
-                            </td>
-                          </tr>
-                          {/* DPD History row */}
-                          {acct.dpdHistory?.length > 0 && (
-                            <tr style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
-                              <td colSpan={9} style={{ padding: '4px 12px 10px' }}>
-                                <div style={{ fontSize: 8.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', marginBottom: 4 }}>
-                                  Payment History {acct.paymentHistoryStart && acct.paymentHistoryEnd ? `(${acct.paymentHistoryStart} – ${acct.paymentHistoryEnd})` : ''}
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                                  {acct.dpdHistory.map((d: any, di: number) => {
-                                    const dpd = (d.dpd ?? '').trim();
-                                    const isStd   = dpd === '000' || dpd === 'STD';
-                                    const isNA    = !dpd || dpd === 'NNN' || dpd === 'XXX';
-                                    const dpd30   = !isNaN(parseInt(dpd, 10)) && parseInt(dpd, 10) > 0 && parseInt(dpd, 10) <= 30;
-                                    const dpd90   = !isNaN(parseInt(dpd, 10)) && parseInt(dpd, 10) > 30 && parseInt(dpd, 10) <= 90;
-                                    const dpdBig  = !isNaN(parseInt(dpd, 10)) && parseInt(dpd, 10) > 90;
-                                    const isWO    = dpd === 'WO' || dpd === '900' || dpd === 'SUB' || dpd === 'DBT' || dpd === 'LSS';
-                                    const cellBg  = isNA ? '#F3F4F6' : isStd ? '#D1FAE5' : dpd30 ? '#FEF3C7' : dpd90 ? '#FED7AA' : (dpdBig || isWO) ? '#FEE2E2' : '#EFF6FF';
-                                    const cellFg  = isNA ? '#9CA3AF' : isStd ? '#065F46' : dpd30 ? '#92400E' : dpd90 ? '#9A3412' : (dpdBig || isWO) ? '#991B1B' : '#1E40AF';
-                                    return (
-                                      <div key={di} title={`${d.month ?? di + 1}: ${dpd || 'N/A'}`} style={{ width: 24, height: 20, background: cellBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: cellFg, fontFamily: 'monospace', border: '1px solid #E5E7EB' }}>
-                                        {dpd ? dpd.slice(0, 3) : '—'}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-                                  {[
-                                    { bg: '#D1FAE5', fg: '#065F46', label: '000 Standard' },
-                                    { bg: '#FEF3C7', fg: '#92400E', label: '30 DPD' },
-                                    { bg: '#FED7AA', fg: '#9A3412', label: '60–90 DPD' },
-                                    { bg: '#FEE2E2', fg: '#991B1B', label: '90+ / WO' },
-                                    { bg: '#F3F4F6', fg: '#9CA3AF', label: 'NNN – N/A' },
-                                  ].map(leg => (
-                                    <div key={leg.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <div style={{ width: 12, height: 12, background: leg.bg, border: '1px solid #E5E7EB', flexShrink: 0 }} />
-                                      <span style={{ fontSize: 9.5, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{leg.label}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
+                        <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{acct.memberName}</td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{acct.accountType}</td>
+                          <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: 12 }}>{acct.accountNumber}</td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{acct.dateOpened || '—'}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{inr(acct.currentBalance)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: isOverdue ? RM_RED : '#1A7A4A', fontFamily: 'Inter, sans-serif' }}>{isOverdue ? inr(acct.amountOverdue) : 'NIL'}</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <span style={{ padding: '3px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: isOverdue ? '#FFF0F0' : acct.dateClosed ? 'var(--surface-2)' : '#F0FAF4', color: isOverdue ? RM_RED : acct.dateClosed ? '#3A4F80' : '#1A7A4A', fontFamily: 'Inter, sans-serif' }}>
+                              {isOverdue ? 'OVERDUE' : acct.dateClosed ? 'CLOSED' : 'ACTIVE'}
+                            </span>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -994,34 +893,30 @@ export const CibilBureauCheckPage: React.FC = () => {
             </div>
           )}
 
-          {/* Enquiry details table */}
-          {summary.enquiries?.length > 0 && (
-            <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--surface-3)', background: '#EFF6FF', fontSize: 9, fontWeight: 700, color: RM_NAVY, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>Enquiry Details ({summary.enquiryCount})</div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-                  <thead>
-                    <tr style={{ background: RM_NAVY }}>
-                      {['#', 'Member Name', 'Enquiry Date', 'Purpose', 'Amount'].map(h => (
-                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.enquiries.map((eq: any, i: number) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
-                        <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11 }}>{i + 1}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{eq.memberName}</td>
-                        <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif', fontSize: 11 }}>{eq.date}</td>
-                        <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{eq.purpose}</td>
-                        <td style={{ padding: '8px 12px', color: eq.amount > 0 ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{eq.amount > 0 ? `₹${Number(eq.amount).toLocaleString('en-IN')}` : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {/* Score range reference */}
+          <div className="pro-card" style={{ padding: '18px 20px' }}>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif', marginBottom: 14 }}>
+              Score Range Reference
             </div>
-          )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { range: '750–900', label: 'Excellent', color: '#1A7A4A', bg: '#F0FAF4' },
+                { range: '700–749', label: 'Good',      color: '#1A7A4A', bg: '#F5FDF8' },
+                { range: '650–699', label: 'Fair',      color: '#8A6020', bg: '#FBF4E0' },
+                { range: '550–649', label: 'Poor',      color: '#C2410C', bg: '#FFF3EE' },
+                { range: '300–549', label: 'Very Poor', color: '#991B1B', bg: '#FFF0F0' },
+              ].map(({ range, label, color, bg }) => {
+                const isActive = SCORE_BANDS[summary.scoreBand]?.label === label;
+                return (
+                  <div key={range} style={{ padding: '8px 14px', background: isActive ? color : bg, border: `1px solid ${isActive ? color : color + '33'}`, flex: 1, minWidth: 90, textAlign: 'center' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? '#fff' : color, fontFamily: '"Playfair Display", Georgia, serif' }}>{range}</div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: isActive ? 'rgba(255,255,255,0.85)' : color, fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 10, paddingBottom: 8 }}>
