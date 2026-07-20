@@ -153,10 +153,17 @@ router.post('/submit', async (req: Request, res: Response) => {
   res.status(201).json(ok('Eligibility submitted', await loanService.submitEligibility(req.body)));
 });
 
-router.get('/submissions', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
+router.get('/submissions', requireRoles('ADMIN', 'RM', 'OPERATIONS', 'CONNECTOR'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('Submissions fetched', await loanService.getEligibilitySubmissions({ status: req.query.status as string, page, size })));
+});
+
+router.put('/submissions/:id/status', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
+  const { status, remarks } = req.body;
+  if (!status) { res.status(400).json(fail('status is required')); return; }
+  await loanService.updateEligibilitySubmissionStatus(req.params.id, status, remarks);
+  res.json(ok('Submission status updated', 'SUCCESS'));
 });
 
 // ── Tenacio CRIF helpers ──────────────────────────────────────────────────────

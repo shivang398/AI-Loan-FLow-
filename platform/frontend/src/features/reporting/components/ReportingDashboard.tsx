@@ -106,7 +106,7 @@ const ReportingDashboard: React.FC = () => {
   const handleSaveEmailConfig = async (values: any) => {
     setSavingEmail(true);
     try {
-      await apiClient.post('/reports/email-config', {
+      await apiClient.put('/reports/email-config', {
         frequency: values.frequency,
         recipients: values.recipients || [],
       });

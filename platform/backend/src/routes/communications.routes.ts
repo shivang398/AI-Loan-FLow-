@@ -62,7 +62,12 @@ router.get('/conversations/:id', async (req: Request, res: Response) => {
 router.get('/whatsapp/conversations', async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
-  res.json(ok('WhatsApp conversations fetched', await commsService.getConversations({ status: req.query.status as string, page, size })));
+  res.json(ok('WhatsApp conversations fetched', await commsService.getConversations({ conversationType: 'WHATSAPP', status: req.query.status as string, page, size })));
+});
+
+router.post('/whatsapp/conversations', async (req: Request, res: Response) => {
+  const { connectorId, rmId, loanApplicationId, assignedOpsUserId, customerName, customerPhone } = req.body;
+  res.status(201).json(ok('WhatsApp conversation created', await commsService.createConversation({ connectorId, rmId, loanApplicationId, assignedOpsUserId, conversationType: 'WHATSAPP', customerName, customerPhone })));
 });
 
 router.get('/whatsapp/templates', async (_req: Request, res: Response) => {

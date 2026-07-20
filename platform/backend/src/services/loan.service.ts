@@ -140,3 +140,19 @@ export async function getPolicyDocuments() {
 export async function uploadPolicyDocument(data: { title: string; category: string; fileName: string; mimeType: string; fileData: Buffer; fileSizeBytes: number; uploadedByEmail: string }) {
   return loanDb.policyDocument.create({ data: { ...data, fileData: data.fileData } });
 }
+
+export async function getPolicyDocumentById(id: string) {
+  const doc = await loanDb.policyDocument.findFirst({ where: { id, isActive: true } });
+  if (!doc) throw Object.assign(new Error('Document not found'), { status: 404 });
+  return doc;
+}
+
+export async function deletePolicyDocument(id: string) {
+  const doc = await loanDb.policyDocument.findFirst({ where: { id, isActive: true } });
+  if (!doc) throw Object.assign(new Error('Document not found'), { status: 404 });
+  await loanDb.policyDocument.update({ where: { id }, data: { isActive: false } });
+}
+
+export async function updateEligibilitySubmissionStatus(id: string, status: string, remarks?: string) {
+  return loanDb.eligibilitySubmission.update({ where: { id }, data: { status, ...(remarks !== undefined && { remarks }) } });
+}

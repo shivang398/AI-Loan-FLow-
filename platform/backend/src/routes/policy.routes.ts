@@ -55,4 +55,16 @@ router.post('/documents/upload', requireRoles('ADMIN'), upload.single('file'), a
   res.status(201).json(ok('Document uploaded', await loanService.uploadPolicyDocument({ title, category, fileName: req.file.originalname, mimeType: req.file.mimetype, fileData: req.file.buffer, fileSizeBytes: req.file.size, uploadedByEmail: req.user!.email })));
 });
 
+router.get('/documents/:id/download', async (req: Request, res: Response) => {
+  const doc = await loanService.getPolicyDocumentById(req.params.id);
+  res.setHeader('Content-Type', doc.mimeType);
+  res.setHeader('Content-Disposition', `attachment; filename="${doc.fileName}"`);
+  res.send(doc.fileData);
+});
+
+router.delete('/documents/:id', requireRoles('ADMIN'), async (req: Request, res: Response) => {
+  await loanService.deletePolicyDocument(req.params.id);
+  res.json(ok('Document deleted', 'SUCCESS'));
+});
+
 export default router;

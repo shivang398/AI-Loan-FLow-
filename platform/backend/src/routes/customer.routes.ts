@@ -107,7 +107,17 @@ router.get('/leads', async (req: Request, res: Response) => {
 });
 
 router.post('/leads/reassign', requireRoles('ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
-  const { leadIds, assignTo } = req.body;
+  const { leadIds, assignTo, fromEmail } = req.body;
+
+  // Offboarding path: unassign all open leads belonging to a departing user
+  if (fromEmail && !leadIds) {
+    const { items } = await customerService.getLeads({ assignedTo: fromEmail, page: 0, size: 5000 });
+    const open = items.filter((l: any) => !['CLOSED', 'REJECTED', 'DISBURSED'].includes(l.status));
+    await Promise.all(open.map((l: any) => customerService.updateLead(l.id, { assignedTo: '' })));
+    res.json(ok('Leads reassigned', { reassigned: open.length }));
+    return;
+  }
+
   if (!Array.isArray(leadIds) || leadIds.length === 0 || !assignTo) { res.status(400).json(fail('leadIds (array) and assignTo are required')); return; }
   const results = await Promise.all((leadIds as string[]).map((id: string) => customerService.updateLead(id, { assignedTo: assignTo })));
   res.json(ok('Leads reassigned', { count: results.length }));

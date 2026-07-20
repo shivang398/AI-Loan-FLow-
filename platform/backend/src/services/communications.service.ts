@@ -23,11 +23,12 @@ export async function createConversation(data: {
   });
 }
 
-export async function getConversations(filters: { connectorId?: string; rmId?: string; status?: string; page: number; size: number }) {
+export async function getConversations(filters: { connectorId?: string; rmId?: string; status?: string; conversationType?: string; page: number; size: number }) {
   const where = {
     ...(filters.connectorId && { connectorId: filters.connectorId }),
     ...(filters.rmId && { rmId: filters.rmId }),
     ...(filters.status && { conversationStatus: filters.status }),
+    ...(filters.conversationType && { conversationType: filters.conversationType }),
   };
   const [items, total] = await Promise.all([
     commsDb.conversation.findMany({ where, skip: filters.page * filters.size, take: filters.size, orderBy: { updatedAt: 'desc' }, include: { _count: { select: { messages: true } } } }),

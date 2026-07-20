@@ -42,7 +42,7 @@ router.get('/slabs', async (req: Request, res: Response) => {
   res.json(ok('Slabs fetched', await salesOpsService.getPayoutSlabs(req.query.connectorId as string)));
 });
 
-router.post('/slabs', requireRoles('ADMIN'), async (req: Request, res: Response) => {
+router.post('/slabs', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const body = CreateSlabSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
   res.status(201).json(ok('Slab created', await salesOpsService.createPayoutSlab(body.data)));
@@ -52,7 +52,7 @@ router.get('/slabs/connector/:connectorId', async (req: Request, res: Response) 
   res.json(ok('Slabs fetched', await salesOpsService.getPayoutSlabs(req.params.connectorId)));
 });
 
-router.put('/slabs/:id', requireRoles('ADMIN'), async (req: Request, res: Response) => {
+router.put('/slabs/:id', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const body = UpdateSlabSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
   const updated = await salesOpsService.updatePayoutSlab(req.params.id, body.data);
@@ -60,7 +60,7 @@ router.put('/slabs/:id', requireRoles('ADMIN'), async (req: Request, res: Respon
 });
 
 // ── Commission Transactions ───────────────────────────────────────────────────
-router.get('/transactions', requireRoles('ADMIN', 'RM'), async (req: Request, res: Response) => {
+router.get('/transactions', requireRoles('ADMIN', 'RM', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('Transactions fetched', await salesOpsService.getCommissionTransactions({ connectorId: req.query.connectorId as string, status: req.query.status as string, page, size })));
@@ -72,7 +72,7 @@ router.post('/transactions', requireRoles('ADMIN', 'RM'), async (req: Request, r
   res.status(201).json(ok('Commission created', await salesOpsService.createCommissionTransaction(body.data)));
 });
 
-router.get('/transactions/connector/:connectorId', requireRoles('ADMIN', 'RM', 'TEAM_LEADER'), async (req: Request, res: Response) => {
+router.get('/transactions/connector/:connectorId', requireRoles('ADMIN', 'RM', 'TEAM_LEADER', 'CONNECTOR'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '20');
   res.json(ok('Transactions fetched', await salesOpsService.getCommissionTransactions({ connectorId: req.params.connectorId, status: req.query.status as string, page, size })));

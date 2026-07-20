@@ -261,7 +261,7 @@ const WhatsAppTab: React.FC = () => {
   const handlePushStatus = async () => {
     if (!active) return;
     try {
-      await apiClient.post('/messaging/status-update', {
+      await apiClient.put('/messaging/status-update', {
         loanId: activeId,
         status: selStatus,
         connectorPhone: active.customerPhone,
