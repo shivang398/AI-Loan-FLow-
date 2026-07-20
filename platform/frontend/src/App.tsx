@@ -18,7 +18,7 @@ import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDas
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
 import EmiCalculator from './features/connector/components/EmiCalculator';
-import { CibilCheckPage, BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
+import { CrifCheckPage, CibilBureauCheckPage, BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
 import CibilHistoryPage from './features/eligibility/components/CibilHistoryPage';
 import CheckEligibility from './features/connector/components/CheckEligibility';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
@@ -104,8 +104,10 @@ const App: React.FC = () => {
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<FeatureErrorBoundary feature="Dashboard"><DashboardOverview /></FeatureErrorBoundary>} />
 
-              {/* CIBIL Check — all authenticated roles */}
-              <Route path="/connector/cibil" element={<FeatureErrorBoundary feature="CIBIL Check"><CibilCheckPage /></FeatureErrorBoundary>} />
+              {/* CRIF Check — all authenticated roles */}
+              <Route path="/connector/cibil" element={<FeatureErrorBoundary feature="CRIF Check"><CrifCheckPage /></FeatureErrorBoundary>} />
+              {/* CIBIL Bureau — all authenticated roles */}
+              <Route path="/connector/cibil-bureau" element={<FeatureErrorBoundary feature="CIBIL Bureau"><CibilBureauCheckPage /></FeatureErrorBoundary>} />
 
               {/* CIBIL History — ADMIN, RM, OPERATIONS */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS']} />}>
