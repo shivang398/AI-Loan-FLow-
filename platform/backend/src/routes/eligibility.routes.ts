@@ -286,6 +286,32 @@ function mapTenacioResponse(raw: any, requestId: string): object {
     const firstLoan = responseArr[0]['LOAN-DETAILS'] ?? responseArr[0];
     console.log('[CRIF-DEBUG] LOAN-DETAILS keys on first account:', Object.keys(firstLoan));
     console.log('[CRIF-DEBUG] LOAN-DETAILS first account (raw):', JSON.stringify(firstLoan, null, 2));
+
+    // Raw payment history value — exactly as CRIF sent it, zero parsing applied
+    const RAW_PAY_HIST =
+      firstLoan['PAYMENT-HISTORY']
+      ?? firstLoan['Payment_History_Grid']
+      ?? firstLoan['COMBINED-PAYMENT-HISTORY']
+      ?? firstLoan['48-MONTHS-PAYMENT-HISTORY-PROFILE']
+      ?? firstLoan['History_of_Recent_Payments']
+      ?? firstLoan['PAYMENT-HISTORY-PROFILE']
+      ?? null;
+    const RAW_START =
+      firstLoan['PAYMENT-HISTORY-START-DATE']
+      ?? firstLoan['Payment_History_Start_Date']
+      ?? firstLoan['ACCOUNT-START-DATE']
+      ?? null;
+    const RAW_END =
+      firstLoan['PAYMENT-HISTORY-END-DATE']
+      ?? firstLoan['Payment_History_End_Date']
+      ?? firstLoan['ACCOUNT-END-DATE']
+      ?? null;
+
+    console.log('[CRIF-DEBUG] RAW payment history value:', JSON.stringify(RAW_PAY_HIST));
+    console.log('[CRIF-DEBUG] RAW payment history field type:', RAW_PAY_HIST === null ? 'null (field not found)' : typeof RAW_PAY_HIST);
+    console.log('[CRIF-DEBUG] RAW payment history length:', typeof RAW_PAY_HIST === 'string' ? RAW_PAY_HIST.length : Array.isArray(RAW_PAY_HIST) ? RAW_PAY_HIST.length : 'N/A');
+    console.log('[CRIF-DEBUG] PAYMENT-HISTORY-START-DATE (or equivalent):', RAW_START ?? 'Not found');
+    console.log('[CRIF-DEBUG] PAYMENT-HISTORY-END-DATE   (or equivalent):', RAW_END   ?? 'Not found');
   }
 
   // ── DPD payment history decoder ──────────────────────────────────────────
@@ -401,6 +427,38 @@ function mapTenacioResponse(raw: any, requestId: string): object {
       paymentHistoryRaw: payHistRaw ?? null,
     };
   });
+
+  // DEBUG — side-by-side: raw payment history string vs decoded dpdHistory[]
+  // for the first account, so we can manually verify chunk size, direction,
+  // code mapping, and month label alignment before removing these logs.
+  if (accounts.length > 0) {
+    const first: any = accounts[0];
+    console.log('[CRIF-DEBUG] ── Decode verification for account[0] ──────────────────────────────');
+    console.log('[CRIF-DEBUG] memberName    :', first.memberName);
+    console.log('[CRIF-DEBUG] accountType   :', first.accountType);
+    console.log('[CRIF-DEBUG] dpdSource     :', first.dpdSource);
+    console.log('[CRIF-DEBUG] paymentHistoryRaw (verbatim):', JSON.stringify(first.paymentHistoryRaw));
+
+    if (first.paymentHistoryRaw) {
+      const str = first.paymentHistoryRaw.replace(/\s/g, '');
+      const chunkSize = str.length % 2 === 0 && str.length % 3 !== 0 ? 2 : 3;
+      console.log('[CRIF-DEBUG] detected chunk size:', chunkSize, '(string length', str.length, '/ chunk =', str.length / chunkSize, 'months)');
+      console.log('[CRIF-DEBUG] decoded dpdHistory[] (month → code → numeric):');
+      (first.dpdHistory ?? []).slice(0, 24).forEach((e: any, i: number) => {
+        console.log(`  [${String(i).padStart(2, '0')}]  month=${e.month}  dpd=${String(e.dpd).padEnd(5)}  dpdNumeric=${e.dpdNumeric !== null ? e.dpdNumeric : 'null (no-data)'}`);
+      });
+      if ((first.dpdHistory ?? []).length > 24) {
+        console.log(`  ... and ${first.dpdHistory.length - 24} more months`);
+      }
+    } else {
+      console.log('[CRIF-DEBUG] No payment history string found — checking direct DPD field:');
+      console.log('[CRIF-DEBUG] currentDpd        :', first.currentDpd);
+      console.log('[CRIF-DEBUG] assetClassification:', first.assetClassification);
+      console.log('[CRIF-DEBUG] suitFiled          :', first.suitFiled);
+      console.log('[CRIF-DEBUG] writtenOffStatus   :', first.writtenOffStatus);
+    }
+    console.log('[CRIF-DEBUG] ──────────────────────────────────────────────────────────────────');
+  }
 
   // ── Income — most recently reported across all accounts ──────────────────
   const incomeEntry = responseArr
