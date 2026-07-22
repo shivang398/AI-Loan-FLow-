@@ -279,22 +279,126 @@ function mapTenacioResponse(raw: any, requestId: string): object {
   const rawResponses = d.responses?.RESPONSE ?? [];
   const responseArr  = Array.isArray(rawResponses) ? rawResponses : [rawResponses];
 
+  // DEBUG — log the raw LOAN-DETAILS keys of the first account so we can confirm
+  // which DPD fields the Tenacio/CRIF response actually carries.
+  // Remove this log once DPD field names are confirmed.
+  if (responseArr.length > 0) {
+    const firstLoan = responseArr[0]['LOAN-DETAILS'] ?? responseArr[0];
+    console.log('[CRIF-DEBUG] LOAN-DETAILS keys on first account:', Object.keys(firstLoan));
+    console.log('[CRIF-DEBUG] LOAN-DETAILS first account (raw):', JSON.stringify(firstLoan, null, 2));
+  }
+
+  // ── DPD payment history decoder ──────────────────────────────────────────
+  // CRIF encodes monthly payment history as a fixed-width string of codes.
+  // Each position = one month (most recent first). Common encodings:
+  //   3-char per month: "000" = standard, "030"/"060"/"090" = DPD bucket,
+  //                     "SUB"/"DBT"/"LSS" = NPA, "XXX" = no data, "STD" = current
+  //   2-char per month: "00"=standard, "30"/"60"/"90"=DPD, "XX"=no data
+  function decodePaymentHistory(raw: string | null | undefined, startDate: string | null | undefined): Array<{ month: string; dpd: string; dpdNumeric: number | null }> {
+    if (!raw) return [];
+    const str = raw.replace(/\s/g, '');
+    const chunkSize = str.length % 2 === 0 && str.length % 3 !== 0 ? 2 : 3;
+    const chunks: string[] = [];
+    for (let i = 0; i < str.length; i += chunkSize) chunks.push(str.slice(i, i + chunkSize));
+
+    // Parse start date (DD-MM-YYYY or MM-YYYY or YYYYMM)
+    let baseYear = new Date().getFullYear();
+    let baseMonth = new Date().getMonth(); // 0-indexed, most recent first
+    if (startDate) {
+      const parts = startDate.replace(/\//g, '-').split('-');
+      if (parts.length === 3) { baseYear = parseInt(parts[2]); baseMonth = parseInt(parts[1]) - 1; }
+      else if (parts.length === 2) { baseYear = parseInt(parts[1]); baseMonth = parseInt(parts[0]) - 1; }
+    }
+
+    return chunks.map((code, idx) => {
+      const d = new Date(baseYear, baseMonth - idx);
+      const monthLabel = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+      const upper = code.toUpperCase().trim();
+      let dpdNumeric: number | null = null;
+      if (upper === '000' || upper === 'STD' || upper === '00') dpdNumeric = 0;
+      else if (upper === 'SUB') dpdNumeric = 90;
+      else if (upper === 'DBT') dpdNumeric = 180;
+      else if (upper === 'LSS' || upper === 'WO')  dpdNumeric = 999;
+      else if (upper !== 'XXX' && upper !== 'NNN' && upper !== '***') {
+        const n = parseInt(upper, 10);
+        if (!isNaN(n)) dpdNumeric = n;
+      }
+      return { month: monthLabel, dpd: upper, dpdNumeric };
+    });
+  }
+
   const accounts = responseArr.map((entry: any) => {
     const loan = entry['LOAN-DETAILS'] ?? entry;
     // INSTALLMENT-AMT format: "4,094/Monthly/Monthly" — extract the number part
     const emiRaw = pick(loan['INSTALLMENT-AMT']);
     const emiAmt = emiRaw ? num(emiRaw.split('/')[0]) : 0;
+
+    // ── DPD extraction — try all known CRIF High Mark field name variants ───
+    // 2a: Direct DPD field
+    const directDpd = pick(
+      loan['DAYS-PAST-DUE']           // standard CRIF field
+      ?? loan['DPD']
+      ?? loan['Days_Past_Due']
+      ?? loan['CURRENT-DPD']
+    );
+
+    // 2b: Monthly payment history grid
+    const payHistRaw = pick(
+      loan['PAYMENT-HISTORY']
+      ?? loan['Payment_History_Grid']
+      ?? loan['COMBINED-PAYMENT-HISTORY']
+      ?? loan['48-MONTHS-PAYMENT-HISTORY-PROFILE']
+      ?? loan['History_of_Recent_Payments']
+      ?? loan['PAYMENT-HISTORY-PROFILE']
+    );
+    const payHistStart = pick(
+      loan['PAYMENT-HISTORY-START-DATE']
+      ?? loan['Payment_History_Start_Date']
+      ?? loan['ACCOUNT-START-DATE']
+    );
+    const dpdHistory = decodePaymentHistory(payHistRaw, payHistStart);
+    const currentDpd    = dpdHistory[0]?.dpdNumeric ?? (directDpd !== null ? num(directDpd) : null);
+    const currentDpdMonth = dpdHistory[0]?.month ?? null;
+    const maxDpd12      = dpdHistory.slice(0, 12).reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+    const maxDpdEver    = dpdHistory.reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+
+    // 2c: Asset classification / status fields
+    const assetClass   = pick(loan['ASSET-CLASSIFICATION'] ?? loan['ASSET_CLASSIFICATION'] ?? loan['NPA-CLASSIFICATION']);
+    const suitFiled    = pick(loan['SUIT-FILED-WILFUL-DEFAULT'] ?? loan['SUIT-FILED'] ?? loan['WILFUL-DEFAULT']);
+    const writtenOff   = pick(loan['WRITTEN-OFF-SETTLED-STATUS'] ?? loan['WRITTEN-OFF-STATUS']);
+    const writtenOffAmt = num(loan['WRITTEN-OFF-AMT'] ?? loan['TOTAL-WRITTEN-OFF-AMT'] ?? loan['PRINCIPAL-WRITTEN-OFF-AMT']);
+    const acctStatus   = pick(loan['ACCT-STATUS'] ?? loan['ACCOUNT-STATUS'] ?? loan['STATUS']);
+
+    // DPD source for transparency
+    const dpdSource = payHistRaw ? '2b (payment history grid)'
+      : directDpd  ? '2a (direct DPD field)'
+      : assetClass ? '2c (asset classification)'
+      : 'Not Available';
+
     return {
-      memberName:       pick(loan['CREDIT-GUARANTOR']),
-      accountType:      pick(loan['ACCT-TYPE']),
-      accountNumber:    pick(loan['ACCT-NUMBER']),
-      dateOpened:       pick(loan['DISBURSED-DT']),
-      sanctionedAmount: num(loan['DISBURSED-AMT']),  // original loan / credit limit
-      currentBalance:   num(loan['CURRENT-BAL']),
-      amountOverdue:    num(loan['OVERDUE-AMT']),
-      emiAmount:        emiAmt,
-      dateClosed:       pick(loan['CLOSED-DATE']) || null,
-      ownershipType:    pick(loan['OWNERSHIP-IND']),
+      memberName:        pick(loan['CREDIT-GUARANTOR']),
+      accountType:       pick(loan['ACCT-TYPE']),
+      accountNumber:     pick(loan['ACCT-NUMBER']),
+      dateOpened:        pick(loan['DISBURSED-DT']),
+      sanctionedAmount:  num(loan['DISBURSED-AMT']),
+      currentBalance:    num(loan['CURRENT-BAL']),
+      amountOverdue:     num(loan['OVERDUE-AMT']),
+      emiAmount:         emiAmt,
+      dateClosed:        pick(loan['CLOSED-DATE']) || null,
+      ownershipType:     pick(loan['OWNERSHIP-IND']),
+      // DPD fields
+      currentDpd,
+      currentDpdMonth,
+      maxDpd12Months:    payHistRaw ? maxDpd12 : null,
+      maxDpdEver:        payHistRaw ? maxDpdEver : null,
+      assetClassification: assetClass || null,
+      suitFiled:         suitFiled   || null,
+      writtenOffStatus:  writtenOff  || null,
+      writtenOffAmount:  writtenOffAmt > 0 ? writtenOffAmt : null,
+      accountStatus:     acctStatus  || null,
+      dpdHistory:        dpdHistory.length > 0 ? dpdHistory : null,
+      dpdSource,
+      paymentHistoryRaw: payHistRaw ?? null,
     };
   });
 
@@ -369,6 +473,21 @@ function mapTenacioResponse(raw: any, requestId: string): object {
   // ── Report metadata ───────────────────────────────────────────────────────
   const scoreDate = new Date().toLocaleDateString('en-IN');
 
+  // ── DPD summary across all accounts (for quick dashboard view) ───────────
+  const accountsWithDpd   = accounts.filter((a: any) => a.currentDpd !== null).length;
+  const accountsNoDpd     = accounts.length - accountsWithDpd;
+  const maxDpdCurrentAll  = accounts.reduce((mx: number, a: any) => a.currentDpd !== null ? Math.max(mx, a.currentDpd) : mx, 0);
+  const npaAccounts       = accounts.filter((a: any) => a.assetClassification && a.assetClassification !== 'STANDARD' && a.assetClassification !== 'STD').length;
+  const writtenOffAccounts = accounts.filter((a: any) => a.writtenOffStatus).length;
+
+  const dpdSummary = {
+    accountsWithDpdData: accountsWithDpd,
+    accountsMissingDpdData: accountsNoDpd,
+    maxCurrentDpdAcrossAllAccounts: maxDpdCurrentAll,
+    npaAccounts,
+    writtenOffOrSettledAccounts: writtenOffAccounts,
+  };
+
   return {
     demoMode: false,
     cibilScore,
@@ -392,6 +511,7 @@ function mapTenacioResponse(raw: any, requestId: string): object {
     scoreDate,
     reportId: requestId,
     accounts,
+    dpdSummary,
     _raw: undefined,
   };
 }
