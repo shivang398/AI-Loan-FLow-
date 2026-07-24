@@ -50,7 +50,7 @@ router.get('/rules', async (_req: Request, res: Response) => {
 });
 
 // GET /eligibility/cibil/stats?from=&to= — dashboard summary (defaults to today)
-router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
+router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS', 'CREDIT_BUREAU'), async (req: Request, res: Response) => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -95,7 +95,7 @@ router.get('/cibil/stats', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req
 });
 
 // GET /eligibility/cibil/history?from=&to=&page=0&size=20 — full paginated history
-router.get('/cibil/history', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
+router.get('/cibil/history', requireRoles('ADMIN', 'RM', 'OPERATIONS', 'CREDIT_BUREAU'), async (req: Request, res: Response) => {
   const page = Math.max(0, parseInt(req.query.page as string ?? '0'));
   const size = Math.min(100, Math.max(1, parseInt(req.query.size as string ?? '20')));
   const from = req.query.from ? new Date(req.query.from as string) : undefined;
@@ -936,8 +936,8 @@ router.post('/cibil-bureau/check', cibilLimiter, async (req: Request, res: Respo
   res.json(ok('CIBIL Bureau check complete', cibilDemoResult));
 });
 
-// POST /cibil-bureau/report — ADMIN only — simple score + accounts PDF
-router.post('/cibil-bureau/report', requireRoles('ADMIN'), async (req: Request, res: Response) => {
+// POST /cibil-bureau/report — ADMIN + CREDIT_BUREAU — detailed TransUnion CIBIL credit information report
+router.post('/cibil-bureau/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req: Request, res: Response) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const PDFDocument = require('pdfkit') as typeof import('pdfkit');
 
@@ -947,24 +947,28 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN'), async (req: Request, 
   const NAVY  = '#0A1628';
   const GOLD  = '#C9A84C';
   const RED   = '#DC2626';
-  const GREEN = '#15803D';
   const GREY  = '#6B7280';
+  const LGREY = '#9CA3AF';
   const LIGHT = '#F8F9FA';
   const W     = 595.28;
   const H     = 841.89;
-  const MARGIN = 40;
-  const COL    = W - MARGIN * 2;
+  const MARGIN    = 36;
+  const COL       = W - MARGIN * 2;
   const FOOTER_Y  = H - 28;
   const PAGE_SAFE = H - 50;
 
-  const score     = r.cibilScore ?? -1;
-  const fullName  = r.fullName   ?? 'N/A';
-  const mobile    = d.mobileNumber ?? '';
-  const reportId  = r.reportId   ?? '';
-  const accounts: any[] = r.accounts ?? [];
+  const score      = r.cibilScore  ?? -1;
+  const fullName   = r.fullName    ?? 'N/A';
+  const mobile     = d.mobileNumber ?? '';
+  const reportId   = r.reportId    ?? '';
+  const accounts: any[]  = r.accounts  ?? [];
+  const phones: any[]    = r.phones    ?? [];
+  const addresses: any[] = r.addresses ?? [];
+  const enquiries: any[] = r.enquiries ?? [];
+  const identifications: any[] = r.identifications ?? [];
+  const scoringFactors: string[] = r.scoringFactors ?? [];
   const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
-  // ── PDF helpers ─────────────────────────────────────────────────────────────
   function fmtINR(v: number): string { return !v ? '0' : Math.abs(v).toLocaleString('en-IN'); }
   function clip(s: string, max: number): string { return !s ? '—' : s.length > max ? s.slice(0, max - 1) + '…' : s; }
   function scoreColour(s: number): string {
@@ -983,125 +987,192 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN'), async (req: Request, 
 
   function addFooter() {
     doc.rect(0, FOOTER_Y, W, 28).fill(NAVY);
-    doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(7)
-       .text('Realmoney Advisory Solution', MARGIN, FOOTER_Y + 7, { width: 280, lineBreak: false });
+    doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(6.5)
+       .text('Realmoney Advisory Solution  |  CIBIL Bureau Credit Report  |  Confidential',
+             MARGIN, FOOTER_Y + 6, { width: 340, lineBreak: false });
+    doc.fillColor('#94A3B8').font('Helvetica').fontSize(6)
+       .text(`Page ${pageNum}  |  ${reportId.slice(0, 20)}  |  ${now.split(',')[0]} IST`,
+             MARGIN + 345, FOOTER_Y + 7, { width: COL - 345, align: 'right', lineBreak: false });
+  }
+
+  function newPage(subtitle?: string) {
+    doc.addPage({ size: 'A4', margin: 0 }); pageNum++;
+    doc.rect(0, 0, W, 50).fill(NAVY);
+    doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(10)
+       .text('Realmoney Advisory Solution', MARGIN, 10, { lineBreak: false });
+    doc.fillColor('#94A3B8').font('Helvetica').fontSize(7)
+       .text('Credit Information Report — Powered by TransUnion CIBIL', MARGIN, 24, { lineBreak: false });
+    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8)
+       .text(subtitle ?? '', W - MARGIN - 200, 12, { width: 200, align: 'right', lineBreak: false });
     doc.fillColor('#94A3B8').font('Helvetica').fontSize(6.5)
-       .text(`Confidential  |  Page ${pageNum}  |  Report: ${reportId.slice(0, 16)}`,
-             MARGIN + 285, FOOTER_Y + 8, { width: COL - 285, align: 'right', lineBreak: false });
+       .text(`${clip(fullName, 28)}  |  ${mobile || '—'}`, W - MARGIN - 200, 26, { width: 200, align: 'right', lineBreak: false });
   }
 
-  function newPage() { doc.addPage({ size: 'A4', margin: 0 }); pageNum++; }
+  function sectionHeader(label: string, yy: number): void {
+    doc.rect(MARGIN, yy, COL, 16).fill('#1E293B');
+    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(7.5)
+       .text(label, MARGIN + 8, yy + 4, { lineBreak: false });
+  }
 
-  // PAGE 1 — Summary
-  newPage();
+  function kvPair(lbl: string, val: string, x: number, yy: number, lw: number, vw: number, bg: string): void {
+    doc.rect(x, yy, lw + vw, 14).fill(bg);
+    doc.fillColor(LGREY).font('Helvetica').fontSize(6.5).text(lbl, x + 4, yy + 3, { width: lw - 6, lineBreak: false });
+    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(7).text(clip(val, Math.floor(vw / 4)), x + lw + 2, yy + 3, { width: vw - 4, lineBreak: false });
+  }
 
-  // Header bar
-  doc.rect(0, 0, W, 65).fill(NAVY);
-  doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(16).text('Realmoney Advisory Solution', MARGIN, 22);
-  doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(12)
-     .text('CIBIL BUREAU REPORT', W - MARGIN - 170, 16, { width: 170, align: 'right', lineBreak: false });
-  doc.fillColor(GOLD).font('Helvetica').fontSize(7.5)
-     .text('TransUnion CIBIL · Soft Pull · No Score Impact', W - MARGIN - 170, 33, { width: 170, align: 'right', lineBreak: false });
-  doc.fillColor('#94A3B8').font('Helvetica').fontSize(6.5)
-     .text(`Generated: ${now} IST`, W - MARGIN - 170, 45, { width: 170, align: 'right', lineBreak: false });
+  // PAGE 1
+  newPage('Report Date: ' + now.split(',')[0]);
+  let y = 58;
 
-  let y = 73;
-
-  // Bureau disclosure strip
-  doc.rect(0, y, W, 18).fill('#1E3A5F');
-  doc.fillColor('#93C5FD').font('Helvetica').fontSize(7)
+  // Disclosure banner
+  doc.rect(0, y, W, 16).fill('#1E3A5F');
+  doc.fillColor('#93C5FD').font('Helvetica').fontSize(6.5)
      .text('Data sourced from TransUnion CIBIL Ltd. (RBI Licensed CIC) via Tenacio Analytics Pvt. Ltd.  |  Soft Pull — No enquiry footprint',
-           MARGIN, y + 5, { width: COL, lineBreak: false });
-  y += 24;
+           MARGIN, y + 4, { width: COL, lineBreak: false });
+  y += 22;
 
-  // Score box (left) + customer profile (right)
-  const scoreBoxW = 150;
-  const profileW  = COL - scoreBoxW - 12;
-  const rx        = MARGIN + scoreBoxW + 12;
-  const boxH      = 120;
-
-  const sCol = scoreColour(score);
-  doc.rect(MARGIN, y, scoreBoxW, boxH).fill(LIGHT).strokeColor('#CBD5E1').lineWidth(0.5).stroke();
-  doc.rect(MARGIN, y, scoreBoxW, 20).fill(NAVY);
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(7.5).text('CIBIL SCORE', MARGIN + 4, y + 6, { lineBreak: false });
-  if (score > 5) {
-    doc.fillColor(sCol).font('Helvetica-Bold').fontSize(36)
-       .text(score.toString(), MARGIN, y + 30, { width: scoreBoxW, align: 'center', lineBreak: false });
-    doc.fillColor(sCol).font('Helvetica-Bold').fontSize(8)
-       .text(r.scoreBand ?? '', MARGIN, y + 76, { width: scoreBoxW, align: 'center', lineBreak: false });
-    doc.fillColor('#6B7280').font('Helvetica').fontSize(6.5)
-       .text('Range: 300 – 900', MARGIN, y + 90, { width: scoreBoxW, align: 'center', lineBreak: false });
-  } else {
-    doc.fillColor('#6B7280').font('Helvetica-Bold').fontSize(20)
-       .text('NH / NA', MARGIN, y + 40, { width: scoreBoxW, align: 'center', lineBreak: false });
-    doc.fillColor('#6B7280').font('Helvetica').fontSize(7)
-       .text('No Credit History', MARGIN, y + 70, { width: scoreBoxW, align: 'center', lineBreak: false });
-  }
-
-  doc.rect(rx, y, profileW, boxH).fill(LIGHT).strokeColor('#CBD5E1').lineWidth(0.5).stroke();
-  doc.rect(rx, y, profileW, 20).fill(NAVY);
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(7.5).text('CUSTOMER PROFILE', rx + 4, y + 6, { lineBreak: false });
-  const pfFields: [string, string][] = [
-    ['Full Name',   fullName],
+  // ── CONSUMER INFORMATION ────────────────────────────────────────────────────
+  sectionHeader('CONSUMER INFORMATION', y);
+  y += 18;
+  const ciFields: [string, string][] = [
+    ['Full Name',     fullName],
     ['Date of Birth', r.dob ?? '—'],
-    ['Gender',      r.gender ?? '—'],
-    ['Occupation',  r.occupationType ?? '—'],
-    ['Income',      r.income ?? '—'],
-    ['Address',     clip(r.address ?? '—', 55)],
+    ['Gender',        r.gender ?? '—'],
+    ['Age',           r.age ? `${r.age} years` : '—'],
+    ['Occupation',    r.occupationType ?? '—'],
+    ['Income',        r.income ?? '—'],
   ];
-  let fy = y + 24;
-  const halfW = profileW / 2;
-  for (let i = 0; i < pfFields.length; i++) {
-    const fx = rx + (i % 2) * halfW;
-    if (i % 2 === 0 && i > 0) fy += 14;
-    const bg = Math.floor(i / 2) % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
-    doc.rect(fx, fy, halfW, 14).fill(bg);
-    doc.fillColor('#9CA3AF').font('Helvetica').fontSize(6).text(pfFields[i][0], fx + 4, fy + 2, { width: halfW * 0.38, lineBreak: false });
-    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(7).text(pfFields[i][1], fx + halfW * 0.40, fy + 2, { width: halfW * 0.58, lineBreak: false });
+  const halfCOL = COL / 2;
+  for (let i = 0; i < ciFields.length; i += 2) {
+    const bg = (i / 2) % 2 === 0 ? '#FFFFFF' : LIGHT;
+    kvPair(ciFields[i][0], ciFields[i][1], MARGIN, y, 70, halfCOL - 70, bg);
+    if (ciFields[i + 1]) kvPair(ciFields[i + 1][0], ciFields[i + 1][1], MARGIN + halfCOL, y, 70, halfCOL - 70, bg);
+    y += 14;
   }
-  y += boxH + 16;
+  y += 6;
 
-  // 4 stat cards
-  const cardW = (COL - 12) / 4;
-  const statCards = [
-    { label: 'Total Accounts',   val: r.totalAccounts   ?? 0, bg: NAVY  },
-    { label: 'Active Accounts',  val: r.activeAccounts  ?? 0, bg: GREEN },
-    { label: 'Closed Accounts',  val: r.closedAccounts  ?? 0, bg: '#6B7280' },
-    { label: 'Overdue Accounts', val: r.overdueAccounts ?? 0, bg: RED   },
+  // ── IDENTIFICATIONS ─────────────────────────────────────────────────────────
+  if (identifications.length > 0) {
+    sectionHeader('IDENTIFICATIONS', y);
+    y += 18;
+    for (let i = 0; i < identifications.length; i++) {
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      kvPair('ID Type',  identifications[i].type  ?? '—', MARGIN,       y, 80, 150, bg);
+      kvPair('Number',   identifications[i].value ?? '—', MARGIN + 230, y, 60, 120, bg);
+      y += 14;
+    }
+    y += 6;
+  }
+
+  // ── PHONE NUMBERS ───────────────────────────────────────────────────────────
+  const allPhones = phones.length > 0 ? phones : (mobile ? [{ type: 'Mobile', number: mobile }] : []);
+  if (allPhones.length > 0) {
+    sectionHeader('PHONE NUMBERS', y);
+    y += 18;
+    for (let i = 0; i < allPhones.length; i++) {
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      kvPair('Type',   allPhones[i].type   ?? 'Mobile', MARGIN,       y, 60, 80,  bg);
+      kvPair('Number', allPhones[i].number ?? '—',      MARGIN + 140, y, 60, COL - 200, bg);
+      y += 14;
+    }
+    y += 6;
+  }
+
+  // ── ADDRESSES ───────────────────────────────────────────────────────────────
+  const addrList = addresses.length > 0
+    ? addresses
+    : (r.address ? [{ address: r.address, category: 'Address', state: '', pincode: '', reportedDate: '' }] : []);
+  if (addrList.length > 0) {
+    sectionHeader('ADDRESSES', y);
+    y += 18;
+    for (let i = 0; i < addrList.length; i++) {
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      kvPair('Category',      addrList[i].category     ?? '—', MARGIN,       y, 70, 130, bg);
+      kvPair('Pincode',       addrList[i].pincode      ?? '—', MARGIN + 200, y, 55, 80,  bg);
+      kvPair('Reported Date', addrList[i].reportedDate ?? '—', MARGIN + 335, y, 75, COL - 410, bg);
+      y += 14;
+      kvPair('Address', `${addrList[i].address ?? ''}${addrList[i].state ? ', ' + addrList[i].state : ''}`.trim() || '—',
+             MARGIN, y, 70, COL - 70, bg);
+      y += 14;
+    }
+    y += 6;
+  }
+
+  // ── TRANSUNION CIBIL SCORE ───────────────────────────────────────────────────
+  sectionHeader('TRANSUNION CIBIL SCORE', y);
+  y += 18;
+  const sCol = scoreColour(score);
+  const scoreBoxW = 100;
+  doc.rect(MARGIN, y, scoreBoxW, 48).fill(LIGHT).strokeColor('#E2E8F0').lineWidth(0.4).stroke();
+  if (score > 5) {
+    doc.fillColor(sCol).font('Helvetica-Bold').fontSize(28)
+       .text(score.toString(), MARGIN, y + 4, { width: scoreBoxW, align: 'center', lineBreak: false });
+    doc.fillColor(sCol).font('Helvetica-Bold').fontSize(7)
+       .text(r.scoreBand ?? '', MARGIN, y + 36, { width: scoreBoxW, align: 'center', lineBreak: false });
+  } else {
+    doc.fillColor(GREY).font('Helvetica-Bold').fontSize(18)
+       .text('NH / NA', MARGIN, y + 15, { width: scoreBoxW, align: 'center', lineBreak: false });
+  }
+  const scRight = MARGIN + scoreBoxW + 12;
+  const scW     = COL - scoreBoxW - 12;
+  kvPair('Score Version', r.scoreVersion ?? 'CIBIL TRANSUNION SCORE VERSION 3.0', scRight, y,      80, scW - 80, '#FFFFFF');
+  kvPair('Score Date',    r.scoreDate ?? now.split(',')[0],                        scRight, y + 14, 80, scW - 80, LIGHT);
+  kvPair('Score Range',   '300 – 900 (Higher is Better)',                          scRight, y + 28, 80, scW - 80, '#FFFFFF');
+  y += 55;
+
+  // Scoring factors (if any)
+  if (scoringFactors.length > 0) {
+    if (y > PAGE_SAFE - 20) { addFooter(); newPage('Score Factors'); y = 58; }
+    sectionHeader('SCORE FACTORS', y);
+    y += 18;
+    for (let i = 0; i < scoringFactors.length; i++) {
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      doc.rect(MARGIN, y, COL, 13).fill(bg);
+      doc.fillColor(LGREY).font('Helvetica').fontSize(6).text(`${i + 1}.`, MARGIN + 4, y + 3, { width: 16, lineBreak: false });
+      doc.fillColor(NAVY).font('Helvetica').fontSize(6.5).text(scoringFactors[i], MARGIN + 20, y + 3, { width: COL - 24, lineBreak: false });
+      y += 13;
+    }
+    y += 6;
+  }
+
+  // ── ACCOUNT SUMMARY ─────────────────────────────────────────────────────────
+  if (y > PAGE_SAFE - 60) { addFooter(); newPage('Account Summary'); y = 58; }
+  sectionHeader('ACCOUNT SUMMARY', y);
+  y += 18;
+  const sumFields: [string, string][] = [
+    ['Total Accounts',    String(r.totalAccounts   ?? 0)],
+    ['Active Accounts',   String(r.activeAccounts  ?? 0)],
+    ['Closed Accounts',   String(r.closedAccounts  ?? 0)],
+    ['Overdue Accounts',  String(r.overdueAccounts ?? 0)],
+    ['Sanctioned Amount', `₹${fmtINR(r.totalSanctioned ?? 0)}`],
+    ['Current Balance',  `₹${fmtINR(r.totalBalance ?? 0)}`],
+    ['Total Overdue',    `₹${fmtINR(r.totalOverdue ?? 0)}`],
+    ['Enquiry Count',     String(r.enquiryCount ?? 0)],
+    ['Oldest Account',    r.oldestOpenDate  ?? '—'],
+    ['Recent Account',    r.recentOpenDate  ?? '—'],
   ];
-  for (let i = 0; i < 4; i++) {
-    const cx = MARGIN + i * (cardW + 4);
-    doc.rect(cx, y, cardW, 44).fill(statCards[i].bg);
-    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(22)
-       .text(String(statCards[i].val), cx, y + 6, { width: cardW, align: 'center', lineBreak: false });
-    doc.fillColor('#FFFFFF').font('Helvetica').fontSize(7)
-       .text(statCards[i].label, cx, y + 32, { width: cardW, align: 'center', lineBreak: false });
+  const sumColW = COL / 4;
+  let sumRowIdx = 0;
+  for (let i = 0; i < sumFields.length; i++) {
+    const col = i % 4;
+    if (col === 0 && i > 0) { y += 14; sumRowIdx++; }
+    const sx = MARGIN + col * sumColW;
+    const bg = sumRowIdx % 2 === 0 ? '#FFFFFF' : LIGHT;
+    kvPair(sumFields[i][0], sumFields[i][1], sx, y, 80, sumColW - 80, bg);
   }
-  y += 56;
+  y += 20;
 
-  // Balance panels
-  const pW = (COL - 8) / 2;
-  const balPanels = [
-    { label: 'Total Current Balance', val: `₹${fmtINR(r.totalBalance ?? 0)}`, bg: '#EFF6FF' },
-    { label: 'Total Overdue Amount',  val: `₹${fmtINR(r.totalOverdue ?? 0)}`, bg: (r.totalOverdue ?? 0) > 0 ? '#FEF2F2' : '#F0FDF4' },
-  ];
-  for (let i = 0; i < 2; i++) {
-    const px = MARGIN + i * (pW + 8);
-    doc.rect(px, y, pW, 36).fill(balPanels[i].bg).strokeColor('#E2E8F0').lineWidth(0.4).stroke();
-    doc.fillColor('#6B7280').font('Helvetica').fontSize(7).text(balPanels[i].label, px + 8, y + 7, { lineBreak: false });
-    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(14).text(balPanels[i].val, px + 8, y + 17, { lineBreak: false });
-  }
-  y += 48;
-
-  // Accounts table
+  // ── ACCOUNT DETAILS ──────────────────────────────────────────────────────────
   if (accounts.length > 0) {
-    doc.rect(MARGIN, y, COL, 16).fill('#1E293B');
-    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8).text('ACCOUNT DETAILS', MARGIN + 8, y + 4, { lineBreak: false });
-    y += 16;
+    if (y > PAGE_SAFE - 60) { addFooter(); newPage('Account Details'); y = 58; }
+    sectionHeader('ACCOUNT DETAILS', y);
+    y += 18;
 
     const acCols = [
-      { label: 'Member', w: 110 }, { label: 'Type', w: 80 }, { label: 'Account#', w: 75 },
-      { label: 'Opened', w: 60 }, { label: 'Balance (₹)', w: 65 }, { label: 'Overdue (₹)', w: 65 }, { label: 'Status', w: 60 },
+      { label: 'Member / Bank',  w: 100 }, { label: 'Account Type', w: 80 },
+      { label: 'Account#',       w: 80  }, { label: 'Opened',       w: 52 },
+      { label: 'Balance (₹)',    w: 62  }, { label: 'Overdue (₹)',  w: 62 },
+      { label: 'Status',         w: COL - 436 },
     ];
     let hx = MARGIN;
     doc.rect(MARGIN, y, COL, 14).fill('#334155');
@@ -1113,22 +1184,81 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN'), async (req: Request, 
     y += 14;
 
     for (let i = 0; i < accounts.length; i++) {
-      if (y > PAGE_SAFE - 12) { addFooter(); newPage(); y = 40; }
+      if (y > PAGE_SAFE - 13) { addFooter(); newPage('Account Details (cont.)'); y = 58; }
       const acc = accounts[i];
+      const isOverdueRow = (acc.amountOverdue ?? 0) > 0;
       const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
       doc.rect(MARGIN, y, COL, 13).fill(bg);
       let ax = MARGIN;
+      const statusLabel = acc.dateClosed ? 'Closed' : isOverdueRow ? 'Overdue' : 'Active';
       const cells = [
-        clip(acc.memberName ?? '—', 20), clip(acc.accountType ?? '—', 16),
-        acc.accountNumber ?? '—', acc.dateOpened ?? '—',
-        fmtINR(acc.currentBalance ?? 0), fmtINR(acc.amountOverdue ?? 0),
-        acc.dateClosed ? 'Closed' : 'Active',
+        clip(acc.memberName  ?? '—', 18), clip(acc.accountType ?? '—', 14),
+        acc.accountNumber ?? '—',         acc.dateOpened ?? '—',
+        fmtINR(acc.currentBalance ?? 0),  fmtINR(acc.amountOverdue ?? 0),
+        statusLabel,
       ];
       for (let j = 0; j < acCols.length; j++) {
-        const isOverdue = j === 5 && (acc.amountOverdue ?? 0) > 0;
-        doc.fillColor(isOverdue ? RED : NAVY).font('Helvetica').fontSize(6.5)
+        const isOverdueCell = j === 5 && isOverdueRow;
+        const isStatusCell  = j === 6 && isOverdueRow;
+        doc.fillColor(isOverdueCell || isStatusCell ? RED : NAVY).font('Helvetica').fontSize(6.5)
            .text(cells[j], ax + 3, y + 3, { width: acCols[j].w - 4, lineBreak: false });
         ax += acCols[j].w;
+      }
+      doc.rect(MARGIN, y, COL, 13).strokeColor('#E2E8F0').lineWidth(0.25).stroke();
+      y += 13;
+
+      // Secondary detail row (sanctioned, EMI, interest rate, ownership)
+      if (acc.sanctionedAmount > 0 || acc.emiAmount > 0 || acc.interestRate || acc.ownershipType) {
+        if (y > PAGE_SAFE - 13) { addFooter(); newPage('Account Details (cont.)'); y = 58; }
+        const detBg = i % 2 === 0 ? '#F0F4FF' : '#EAF0FF';
+        doc.rect(MARGIN, y, COL, 12).fill(detBg);
+        const detParts: string[] = [];
+        if (acc.sanctionedAmount > 0) detParts.push(`Sanctioned: ₹${fmtINR(acc.sanctionedAmount)}`);
+        if (acc.emiAmount > 0)        detParts.push(`EMI: ₹${fmtINR(acc.emiAmount)}`);
+        if (acc.interestRate)         detParts.push(`Rate: ${acc.interestRate}%`);
+        if (acc.ownershipType)        detParts.push(`Ownership: ${acc.ownershipType}`);
+        if (acc.lastPaymentDate)      detParts.push(`Last Payment: ${acc.lastPaymentDate}`);
+        doc.fillColor(GREY).font('Helvetica').fontSize(6)
+           .text(detParts.join('   ·   '), MARGIN + 6, y + 3, { width: COL - 10, lineBreak: false });
+        y += 12;
+      }
+    }
+    y += 8;
+  }
+
+  // ── ENQUIRY DETAILS ───────────────────────────────────────────────────────────
+  if (enquiries.length > 0) {
+    if (y > PAGE_SAFE - 60) { addFooter(); newPage('Enquiry Details'); y = 58; }
+    sectionHeader('ENQUIRY DETAILS', y);
+    y += 18;
+
+    const enCols = [
+      { label: 'Member / Institution', w: 170 }, { label: 'Date', w: 70 },
+      { label: 'Purpose', w: 130 }, { label: 'Amount (₹)', w: COL - 370 },
+    ];
+    let ex = MARGIN;
+    doc.rect(MARGIN, y, COL, 14).fill('#334155');
+    for (const col of enCols) {
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(6.5)
+         .text(col.label, ex + 3, y + 3, { width: col.w - 4, lineBreak: false });
+      ex += col.w;
+    }
+    y += 14;
+
+    for (let i = 0; i < enquiries.length; i++) {
+      if (y > PAGE_SAFE - 13) { addFooter(); newPage('Enquiry Details (cont.)'); y = 58; }
+      const enq = enquiries[i];
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      doc.rect(MARGIN, y, COL, 13).fill(bg);
+      let qx = MARGIN;
+      const cells = [
+        clip(enq.memberName ?? '—', 30), enq.date ?? '—',
+        clip(enq.purpose    ?? '—', 22), enq.amount ? fmtINR(enq.amount) : '—',
+      ];
+      for (let j = 0; j < enCols.length; j++) {
+        doc.fillColor(NAVY).font('Helvetica').fontSize(6.5)
+           .text(cells[j], qx + 3, y + 3, { width: enCols[j].w - 4, lineBreak: false });
+        qx += enCols[j].w;
       }
       doc.rect(MARGIN, y, COL, 13).strokeColor('#E2E8F0').lineWidth(0.25).stroke();
       y += 13;
@@ -1136,13 +1266,14 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN'), async (req: Request, 
     y += 8;
   }
 
-  // Disclaimer
-  if (y > PAGE_SAFE - 40) { addFooter(); newPage(); y = 40; }
+  // ── DISCLAIMER ───────────────────────────────────────────────────────────────
+  if (y > PAGE_SAFE - 40) { addFooter(); newPage(); y = 58; }
   doc.rect(MARGIN, y, COL, 1).fill('#CBD5E1');
   y += 6;
-  doc.fillColor('#6B7280').font('Helvetica').fontSize(6)
+  doc.fillColor(GREY).font('Helvetica').fontSize(6)
      .text('DISCLAIMER: This report is generated for internal use by Realmoney Advisory Solution and is based on data obtained from TransUnion CIBIL Ltd. ' +
-           'The information is provided "as is" without warranty. This report must not be shared with third parties without written consent.',
+           '(RBI Licensed Credit Information Company). This is a soft-pull enquiry and has no impact on the consumer\'s credit score. ' +
+           'The information is provided "as is" without warranty of any kind. This report must not be shared with third parties without prior written consent.',
            MARGIN, y, { width: COL });
 
   addFooter();
@@ -1157,8 +1288,8 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN'), async (req: Request, 
 });
 
 
-// POST /cibil/report — ADMIN only — CRIF detailed credit information report
-router.post('/cibil/report', requireRoles('ADMIN'), async (req: Request, res: Response) => {
+// POST /cibil/report — ADMIN + CREDIT_BUREAU — CRIF detailed credit information report
+router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req: Request, res: Response) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const PDFDocument = require('pdfkit') as typeof import('pdfkit');
 

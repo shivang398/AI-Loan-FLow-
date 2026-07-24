@@ -18,7 +18,9 @@ import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDas
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
 import EmiCalculator from './features/connector/components/EmiCalculator';
-import { CrifCheckPage, CibilBureauCheckPage, BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
+import CrifCheckPage from './features/connector/components/CrifCheckPage';
+import CibilBureauCheckPage from './features/connector/components/CibilBureauCheckPage';
+import { BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
 import CibilHistoryPage from './features/eligibility/components/CibilHistoryPage';
 import CheckEligibility from './features/connector/components/CheckEligibility';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
@@ -51,6 +53,7 @@ const SmartRedirect: React.FC = () => {
     CONNECTOR:       '/connector/dashboard',
     PARTNER_MANAGER: '/pm/partners',
     TELECALLER:      '/telecaller/queue',
+    CREDIT_BUREAU:   '/connector/cibil',
   };
   return <Navigate to={roleHome[user.role] ?? '/dashboard'} replace />;
 };
@@ -109,8 +112,8 @@ const App: React.FC = () => {
               {/* CIBIL Bureau — all authenticated roles */}
               <Route path="/connector/cibil-bureau" element={<FeatureErrorBoundary feature="CIBIL Bureau"><CibilBureauCheckPage /></FeatureErrorBoundary>} />
 
-              {/* CIBIL History — ADMIN, RM, OPERATIONS */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS']} />}>
+              {/* CIBIL History — ADMIN, RM, OPERATIONS, CREDIT_BUREAU */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS', 'CREDIT_BUREAU']} />}>
                 <Route path="/cibil/history" element={<FeatureErrorBoundary feature="CIBIL History"><CibilHistoryPage /></FeatureErrorBoundary>} />
               </Route>
 

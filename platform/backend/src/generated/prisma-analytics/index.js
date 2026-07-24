@@ -176,6 +176,10 @@ const config = {
         "fromEnvVar": null,
         "value": "debian-openssl-3.0.x",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "linux-musl-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
@@ -201,8 +205,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../../src/generated/prisma-analytics\"\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"ANALYTICS_DATABASE_URL\")\n}\n\nmodel AnalyticsSnapshot {\n  id             String   @id @db.Char(36)\n  snapshotDate   DateTime @map(\"snapshot_date\") @db.Date\n  metricType     String   @map(\"metric_type\") @db.VarChar(100)\n  metricValue    Float    @map(\"metric_value\")\n  dimension      String?  @db.VarChar(50)\n  dimensionValue String?  @map(\"dimension_value\") @db.VarChar(100)\n  createdAt      DateTime @map(\"created_at\")\n\n  @@index([snapshotDate])\n  @@index([metricType, dimension])\n  @@map(\"analytics_snapshots\")\n}\n\nmodel AggregationLog {\n  id               String    @id @db.Char(36)\n  jobType          String    @map(\"job_type\") @db.VarChar(100)\n  startedAt        DateTime  @map(\"started_at\")\n  completedAt      DateTime? @map(\"completed_at\")\n  recordsProcessed Int       @default(0) @map(\"records_processed\")\n  status           String    @db.VarChar(50)\n\n  @@map(\"aggregation_logs\")\n}\n\nmodel ReportJob {\n  id          String    @id @db.Char(36)\n  reportType  String    @map(\"report_type\") @db.VarChar(100)\n  status      String    @db.VarChar(50)\n  requestedBy String?   @map(\"requested_by\") @db.Char(36)\n  filePath    String?   @map(\"file_path\") @db.VarChar(500)\n  requestedAt DateTime  @map(\"requested_at\")\n  completedAt DateTime? @map(\"completed_at\")\n\n  @@map(\"report_jobs\")\n}\n\nmodel MisReport {\n  id         String   @id @default(dbgenerated(\"(UUID())\")) @db.Char(36)\n  rmName     String   @map(\"rm_name\") @db.VarChar(255)\n  fileName   String?  @map(\"file_name\") @db.VarChar(500)\n  volume     Decimal  @default(0) @db.Decimal(18, 2)\n  status     String   @default(\"PENDING_REVIEW\") @db.VarChar(50)\n  uploadedAt DateTime @default(now()) @map(\"uploaded_at\")\n\n  @@map(\"mis_reports\")\n}\n\nmodel EmailConfig {\n  id         String   @id @default(dbgenerated(\"(UUID())\")) @db.Char(36)\n  frequency  String   @default(\"weekly\") @db.VarChar(50)\n  recipients String   @db.VarChar(5000)\n  updatedAt  DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"email_configs\")\n}\n",
-  "inlineSchemaHash": "ae62aeb25ed909f6f4fb26b4881148b82c3b9bfe8493deb7ce54f15cbf77b7c9",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../../src/generated/prisma-analytics\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"ANALYTICS_DATABASE_URL\")\n}\n\nmodel AnalyticsSnapshot {\n  id             String   @id @db.Char(36)\n  snapshotDate   DateTime @map(\"snapshot_date\") @db.Date\n  metricType     String   @map(\"metric_type\") @db.VarChar(100)\n  metricValue    Float    @map(\"metric_value\")\n  dimension      String?  @db.VarChar(50)\n  dimensionValue String?  @map(\"dimension_value\") @db.VarChar(100)\n  createdAt      DateTime @map(\"created_at\")\n\n  @@index([snapshotDate])\n  @@index([metricType, dimension])\n  @@map(\"analytics_snapshots\")\n}\n\nmodel AggregationLog {\n  id               String    @id @db.Char(36)\n  jobType          String    @map(\"job_type\") @db.VarChar(100)\n  startedAt        DateTime  @map(\"started_at\")\n  completedAt      DateTime? @map(\"completed_at\")\n  recordsProcessed Int       @default(0) @map(\"records_processed\")\n  status           String    @db.VarChar(50)\n\n  @@map(\"aggregation_logs\")\n}\n\nmodel ReportJob {\n  id          String    @id @db.Char(36)\n  reportType  String    @map(\"report_type\") @db.VarChar(100)\n  status      String    @db.VarChar(50)\n  requestedBy String?   @map(\"requested_by\") @db.Char(36)\n  filePath    String?   @map(\"file_path\") @db.VarChar(500)\n  requestedAt DateTime  @map(\"requested_at\")\n  completedAt DateTime? @map(\"completed_at\")\n\n  @@map(\"report_jobs\")\n}\n\nmodel MisReport {\n  id         String   @id @default(dbgenerated(\"(UUID())\")) @db.Char(36)\n  rmName     String   @map(\"rm_name\") @db.VarChar(255)\n  fileName   String?  @map(\"file_name\") @db.VarChar(500)\n  volume     Decimal  @default(0) @db.Decimal(18, 2)\n  status     String   @default(\"PENDING_REVIEW\") @db.VarChar(50)\n  uploadedAt DateTime @default(now()) @map(\"uploaded_at\")\n\n  @@map(\"mis_reports\")\n}\n\nmodel EmailConfig {\n  id         String   @id @default(dbgenerated(\"(UUID())\")) @db.Char(36)\n  frequency  String   @default(\"weekly\") @db.VarChar(50)\n  recipients String   @db.VarChar(5000)\n  updatedAt  DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"email_configs\")\n}\n",
+  "inlineSchemaHash": "bc0c2d121c89e11554a8f7491f75da6c5c9a4421fcdf5fd81fafd0c19133d921",
   "copyEngine": true
 }
 
@@ -242,6 +246,10 @@ Object.assign(exports, Prisma)
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
 path.join(process.cwd(), "src/generated/prisma-analytics/libquery_engine-debian-openssl-3.0.x.so.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-linux-musl-openssl-3.0.x.so.node");
+path.join(process.cwd(), "src/generated/prisma-analytics/libquery_engine-linux-musl-openssl-3.0.x.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
 path.join(process.cwd(), "src/generated/prisma-analytics/schema.prisma")

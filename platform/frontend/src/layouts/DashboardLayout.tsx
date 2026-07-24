@@ -158,6 +158,12 @@ const DashboardLayout: React.FC = () => {
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
   ];
 
+  const creditBureauItems = [
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'CRIF Check' },
+    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
+    { key: '/cibil/history',          icon: <ClipboardList size={16} />, label: 'CIBIL History' },
+  ];
+
   const menuItems = [
     ...(user?.role === 'ADMIN'           ? adminItems          : []),
     ...(user?.role === 'PARTNER_MANAGER' ? partnerManagerItems : []),
@@ -166,6 +172,7 @@ const DashboardLayout: React.FC = () => {
     ...(user?.role === 'OPERATIONS'      ? opsItems            : []),
     ...(user?.role === 'CONNECTOR'       ? connectorItems      : []),
     ...(user?.role === 'TELECALLER'      ? telecallerItems     : []),
+    ...(user?.role === 'CREDIT_BUREAU'   ? creditBureauItems   : []),
   ];
 
   const handleLogout = () => { dispatch(logout()); navigate('/login'); };

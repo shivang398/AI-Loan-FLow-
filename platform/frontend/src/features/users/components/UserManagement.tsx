@@ -20,6 +20,7 @@ const ROLE_COLORS: Record<string, string> = {
   TEAM_LEADER: '#ec4899',
   PARTNER_MANAGER: '#8b5cf6',
   TELECALLER: '#06b6d4',
+  CREDIT_BUREAU: '#0B1E3D',
 };
 
 const DEPT_MAP: Record<string, string> = {
@@ -29,9 +30,10 @@ const DEPT_MAP: Record<string, string> = {
   TEAM_LEADER: 'Sales & Growth',
   PARTNER_MANAGER: 'Partner Management',
   TELECALLER: 'Tele Sales',
+  CREDIT_BUREAU: 'Credit Bureau',
 };
 
-const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER', 'TELECALLER'];
+const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER', 'TELECALLER', 'CREDIT_BUREAU'];
 
 function connectorToRow(c: any) {
   const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
@@ -514,6 +516,7 @@ const UserManagement: React.FC = () => {
                       OPERATIONS: 'Credit Ops',
                       PARTNER_MANAGER: 'Partner Management',
                       TELECALLER: 'Tele Sales',
+                      CREDIT_BUREAU: 'Credit Bureau',
                     };
                     if (deptMap[val]) form.setFieldValue('department', deptMap[val]);
                   }}
@@ -523,6 +526,7 @@ const UserManagement: React.FC = () => {
                   <Option value="TEAM_LEADER">Team Leader</Option>
                   <Option value="PARTNER_MANAGER">Partner Manager</Option>
                   <Option value="TELECALLER">Telecaller</Option>
+                  <Option value="CREDIT_BUREAU">Credit Bureau</Option>
                 </Select>
               </Form.Item>
             </Col>
