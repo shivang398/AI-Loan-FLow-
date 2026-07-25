@@ -867,6 +867,8 @@ router.post('/cibil-bureau/check', cibilLimiter, async (req: Request, res: Respo
       });
 
       const raw: any = await apiRes.json();
+      console.log('[CIBIL-Bureau-DEBUG] workflow-id used:', TENACIO_CIBIL_WORKFLOW);
+      console.log('[CIBIL-Bureau-DEBUG] raw response:', JSON.stringify(raw).slice(0, 500));
 
       if (raw.status === 'error' || raw.serviceStatusCode === 422) {
         const msg: string = raw.serviceError?.message ?? raw.error?.message ?? 'No credit data found';
