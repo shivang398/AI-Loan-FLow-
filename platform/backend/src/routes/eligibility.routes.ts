@@ -275,10 +275,12 @@ function mapTenacioResponse(raw: any, requestId: string): object {
   const primary = d.accountsSummary?.['PRIMARY-ACCOUNTS-SUMMARY'] ?? {};
   const derived  = d.accountsSummary?.['DERIVED-ATTRIBUTES'] ?? {};
 
-  const totalAccounts   = num(primary['PRIMARY-NUMBER-OF-ACCOUNTS']);
-  const activeAccounts  = num(primary['PRIMARY-ACTIVE-NUMBER-OF-ACCOUNTS']);
-  const overdueAccounts = num(primary['PRIMARY-OVERDUE-NUMBER-OF-ACCOUNTS']);
-  const closedAccounts  = Math.max(0, totalAccounts - activeAccounts);
+  const totalAccounts      = num(primary['PRIMARY-NUMBER-OF-ACCOUNTS']);
+  const activeAccounts     = num(primary['PRIMARY-ACTIVE-NUMBER-OF-ACCOUNTS']);
+  const overdueAccounts    = num(primary['PRIMARY-OVERDUE-NUMBER-OF-ACCOUNTS']);
+  const zeroBalanceAccounts = num(primary['PRIMARY-ZERO-BALANCE-NUMBER-OF-ACCOUNTS'] ?? primary['PRIMARY-ZERO-BALANCE-ACCOUNTS']);
+  const closedAccounts     = Math.max(0, totalAccounts - activeAccounts);
+  const totalSanctioned    = num(primary['PRIMARY-SANCTIONED-AMOUNT'] ?? primary['PRIMARY-HIGH-CREDIT-AMOUNT'] ?? primary['TOTAL-HIGH-CREDIT']);
 
   // ── Credit accounts ───────────────────────────────────────────────────────
   const rawResponses = d.responses?.RESPONSE ?? [];
@@ -514,6 +516,46 @@ function mapTenacioResponse(raw: any, requestId: string): object {
     amount:     num(h['AMOUNT'] ?? h['LOAN-AMOUNT'] ?? h['REQUESTED-AMOUNT']),
   })).filter((e: any) => e.memberName || e.date);
 
+  // ── Enquiry summary by purpose (group enquiryHistory by purpose) ──────────
+  const now = Date.now();
+  const MS_30  = 30  * 24 * 3600 * 1000;
+  const MS_12  = 365 * 24 * 3600 * 1000;
+  const MS_24  = 2   * MS_12;
+  function parseDateMs(s: string): number {
+    if (!s) return 0;
+    const p = s.replace(/\//g, '-').split('-');
+    if (p.length === 3) {
+      // DD-MM-YYYY
+      const ms = new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
+      if (!isNaN(ms)) return ms;
+      // YYYY-MM-DD
+      return new Date(s).getTime() || 0;
+    }
+    return new Date(s).getTime() || 0;
+  }
+  const purposeMap: Record<string, { total: number; past30Days: number; past12Months: number; past24Months: number; recentMs: number; recent: string }> = {};
+  for (const h of historyRaw) {
+    const purpose = pick(h['PURPOSE'] ?? h['CREDIT-INQUIRY-PURPOSE-TYPE'] ?? h['ENQUIRY-REASON']) || 'Unknown';
+    const dateStr = pick(h['DATE'] ?? h['DATE-OF-INQUIRY'] ?? h['INQUIRY-DATE']) || '';
+    const ms = parseDateMs(dateStr);
+    const age = now - ms;
+    if (!purposeMap[purpose]) purposeMap[purpose] = { total: 0, past30Days: 0, past12Months: 0, past24Months: 0, recentMs: 0, recent: '' };
+    const p = purposeMap[purpose];
+    p.total++;
+    if (ms > 0 && age <= MS_30)  p.past30Days++;
+    if (ms > 0 && age <= MS_12)  p.past12Months++;
+    if (ms > 0 && age <= MS_24)  p.past24Months++;
+    if (ms > p.recentMs) { p.recentMs = ms; p.recent = dateStr; }
+  }
+  const enquirySummary = Object.entries(purposeMap).map(([purpose, v]) => ({
+    purpose,
+    total:        v.total,
+    past30Days:   v.past30Days,
+    past12Months: v.past12Months,
+    past24Months: v.past24Months,
+    recent:       v.recent,
+  }));
+
   // ── Phones from request ───────────────────────────────────────────────────
   const phone1 = pick(req['PHONE-1'] ?? req['MOBILE-NUMBER'] ?? req['MOBILE'] ?? req['PHONE']);
   const phone2 = pick(req['PHONE-2']);
@@ -532,6 +574,13 @@ function mapTenacioResponse(raw: any, requestId: string): object {
       reportedDate: pick(v['REPORTED-DATE']),
       category:     pick(v.CATEGORY) || 'Permanent Address',
     }));
+
+  // ── Recent / oldest account open dates ───────────────────────────────────
+  const openDates = accounts
+    .map((a: any) => ({ str: a.dateOpened, ms: parseDDMMYYYY(a.dateOpened) }))
+    .filter((x: any) => x.ms > 0);
+  const recentOpenDate  = openDates.length ? openDates.reduce((a: any, b: any) => b.ms > a.ms ? b : a).str : '';
+  const oldestOpenDate  = openDates.length ? openDates.reduce((a: any, b: any) => b.ms < a.ms ? b : a).str : '';
 
   // ── Report metadata ───────────────────────────────────────────────────────
   const scoreDate = new Date().toLocaleDateString('en-IN');
@@ -565,12 +614,17 @@ function mapTenacioResponse(raw: any, requestId: string): object {
     phones,
     addresses,
     enquiries,
+    enquirySummary,
     totalAccounts,
     activeAccounts,
     closedAccounts,
     overdueAccounts,
+    zeroBalanceAccounts,
     totalBalance,
     totalOverdue,
+    totalSanctioned,
+    recentOpenDate,
+    oldestOpenDate,
     scoreDate,
     reportId: requestId,
     accounts,
