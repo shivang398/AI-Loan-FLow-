@@ -325,131 +325,196 @@ const CrifCheckPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Financial summary */}
-          <Row gutter={12}>
-            <Col span={12}>
-              <div className="pro-card" style={{ padding: '20px 24px' }}>
-                <div style={{
-                  fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
-                  textTransform: 'uppercase', letterSpacing: '0.10em',
-                  fontFamily: 'Inter, sans-serif', marginBottom: 6,
-                }}>
-                  Total Outstanding Balance
-                </div>
-                <div style={{
-                  fontSize: 28, fontWeight: 700, color: 'var(--text-primary)',
-                  fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.02em',
-                }}>
-                  ₹{Number(summary.totalBalance).toLocaleString('en-IN')}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-                  Across all active credit accounts
-                </div>
-              </div>
-            </Col>
-            <Col span={12}>
-              <div className="pro-card" style={{ padding: '20px 24px' }}>
-                <div style={{
-                  fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
-                  textTransform: 'uppercase', letterSpacing: '0.10em',
-                  fontFamily: 'Inter, sans-serif', marginBottom: 6,
-                }}>
-                  Total Overdue Amount
-                </div>
-                <div style={{
-                  fontSize: 28, fontWeight: 700,
-                  color: summary.totalOverdue > 0 ? RM_RED : '#1A7A4A',
-                  fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.02em',
-                }}>
-                  {summary.totalOverdue > 0 ? `₹${Number(summary.totalOverdue).toLocaleString('en-IN')}` : 'NIL'}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-                  {summary.totalOverdue > 0 ? 'Payment(s) overdue — requires attention' : 'No overdue payments'}
-                </div>
-              </div>
-            </Col>
-          </Row>
+          {/* Account Summary */}
+          <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--surface-3)', fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>
+              Account(s)
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-2)' }}>
+                    {['Account Type', 'Accounts', 'High Cr/Sanc Amt', 'Balances', 'Date Opened'].map(h => (
+                      <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--surface-2)' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>All Accounts</td>
+                    <td style={{ padding: '10px 14px', fontFamily: 'Inter, sans-serif', fontSize: 12 }}>
+                      <div>TOTAL: <b>{summary.totalAccounts}</b></div>
+                      <div style={{ color: summary.overdueAccounts > 0 ? RM_RED : 'var(--text-muted)' }}>OVERDUE: <b>{summary.overdueAccounts}</b></div>
+                      <div style={{ color: 'var(--text-muted)' }}>ZERO BALANCE: <b>{summary.zeroBalanceAccounts ?? summary.closedAccounts}</b></div>
+                    </td>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
+                      {summary.totalSanctioned > 0 ? `₹${Number(summary.totalSanctioned).toLocaleString('en-IN')}` : '—'}
+                    </td>
+                    <td style={{ padding: '10px 14px', fontFamily: 'Inter, sans-serif', fontSize: 12 }}>
+                      <div>CURRENT: <b>{summary.totalBalance > 0 ? `₹${Number(summary.totalBalance).toLocaleString('en-IN')}` : '—'}</b></div>
+                      <div style={{ color: summary.totalOverdue > 0 ? RM_RED : 'var(--text-muted)' }}>OVERDUE: <b>{summary.totalOverdue > 0 ? `₹${Number(summary.totalOverdue).toLocaleString('en-IN')}` : '—'}</b></div>
+                    </td>
+                    <td style={{ padding: '10px 14px', fontFamily: 'Inter, sans-serif', fontSize: 12 }}>
+                      <div>RECENT: <b>{summary.recentOpenDate || '—'}</b></div>
+                      <div style={{ color: 'var(--text-muted)' }}>OLDEST: <b>{summary.oldestOpenDate || '—'}</b></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-          {/* Accounts table */}
+            {/* Enquiry Summary by Purpose */}
+            {summary.enquirySummary?.length > 0 && (
+              <>
+                <div style={{ padding: '10px 20px', borderTop: '1px solid var(--surface-3)', borderBottom: '1px solid var(--surface-3)', fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>
+                  Enquiries
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: 'var(--surface-2)' }}>
+                        {['Enquiry Purpose', 'Total', 'Past 30 Days', 'Past 12 Months', 'Past 24 Months', 'Recent'].map(h => (
+                          <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.enquirySummary.map((eq: any, i: number) => (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--surface-2)', background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)' }}>
+                          <td style={{ padding: '8px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{eq.purpose}</td>
+                          <td style={{ padding: '8px 14px', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{eq.total}</td>
+                          <td style={{ padding: '8px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{eq.past30Days}</td>
+                          <td style={{ padding: '8px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{eq.past12Months}</td>
+                          <td style={{ padding: '8px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{eq.past24Months}</td>
+                          <td style={{ padding: '8px 14px', color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', fontSize: 11 }}>{eq.recent || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Account Detail Cards */}
           {summary.accounts?.length > 0 && (
             <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{
-                padding: '12px 20px', borderBottom: '1px solid var(--surface-3)',
-                fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
-                textTransform: 'uppercase', letterSpacing: '0.10em',
-                fontFamily: 'Inter, sans-serif',
-              }}>
-                Credit Account Details
+              <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--surface-3)', fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif' }}>
+                Account(s)
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: RM_NAVY }}>
-                      {['Lender', 'Type', 'Account No.', 'Opened', 'Outstanding', 'Overdue', 'Status'].map(h => (
-                        <th key={h} style={{
-                          color: 'rgba(255,255,255,0.85)', padding: '10px 14px',
-                          textAlign: 'left', fontSize: 9.5, fontWeight: 700,
-                          textTransform: 'uppercase', letterSpacing: '0.07em',
-                          whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif',
-                        }}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.accounts.map((acct: any, i: number) => {
-                      const isOverdue = acct.amountOverdue > 0;
-                      const inr = (v: number) => v ? `₹${Number(v).toLocaleString('en-IN')}` : '—';
-                      return (
-                        <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{acct.memberName}</td>
-                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{acct.accountType}</td>
-                          <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: 12 }}>{acct.accountNumber}</td>
-                          <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>{acct.dateOpened || '—'}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{inr(acct.currentBalance)}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 700, color: isOverdue ? RM_RED : '#1A7A4A', fontFamily: 'Inter, sans-serif' }}>
-                            {isOverdue ? inr(acct.amountOverdue) : 'NIL'}
-                          </td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <span style={{
-                              padding: '3px 10px', fontSize: 10, fontWeight: 700,
-                              textTransform: 'uppercase', letterSpacing: '0.06em',
-                              background: isOverdue ? '#FFF0F0' : acct.dateClosed ? 'var(--surface-2)' : '#F0FAF4',
-                              color: isOverdue ? RM_RED : acct.dateClosed ? '#3A4F80' : '#1A7A4A',
-                              fontFamily: 'Inter, sans-serif',
-                            }}>
-                              {isOverdue ? 'OVERDUE' : acct.dateClosed ? 'CLOSED' : 'ACTIVE'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+              {summary.accounts.map((acct: any, i: number) => {
+                const inr = (v: number | null) => v && v > 0 ? `₹${Number(v).toLocaleString('en-IN')}` : '';
+                const isOverdue = acct.amountOverdue > 0;
+                const statusLabel = isOverdue ? 'OVERDUE' : acct.dateClosed ? 'CLOSED' : 'ACTIVE';
+                const statusColor = isOverdue ? RM_RED : acct.dateClosed ? '#3A4F80' : '#1A7A4A';
+                return (
+                  <div key={i} style={{ borderBottom: '2px solid var(--surface-3)' }}>
+                    {/* 4-col grid: ACCOUNT | DATES | AMOUNTS | STATUS */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 0 }}>
+                      {/* ACCOUNT */}
+                      <div style={{ padding: '14px 16px', borderRight: '1px solid var(--surface-2)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>Account</div>
+                        {[
+                          ['Member Name', acct.memberName || 'NOT DISCLOSED'],
+                          ['Account Number', acct.accountNumber],
+                          ['Type', acct.accountType],
+                          ['Ownership', acct.ownershipType],
+                          ['Collateral Value', acct.collateralValue],
+                          ['Collateral Type', acct.collateralType],
+                        ].map(([label, val]) => val ? (
+                          <div key={label} style={{ marginBottom: 5 }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
+                            <span style={{ fontSize: 11, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{val}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                      {/* DATES */}
+                      <div style={{ padding: '14px 16px', borderRight: '1px solid var(--surface-2)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>Dates</div>
+                        {[
+                          ['Opened', acct.dateOpened],
+                          ['Last Payment', acct.lastPaymentDate],
+                          ['Closed', acct.dateClosed],
+                          ['Reported & Certified', acct.reportedDate],
+                          ['Pmt Hist Start', acct.paymentHistoryStart],
+                          ['Pmt Hist End', acct.paymentHistoryEnd],
+                        ].map(([label, val]) => val ? (
+                          <div key={label} style={{ marginBottom: 5 }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
+                            <span style={{ fontSize: 11, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{val}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                      {/* AMOUNTS */}
+                      <div style={{ padding: '14px 16px', borderRight: '1px solid var(--surface-2)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>Amounts</div>
+                        {[
+                          ['High Cr/Sanctioned', inr(acct.sanctionedAmount)],
+                          ['Current Balance', inr(acct.currentBalance)],
+                          ['Credit Limit', inr(acct.creditLimit)],
+                          ['Cash Limit', inr(acct.cashLimit)],
+                          ['Overdue', acct.amountOverdue > 0 ? inr(acct.amountOverdue) : null],
+                          ['EMI', inr(acct.emiAmount)],
+                          ['Pmt Freq', acct.emiFrequency],
+                          ['Repayment Tenure', acct.repaymentTenure],
+                          ['Interest Rate', acct.interestRate],
+                          ['Actual Payment', inr(acct.actualPayment)],
+                        ].map(([label, val]) => val ? (
+                          <div key={label} style={{ marginBottom: 5 }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
+                            <span style={{ fontSize: 11, color: label === 'Overdue' ? RM_RED : 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{val}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                      {/* STATUS */}
+                      <div style={{ padding: '14px 16px' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, fontFamily: 'Inter, sans-serif' }}>Status</div>
+                        <div style={{ marginBottom: 8 }}>
+                          <span style={{ padding: '3px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: isOverdue ? '#FFF0F0' : acct.dateClosed ? 'var(--surface-2)' : '#F0FAF4', color: statusColor, fontFamily: 'Inter, sans-serif' }}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                        {[
+                          ['Suit Filed/Wilful Default', acct.suitFiled],
+                          ['Written Off (Total)', inr(acct.writtenOffTotal)],
+                          ['Written Off (Principal)', inr(acct.writtenOffPrincipal)],
+                          ['Settlement', inr(acct.settlementAmount)],
+                          ['Written Off/Settled Status', acct.writtenOffSettledStatus],
+                          ['Asset Classification', acct.assetClassification],
+                        ].map(([label, val]) => val && val !== 'N' ? (
+                          <div key={label} style={{ marginBottom: 5 }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
+                            <span style={{ fontSize: 11, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{val}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                    </div>
 
-          {/* Addresses */}
-          {summary.addresses?.length > 0 && (
-            <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{
-                padding: '12px 20px', borderBottom: '1px solid var(--surface-3)',
-                fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
-                textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif',
-              }}>
-                Address(es)
-              </div>
-              {summary.addresses.map((a: any, i: number) => (
-                <div key={i} style={{ padding: '12px 20px', borderBottom: '1px solid var(--surface-2)', background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 9.5, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{a.category || 'Address'}</span>
-                    {a.reportedDate && <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{a.reportedDate}</span>}
+                    {/* DPD Grid */}
+                    {acct.dpdHistory?.length > 0 && (
+                      <div style={{ padding: '10px 16px', background: '#EEF2FF', borderTop: '1px solid #C7D2FE' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: RM_BLUE, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: 'Inter, sans-serif' }}>
+                          Days Past Due / Asset Classification (Up to {acct.dpdHistory.length} Months; Left to Right)
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 0' }}>
+                          {acct.dpdHistory.map((d: any, j: number) => {
+                            const n = d.dpdNumeric;
+                            const isNpa = n !== null && n >= 90;
+                            const isOk  = n !== null && n === 0;
+                            const cellColor = isNpa ? RM_RED : isOk ? '#1A7A4A' : n !== null ? '#A87C3A' : 'var(--text-muted)';
+                            return (
+                              <div key={j} style={{ width: 52, textAlign: 'center', marginBottom: 2 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: cellColor, fontFamily: 'monospace' }}>{d.dpd}</div>
+                                <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{d.month}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{a.address || '—'}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -458,24 +523,23 @@ const CrifCheckPage: React.FC = () => {
             <div className="pro-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{
                 padding: '12px 20px', borderBottom: '1px solid var(--surface-3)',
-                fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)',
+                fontSize: 9.5, fontWeight: 700, color: RM_BLUE,
                 textTransform: 'uppercase', letterSpacing: '0.10em', fontFamily: 'Inter, sans-serif',
               }}>
-                Enquiry Details ({summary.enquiryCount ?? summary.enquiries.length})
+                Enquiries ({summary.enquiryCount ?? summary.enquiries.length})
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: RM_NAVY }}>
-                      {['#', 'Member Name', 'Date', 'Purpose', 'Amount'].map(h => (
-                        <th key={h} style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px', textAlign: 'left', fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Inter, sans-serif' }}>{h}</th>
+                    <tr style={{ background: 'var(--surface-2)' }}>
+                      {['Member', 'Enquiry Date', 'Enquiry Purpose', 'Enquiry Amount'].map(h => (
+                        <th key={h} style={{ color: RM_BLUE, padding: '10px 14px', textAlign: 'left', fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Inter, sans-serif' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {summary.enquiries.map((eq: any, i: number) => (
                       <tr key={i} style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-0)', borderBottom: '1px solid var(--surface-2)' }}>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>{i + 1}</td>
                         <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{eq.memberName || '—'}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif', fontSize: 12 }}>{eq.date || '—'}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>{eq.purpose || '—'}</td>
