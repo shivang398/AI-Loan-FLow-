@@ -770,11 +770,30 @@ function mapCibilResponse(raw: any, requestId: string): object {
 
   const accounts = accountArr.map((a: any) => {
     const dpdArr = toArr(a.PaymentHistory ?? a.DPDHistory);
-    const dpdHistory = dpdArr.map((d: any) => ({
-      month:          pick(d.Month ?? d.seq ?? d.Seq),
-      dpd:            pick(d.Days ?? d.Value ?? d.DPD ?? d.DaysOverdue),
-      classification: pick(d.AssetClassification ?? d.Classification),
-    }));
+    const dpdHistory = dpdArr.map((d: any) => {
+      const raw = pick(d.Days ?? d.Value ?? d.DPD ?? d.DaysOverdue) ?? '';
+      const upper = String(raw).toUpperCase().trim();
+      let dpdNumeric: number | null = null;
+      if (upper === '000' || upper === 'STD' || upper === '00' || upper === '0') dpdNumeric = 0;
+      else if (upper === 'SUB') dpdNumeric = 90;
+      else if (upper === 'DBT') dpdNumeric = 180;
+      else if (upper === 'LSS' || upper === 'WO') dpdNumeric = 999;
+      else if (upper !== '' && upper !== 'XXX' && upper !== 'NNN' && upper !== '***') {
+        const n = parseInt(upper, 10);
+        if (!isNaN(n)) dpdNumeric = n;
+      }
+      return {
+        month:          pick(d.Month ?? d.seq ?? d.Seq),
+        dpd:            upper || raw,
+        dpdNumeric,
+        classification: pick(d.AssetClassification ?? d.Classification),
+      };
+    });
+
+    const currentDpd     = dpdHistory[0]?.dpdNumeric ?? null;
+    const maxDpd12Months = dpdHistory.slice(0, 12).reduce((mx: number, e: any) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+    const maxDpdEver     = dpdHistory.reduce((mx: number, e: any) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+
     return {
       memberName:       pick(a.MemberName),
       accountNumber:    pick(a.AccountNumber),
@@ -801,7 +820,10 @@ function mapCibilResponse(raw: any, requestId: string): object {
       emiAmount:        num(a.ActualPaymentAmount ?? a.EMIAmount),
       paymentHistoryStart: pick(a.PaymentHistoryStartDate) || '',
       paymentHistoryEnd:   pick(a.PaymentHistoryEndDate)   || '',
-      dpdHistory,
+      currentDpd,
+      maxDpd12Months:  dpdHistory.length > 0 ? maxDpd12Months : null,
+      maxDpdEver:      dpdHistory.length > 0 ? maxDpdEver : null,
+      dpdHistory:      dpdHistory.length > 0 ? dpdHistory : null,
     };
   });
 
@@ -827,7 +849,6 @@ function mapCibilResponse(raw: any, requestId: string): object {
     identifications,
     panNumber,
     phones,
-    addresses,
     employment,
     totalAccounts,
     activeAccounts,
