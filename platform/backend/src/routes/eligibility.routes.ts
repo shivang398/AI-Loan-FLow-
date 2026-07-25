@@ -612,7 +612,6 @@ function mapTenacioResponse(raw: any, requestId: string): object {
     enquiryCount,
     address,
     phones,
-    addresses,
     enquiries,
     enquirySummary,
     totalAccounts,
