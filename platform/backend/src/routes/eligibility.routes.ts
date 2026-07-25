@@ -362,20 +362,18 @@ function mapTenacioResponse(raw: any, requestId: string): object {
 
   const accounts = responseArr.map((entry: any) => {
     const loan = entry['LOAN-DETAILS'] ?? entry;
-    // INSTALLMENT-AMT format: "4,094/Monthly/Monthly" — extract the number part
-    const emiRaw = pick(loan['INSTALLMENT-AMT']);
-    const emiAmt = emiRaw ? num(emiRaw.split('/')[0]) : 0;
+
+    // INSTALLMENT-AMT format: "4,094/Monthly/Monthly" — number / frequency / type
+    const emiRaw  = pick(loan['INSTALLMENT-AMT']);
+    const emiParts = emiRaw ? emiRaw.split('/') : [];
+    const emiAmt  = emiParts.length ? num(emiParts[0]) : 0;
+    const emiFreq = emiParts[1] ?? pick(loan['INSTALLMENT-FREQUENCY'] ?? loan['PAYMENT-FREQUENCY']) ?? '';
 
     // ── DPD extraction — try all known CRIF High Mark field name variants ───
-    // 2a: Direct DPD field
     const directDpd = pick(
-      loan['DAYS-PAST-DUE']           // standard CRIF field
-      ?? loan['DPD']
-      ?? loan['Days_Past_Due']
-      ?? loan['CURRENT-DPD']
+      loan['DAYS-PAST-DUE'] ?? loan['DPD'] ?? loan['Days_Past_Due'] ?? loan['CURRENT-DPD']
     );
 
-    // 2b: Monthly payment history grid
     const payHistRaw = pick(
       loan['PAYMENT-HISTORY']
       ?? loan['Payment_History_Grid']
@@ -385,53 +383,71 @@ function mapTenacioResponse(raw: any, requestId: string): object {
       ?? loan['PAYMENT-HISTORY-PROFILE']
     );
     const payHistStart = pick(
-      loan['PAYMENT-HISTORY-START-DATE']
-      ?? loan['Payment_History_Start_Date']
-      ?? loan['ACCOUNT-START-DATE']
+      loan['PAYMENT-HISTORY-START-DATE'] ?? loan['Payment_History_Start_Date'] ?? loan['ACCOUNT-START-DATE']
+    );
+    const payHistEnd = pick(
+      loan['PAYMENT-HISTORY-END-DATE'] ?? loan['Payment_History_End_Date'] ?? loan['ACCOUNT-END-DATE']
     );
     const dpdHistory = decodePaymentHistory(payHistRaw, payHistStart);
-    const currentDpd    = dpdHistory[0]?.dpdNumeric ?? (directDpd !== null ? num(directDpd) : null);
+    const currentDpd      = dpdHistory[0]?.dpdNumeric ?? (directDpd !== null ? num(directDpd) : null);
     const currentDpdMonth = dpdHistory[0]?.month ?? null;
-    const maxDpd12      = dpdHistory.slice(0, 12).reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
-    const maxDpdEver    = dpdHistory.reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+    const maxDpd12        = dpdHistory.slice(0, 12).reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+    const maxDpdEver      = dpdHistory.reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
 
-    // 2c: Asset classification / status fields
-    const assetClass   = pick(loan['ASSET-CLASSIFICATION'] ?? loan['ASSET_CLASSIFICATION'] ?? loan['NPA-CLASSIFICATION']);
-    const suitFiled    = pick(loan['SUIT-FILED-WILFUL-DEFAULT'] ?? loan['SUIT-FILED'] ?? loan['WILFUL-DEFAULT']);
-    const writtenOff   = pick(loan['WRITTEN-OFF-SETTLED-STATUS'] ?? loan['WRITTEN-OFF-STATUS']);
-    const writtenOffAmt = num(loan['WRITTEN-OFF-AMT'] ?? loan['TOTAL-WRITTEN-OFF-AMT'] ?? loan['PRINCIPAL-WRITTEN-OFF-AMT']);
-    const acctStatus   = pick(loan['ACCT-STATUS'] ?? loan['ACCOUNT-STATUS'] ?? loan['STATUS']);
+    const assetClass         = pick(loan['ASSET-CLASSIFICATION'] ?? loan['ASSET_CLASSIFICATION'] ?? loan['NPA-CLASSIFICATION']);
+    const suitFiled          = pick(loan['SUIT-FILED-WILFUL-DEFAULT'] ?? loan['SUIT-FILED'] ?? loan['WILFUL-DEFAULT']);
+    const writtenOffSettled  = pick(loan['WRITTEN-OFF-SETTLED-STATUS'] ?? loan['WRITTEN-OFF-STATUS']);
+    const writtenOffTotal    = num(loan['WRITTEN-OFF-AMT'] ?? loan['TOTAL-WRITTEN-OFF-AMT']);
+    const writtenOffPrincipal = num(loan['PRINCIPAL-WRITTEN-OFF-AMT'] ?? loan['WRITTEN-OFF-PRINCIPAL']);
+    const settlementAmount   = num(loan['SETTLEMENT-AMT'] ?? loan['WRITE-OFF-SETTLED-AMOUNT'] ?? loan['SETTLED-AMT']);
+    const acctStatus         = pick(loan['ACCT-STATUS'] ?? loan['ACCOUNT-STATUS'] ?? loan['STATUS']);
 
-    // DPD source for transparency
     const dpdSource = payHistRaw ? '2b (payment history grid)'
       : directDpd  ? '2a (direct DPD field)'
       : assetClass ? '2c (asset classification)'
       : 'Not Available';
 
     return {
-      memberName:        pick(loan['CREDIT-GUARANTOR']),
-      accountType:       pick(loan['ACCT-TYPE']),
-      accountNumber:     pick(loan['ACCT-NUMBER']),
-      dateOpened:        pick(loan['DISBURSED-DT']),
-      sanctionedAmount:  num(loan['DISBURSED-AMT']),
-      currentBalance:    num(loan['CURRENT-BAL']),
-      amountOverdue:     num(loan['OVERDUE-AMT']),
-      emiAmount:         emiAmt,
-      dateClosed:        pick(loan['CLOSED-DATE']) || null,
-      ownershipType:     pick(loan['OWNERSHIP-IND']),
-      // DPD fields
+      memberName:          pick(loan['CREDIT-GUARANTOR']),
+      accountNumber:       pick(loan['ACCT-NUMBER']),
+      accountType:         pick(loan['ACCT-TYPE']),
+      ownershipType:       pick(loan['OWNERSHIP-IND']),
+      accountStatus:       acctStatus || null,
+      collateralValue:     pick(loan['COLLATERAL-VALUE'] ?? loan['COLLATERAL-VAL']) || null,
+      collateralType:      pick(loan['COLLATERAL-TYPE']) || null,
+      // Dates
+      dateOpened:          pick(loan['DISBURSED-DT']),
+      lastPaymentDate:     pick(loan['DATE-OF-LAST-PAYMENT'] ?? loan['LAST-PAYMENT-DATE'] ?? loan['LAST-PMNTS-RECEIVED-DATE']) || null,
+      dateClosed:          pick(loan['CLOSED-DATE']) || null,
+      reportedDate:        pick(loan['DATE-REPORTED'] ?? loan['CERTIFIED-DATE'] ?? loan['REPORTED-DATE']) || null,
+      paymentHistoryStart: payHistStart || null,
+      paymentHistoryEnd:   payHistEnd   || null,
+      // Amounts
+      sanctionedAmount:    num(loan['DISBURSED-AMT']),
+      currentBalance:      num(loan['CURRENT-BAL']),
+      creditLimit:         num(loan['CREDIT-LIMIT-AMOUNT'] ?? loan['CREDIT-LIMIT']) || null,
+      cashLimit:           num(loan['CASH-LIMIT-AMOUNT']   ?? loan['CASH-LIMIT'])   || null,
+      amountOverdue:       num(loan['OVERDUE-AMT']),
+      emiAmount:           emiAmt,
+      emiFrequency:        emiFreq || null,
+      repaymentTenure:     pick(loan['REPAYMENT-TENURE'] ?? loan['ORIGINAL-LOAN-TERM'] ?? loan['TENURE']) || null,
+      interestRate:        pick(loan['RATE-OF-INTEREST'] ?? loan['INTEREST-RATE'] ?? loan['ROI']) || null,
+      actualPayment:       num(loan['ACTUAL-PAYMENT-AMOUNT'] ?? loan['ACTUAL-PAYMENT'] ?? loan['PAYMENT-AMOUNT']) || null,
+      // Status / write-off
+      suitFiled:           suitFiled          || null,
+      writtenOffSettledStatus: writtenOffSettled || null,
+      writtenOffTotal:     writtenOffTotal     > 0 ? writtenOffTotal     : null,
+      writtenOffPrincipal: writtenOffPrincipal > 0 ? writtenOffPrincipal : null,
+      settlementAmount:    settlementAmount    > 0 ? settlementAmount    : null,
+      assetClassification: assetClass         || null,
+      // DPD
       currentDpd,
       currentDpdMonth,
-      maxDpd12Months:    payHistRaw ? maxDpd12 : null,
-      maxDpdEver:        payHistRaw ? maxDpdEver : null,
-      assetClassification: assetClass || null,
-      suitFiled:         suitFiled   || null,
-      writtenOffStatus:  writtenOff  || null,
-      writtenOffAmount:  writtenOffAmt > 0 ? writtenOffAmt : null,
-      accountStatus:     acctStatus  || null,
-      dpdHistory:        dpdHistory.length > 0 ? dpdHistory : null,
+      maxDpd12Months:      payHistRaw ? maxDpd12   : null,
+      maxDpdEver:          payHistRaw ? maxDpdEver : null,
+      dpdHistory:          dpdHistory.length > 0 ? dpdHistory : null,
       dpdSource,
-      paymentHistoryRaw: payHistRaw ?? null,
+      paymentHistoryRaw:   payHistRaw ?? null,
     };
   });
 
