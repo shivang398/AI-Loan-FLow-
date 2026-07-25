@@ -173,14 +173,19 @@ const TENACIO_URL          = process.env.TENACIO_CRIF_URL        ?? '';
 const TENACIO_CLIENT_ID    = process.env.TENACIO_CRIF_CLIENT_ID  ?? '';
 const TENACIO_API_KEY      = process.env.TENACIO_CRIF_API_KEY    ?? '';
 const TENACIO_WORKFLOW     = process.env.TENACIO_CRIF_WORKFLOW_ID ?? '';
-const TENACIO_CIBIL_WORKFLOW = process.env.TENACIO_CIBIL_WORKFLOW_ID ?? '';
+
+// CIBIL Bureau may use a different URL/credentials — fall back to CRIF values if not set separately
+const TENACIO_CIBIL_URL       = process.env.TENACIO_CIBIL_URL       ?? TENACIO_URL;
+const TENACIO_CIBIL_CLIENT_ID = process.env.TENACIO_CIBIL_CLIENT_ID ?? TENACIO_CLIENT_ID;
+const TENACIO_CIBIL_API_KEY   = process.env.TENACIO_CIBIL_API_KEY   ?? TENACIO_API_KEY;
+const TENACIO_CIBIL_WORKFLOW  = process.env.TENACIO_CIBIL_WORKFLOW_ID ?? '';
 
 function tenacioConfigured(): boolean {
   return !!(TENACIO_URL && TENACIO_CLIENT_ID && TENACIO_API_KEY && TENACIO_WORKFLOW);
 }
 
 function cibilBureauConfigured(): boolean {
-  return !!(TENACIO_URL && TENACIO_CLIENT_ID && TENACIO_API_KEY && TENACIO_CIBIL_WORKFLOW);
+  return !!(TENACIO_CIBIL_URL && TENACIO_CIBIL_CLIENT_ID && TENACIO_CIBIL_API_KEY && TENACIO_CIBIL_WORKFLOW);
 }
 
 function scoreBandFromScore(score: number): string {
@@ -854,12 +859,12 @@ router.post('/cibil-bureau/check', cibilLimiter, async (req: Request, res: Respo
 
   if (cibilBureauConfigured()) {
     try {
-      const apiRes = await fetch(TENACIO_URL, {
+      const apiRes = await fetch(TENACIO_CIBIL_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'client-id':    TENACIO_CLIENT_ID,
-          'x-api-key':    TENACIO_API_KEY,
+          'client-id':    TENACIO_CIBIL_CLIENT_ID,
+          'x-api-key':    TENACIO_CIBIL_API_KEY,
           'workflow-id':  TENACIO_CIBIL_WORKFLOW,
         },
         body: JSON.stringify({ input: { mobileNumber, name, panNumber, consent } }),
@@ -867,7 +872,7 @@ router.post('/cibil-bureau/check', cibilLimiter, async (req: Request, res: Respo
       });
 
       const raw: any = await apiRes.json();
-      console.log('[CIBIL-Bureau-DEBUG] workflow-id used:', TENACIO_CIBIL_WORKFLOW);
+      console.log('[CIBIL-Bureau-DEBUG] url:', TENACIO_CIBIL_URL, 'workflow-id:', TENACIO_CIBIL_WORKFLOW);
       console.log('[CIBIL-Bureau-DEBUG] raw response:', JSON.stringify(raw).slice(0, 500));
 
       if (raw.status === 'error' || raw.serviceStatusCode === 422) {
