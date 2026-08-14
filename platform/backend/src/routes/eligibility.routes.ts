@@ -167,22 +167,12 @@ router.put('/submissions/:id/status', requireRoles('ADMIN', 'RM', 'OPERATIONS'),
   res.json(ok('Submission status updated', 'SUCCESS'));
 });
 
-// ── Tenacio CRIF helpers ──────────────────────────────────────────────────────
+// ── Tenacio CIBIL Bureau helpers ────────────────────────────────────────────
 
-const TENACIO_URL          = process.env.TENACIO_CRIF_URL        ?? '';
-const TENACIO_CLIENT_ID    = process.env.TENACIO_CRIF_CLIENT_ID  ?? '';
-const TENACIO_API_KEY      = process.env.TENACIO_CRIF_API_KEY    ?? '';
-const TENACIO_WORKFLOW     = process.env.TENACIO_CRIF_WORKFLOW_ID ?? '';
-
-// CIBIL Bureau may use a different URL/credentials — fall back to CRIF values if not set separately
-const TENACIO_CIBIL_URL       = process.env.TENACIO_CIBIL_URL       ?? TENACIO_URL;
-const TENACIO_CIBIL_CLIENT_ID = process.env.TENACIO_CIBIL_CLIENT_ID ?? TENACIO_CLIENT_ID;
-const TENACIO_CIBIL_API_KEY   = process.env.TENACIO_CIBIL_API_KEY   ?? TENACIO_API_KEY;
+const TENACIO_CIBIL_URL       = process.env.TENACIO_CIBIL_URL       ?? '';
+const TENACIO_CIBIL_CLIENT_ID = process.env.TENACIO_CIBIL_CLIENT_ID ?? '';
+const TENACIO_CIBIL_API_KEY   = process.env.TENACIO_CIBIL_API_KEY   ?? '';
 const TENACIO_CIBIL_WORKFLOW  = process.env.TENACIO_CIBIL_WORKFLOW_ID ?? '';
-
-function tenacioConfigured(): boolean {
-  return !!(TENACIO_URL && TENACIO_CLIENT_ID && TENACIO_API_KEY && TENACIO_WORKFLOW);
-}
 
 function cibilBureauConfigured(): boolean {
   return !!(TENACIO_CIBIL_URL && TENACIO_CIBIL_CLIENT_ID && TENACIO_CIBIL_API_KEY && TENACIO_CIBIL_WORKFLOW);
@@ -210,536 +200,6 @@ function num(v: string | number | undefined | null): number {
   const n = Number(String(v).replace(/,/g, '').trim());
   return isNaN(n) ? 0 : n;
 }
-
-// Pick the most recently reported address variation
-function latestVariation(variations: any): string {
-  if (!variations) return '';
-  const arr = Array.isArray(variations) ? variations : [variations];
-  if (!arr.length) return '';
-  const sorted = arr
-    .filter((v: any) => v?.VALUE)
-    .sort((a: any, b: any) => {
-      const da = new Date(a['REPORTED-DATE'] ?? 0).getTime();
-      const db = new Date(b['REPORTED-DATE'] ?? 0).getTime();
-      return db - da;
-    });
-  return sorted[0]?.VALUE ?? '';
-}
-
-// Map actual Tenacio CRIF response structure to the frontend's expected shape.
-// Response structure confirmed from live API:
-//   raw.data.request            → customer identifiers (NAME, DOB, PAN, PHONE-1, ADDRESS-1)
-//   raw.data.personalInfoVariation → variation history arrays
-//   raw.data.accountsSummary    → PRIMARY-ACCOUNTS-SUMMARY, DERIVED-ATTRIBUTES
-//   raw.data.employmentDetails  → EMPLOYMENT-DETAIL
-//   raw.data.responses.RESPONSE → array of { LOAN-DETAILS: {...} }
-//   Score location varies (riskScore / SCORE / SCORES.SCORE / etc.)
-function mapTenacioResponse(raw: any, requestId: string): object {
-  const d = raw.data ?? raw.output ?? raw;
-
-  // ── Score — confirmed field: d.scores.SCORE['SCORE-VALUE'] ───────────────
-  const scoreRaw =
-    d.scores?.SCORE?.['SCORE-VALUE']          // primary (confirmed from live API)
-    ?? d.riskScore
-    ?? d['SCORE']?.['SCORE-VALUE']
-    ?? d['SCORES']?.['SCORE']?.['SCORE-VALUE']
-    ?? raw.riskScore
-    ?? 1;
-  const cibilScore = num(scoreRaw);
-
-  // ── Personal info ─────────────────────────────────────────────────────────
-  const req  = d.request ?? {};
-  const vars = d.personalInfoVariation ?? {};
-
-  const fullName = pick(req.NAME) || 'N/A';
-  const dob      = pick(req.DOB)  || latestVariation(vars['DATE-OF-BIRTH-VARIATIONS']?.VARIATION) || '';
-  const address  =
-    latestVariation(vars['ADDRESS-VARIATIONS']?.VARIATION)
-    || pick(req['ADDRESS-1'])
-    || '';
-
-  // ── Employment ────────────────────────────────────────────────────────────
-  const empDetail = d.employmentDetails?.['EMPLOYMENT-DETAIL'] ?? {};
-  const occupationType = pick(empDetail.OCCUPATION) || '';
-
-  // ── Income — pick most recently reported non-empty INCOME-AMOUNT ──────────
-  // CRIF stores income per account (INCOME-AMOUNT + INCOME-FREQUENCY + DATE-REPORTED)
-  // Dates are DD-MM-YYYY; normalize all to monthly before comparing
-  function parseDDMMYYYY(s: string): number {
-    if (!s) return 0;
-    const [dd, mm, yyyy] = s.split('-');
-    return new Date(`${yyyy}-${mm}-${dd}`).getTime() || 0;
-  }
-
-  // ── Account summary ───────────────────────────────────────────────────────
-  const primary = d.accountsSummary?.['PRIMARY-ACCOUNTS-SUMMARY'] ?? {};
-  const derived  = d.accountsSummary?.['DERIVED-ATTRIBUTES'] ?? {};
-
-  const totalAccounts      = num(primary['PRIMARY-NUMBER-OF-ACCOUNTS']);
-  const activeAccounts     = num(primary['PRIMARY-ACTIVE-NUMBER-OF-ACCOUNTS']);
-  const overdueAccounts    = num(primary['PRIMARY-OVERDUE-NUMBER-OF-ACCOUNTS']);
-  const zeroBalanceAccounts = num(primary['PRIMARY-ZERO-BALANCE-NUMBER-OF-ACCOUNTS'] ?? primary['PRIMARY-ZERO-BALANCE-ACCOUNTS']);
-  const closedAccounts     = Math.max(0, totalAccounts - activeAccounts);
-  const totalSanctioned    = num(primary['PRIMARY-SANCTIONED-AMOUNT'] ?? primary['PRIMARY-HIGH-CREDIT-AMOUNT'] ?? primary['TOTAL-HIGH-CREDIT']);
-
-  // ── Credit accounts ───────────────────────────────────────────────────────
-  const rawResponses = d.responses?.RESPONSE ?? [];
-  const responseArr  = Array.isArray(rawResponses) ? rawResponses : [rawResponses];
-
-  // DEBUG — log the raw LOAN-DETAILS keys of the first account so we can confirm
-  // which DPD fields the Tenacio/CRIF response actually carries.
-  // Remove this log once DPD field names are confirmed.
-  if (responseArr.length > 0) {
-    const firstLoan = responseArr[0]['LOAN-DETAILS'] ?? responseArr[0];
-    console.log('[CRIF-DEBUG] LOAN-DETAILS keys on first account:', Object.keys(firstLoan));
-    console.log('[CRIF-DEBUG] LOAN-DETAILS first account (raw):', JSON.stringify(firstLoan, null, 2));
-
-    // Raw payment history value — exactly as CRIF sent it, zero parsing applied
-    const RAW_PAY_HIST =
-      firstLoan['PAYMENT-HISTORY']
-      ?? firstLoan['Payment_History_Grid']
-      ?? firstLoan['COMBINED-PAYMENT-HISTORY']
-      ?? firstLoan['48-MONTHS-PAYMENT-HISTORY-PROFILE']
-      ?? firstLoan['History_of_Recent_Payments']
-      ?? firstLoan['PAYMENT-HISTORY-PROFILE']
-      ?? null;
-    const RAW_START =
-      firstLoan['PAYMENT-HISTORY-START-DATE']
-      ?? firstLoan['Payment_History_Start_Date']
-      ?? firstLoan['ACCOUNT-START-DATE']
-      ?? null;
-    const RAW_END =
-      firstLoan['PAYMENT-HISTORY-END-DATE']
-      ?? firstLoan['Payment_History_End_Date']
-      ?? firstLoan['ACCOUNT-END-DATE']
-      ?? null;
-
-    console.log('[CRIF-DEBUG] RAW payment history value:', JSON.stringify(RAW_PAY_HIST));
-    console.log('[CRIF-DEBUG] RAW payment history field type:', RAW_PAY_HIST === null ? 'null (field not found)' : typeof RAW_PAY_HIST);
-    console.log('[CRIF-DEBUG] RAW payment history length:', typeof RAW_PAY_HIST === 'string' ? RAW_PAY_HIST.length : Array.isArray(RAW_PAY_HIST) ? RAW_PAY_HIST.length : 'N/A');
-    console.log('[CRIF-DEBUG] PAYMENT-HISTORY-START-DATE (or equivalent):', RAW_START ?? 'Not found');
-    console.log('[CRIF-DEBUG] PAYMENT-HISTORY-END-DATE   (or equivalent):', RAW_END   ?? 'Not found');
-  }
-
-  // ── DPD payment history decoder ──────────────────────────────────────────
-  // CRIF encodes monthly payment history as a fixed-width string of codes.
-  // Each position = one month (most recent first). Common encodings:
-  //   3-char per month: "000" = standard, "030"/"060"/"090" = DPD bucket,
-  //                     "SUB"/"DBT"/"LSS" = NPA, "XXX" = no data, "STD" = current
-  //   2-char per month: "00"=standard, "30"/"60"/"90"=DPD, "XX"=no data
-  function decodePaymentHistory(raw: string | null | undefined, startDate: string | null | undefined): Array<{ month: string; dpd: string; dpdNumeric: number | null }> {
-    if (!raw) return [];
-    const str = raw.replace(/\s/g, '');
-    const chunkSize = str.length % 2 === 0 && str.length % 3 !== 0 ? 2 : 3;
-    const chunks: string[] = [];
-    for (let i = 0; i < str.length; i += chunkSize) chunks.push(str.slice(i, i + chunkSize));
-
-    // Parse start date (DD-MM-YYYY or MM-YYYY or YYYYMM)
-    let baseYear = new Date().getFullYear();
-    let baseMonth = new Date().getMonth(); // 0-indexed, most recent first
-    if (startDate) {
-      const parts = startDate.replace(/\//g, '-').split('-');
-      if (parts.length === 3) { baseYear = parseInt(parts[2]); baseMonth = parseInt(parts[1]) - 1; }
-      else if (parts.length === 2) { baseYear = parseInt(parts[1]); baseMonth = parseInt(parts[0]) - 1; }
-    }
-
-    return chunks.map((code, idx) => {
-      const d = new Date(baseYear, baseMonth - idx);
-      const monthLabel = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-      const upper = code.toUpperCase().trim();
-      let dpdNumeric: number | null = null;
-      if (upper === '000' || upper === 'STD' || upper === '00') dpdNumeric = 0;
-      else if (upper === 'SUB') dpdNumeric = 90;
-      else if (upper === 'DBT') dpdNumeric = 180;
-      else if (upper === 'LSS' || upper === 'WO')  dpdNumeric = 999;
-      else if (upper !== 'XXX' && upper !== 'NNN' && upper !== '***') {
-        const n = parseInt(upper, 10);
-        if (!isNaN(n)) dpdNumeric = n;
-      }
-      return { month: monthLabel, dpd: upper, dpdNumeric };
-    });
-  }
-
-  const accounts = responseArr.map((entry: any) => {
-    const loan = entry['LOAN-DETAILS'] ?? entry;
-
-    // INSTALLMENT-AMT format: "4,094/Monthly/Monthly" — number / frequency / type
-    const emiRaw  = pick(loan['INSTALLMENT-AMT']);
-    const emiParts = emiRaw ? emiRaw.split('/') : [];
-    const emiAmt  = emiParts.length ? num(emiParts[0]) : 0;
-    const emiFreq = emiParts[1] ?? pick(loan['INSTALLMENT-FREQUENCY'] ?? loan['PAYMENT-FREQUENCY']) ?? '';
-
-    // ── DPD extraction — try all known CRIF High Mark field name variants ───
-    const directDpd = pick(
-      loan['DAYS-PAST-DUE'] ?? loan['DPD'] ?? loan['Days_Past_Due'] ?? loan['CURRENT-DPD']
-    );
-
-    const payHistRaw = pick(
-      loan['PAYMENT-HISTORY']
-      ?? loan['Payment_History_Grid']
-      ?? loan['COMBINED-PAYMENT-HISTORY']
-      ?? loan['48-MONTHS-PAYMENT-HISTORY-PROFILE']
-      ?? loan['History_of_Recent_Payments']
-      ?? loan['PAYMENT-HISTORY-PROFILE']
-    );
-    const payHistStart = pick(
-      loan['PAYMENT-HISTORY-START-DATE'] ?? loan['Payment_History_Start_Date'] ?? loan['ACCOUNT-START-DATE']
-    );
-    const payHistEnd = pick(
-      loan['PAYMENT-HISTORY-END-DATE'] ?? loan['Payment_History_End_Date'] ?? loan['ACCOUNT-END-DATE']
-    );
-    const dpdHistory = decodePaymentHistory(payHistRaw, payHistStart);
-    const currentDpd      = dpdHistory[0]?.dpdNumeric ?? (directDpd !== null ? num(directDpd) : null);
-    const currentDpdMonth = dpdHistory[0]?.month ?? null;
-    const maxDpd12        = dpdHistory.slice(0, 12).reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
-    const maxDpdEver      = dpdHistory.reduce((mx, e) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
-
-    const assetClass         = pick(loan['ASSET-CLASSIFICATION'] ?? loan['ASSET_CLASSIFICATION'] ?? loan['NPA-CLASSIFICATION']);
-    const suitFiled          = pick(loan['SUIT-FILED-WILFUL-DEFAULT'] ?? loan['SUIT-FILED'] ?? loan['WILFUL-DEFAULT']);
-    const writtenOffSettled  = pick(loan['WRITTEN-OFF-SETTLED-STATUS'] ?? loan['WRITTEN-OFF-STATUS']);
-    const writtenOffTotal    = num(loan['WRITTEN-OFF-AMT'] ?? loan['TOTAL-WRITTEN-OFF-AMT']);
-    const writtenOffPrincipal = num(loan['PRINCIPAL-WRITTEN-OFF-AMT'] ?? loan['WRITTEN-OFF-PRINCIPAL']);
-    const settlementAmount   = num(loan['SETTLEMENT-AMT'] ?? loan['WRITE-OFF-SETTLED-AMOUNT'] ?? loan['SETTLED-AMT']);
-    const acctStatus         = pick(loan['ACCT-STATUS'] ?? loan['ACCOUNT-STATUS'] ?? loan['STATUS']);
-
-    const dpdSource = payHistRaw ? '2b (payment history grid)'
-      : directDpd  ? '2a (direct DPD field)'
-      : assetClass ? '2c (asset classification)'
-      : 'Not Available';
-
-    return {
-      memberName:          pick(loan['CREDIT-GUARANTOR']),
-      accountNumber:       pick(loan['ACCT-NUMBER']),
-      accountType:         pick(loan['ACCT-TYPE']),
-      ownershipType:       pick(loan['OWNERSHIP-IND']),
-      accountStatus:       acctStatus || null,
-      collateralValue:     pick(loan['COLLATERAL-VALUE'] ?? loan['COLLATERAL-VAL']) || null,
-      collateralType:      pick(loan['COLLATERAL-TYPE']) || null,
-      // Dates
-      dateOpened:          pick(loan['DISBURSED-DT']),
-      lastPaymentDate:     pick(loan['DATE-OF-LAST-PAYMENT'] ?? loan['LAST-PAYMENT-DATE'] ?? loan['LAST-PMNTS-RECEIVED-DATE']) || null,
-      dateClosed:          pick(loan['CLOSED-DATE']) || null,
-      reportedDate:        pick(loan['DATE-REPORTED'] ?? loan['CERTIFIED-DATE'] ?? loan['REPORTED-DATE']) || null,
-      paymentHistoryStart: payHistStart || null,
-      paymentHistoryEnd:   payHistEnd   || null,
-      // Amounts
-      sanctionedAmount:    num(loan['DISBURSED-AMT']),
-      currentBalance:      num(loan['CURRENT-BAL']),
-      creditLimit:         num(loan['CREDIT-LIMIT-AMOUNT'] ?? loan['CREDIT-LIMIT']) || null,
-      cashLimit:           num(loan['CASH-LIMIT-AMOUNT']   ?? loan['CASH-LIMIT'])   || null,
-      amountOverdue:       num(loan['OVERDUE-AMT']),
-      emiAmount:           emiAmt,
-      emiFrequency:        emiFreq || null,
-      repaymentTenure:     pick(loan['REPAYMENT-TENURE'] ?? loan['ORIGINAL-LOAN-TERM'] ?? loan['TENURE']) || null,
-      interestRate:        pick(loan['RATE-OF-INTEREST'] ?? loan['INTEREST-RATE'] ?? loan['ROI']) || null,
-      actualPayment:       num(loan['ACTUAL-PAYMENT-AMOUNT'] ?? loan['ACTUAL-PAYMENT'] ?? loan['PAYMENT-AMOUNT']) || null,
-      // Status / write-off
-      suitFiled:           suitFiled          || null,
-      writtenOffSettledStatus: writtenOffSettled || null,
-      writtenOffTotal:     writtenOffTotal     > 0 ? writtenOffTotal     : null,
-      writtenOffPrincipal: writtenOffPrincipal > 0 ? writtenOffPrincipal : null,
-      settlementAmount:    settlementAmount    > 0 ? settlementAmount    : null,
-      assetClassification: assetClass         || null,
-      // DPD
-      currentDpd,
-      currentDpdMonth,
-      maxDpd12Months:      payHistRaw ? maxDpd12   : null,
-      maxDpdEver:          payHistRaw ? maxDpdEver : null,
-      dpdHistory:          dpdHistory.length > 0 ? dpdHistory : null,
-      dpdSource,
-      paymentHistoryRaw:   payHistRaw ?? null,
-    };
-  });
-
-  // DEBUG — side-by-side: raw payment history string vs decoded dpdHistory[]
-  // for the first account, so we can manually verify chunk size, direction,
-  // code mapping, and month label alignment before removing these logs.
-  if (accounts.length > 0) {
-    const first: any = accounts[0];
-    console.log('[CRIF-DEBUG] ── Decode verification for account[0] ──────────────────────────────');
-    console.log('[CRIF-DEBUG] memberName    :', first.memberName);
-    console.log('[CRIF-DEBUG] accountType   :', first.accountType);
-    console.log('[CRIF-DEBUG] dpdSource     :', first.dpdSource);
-    console.log('[CRIF-DEBUG] paymentHistoryRaw (verbatim):', JSON.stringify(first.paymentHistoryRaw));
-
-    if (first.paymentHistoryRaw) {
-      const str = first.paymentHistoryRaw.replace(/\s/g, '');
-      const chunkSize = str.length % 2 === 0 && str.length % 3 !== 0 ? 2 : 3;
-      console.log('[CRIF-DEBUG] detected chunk size:', chunkSize, '(string length', str.length, '/ chunk =', str.length / chunkSize, 'months)');
-      console.log('[CRIF-DEBUG] decoded dpdHistory[] (month → code → numeric):');
-      (first.dpdHistory ?? []).slice(0, 24).forEach((e: any, i: number) => {
-        console.log(`  [${String(i).padStart(2, '0')}]  month=${e.month}  dpd=${String(e.dpd).padEnd(5)}  dpdNumeric=${e.dpdNumeric !== null ? e.dpdNumeric : 'null (no-data)'}`);
-      });
-      if ((first.dpdHistory ?? []).length > 24) {
-        console.log(`  ... and ${first.dpdHistory.length - 24} more months`);
-      }
-    } else {
-      console.log('[CRIF-DEBUG] No payment history string found — checking direct DPD field:');
-      console.log('[CRIF-DEBUG] currentDpd        :', first.currentDpd);
-      console.log('[CRIF-DEBUG] assetClassification:', first.assetClassification);
-      console.log('[CRIF-DEBUG] suitFiled          :', first.suitFiled);
-      console.log('[CRIF-DEBUG] writtenOffStatus   :', first.writtenOffStatus);
-    }
-    console.log('[CRIF-DEBUG] ──────────────────────────────────────────────────────────────────');
-  }
-
-  // ── Income — most recently reported across all accounts ──────────────────
-  const incomeEntry = responseArr
-    .map((entry: any) => {
-      const loan = entry['LOAN-DETAILS'] ?? entry;
-      const rawAmt = loan['INCOME-AMOUNT'];
-      const freq   = loan['INCOME-FREQUENCY'];
-      if (!rawAmt) return null;
-      const amount = num(rawAmt);
-      if (!amount) return null;
-      const monthly = freq === 'Monthly' ? amount : amount / 12;
-      return { monthly, dateMs: parseDDMMYYYY(loan['DATE-REPORTED'] ?? '') };
-    })
-    .filter(Boolean)
-    .sort((a: any, b: any) => b.dateMs - a.dateMs)[0] as { monthly: number } | undefined;
-
-  const income = incomeEntry
-    ? `₹${Math.round(incomeEntry.monthly).toLocaleString('en-IN')} / month`
-    : '';
-
-  // ── Balance & overdue — sum from accounts when summary reports 0 ──────────
-  // CRIF sometimes returns 0 in the summary fields; individual accounts are accurate
-  const summaryBalance = num(primary['PRIMARY-CURRENT-BALANCE']);
-  const summaryOverdue = num(primary['PRIMARY-OVERDUE-AMOUNT']);
-  const totalBalance = summaryBalance > 0
-    ? summaryBalance
-    : accounts.reduce((s: number, a: any) => s + (a.currentBalance > 0 ? a.currentBalance : 0), 0);
-  const totalOverdue = summaryOverdue > 0
-    ? summaryOverdue
-    : accounts.reduce((s: number, a: any) => s + a.amountOverdue, 0);
-
-  // ── Enquiries — use inquiryHistory count + 6-month summary ───────────────
-  const historyArr = d.inquiryHistory?.HISTORY ?? [];
-  const historyRaw = Array.isArray(historyArr) ? historyArr : (historyArr ? [historyArr] : []);
-  const historyCount = historyRaw.length;
-  // API typo "INQURIES"; fall back to history array length
-  const enquirySix = num(
-    derived['INQURIES-IN-LAST-SIX-MONTHS']
-    ?? derived['INQUIRIES-IN-LAST-SIX-MONTHS'],
-  );
-  const enquiryCount = enquirySix > 0 ? enquirySix : historyCount;
-
-  // Enquiry details (member, date, purpose, amount)
-  const enquiries = historyRaw.map((h: any) => ({
-    memberName: pick(h['MEMBER-NAME'] ?? h['MEMBER'] ?? h['CREDIT-GRANTOR']),
-    date:       pick(h['DATE'] ?? h['DATE-OF-INQUIRY'] ?? h['INQUIRY-DATE']),
-    purpose:    pick(h['PURPOSE'] ?? h['CREDIT-INQUIRY-PURPOSE-TYPE'] ?? h['ENQUIRY-REASON']),
-    amount:     num(h['AMOUNT'] ?? h['LOAN-AMOUNT'] ?? h['REQUESTED-AMOUNT']),
-  })).filter((e: any) => e.memberName || e.date);
-
-  // ── Enquiry summary by purpose (group enquiryHistory by purpose) ──────────
-  const now = Date.now();
-  const MS_30  = 30  * 24 * 3600 * 1000;
-  const MS_12  = 365 * 24 * 3600 * 1000;
-  const MS_24  = 2   * MS_12;
-  function parseDateMs(s: string): number {
-    if (!s) return 0;
-    const p = s.replace(/\//g, '-').split('-');
-    if (p.length === 3) {
-      // DD-MM-YYYY
-      const ms = new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
-      if (!isNaN(ms)) return ms;
-      // YYYY-MM-DD
-      return new Date(s).getTime() || 0;
-    }
-    return new Date(s).getTime() || 0;
-  }
-  const purposeMap: Record<string, { total: number; past30Days: number; past12Months: number; past24Months: number; recentMs: number; recent: string }> = {};
-  for (const h of historyRaw) {
-    const purpose = pick(h['PURPOSE'] ?? h['CREDIT-INQUIRY-PURPOSE-TYPE'] ?? h['ENQUIRY-REASON']) || 'Unknown';
-    const dateStr = pick(h['DATE'] ?? h['DATE-OF-INQUIRY'] ?? h['INQUIRY-DATE']) || '';
-    const ms = parseDateMs(dateStr);
-    const age = now - ms;
-    if (!purposeMap[purpose]) purposeMap[purpose] = { total: 0, past30Days: 0, past12Months: 0, past24Months: 0, recentMs: 0, recent: '' };
-    const p = purposeMap[purpose];
-    p.total++;
-    if (ms > 0 && age <= MS_30)  p.past30Days++;
-    if (ms > 0 && age <= MS_12)  p.past12Months++;
-    if (ms > 0 && age <= MS_24)  p.past24Months++;
-    if (ms > p.recentMs) { p.recentMs = ms; p.recent = dateStr; }
-  }
-  const enquirySummary = Object.entries(purposeMap).map(([purpose, v]) => ({
-    purpose,
-    total:        v.total,
-    past30Days:   v.past30Days,
-    past12Months: v.past12Months,
-    past24Months: v.past24Months,
-    recent:       v.recent,
-  }));
-
-  // ── Phones from request ───────────────────────────────────────────────────
-  const phone1 = pick(req['PHONE-1'] ?? req['MOBILE-NUMBER'] ?? req['MOBILE'] ?? req['PHONE']);
-  const phone2 = pick(req['PHONE-2']);
-  const phones = [
-    ...(phone1 ? [{ type: 'Mobile', number: phone1 }] : []),
-    ...(phone2 ? [{ type: 'Other',  number: phone2 }] : []),
-  ];
-
-  // ── Addresses from variations (all entries, not just latest) ─────────────
-  const addrVarRaw = vars['ADDRESS-VARIATIONS']?.VARIATION ?? [];
-  const addrVarArr = Array.isArray(addrVarRaw) ? addrVarRaw : (addrVarRaw ? [addrVarRaw] : []);
-  const addresses = addrVarArr
-    .filter((v: any) => v?.VALUE)
-    .map((v: any) => ({
-      address:      pick(v.VALUE),
-      reportedDate: pick(v['REPORTED-DATE']),
-      category:     pick(v.CATEGORY) || 'Permanent Address',
-    }));
-
-  // ── Recent / oldest account open dates ───────────────────────────────────
-  const openDates = accounts
-    .map((a: any) => ({ str: a.dateOpened, ms: parseDDMMYYYY(a.dateOpened) }))
-    .filter((x: any) => x.ms > 0);
-  const recentOpenDate  = openDates.length ? openDates.reduce((a: any, b: any) => b.ms > a.ms ? b : a).str : '';
-  const oldestOpenDate  = openDates.length ? openDates.reduce((a: any, b: any) => b.ms < a.ms ? b : a).str : '';
-
-  // ── Report metadata ───────────────────────────────────────────────────────
-  const scoreDate = new Date().toLocaleDateString('en-IN');
-
-  // ── DPD summary across all accounts (for quick dashboard view) ───────────
-  const accountsWithDpd   = accounts.filter((a: any) => a.currentDpd !== null).length;
-  const accountsNoDpd     = accounts.length - accountsWithDpd;
-  const maxDpdCurrentAll  = accounts.reduce((mx: number, a: any) => a.currentDpd !== null ? Math.max(mx, a.currentDpd) : mx, 0);
-  const npaAccounts       = accounts.filter((a: any) => a.assetClassification && a.assetClassification !== 'STANDARD' && a.assetClassification !== 'STD').length;
-  const writtenOffAccounts = accounts.filter((a: any) => a.writtenOffStatus).length;
-
-  const dpdSummary = {
-    accountsWithDpdData: accountsWithDpd,
-    accountsMissingDpdData: accountsNoDpd,
-    maxCurrentDpdAcrossAllAccounts: maxDpdCurrentAll,
-    npaAccounts,
-    writtenOffOrSettledAccounts: writtenOffAccounts,
-  };
-
-  return {
-    demoMode: false,
-    cibilScore,
-    scoreBand: scoreBandFromScore(cibilScore),
-    fullName,
-    dob,
-    gender: '',
-    occupationType,
-    income,
-    enquiryCount,
-    address,
-    phones,
-    enquiries,
-    enquirySummary,
-    totalAccounts,
-    activeAccounts,
-    closedAccounts,
-    overdueAccounts,
-    zeroBalanceAccounts,
-    totalBalance,
-    totalOverdue,
-    totalSanctioned,
-    recentOpenDate,
-    oldestOpenDate,
-    scoreDate,
-    reportId: requestId,
-    accounts,
-    dpdSummary,
-    _raw: undefined,
-  };
-}
-
-// POST /cibil/check — all authenticated roles, rate-limited per user (HIGH-7)
-router.post('/cibil/check', cibilLimiter, async (req: Request, res: Response) => {
-  const { mobileNumber, name, consent } = req.body;
-  if (!consent)      { res.status(400).json(fail('Customer consent is required')); return; }
-  if (!mobileNumber) { res.status(400).json(fail('Mobile number is required')); return; }
-
-  // ── Live Tenacio call ─────────────────────────────────────────────────────
-  if (tenacioConfigured()) {
-    try {
-      const apiRes = await fetch(TENACIO_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'client-id':    TENACIO_CLIENT_ID,
-          'x-api-key':    TENACIO_API_KEY,
-          'workflow-id':  TENACIO_WORKFLOW,
-        },
-        body: JSON.stringify({ input: { mobileNumber, name, consent } }),
-        signal: AbortSignal.timeout(30000),
-      });
-
-      const raw: any = await apiRes.json();
-
-      // No credit data found
-      if (raw.status === 'error' || raw.serviceStatusCode === 422) {
-        const msg: string = raw.serviceError?.message ?? raw.error?.message ?? 'No credit data found';
-        if (msg.toLowerCase().includes('no data')) {
-          res.json(ok('CIBIL check complete', {
-            demoMode: false,
-            cibilScore: 1, scoreBand: 'NO_HISTORY',
-            fullName: (name || '').toUpperCase(),
-            dob: '', gender: '', occupationType: '', income: '',
-            enquiryCount: 0, address: '',
-            totalAccounts: 0, activeAccounts: 0, closedAccounts: 0,
-            overdueAccounts: 0, totalBalance: 0, totalOverdue: 0,
-            scoreDate: new Date().toLocaleDateString('en-IN'),
-            reportId: raw.requestId ?? '',
-            accounts: [],
-          }));
-          return;
-        }
-        res.status(502).json(fail(`Bureau error: ${msg}`));
-        return;
-      }
-
-      const result = mapTenacioResponse(raw, raw.requestId ?? '') as any;
-      await loanDb.cibilCheck.create({ data: {
-        id: uuidv4(), requestedBy: req.user!.email,
-        fullName: result.fullName ?? (name || ''), mobileNumber,
-        panNumber: req.body.panNumber ?? null,
-        cibilScore: result.cibilScore ?? 0, scoreBand: result.scoreBand ?? 'UNKNOWN',
-        demoMode: false,
-      }});
-      res.json(ok('CIBIL check complete', result));
-      return;
-    } catch (err: any) {
-      console.error('[CIBIL] Tenacio call failed:', err?.message);
-      // Fall through to demo on network errors
-    }
-  }
-
-  // ── Demo fallback ─────────────────────────────────────────────────────────
-  console.warn('[CIBIL] Running in demo mode — Tenacio credentials not configured or unreachable');
-  const score = 620 + Math.floor((parseInt(mobileNumber?.slice(-3) ?? '0') % 231));
-  const demoResult = {
-    demoMode: true,
-    cibilScore: score,
-    scoreBand: scoreBandFromScore(score),
-    fullName: (name || 'SAMPLE CUSTOMER').toUpperCase(),
-    dob: '15/08/1988', gender: 'MALE', occupationType: 'SALARIED',
-    income: '₹65,000 / month', enquiryCount: 2,
-    address: 'Mumbai, Maharashtra – 400001',
-    totalAccounts: 4, activeAccounts: 2, closedAccounts: 2,
-    overdueAccounts: 0, totalBalance: 320000, totalOverdue: 0,
-    scoreDate: new Date().toLocaleDateString('en-IN'),
-    reportId: `DEMO-${Date.now()}`,
-    accounts: [
-      { memberName: 'HDFC BANK',  accountType: 'Personal Loan', accountNumber: 'XXXX9876', dateOpened: '15/03/2021', currentBalance: 180000, amountOverdue: 0, dateClosed: null },
-      { memberName: 'AXIS BANK',  accountType: 'Credit Card',   accountNumber: 'XXXX4521', dateOpened: '01/01/2020', currentBalance: 140000, amountOverdue: 0, dateClosed: null },
-      { memberName: 'SBI',        accountType: 'Home Loan',     accountNumber: 'XXXX1234', dateOpened: '10/06/2018', currentBalance: 0,      amountOverdue: 0, dateClosed: '15/04/2023' },
-      { memberName: 'ICICI BANK', accountType: 'Auto Loan',     accountNumber: 'XXXX5678', dateOpened: '22/09/2019', currentBalance: 0,      amountOverdue: 0, dateClosed: '30/12/2022' },
-    ],
-  };
-  await loanDb.cibilCheck.create({ data: {
-    id: uuidv4(), requestedBy: req.user!.email,
-    fullName: demoResult.fullName, mobileNumber,
-    panNumber: req.body.panNumber ?? null,
-    cibilScore: score, scoreBand: demoResult.scoreBand,
-    demoMode: true,
-  }});
-  res.json(ok('CIBIL check complete', demoResult));
-});
 
 // ── CIBIL Bureau response mapper ─────────────────────────────────────────────
 // Handles the TransUnion CIBIL CCRResponse structure returned by Tenacio.
@@ -1384,9 +844,381 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), asyn
   res.end(pdfBuffer);
 });
 
+// ── Equifax / Recordent (Retail Credit Reports API v5.0) ────────────────────
+// Recordent is an intermediary: our backend never talks to Equifax directly.
+// Flow is a real RBI-style consent journey (unlike CRIF/CIBIL Bureau's checkbox):
+//   1. /equifax/send-otp    -> Recordent SMS's an OTP to the customer's phone
+//   2. /equifax/verify-otp  -> customer reads the OTP back, we verify + fetch the report
+// Docs: Recordent "Retail Credit Reports API Specification v5.0" (REC-RCR-API-SPEC-01)
 
-// POST /cibil/report — ADMIN + CREDIT_BUREAU — CRIF detailed credit information report
-router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req: Request, res: Response) => {
+const RECORDENT_BASE_URL     = process.env.RECORDENT_BASE_URL     ?? '';
+const RECORDENT_USERNAME     = process.env.RECORDENT_USERNAME     ?? '';
+const RECORDENT_PASSWORD     = process.env.RECORDENT_PASSWORD     ?? '';
+const RECORDENT_API_KEY      = process.env.RECORDENT_API_KEY      ?? '';
+const RECORDENT_API_SECRET   = process.env.RECORDENT_API_SECRET   ?? '';
+const RECORDENT_PRODUCT_CODE = process.env.RECORDENT_PRODUCT_CODE ?? 'RECV5J';
+
+function recordentConfigured(): boolean {
+  return !!(RECORDENT_BASE_URL && RECORDENT_USERNAME && RECORDENT_PASSWORD && RECORDENT_API_KEY && RECORDENT_API_SECRET);
+}
+
+// Single Node process — in-memory cache is fine. Access token valid 3h per spec (§3.1).
+let recordentTokenCache: { accessToken: string; expiresAt: number } | null = null;
+
+async function getRecordentAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (recordentTokenCache && recordentTokenCache.expiresAt - now > 60_000) {
+    return recordentTokenCache.accessToken;
+  }
+  const res = await fetch(`${RECORDENT_BASE_URL}/v2/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: RECORDENT_USERNAME,
+      password: RECORDENT_PASSWORD,
+      api_key: RECORDENT_API_KEY,
+      api_secret: RECORDENT_API_SECRET,
+      grant_type: 'access_token',
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const raw: any = await res.json();
+  if (!raw.status || !raw.data?.access_token) {
+    throw new Error(raw.message ?? 'Recordent authentication failed');
+  }
+  recordentTokenCache = {
+    accessToken: raw.data.access_token,
+    expiresAt: now + (raw.data.expires_in ?? 3600) * 1000,
+  };
+  return recordentTokenCache.accessToken;
+}
+
+async function recordentFetch(path: string, body: object): Promise<any> {
+  const token = await getRecordentAccessToken();
+  const res = await fetch(`${RECORDENT_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
+  });
+  return res.json();
+}
+
+// POST /equifax/send-otp — all authenticated roles, rate-limited per user
+router.post('/equifax/send-otp', cibilLimiter, async (req: Request, res: Response) => {
+  const { mobileNumber, name, panNumber, consent } = req.body;
+  if (!consent)      { res.status(400).json(fail('Customer consent is required')); return; }
+  if (!mobileNumber) { res.status(400).json(fail('Mobile number is required')); return; }
+  if (!name)         { res.status(400).json(fail('Customer name is required')); return; }
+
+  if (!recordentConfigured()) {
+    console.warn('[Equifax] Running in demo mode — Recordent credentials not configured');
+    res.json(ok('OTP sent (demo mode — use 123456)', { requestId: `DEMO-${Date.now()}`, demoMode: true }));
+    return;
+  }
+
+  try {
+    const raw = await recordentFetch('/v5/reports/retail/sendConsentOtp', {
+      fullName: name,
+      uniqueId: panNumber || undefined,
+      mobileNumber,
+      channel: 1,
+    });
+    if (!raw.status) {
+      res.status(502).json(fail(raw.message ?? raw.errMessage ?? 'Unable to send OTP. Please try again.'));
+      return;
+    }
+    res.json(ok('OTP sent successfully', { requestId: raw.data?.requestId, demoMode: false }));
+  } catch (err: any) {
+    console.error('[Equifax] sendConsentOtp failed:', err?.message);
+    res.status(502).json(fail('Unable to reach the credit bureau. Please try again.'));
+  }
+});
+
+// POST /equifax/verify-otp — verifies OTP, fetches report, maps + persists it
+router.post('/equifax/verify-otp', cibilLimiter, async (req: Request, res: Response) => {
+  const { requestId, otp, mobileNumber, name, panNumber } = req.body;
+  if (!requestId)    { res.status(400).json(fail('requestId is required — send OTP first')); return; }
+  if (!otp)          { res.status(400).json(fail('OTP is required')); return; }
+  if (!mobileNumber) { res.status(400).json(fail('Mobile number is required')); return; }
+
+  // Demo fallback — mirrors CRIF/CIBIL Bureau's demo pattern
+  if (!recordentConfigured() || String(requestId).startsWith('DEMO-')) {
+    if (otp !== '123456') { res.status(400).json(fail('Invalid OTP. (Demo mode: use 123456)')); return; }
+    const demoScore = 640 + Math.floor((parseInt(mobileNumber?.slice(-3) ?? '0') % 211));
+    const demoResult = {
+      demoMode: true,
+      cibilScore: demoScore,
+      scoreBand: scoreBandFromScore(demoScore),
+      fullName: (name || 'SAMPLE CUSTOMER').toUpperCase(),
+      dob: '18/11/1991', gender: 'MALE', occupationType: 'SALARIED',
+      income: '₹48,000 / month', enquiryCount: 1,
+      address: 'Bengaluru, Karnataka – 560001',
+      totalAccounts: 3, activeAccounts: 2, closedAccounts: 1,
+      overdueAccounts: 0, totalBalance: 175000, totalOverdue: 0,
+      scoreDate: new Date().toLocaleDateString('en-IN'),
+      reportId: `DEMO-EQF-${Date.now()}`,
+      accounts: [
+        { memberName: 'HDFC BANK', accountType: 'Personal Loan', accountNumber: 'XXXX7788', dateOpened: '05/02/2022', currentBalance: 95000, amountOverdue: 0, dateClosed: null },
+        { memberName: 'SBI CARD',  accountType: 'Credit Card',   accountNumber: 'XXXX2233', dateOpened: '20/06/2021', currentBalance: 80000, amountOverdue: 0, dateClosed: null },
+        { memberName: 'AXIS BANK', accountType: 'Auto Loan',     accountNumber: 'XXXX9911', dateOpened: '11/03/2019', currentBalance: 0,     amountOverdue: 0, dateClosed: '15/03/2023' },
+      ],
+    };
+    await loanDb.cibilCheck.create({ data: {
+      id: uuidv4(), requestedBy: req.user!.email,
+      fullName: demoResult.fullName, mobileNumber,
+      panNumber: panNumber || null,
+      cibilScore: demoScore, scoreBand: demoResult.scoreBand,
+      demoMode: true,
+    }});
+    res.json(ok('Equifax check complete', demoResult));
+    return;
+  }
+
+  try {
+    const verifyRaw = await recordentFetch('/v5/reports/retail/verifyConsentOtp', { requestId, otp });
+    if (!verifyRaw.status || !verifyRaw.data?.consentId) {
+      res.status(400).json(fail(verifyRaw.message ?? verifyRaw.errMessage ?? 'OTP verification failed'));
+      return;
+    }
+
+    const reportRaw = await recordentFetch('/v5/reports/retail/fetchRecordentReport', {
+      consentId: verifyRaw.data.consentId,
+      productCode: RECORDENT_PRODUCT_CODE,
+    });
+
+    if (!reportRaw.status) {
+      res.status(502).json(fail(reportRaw.errMessage ?? reportRaw.message ?? 'Bureau error'));
+      return;
+    }
+
+    if (reportRaw.data?.hitStatus === 0) {
+      const nhResult = {
+        demoMode: false, cibilScore: 1, scoreBand: 'NO_HISTORY',
+        fullName: (name || '').toUpperCase(), dob: '', gender: '', occupationType: '', income: '',
+        enquiryCount: 0, address: '',
+        totalAccounts: 0, activeAccounts: 0, closedAccounts: 0, overdueAccounts: 0,
+        totalBalance: 0, totalOverdue: 0,
+        scoreDate: new Date().toLocaleDateString('en-IN'),
+        reportId: String(verifyRaw.data.consentId), accounts: [],
+      };
+      await loanDb.cibilCheck.create({ data: {
+        id: uuidv4(), requestedBy: req.user!.email,
+        fullName: nhResult.fullName, mobileNumber, panNumber: panNumber || null,
+        cibilScore: 0, scoreBand: 'NO_HISTORY', demoMode: false,
+      }});
+      res.json(ok('Equifax check complete', nhResult));
+      return;
+    }
+
+    const result = mapEquifaxResponse(reportRaw.data.responseDetails, String(verifyRaw.data.consentId)) as any;
+    await loanDb.cibilCheck.create({ data: {
+      id: uuidv4(), requestedBy: req.user!.email,
+      fullName: result.fullName ?? (name || ''), mobileNumber,
+      panNumber: result.panNumber || panNumber || null,
+      cibilScore: result.cibilScore <= 0 ? 0 : result.cibilScore,
+      scoreBand: result.scoreBand ?? 'UNKNOWN',
+      demoMode: false,
+    }});
+    res.json(ok('Equifax check complete', result));
+  } catch (err: any) {
+    console.error('[Equifax] verify/fetch failed:', err?.message);
+    res.status(502).json(fail('Unable to reach the credit bureau. Please try again.'));
+  }
+});
+
+// ── Equifax PCRLT response mapper ────────────────────────────────────────────
+// Maps Recordent's `responseDetails` (Equifax CIR360/PCRLT structure) to the
+// same shape the frontend/PDF already consume for CRIF/CIBIL Bureau.
+// NOTE: unlike CRIF/CIBIL, Equifax's documented RetailAccountDetailsType has NO
+// lender/institution-name field — falls back to 'NOT DISCLOSED' until confirmed
+// against a live sample response.
+// NOTE: History48Months's exact shape (array vs keyed object) isn't shown with a
+// full sample in the spec — decodeHistory48() below is best-effort per the
+// documented AccountHistoryType and Appendix L status codes; verify against a
+// live response before relying on the DPD grid.
+const EQUIFAX_OWNERSHIP_MAP: Record<string, string> = {
+  '1': 'Individual', '2': 'Authorized User', '3': 'Guarantor', '4': 'Joint',
+};
+const EQUIFAX_COLLATERAL_MAP: Record<string, string> = {
+  '00': 'No Collateral', '01': 'Property', '02': 'Gold', '03': 'Shares', '04': 'Saving Account and Fixed Deposit',
+};
+const EQUIFAX_FREQUENCY_MAP: Record<string, string> = {
+  '1': 'Weekly', '2': 'Fortnightly', '3': 'Monthly', '4': 'Quarterly',
+};
+const EQUIFAX_PHONE_TYPE_MAP: Record<string, string> = {
+  H: 'Home', M: 'Mobile', P: 'Personal Fax', F: 'Work Fax', T: 'Work Telephone', E: 'Employer Telephone',
+};
+const EQUIFAX_SEVERE_STATUS = new Set(['SUB', 'DBT', 'DBT 1', 'DBT 2', 'DBT 3', 'LOSS', 'NPA', 'SF', 'WDF']);
+
+function decodeEquifaxHistory48(h: any): Array<{ month: string; dpd: string; dpdNumeric: number | null }> {
+  if (!h) return [];
+  const entries: [string, any][] = Array.isArray(h)
+    ? h.map((e: any, i: number) => [pick(e?.key ?? e?.Month) || String(i), e])
+    : typeof h === 'object' ? Object.entries(h) : [];
+  return entries.map(([month, v]) => {
+    const status = pick(v?.PaymentStatus ?? v?.AssetClassificationStatus ?? v) || '';
+    let dpdNumeric: number | null = null;
+    if (/^\d+$/.test(status)) {
+      // "1nnn" format = nnn days past due; plain "000"/"030" etc treated as-is
+      dpdNumeric = status.length >= 4 ? parseInt(status.slice(1), 10) : parseInt(status, 10);
+      if (isNaN(dpdNumeric)) dpdNumeric = null;
+    } else if (status === 'STD' || status === 'CLSD' || status === 'NEW') {
+      dpdNumeric = 0;
+    } else if (EQUIFAX_SEVERE_STATUS.has(status)) {
+      dpdNumeric = 90;
+    }
+    return { month, dpd: status || '—', dpdNumeric };
+  });
+}
+
+function mapEquifaxResponse(raw: any, requestId: string): object {
+  const toArr = (v: any) => !v ? [] : Array.isArray(v) ? v : [v];
+
+  const ccr   = raw?.CCRResponse ?? raw ?? {};
+  const lst   = ccr.CIRReportDataLst ?? [];
+  const entry = Array.isArray(lst) ? (lst[0] ?? {}) : lst;
+  const cir   = entry.CIRReportData ?? entry;
+
+  const idContact = cir.IDAndContactInfo ?? {};
+  const personal  = idContact.PersonalInfo ?? {};
+  const identity  = idContact.IdentityInfo ?? {};
+
+  const fullName   = pick(personal.Name?.FullName) || 'N/A';
+  const dob        = pick(personal.DateOfBirth) || '';
+  const gender     = pick(personal.Gender) || '';
+  const age        = pick(personal.Age?.Age) || '';
+  const occupation = pick(personal.Occupation) || '';
+  const incomeRaw  = pick(personal.TotalIncome);
+  const income     = incomeRaw ? (/^\d+$/.test(incomeRaw) ? `₹${num(incomeRaw).toLocaleString('en-IN')} / month` : incomeRaw) : '';
+
+  const identifications: any[] = [];
+  for (const p of toArr(identity.PANId))
+    identifications.push({ type: 'PAN (Income Tax ID)', value: pick(p.IdNumber), reportedDate: pick(p.ReportedDate) });
+  for (const v of toArr(identity.VoterID))
+    identifications.push({ type: 'Voter ID', value: pick(v.IdNumber), reportedDate: pick(v.ReportedDate) });
+  for (const u of toArr(identity.NationalIDCard))
+    identifications.push({ type: 'National ID (Aadhaar)', value: pick(u.IdNumber), reportedDate: pick(u.ReportedDate) });
+  const panNumber = toArr(identity.PANId)[0]?.IdNumber ?? '';
+
+  const phones = toArr(idContact.PhoneInfo).map((p: any) => ({
+    type: EQUIFAX_PHONE_TYPE_MAP[pick(p.typeCode)] ?? pick(p.typeCode) ?? 'Not Classified',
+    number: pick(p.Number),
+    reportedDate: pick(p.ReportedDate),
+  }));
+
+  const addresses = toArr(idContact.AddressInfo)
+    .map((a: any) => ({
+      seq: Number(a.seq ?? 0),
+      address: pick(a.Address),
+      state: pick(a.State),
+      pincode: pick(a.Postal),
+      category: pick(a.Type) || 'Address',
+      reportedDate: pick(a.ReportedDate),
+    }))
+    .sort((a: any, b: any) => a.seq - b.seq);
+
+  const employment = occupation || income ? [{ occupationCode: occupation, income, dateReported: '' }] : [];
+
+  const summary            = cir.RetailAccountSummary ?? {};
+  const totalAccounts      = num(summary.NoOfAccounts);
+  const activeAccounts     = num(summary.NoOfActiveAccounts);
+  const zeroBalanceAccounts = num(summary.NoOfZeroBalanceAccounts);
+  const overdueAccounts    = num(summary.NoOfPastDueAccounts);
+  const closedAccounts     = Math.max(0, totalAccounts - activeAccounts);
+  const totalBalance       = num(summary.TotalBalanceAmount);
+  const totalOverdue       = num(summary.TotalPastDue);
+  const totalSanctioned    = num(summary.TotalSanctionAmount);
+  const recentOpenDate     = pick(summary.RecentAccount);
+  const oldestOpenDate     = pick(summary.OldestAccount);
+
+  // Equifax's EnquirySummary is a single object (Purpose="ALL"), not per-purpose like CRIF —
+  // wrap in an array so the shared frontend/PDF rendering (built for CRIF's array) still works.
+  const esRaw = cir.EnquirySummary;
+  const enquirySummary = esRaw ? [{
+    purpose: pick(esRaw.Purpose) || 'ALL',
+    total: num(esRaw.Total), past30Days: num(esRaw.Past30Days),
+    past12Months: num(esRaw.Past12Months), past24Months: num(esRaw.Past24Months),
+    recent: pick(esRaw.Recent),
+  }] : [];
+
+  const enquiries = toArr(cir.Enquiries).map((e: any) => ({
+    memberName: pick(e.Institution), date: pick(e.Date), purpose: pick(e.RequestPurpose), amount: num(e.Amount),
+  }));
+
+  const accounts = toArr(cir.RetailAccountDetails).map((a: any) => {
+    const dpdHistory = decodeEquifaxHistory48(a.History48Months);
+    const maxDpd12Months = dpdHistory.slice(0, 12).reduce((mx: number, e: any) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+    const maxDpdEver     = dpdHistory.reduce((mx: number, e: any) => e.dpdNumeric !== null ? Math.max(mx, e.dpdNumeric) : mx, 0);
+    return {
+      memberName:       'NOT DISCLOSED', // Equifax RetailAccountDetailsType has no lender-name field per spec
+      accountNumber:    pick(a.AccountNumber),
+      accountType:      pick(a.TypeCode),
+      ownershipType:    EQUIFAX_OWNERSHIP_MAP[pick(a.OwnershipType)] || pick(a.OwnershipType),
+      accountStatus:    pick(a.AccountStatus) || (pick(a.DateClosed) ? 'Closed' : 'Active'),
+      dateOpened:       pick(a.DateOpened),
+      lastPaymentDate:  pick(a.LastPaymentDate) || null,
+      dateClosed:       pick(a.DateClosed) || null,
+      reportedDate:     pick(a.DateReported),
+      sanctionedAmount: num(a.SanctionAmount),
+      currentBalance:   num(a.Balance),
+      creditLimit:      num(a.CreditLimit),
+      cashLimit:        0,
+      amountOverdue:    num(a.PastDueAmount),
+      suitFiled:        a.SuitFiledStatus === 'SF' ? 'Y' : 'N',
+      wilfulDefault:    'N',
+      writtenOffStatus: pick(a.DisputeCode) || 'N',
+      writtenOffTotal:  num(a.WriteOffAmount),
+      writtenOffPrincipal: 0,
+      settlementAmount: 0,
+      interestRate:     pick(a.InterestRate) || '',
+      repaymentTenure:  pick(a.RepaymentTenure) || '',
+      emiAmount:        num(a.InstallmentAmount),
+      emiFrequency:     EQUIFAX_FREQUENCY_MAP[pick(a.TermFrequency)] || pick(a.TermFrequency) || '',
+      collateralValue:  pick(a.CollateralValue) || null,
+      collateralType:   EQUIFAX_COLLATERAL_MAP[pick(a.CollateralType)] || pick(a.CollateralType) || null,
+      assetClassification: pick(a.AssetClassification) || '',
+      paymentHistoryStart: '',
+      paymentHistoryEnd:   '',
+      currentDpd:      dpdHistory[0]?.dpdNumeric ?? null,
+      maxDpd12Months:  dpdHistory.length > 0 ? maxDpd12Months : null,
+      maxDpdEver:      dpdHistory.length > 0 ? maxDpdEver : null,
+      dpdHistory:      dpdHistory.length > 0 ? dpdHistory : null,
+    };
+  });
+
+  const scoreEntries = toArr(cir.ScoreDetails);
+  const ersEntry      = scoreEntries.find((s: any) => pick(s.Type) === 'ERS') ?? scoreEntries[0] ?? {};
+  const scoreRaw      = num(ersEntry.Value);
+  const cibilScore    = scoreRaw <= 0 ? -1 : scoreRaw;
+  const scoreVersion  = pick(ersEntry.Version) || 'Equifax ERS 3.0';
+  const scoringFactors = toArr(ersEntry.ScoringElements)
+    .map((se: any) => pick(se.Description) || pick(se.Code))
+    .filter(Boolean);
+
+  return {
+    demoMode: false,
+    cibilScore: cibilScore < 0 ? -1 : cibilScore,
+    scoreBand: cibilScore < 300 ? 'NO_HISTORY' : scoreBandFromScore(cibilScore),
+    scoreVersion,
+    scoringFactors,
+    fullName, dob, gender, age,
+    identifications, panNumber, phones, employment,
+    totalAccounts, activeAccounts, closedAccounts, overdueAccounts, zeroBalanceAccounts,
+    totalBalance, totalOverdue, totalSanctioned, recentOpenDate, oldestOpenDate,
+    accounts,
+    enquiryCount: enquiries.length || enquirySummary[0]?.total || 0,
+    enquiries, enquirySummary,
+    reportId: requestId,
+    scoreDate: new Date().toLocaleDateString('en-IN'),
+    address: addresses[0] ? `${addresses[0].address}, ${addresses[0].state} – ${addresses[0].pincode}`.replace(/,\s*–/, ' –').replace(/\s+/g, ' ').trim() : '',
+    occupationType: occupation,
+    income,
+  };
+}
+
+
+router.post('/equifax/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req: Request, res: Response) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const PDFDocument = require('pdfkit') as typeof import('pdfkit');
 
@@ -1401,19 +1233,21 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
   const LIGHT = '#F8F9FA';
   const W     = 595.28;
   const H     = 841.89;
-  const MARGIN = 36;
-  const COL    = W - MARGIN * 2;
+  const MARGIN    = 36;
+  const COL       = W - MARGIN * 2;
   const FOOTER_Y  = H - 28;
   const PAGE_SAFE = H - 50;
 
-  const score     = r.cibilScore  ?? 1;
-  const fullName  = r.fullName    ?? 'N/A';
-  const mobile    = d.mobileNumber ?? '';
-  const reportId  = r.reportId    ?? '';
+  const score      = r.cibilScore  ?? -1;
+  const fullName   = r.fullName    ?? 'N/A';
+  const mobile     = d.mobileNumber ?? '';
+  const reportId   = r.reportId    ?? '';
   const accounts: any[]  = r.accounts  ?? [];
   const phones: any[]    = r.phones    ?? [];
   const addresses: any[] = r.addresses ?? [];
   const enquiries: any[] = r.enquiries ?? [];
+  const identifications: any[] = r.identifications ?? [];
+  const scoringFactors: string[] = r.scoringFactors ?? [];
   const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
   function fmtINR(v: number): string { return !v ? '0' : Math.abs(v).toLocaleString('en-IN'); }
@@ -1435,7 +1269,7 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
   function addFooter() {
     doc.rect(0, FOOTER_Y, W, 28).fill(NAVY);
     doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(6.5)
-       .text('Realmoney Advisory Solution  |  CRIF High Mark Credit Report  |  Confidential',
+       .text('Realmoney Advisory Solution  |  Equifax Credit Report  |  Confidential',
              MARGIN, FOOTER_Y + 6, { width: 340, lineBreak: false });
     doc.fillColor('#94A3B8').font('Helvetica').fontSize(6)
        .text(`Page ${pageNum}  |  ${reportId.slice(0, 20)}  |  ${now.split(',')[0]} IST`,
@@ -1448,7 +1282,7 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
     doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(10)
        .text('Realmoney Advisory Solution', MARGIN, 10, { lineBreak: false });
     doc.fillColor('#94A3B8').font('Helvetica').fontSize(7)
-       .text('Credit Information Report — Powered by CRIF High Mark', MARGIN, 24, { lineBreak: false });
+       .text('Credit Information Report — Powered by Equifax', MARGIN, 24, { lineBreak: false });
     doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8)
        .text(subtitle ?? '', W - MARGIN - 200, 12, { width: 200, align: 'right', lineBreak: false });
     doc.fillColor('#94A3B8').font('Helvetica').fontSize(6.5)
@@ -1474,7 +1308,7 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
   // Disclosure banner
   doc.rect(0, y, W, 16).fill('#1E3A5F');
   doc.fillColor('#93C5FD').font('Helvetica').fontSize(6.5)
-     .text('Data sourced from CRIF High Mark Credit Information Services Pvt. Ltd. (RBI Licensed CIC) via Tenacio Analytics Pvt. Ltd.  |  Soft Pull — No enquiry footprint',
+     .text('Data sourced from TransUnion CIBIL Ltd. (RBI Licensed CIC) via Tenacio Analytics Pvt. Ltd.  |  Soft Pull — No enquiry footprint',
            MARGIN, y + 4, { width: COL, lineBreak: false });
   y += 22;
 
@@ -1485,7 +1319,7 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
     ['Full Name',     fullName],
     ['Date of Birth', r.dob ?? '—'],
     ['Gender',        r.gender ?? '—'],
-    ['PAN',           r.panNumber ?? '—'],
+    ['Age',           r.age ? `${r.age} years` : '—'],
     ['Occupation',    r.occupationType ?? '—'],
     ['Income',        r.income ?? '—'],
   ];
@@ -1493,10 +1327,23 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
   for (let i = 0; i < ciFields.length; i += 2) {
     const bg = (i / 2) % 2 === 0 ? '#FFFFFF' : LIGHT;
     kvPair(ciFields[i][0], ciFields[i][1], MARGIN, y, 70, halfCOL - 70, bg);
-    if (ciFields[i + 1]) kvPair(ciFields[i+1][0], ciFields[i+1][1], MARGIN + halfCOL, y, 70, halfCOL - 70, bg);
+    if (ciFields[i + 1]) kvPair(ciFields[i + 1][0], ciFields[i + 1][1], MARGIN + halfCOL, y, 70, halfCOL - 70, bg);
     y += 14;
   }
   y += 6;
+
+  // ── IDENTIFICATIONS ─────────────────────────────────────────────────────────
+  if (identifications.length > 0) {
+    sectionHeader('IDENTIFICATIONS', y);
+    y += 18;
+    for (let i = 0; i < identifications.length; i++) {
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      kvPair('ID Type',  identifications[i].type  ?? '—', MARGIN,       y, 80, 150, bg);
+      kvPair('Number',   identifications[i].value ?? '—', MARGIN + 230, y, 60, 120, bg);
+      y += 14;
+    }
+    y += 6;
+  }
 
   // ── PHONE NUMBERS ───────────────────────────────────────────────────────────
   const allPhones = phones.length > 0 ? phones : (mobile ? [{ type: 'Mobile', number: mobile }] : []);
@@ -1505,7 +1352,7 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
     y += 18;
     for (let i = 0; i < allPhones.length; i++) {
       const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
-      kvPair('Type',   allPhones[i].type   ?? 'Mobile', MARGIN,       y, 60, 80, bg);
+      kvPair('Type',   allPhones[i].type   ?? 'Mobile', MARGIN,       y, 60, 80,  bg);
       kvPair('Number', allPhones[i].number ?? '—',      MARGIN + 140, y, 60, COL - 200, bg);
       y += 14;
     }
@@ -1515,23 +1362,25 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
   // ── ADDRESSES ───────────────────────────────────────────────────────────────
   const addrList = addresses.length > 0
     ? addresses
-    : (r.address ? [{ address: r.address, category: 'Address', reportedDate: '' }] : []);
+    : (r.address ? [{ address: r.address, category: 'Address', state: '', pincode: '', reportedDate: '' }] : []);
   if (addrList.length > 0) {
     sectionHeader('ADDRESSES', y);
     y += 18;
     for (let i = 0; i < addrList.length; i++) {
       const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
-      kvPair('Category',      addrList[i].category     ?? '—', MARGIN,       y, 65, 100, bg);
-      kvPair('Reported Date', addrList[i].reportedDate ?? '—', MARGIN + 165, y, 80, 80,  bg);
+      kvPair('Category',      addrList[i].category     ?? '—', MARGIN,       y, 70, 130, bg);
+      kvPair('Pincode',       addrList[i].pincode      ?? '—', MARGIN + 200, y, 55, 80,  bg);
+      kvPair('Reported Date', addrList[i].reportedDate ?? '—', MARGIN + 335, y, 75, COL - 410, bg);
       y += 14;
-      kvPair('Address', addrList[i].address ?? '—', MARGIN, y, 65, COL - 65, bg);
+      kvPair('Address', `${addrList[i].address ?? ''}${addrList[i].state ? ', ' + addrList[i].state : ''}`.trim() || '—',
+             MARGIN, y, 70, COL - 70, bg);
       y += 14;
     }
     y += 6;
   }
 
-  // ── CRIF SCORE ──────────────────────────────────────────────────────────────
-  sectionHeader('CRIF HIGH MARK SCORE', y);
+  // ── TRANSUNION CIBIL SCORE ───────────────────────────────────────────────────
+  sectionHeader('TRANSUNION CIBIL SCORE', y);
   y += 18;
   const sCol = scoreColour(score);
   const scoreBoxW = 100;
@@ -1546,31 +1395,50 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
        .text('NH / NA', MARGIN, y + 15, { width: scoreBoxW, align: 'center', lineBreak: false });
   }
   const scRight = MARGIN + scoreBoxW + 12;
-  const scW = COL - scoreBoxW - 12;
-  kvPair('Score Version', 'CRIF High Mark Score',           scRight, y,      80, scW - 80, '#FFFFFF');
-  kvPair('Score Date',    r.scoreDate ?? now.split(',')[0], scRight, y + 14, 80, scW - 80, LIGHT);
-  kvPair('Score Range',   '300 – 900 (Higher is Better)',   scRight, y + 28, 80, scW - 80, '#FFFFFF');
+  const scW     = COL - scoreBoxW - 12;
+  kvPair('Score Version', r.scoreVersion ?? 'CIBIL TRANSUNION SCORE VERSION 3.0', scRight, y,      80, scW - 80, '#FFFFFF');
+  kvPair('Score Date',    r.scoreDate ?? now.split(',')[0],                        scRight, y + 14, 80, scW - 80, LIGHT);
+  kvPair('Score Range',   '300 – 900 (Higher is Better)',                          scRight, y + 28, 80, scW - 80, '#FFFFFF');
   y += 55;
 
+  // Scoring factors (if any)
+  if (scoringFactors.length > 0) {
+    if (y > PAGE_SAFE - 20) { addFooter(); newPage('Score Factors'); y = 58; }
+    sectionHeader('SCORE FACTORS', y);
+    y += 18;
+    for (let i = 0; i < scoringFactors.length; i++) {
+      const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
+      doc.rect(MARGIN, y, COL, 13).fill(bg);
+      doc.fillColor(LGREY).font('Helvetica').fontSize(6).text(`${i + 1}.`, MARGIN + 4, y + 3, { width: 16, lineBreak: false });
+      doc.fillColor(NAVY).font('Helvetica').fontSize(6.5).text(scoringFactors[i], MARGIN + 20, y + 3, { width: COL - 24, lineBreak: false });
+      y += 13;
+    }
+    y += 6;
+  }
+
   // ── ACCOUNT SUMMARY ─────────────────────────────────────────────────────────
+  if (y > PAGE_SAFE - 60) { addFooter(); newPage('Account Summary'); y = 58; }
   sectionHeader('ACCOUNT SUMMARY', y);
   y += 18;
   const sumFields: [string, string][] = [
-    ['Total Accounts',   String(r.totalAccounts   ?? 0)],
-    ['Active Accounts',  String(r.activeAccounts  ?? 0)],
-    ['Closed Accounts',  String(r.closedAccounts  ?? 0)],
-    ['Overdue Accounts', String(r.overdueAccounts ?? 0)],
-    ['Total Balance',   `₹${fmtINR(r.totalBalance ?? 0)}`],
-    ['Total Overdue',   `₹${fmtINR(r.totalOverdue ?? 0)}`],
-    ['Enquiry Count',    String(r.enquiryCount    ?? 0)],
+    ['Total Accounts',    String(r.totalAccounts   ?? 0)],
+    ['Active Accounts',   String(r.activeAccounts  ?? 0)],
+    ['Closed Accounts',   String(r.closedAccounts  ?? 0)],
+    ['Overdue Accounts',  String(r.overdueAccounts ?? 0)],
+    ['Sanctioned Amount', `₹${fmtINR(r.totalSanctioned ?? 0)}`],
+    ['Current Balance',  `₹${fmtINR(r.totalBalance ?? 0)}`],
+    ['Total Overdue',    `₹${fmtINR(r.totalOverdue ?? 0)}`],
+    ['Enquiry Count',     String(r.enquiryCount ?? 0)],
+    ['Oldest Account',    r.oldestOpenDate  ?? '—'],
+    ['Recent Account',    r.recentOpenDate  ?? '—'],
   ];
   const sumColW = COL / 4;
   let sumRowIdx = 0;
   for (let i = 0; i < sumFields.length; i++) {
     const col = i % 4;
     if (col === 0 && i > 0) { y += 14; sumRowIdx++; }
-    const sx  = MARGIN + col * sumColW;
-    const bg  = sumRowIdx % 2 === 0 ? '#FFFFFF' : LIGHT;
+    const sx = MARGIN + col * sumColW;
+    const bg = sumRowIdx % 2 === 0 ? '#FFFFFF' : LIGHT;
     kvPair(sumFields[i][0], sumFields[i][1], sx, y, 80, sumColW - 80, bg);
   }
   y += 20;
@@ -1582,10 +1450,10 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
     y += 18;
 
     const acCols = [
-      { label: 'Member / Bank',  w: 105 }, { label: 'Account Type', w: 80 },
-      { label: 'Account#',       w: 75  }, { label: 'Opened',       w: 55 },
-      { label: 'Balance (₹)',    w: 65  }, { label: 'Overdue (₹)',  w: 65 },
-      { label: 'Status',         w: COL - 445 },
+      { label: 'Member / Bank',  w: 100 }, { label: 'Account Type', w: 80 },
+      { label: 'Account#',       w: 80  }, { label: 'Opened',       w: 52 },
+      { label: 'Balance (₹)',    w: 62  }, { label: 'Overdue (₹)',  w: 62 },
+      { label: 'Status',         w: COL - 436 },
     ];
     let hx = MARGIN;
     doc.rect(MARGIN, y, COL, 14).fill('#334155');
@@ -1599,28 +1467,47 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
     for (let i = 0; i < accounts.length; i++) {
       if (y > PAGE_SAFE - 13) { addFooter(); newPage('Account Details (cont.)'); y = 58; }
       const acc = accounts[i];
+      const isOverdueRow = (acc.amountOverdue ?? 0) > 0;
       const bg = i % 2 === 0 ? '#FFFFFF' : LIGHT;
       doc.rect(MARGIN, y, COL, 13).fill(bg);
       let ax = MARGIN;
+      const statusLabel = acc.dateClosed ? 'Closed' : isOverdueRow ? 'Overdue' : 'Active';
       const cells = [
-        clip(acc.memberName ?? '—', 20), clip(acc.accountType ?? '—', 16),
-        acc.accountNumber ?? '—', acc.dateOpened ?? '—',
-        fmtINR(acc.currentBalance ?? 0), fmtINR(acc.amountOverdue ?? 0),
-        acc.dateClosed ? 'Closed' : 'Active',
+        clip(acc.memberName  ?? '—', 18), clip(acc.accountType ?? '—', 14),
+        acc.accountNumber ?? '—',         acc.dateOpened ?? '—',
+        fmtINR(acc.currentBalance ?? 0),  fmtINR(acc.amountOverdue ?? 0),
+        statusLabel,
       ];
       for (let j = 0; j < acCols.length; j++) {
-        const isOverdue = j === 5 && (acc.amountOverdue ?? 0) > 0;
-        doc.fillColor(isOverdue ? RED : NAVY).font('Helvetica').fontSize(6.5)
+        const isOverdueCell = j === 5 && isOverdueRow;
+        const isStatusCell  = j === 6 && isOverdueRow;
+        doc.fillColor(isOverdueCell || isStatusCell ? RED : NAVY).font('Helvetica').fontSize(6.5)
            .text(cells[j], ax + 3, y + 3, { width: acCols[j].w - 4, lineBreak: false });
         ax += acCols[j].w;
       }
       doc.rect(MARGIN, y, COL, 13).strokeColor('#E2E8F0').lineWidth(0.25).stroke();
       y += 13;
+
+      // Secondary detail row (sanctioned, EMI, interest rate, ownership)
+      if (acc.sanctionedAmount > 0 || acc.emiAmount > 0 || acc.interestRate || acc.ownershipType) {
+        if (y > PAGE_SAFE - 13) { addFooter(); newPage('Account Details (cont.)'); y = 58; }
+        const detBg = i % 2 === 0 ? '#F0F4FF' : '#EAF0FF';
+        doc.rect(MARGIN, y, COL, 12).fill(detBg);
+        const detParts: string[] = [];
+        if (acc.sanctionedAmount > 0) detParts.push(`Sanctioned: ₹${fmtINR(acc.sanctionedAmount)}`);
+        if (acc.emiAmount > 0)        detParts.push(`EMI: ₹${fmtINR(acc.emiAmount)}`);
+        if (acc.interestRate)         detParts.push(`Rate: ${acc.interestRate}%`);
+        if (acc.ownershipType)        detParts.push(`Ownership: ${acc.ownershipType}`);
+        if (acc.lastPaymentDate)      detParts.push(`Last Payment: ${acc.lastPaymentDate}`);
+        doc.fillColor(GREY).font('Helvetica').fontSize(6)
+           .text(detParts.join('   ·   '), MARGIN + 6, y + 3, { width: COL - 10, lineBreak: false });
+        y += 12;
+      }
     }
     y += 8;
   }
 
-  // ── ENQUIRY HISTORY ──────────────────────────────────────────────────────────
+  // ── ENQUIRY DETAILS ───────────────────────────────────────────────────────────
   if (enquiries.length > 0) {
     if (y > PAGE_SAFE - 60) { addFooter(); newPage('Enquiry Details'); y = 58; }
     sectionHeader('ENQUIRY DETAILS', y);
@@ -1647,7 +1534,7 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
       let qx = MARGIN;
       const cells = [
         clip(enq.memberName ?? '—', 30), enq.date ?? '—',
-        clip(enq.purpose ?? '—', 22),   enq.amount ? fmtINR(enq.amount) : '—',
+        clip(enq.purpose    ?? '—', 22), enq.amount ? fmtINR(enq.amount) : '—',
       ];
       for (let j = 0; j < enCols.length; j++) {
         doc.fillColor(NAVY).font('Helvetica').fontSize(6.5)
@@ -1665,22 +1552,20 @@ router.post('/cibil/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), async (req:
   doc.rect(MARGIN, y, COL, 1).fill('#CBD5E1');
   y += 6;
   doc.fillColor(GREY).font('Helvetica').fontSize(6)
-     .text('DISCLAIMER: This report is generated for internal use by Realmoney Advisory Solution and is based on data obtained from CRIF High Mark Credit Information Services Pvt. Ltd. ' +
+     .text('DISCLAIMER: This report is generated for internal use by Realmoney Advisory Solution and is based on data obtained from Equifax Credit Information Services Pvt. Ltd. (RBI Licensed Credit Information Company) ' +
            '(RBI Licensed Credit Information Company). This is a soft-pull enquiry and has no impact on the consumer\'s credit score. ' +
-           'This report must not be shared with third parties without prior written consent.',
+           'The information is provided "as is" without warranty of any kind. This report must not be shared with third parties without prior written consent.',
            MARGIN, y, { width: COL });
 
   addFooter();
   doc.end();
   await new Promise<void>((resolve) => doc.on('end', resolve));
   const pdfBuffer = Buffer.concat(chunks);
-
   const safeName = (fullName || 'Customer').replace(/\s+/g, '_');
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="CRIF_CreditReport_${safeName}_${mobile}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="Equifax_CreditReport_${safeName}_${mobile}.pdf"`);
   res.setHeader('Content-Length', pdfBuffer.length);
   res.end(pdfBuffer);
 });
-
 
 export default router;

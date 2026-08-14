@@ -90,7 +90,7 @@ const DashboardLayout: React.FC = () => {
   const adminItems = [
     { key: '/dashboard',             icon: <LayoutDashboard size={16} />, label: 'Overview' },
     { key: '/admin/users',           icon: <Users size={16} />,           label: 'User Management' },
-    { key: '/connector/cibil',       icon: <ShieldCheck size={16} />,     label: 'CRIF Check' },
+    { key: '/connector/cibil',       icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
     { key: '/connector/cibil-bureau',icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
     { key: '/cibil/history',         icon: <ClipboardList size={16} />,   label: 'CIBIL History' },
     { key: '/admin/reports',      icon: <FileText size={16} />,        label: 'MIS Reports' },
@@ -105,7 +105,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/pm/partners',            icon: <Network size={16} />,     label: 'Partner Hub' },
     { key: '/pm/payouts',             icon: <Wallet size={16} />,      label: 'Payout Tracker' },
     { key: '/pm/commissions',         icon: <BarChart3 size={16} />,   label: 'Commission Slabs' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'CRIF Check' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'Equifax Check' },
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
     { key: '/pm/policies',     icon: <BookOpen size={16} />,       label: 'Policies' },
     { key: '/admin/careers',   icon: <UserCheck size={16} />,      label: 'Career Applications' },
@@ -116,7 +116,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/rm/dashboard',           icon: <LayoutDashboard size={16} />, label: 'Regional Hub' },
     { key: '/rm/connectors',          icon: <Users size={16} />,           label: 'Connector Tracker' },
     { key: '/rm/workflow',            icon: <ClipboardList size={16} />,   label: 'Workflow Monitor' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,     label: 'CRIF Check' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
     { key: '/cibil/history',          icon: <FileText size={16} />,        label: 'CIBIL History' },
     { key: '/rm/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
@@ -125,7 +125,7 @@ const DashboardLayout: React.FC = () => {
 
   const opsItems = [
     { key: '/ops/dashboard',          icon: <ClipboardList size={16} />, label: 'Ops Queue' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,   label: 'CRIF Check' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,   label: 'Equifax Check' },
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />,   label: 'CIBIL Bureau' },
     { key: '/cibil/history',          icon: <FileText size={16} />,      label: 'CIBIL History' },
     { key: '/ops/policies',     icon: <BookOpen size={16} />,      label: 'Policies' },
@@ -134,7 +134,7 @@ const DashboardLayout: React.FC = () => {
 
   const connectorItems = [
     { key: '/connector/dashboard',      icon: <LayoutDashboard size={16} />, label: 'Overview' },
-    { key: '/connector/cibil',          icon: <ShieldCheck size={16} />,     label: 'CRIF Check' },
+    { key: '/connector/cibil',          icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
     { key: '/connector/cibil-bureau',   icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
     { key: '/connector/bsa',            icon: <Files size={16} />,           label: 'Statement Analyser' },
     { key: '/connector/foir',           icon: <BarChart3 size={16} />,       label: 'Check Eligibility' },
@@ -146,7 +146,7 @@ const DashboardLayout: React.FC = () => {
 
   const tlItems = [
     { key: '/tl/dashboard',           icon: <LayoutDashboard size={16} />, label: 'Team Leader Hub' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,     label: 'CRIF Check' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
     { key: '/tl/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
     { key: '/tl/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
@@ -154,12 +154,12 @@ const DashboardLayout: React.FC = () => {
 
   const telecallerItems = [
     { key: '/telecaller/queue',       icon: <Phone size={16} />,       label: 'My Call Queue' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'CRIF Check' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'Equifax Check' },
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
   ];
 
   const creditBureauItems = [
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'CRIF Check' },
+    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'Equifax Check' },
     { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
     { key: '/cibil/history',          icon: <ClipboardList size={16} />, label: 'CIBIL History' },
   ];

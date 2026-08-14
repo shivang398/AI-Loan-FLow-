@@ -7,6 +7,7 @@ import { connectAllDatabases, disconnectAllDatabases } from './config/prisma';
 import { connectRedis, disconnectRedis } from './config/redis';
 import { connectRabbitMQ, disconnectRabbitMQ } from './config/rabbitmq';
 import { setSocketServer } from './services/communications.service';
+import { startDataRetentionPurge } from './jobs/dataRetention.job';
 
 const PORT = parseInt(process.env.PORT ?? '8080');
 
@@ -23,6 +24,9 @@ async function bootstrap() {
 
   console.log('[Boot] Connecting to RabbitMQ...');
   await connectRabbitMQ();
+
+  console.log('[Boot] Starting data-retention purge job...');
+  startDataRetentionPurge();
 
   const server = http.createServer(app);
 

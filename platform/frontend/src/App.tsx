@@ -18,7 +18,7 @@ import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDas
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
 import EmiCalculator from './features/connector/components/EmiCalculator';
-import CrifCheckPage from './features/connector/components/CrifCheckPage';
+import EquifaxCheckPage from './features/connector/components/EquifaxCheckPage';
 import CibilBureauCheckPage from './features/connector/components/CibilBureauCheckPage';
 import { BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
 import CibilHistoryPage from './features/eligibility/components/CibilHistoryPage';
@@ -107,8 +107,8 @@ const App: React.FC = () => {
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<FeatureErrorBoundary feature="Dashboard"><DashboardOverview /></FeatureErrorBoundary>} />
 
-              {/* CRIF Check — all authenticated roles */}
-              <Route path="/connector/cibil" element={<FeatureErrorBoundary feature="CRIF Check"><CrifCheckPage /></FeatureErrorBoundary>} />
+              {/* Equifax Check — all authenticated roles */}
+              <Route path="/connector/cibil" element={<FeatureErrorBoundary feature="Equifax Check"><EquifaxCheckPage /></FeatureErrorBoundary>} />
               {/* CIBIL Bureau — all authenticated roles */}
               <Route path="/connector/cibil-bureau" element={<FeatureErrorBoundary feature="CIBIL Bureau"><CibilBureauCheckPage /></FeatureErrorBoundary>} />
 

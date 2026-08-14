@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Typography, Form, Input, Button, Divider, Checkbox, Row, Col, Alert } from 'antd';
-import { ShieldCheck, Zap, Lock, ArrowRight, Download } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight, Download, MessageSquareText } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import apiClient from '../../../shared/services/apiClient';
@@ -8,28 +8,71 @@ import { RM_BLUE, RM_RED, RM_NAVY, SCORE_BANDS, ScoreGauge, ScoreRangeReference 
 
 const { Text } = Typography;
 
-const CrifCheckPage: React.FC = () => {
+// Equifax via Recordent uses a real RBI-style consent journey (OTP sent to the
+// customer's phone), not a checkbox — so this page is a two-phase single form:
+// phase 'details' collects name/mobile/PAN and sends the OTP; phase 'otp' reveals
+// an inline OTP field to verify + fetch the report.
+const EquifaxCheckPage: React.FC = () => {
   const currentUser = useSelector((s: RootState) => s.auth.user);
+  const [phase, setPhase]            = useState<'details' | 'otp'>('details');
   const [loading, setLoading]        = useState(false);
+  const [otpLoading, setOtpLoading]  = useState(false);
   const [pdfLoading, setPdfLoading]  = useState(false);
   const [summary, setSummary]        = useState<any>(null);
   const [lastValues, setLastValues]  = useState<any>(null);
+  const [requestId, setRequestId]    = useState<string | null>(null);
+  const [demoMode, setDemoMode]      = useState(false);
+  const [otp, setOtp]                = useState('');
   const [error, setError]            = useState<string | null>(null);
 
-  const handleCheck = async (values: any) => {
+  const handleSendOtp = async (values: any) => {
     setLoading(true); setSummary(null); setError(null); setLastValues(values);
     try {
-      const res = await apiClient.post('/eligibility/cibil/check', {
+      const res = await apiClient.post('/eligibility/equifax/send-otp', {
         mobileNumber: values.mobileNumber,
         name: values.name,
+        panNumber: values.panNumber || undefined,
         consent: values.consent,
-      });
-      setSummary(res.data?.data || res.data);
+      }, { timeout: 45000 });
+      const data = res.data?.data || res.data;
+      setRequestId(data.requestId);
+      setDemoMode(!!data.demoMode);
+      setOtp('');
+      setPhase('otp');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to fetch CRIF data. Please try again.');
+      setError(err?.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!lastValues || !requestId) return;
+    if (!otp) { setError('Please enter the OTP.'); return; }
+    setOtpLoading(true); setError(null);
+    try {
+      const res = await apiClient.post('/eligibility/equifax/verify-otp', {
+        requestId,
+        otp,
+        mobileNumber: lastValues.mobileNumber,
+        name: lastValues.name,
+        panNumber: lastValues.panNumber || undefined,
+      }, { timeout: 45000 });
+      setSummary(res.data?.data || res.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'OTP verification failed. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!lastValues) return;
+    await handleSendOtp(lastValues);
+  };
+
+  const handleChangeDetails = () => {
+    setPhase('details'); setRequestId(null); setOtp(''); setError(null);
   };
 
   const handleDownloadPdf = async () => {
@@ -37,7 +80,7 @@ const CrifCheckPage: React.FC = () => {
     setPdfLoading(true);
     try {
       const response = await apiClient.post(
-        '/eligibility/cibil/report',
+        '/eligibility/equifax/report',
         { mobileNumber: lastValues.mobileNumber, reportData: summary },
         { responseType: 'blob', timeout: 120000 }
       );
@@ -46,7 +89,7 @@ const CrifCheckPage: React.FC = () => {
       const link = document.createElement('a');
       link.href = url;
       const safeName = (summary.fullName || 'Customer').replace(/\s+/g, '_');
-      link.setAttribute('download', `CRIF_CreditReport_${safeName}_${lastValues.mobileNumber}.pdf`);
+      link.setAttribute('download', `Equifax_CreditReport_${safeName}_${lastValues.mobileNumber}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -86,18 +129,18 @@ const CrifCheckPage: React.FC = () => {
             Credit Intelligence
           </span>
         </div>
-        <h1 className="page-header-title">CRIF Soft Pull</h1>
+        <h1 className="page-header-title">Equifax Credit Check</h1>
         <span className="page-header-subtitle">
-          Zero-impact institutional credit check via CRIF High Mark &ensp;
+          Institutional credit check via Equifax &ensp;
           <Zap size={11} style={{ verticalAlign: 'middle', color: '#8A6020' }} />
-          &thinsp;Instant Report
+          &thinsp;Customer OTP Verified
         </span>
       </div>
 
       {/* ── Input Form ── */}
-      {!summary && (
+      {!summary && phase === 'details' && (
         <div className="pro-card" style={{ padding: '28px 32px' }}>
-          <Form layout="vertical" onFinish={handleCheck} size="large" autoComplete="off">
+          <Form layout="vertical" onFinish={handleSendOtp} size="large" autoComplete="off" initialValues={lastValues ?? undefined}>
             <Row gutter={20}>
               <Col xs={24} md={12}>
                 <Form.Item
@@ -117,6 +160,20 @@ const CrifCheckPage: React.FC = () => {
                   <Input placeholder="9876543210" style={{ borderRadius: 2, height: 44 }} />
                 </Form.Item>
               </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="panNumber"
+                  label="PAN Number (recommended — improves match accuracy)"
+                  rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}
+                >
+                  <Input
+                    placeholder="ABCDE1234F"
+                    maxLength={10}
+                    style={{ borderRadius: 2, height: 44, textTransform: 'uppercase', fontFamily: 'monospace' }}
+                    onChange={(e) => e.target.value = e.target.value.toUpperCase()}
+                  />
+                </Form.Item>
+              </Col>
             </Row>
 
             <Alert
@@ -128,9 +185,9 @@ const CrifCheckPage: React.FC = () => {
               }}
               message={
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Lock size={13} color={RM_BLUE} />
+                  <MessageSquareText size={13} color={RM_BLUE} />
                   <Text style={{ color: RM_NAVY, fontSize: 12, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
-                    End-to-end encrypted. No impact on customer credit score.
+                    The customer will receive an OTP by SMS to confirm consent before the report is fetched.
                   </Text>
                 </div>
               }
@@ -171,10 +228,81 @@ const CrifCheckPage: React.FC = () => {
                   letterSpacing: '0.02em',
                 }}
               >
-                Check CRIF Score <ArrowRight size={15} />
+                Send OTP <ArrowRight size={15} />
               </Button>
             </div>
           </Form>
+        </div>
+      )}
+
+      {/* ── OTP Verification ── */}
+      {!summary && phase === 'otp' && (
+        <div className="pro-card" style={{ padding: '28px 32px' }}>
+          {demoMode && (
+            <Alert
+              type="warning"
+              showIcon
+              message="Demo Mode — Equifax credentials not configured. Use OTP 123456 to continue with illustrative data."
+              style={{ borderRadius: 0, border: 'none', borderLeft: '3px solid #D4A017', background: '#FBF4E0', marginBottom: 20 }}
+            />
+          )}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+              OTP sent to {lastValues?.mobileNumber}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Ask the customer for the OTP they received by SMS, then enter it below to verify consent and fetch the report.
+            </div>
+          </div>
+
+          <Row gutter={20} align="bottom">
+            <Col xs={24} md={12}>
+              <Form.Item label="One-Time Password" style={{ marginBottom: 20 }}>
+                <Input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                  maxLength={6}
+                  placeholder="6-digit OTP"
+                  size="large"
+                  style={{ borderRadius: 2, height: 44, fontFamily: 'monospace', letterSpacing: '0.3em', textAlign: 'center' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {error && (
+            <Alert
+              type="error"
+              message={error}
+              style={{ borderRadius: 0, border: 'none', borderLeft: `3px solid ${RM_RED}`, background: '#FFF0F0', marginBottom: 16 }}
+              showIcon
+            />
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <Button type="link" onClick={handleResendOtp} loading={loading} style={{ padding: 0, fontSize: 12.5, fontWeight: 600 }}>
+                Resend OTP
+              </Button>
+              <Button type="link" onClick={handleChangeDetails} style={{ padding: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Change Details
+              </Button>
+            </div>
+            <Button
+              type="primary"
+              onClick={handleVerifyOtp}
+              loading={otpLoading}
+              style={{
+                height: 42, paddingLeft: 28, paddingRight: 28,
+                borderRadius: 2, fontWeight: 700, fontSize: 13,
+                background: RM_BLUE, borderColor: RM_BLUE,
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                letterSpacing: '0.02em',
+              }}
+            >
+              Verify & Fetch Report <ArrowRight size={15} />
+            </Button>
+          </div>
         </div>
       )}
 
@@ -186,7 +314,7 @@ const CrifCheckPage: React.FC = () => {
             <Alert
               type="warning"
               showIcon
-              message="Demo Mode — CRIF API credentials not configured. All data shown below is illustrative only."
+              message="Demo Mode — Equifax credentials not configured. All data shown below is illustrative only."
               style={{ borderRadius: 0, border: 'none', borderLeft: '3px solid #D4A017', background: '#FBF4E0' }}
             />
           )}
@@ -244,7 +372,7 @@ const CrifCheckPage: React.FC = () => {
                     textTransform: 'uppercase', letterSpacing: '0.12em',
                     fontFamily: 'Inter, sans-serif', marginBottom: 4,
                   }}>
-                    Customer Profile
+                    Customer Profile · Equifax
                   </div>
                   <div style={{
                     fontSize: 22, fontWeight: 700, color: 'var(--text-primary)',
@@ -435,9 +563,7 @@ const CrifCheckPage: React.FC = () => {
                           ['Opened', acct.dateOpened],
                           ['Last Payment', acct.lastPaymentDate],
                           ['Closed', acct.dateClosed],
-                          ['Reported & Certified', acct.reportedDate],
-                          ['Pmt Hist Start', acct.paymentHistoryStart],
-                          ['Pmt Hist End', acct.paymentHistoryEnd],
+                          ['Reported', acct.reportedDate],
                         ].map(([label, val]) => val ? (
                           <div key={label} style={{ marginBottom: 5 }}>
                             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
@@ -452,13 +578,11 @@ const CrifCheckPage: React.FC = () => {
                           ['High Cr/Sanctioned', inr(acct.sanctionedAmount)],
                           ['Current Balance', inr(acct.currentBalance)],
                           ['Credit Limit', inr(acct.creditLimit)],
-                          ['Cash Limit', inr(acct.cashLimit)],
                           ['Overdue', acct.amountOverdue > 0 ? inr(acct.amountOverdue) : null],
                           ['EMI', inr(acct.emiAmount)],
                           ['Pmt Freq', acct.emiFrequency],
                           ['Repayment Tenure', acct.repaymentTenure],
                           ['Interest Rate', acct.interestRate],
-                          ['Actual Payment', inr(acct.actualPayment)],
                         ].map(([label, val]) => val ? (
                           <div key={label} style={{ marginBottom: 5 }}>
                             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
@@ -475,13 +599,10 @@ const CrifCheckPage: React.FC = () => {
                           </span>
                         </div>
                         {[
-                          ['Suit Filed/Wilful Default', acct.suitFiled],
-                          ['Written Off (Total)', inr(acct.writtenOffTotal)],
-                          ['Written Off (Principal)', inr(acct.writtenOffPrincipal)],
-                          ['Settlement', inr(acct.settlementAmount)],
-                          ['Written Off/Settled Status', acct.writtenOffSettledStatus],
+                          ['Suit Filed', acct.suitFiled === 'Y' ? 'Yes' : null],
+                          ['Written Off', inr(acct.writtenOffTotal)],
                           ['Asset Classification', acct.assetClassification],
-                        ].map(([label, val]) => val && val !== 'N' ? (
+                        ].map(([label, val]) => val ? (
                           <div key={label} style={{ marginBottom: 5 }}>
                             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>{label}: </span>
                             <span style={{ fontSize: 11, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{val}</span>
@@ -573,7 +694,7 @@ const CrifCheckPage: React.FC = () => {
               </Button>
             )}
             <Button
-              onClick={() => { setSummary(null); setLastValues(null); setError(null); }}
+              onClick={() => { setSummary(null); setLastValues(null); setRequestId(null); setOtp(''); setError(null); setPhase('details'); }}
               style={{
                 height: 40, borderRadius: 2,
                 fontWeight: 600, fontSize: 13,
@@ -590,4 +711,4 @@ const CrifCheckPage: React.FC = () => {
   );
 };
 
-export default CrifCheckPage;
+export default EquifaxCheckPage;
