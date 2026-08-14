@@ -851,7 +851,10 @@ router.post('/cibil-bureau/report', requireRoles('ADMIN', 'CREDIT_BUREAU'), asyn
 //   2. /equifax/verify-otp  -> customer reads the OTP back, we verify + fetch the report
 // Docs: Recordent "Retail Credit Reports API Specification v5.0" (REC-RCR-API-SPEC-01)
 
-const RECORDENT_BASE_URL     = process.env.RECORDENT_BASE_URL     ?? '';
+// Strip any trailing slash(es) — endpoint paths below already start with '/',
+// so a base URL like "https://host.com/" would otherwise produce a double
+// slash ("https://host.com//v2/...") that some API gateways reject outright.
+const RECORDENT_BASE_URL     = (process.env.RECORDENT_BASE_URL ?? '').replace(/\/+$/, '');
 const RECORDENT_USERNAME     = process.env.RECORDENT_USERNAME     ?? '';
 const RECORDENT_PASSWORD     = process.env.RECORDENT_PASSWORD     ?? '';
 const RECORDENT_API_KEY      = process.env.RECORDENT_API_KEY      ?? '';
