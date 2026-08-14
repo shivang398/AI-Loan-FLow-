@@ -164,13 +164,13 @@ const EquifaxCheckPage: React.FC = () => {
                 <Form.Item
                   name="panNumber"
                   label="PAN Number (recommended — improves match accuracy)"
+                  normalize={(value) => (value ?? '').toUpperCase()}
                   rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}
                 >
                   <Input
                     placeholder="ABCDE1234F"
                     maxLength={10}
-                    style={{ borderRadius: 2, height: 44, textTransform: 'uppercase', fontFamily: 'monospace' }}
-                    onChange={(e) => e.target.value = e.target.value.toUpperCase()}
+                    style={{ borderRadius: 2, height: 44, fontFamily: 'monospace' }}
                   />
                 </Form.Item>
               </Col>
