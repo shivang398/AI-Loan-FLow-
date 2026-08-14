@@ -397,7 +397,7 @@ const EquifaxCheckPage: React.FC = () => {
                     { label: 'Gender',          value: summary.gender },
                     { label: 'Occupation',      value: summary.occupationType },
                     { label: 'Net Income',      value: summary.income },
-                    { label: 'Enquiries (24m)', value: `${summary.enquiryCount}` },
+                    { label: 'Enquiries (24m)', value: `${summary.enquirySummary?.[0]?.past24Months ?? summary.enquiryCount}` },
                     { label: 'Address',         value: summary.address },
                   ].map(({ label, value }) => (
                     <div key={label}>
