@@ -884,7 +884,10 @@ async function getRecordentAccessToken(): Promise<string> {
   });
   const raw: any = await res.json();
   if (!raw.status || !raw.data?.access_token) {
-    throw new Error(raw.message ?? 'Recordent authentication failed');
+    // Recordent's error responses use errCode/errMessage (Appendix A), not `message` —
+    // log the raw body once while we don't yet have a confirmed live shape to code against.
+    console.error('[Equifax-DEBUG] oauth/token http-status:', res.status, 'raw response:', JSON.stringify(raw).slice(0, 500));
+    throw new Error(raw.errMessage ?? raw.message ?? `Recordent authentication failed (HTTP ${res.status})`);
   }
   recordentTokenCache = {
     accessToken: raw.data.access_token,
