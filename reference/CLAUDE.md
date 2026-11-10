@@ -154,8 +154,10 @@ Notifications.
   missing `CORS_ORIGIN`/`AWS_S3_BUCKET`, a set `AWS_S3_ENDPOINT` in production, WhatsApp dry-run, missing webhook
   secrets, leftover `REPLACE_` placeholders, and `ALLOW_SCHEMA_DATA_LOSS` left on.
 - **Health**: `GET /health` = liveness (container healthcheck). `GET /health/ready` = databases + Redis (200/503).
-- **Client IP**: `TRUST_PROXY_HOPS` (code default 1 = frontend nginx). Production is **2**: host Apache `httpd` owns
-  80/443 → frontend nginx (127.0.0.1:8443, appends to X-Forwarded-For) → backend. Wrong value = every visitor shares
+- **Client IP**: `TRUST_PROXY_HOPS` (code default 1 = frontend nginx). Production is **3**: Cloudflare → host Apache
+  `httpd` (80/443, Cloudflare Origin Certificate) → frontend nginx (127.0.0.1:8443, appends to X-Forwarded-For) →
+  backend. Cloudflare SSL mode must be **Full (strict)**: in Flexible mode Cloudflare hits Apache's port-80 site, which
+  loops on `/` and serves an old WordPress install for other paths (seen 10 Nov 2026). Wrong value = every visitor shares
   one IP for rate limiting.
 - **RabbitMQ is optional**: connection failure is a warning and publishing is best-effort (nothing consumes events today).
 - **S3** (`config/s3.ts`): explicit keys if both set, else the EC2 IAM role; objects stored with SSE (AES256);
