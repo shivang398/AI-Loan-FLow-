@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import * as documentService from '../services/document.service';
 import { ok, fail } from '../utils/response';
+import { customerDb } from '../config/prisma';
 
 const router = Router();
 
@@ -21,17 +22,21 @@ const ALLOWED_MIME = new Set([
 
 const PRIVILEGED_ROLES = ['ADMIN', 'OPERATIONS', 'RM'];
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIME.has(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(Object.assign(new Error(`File type not allowed: ${file.mimetype}`), { status: 415 }));
-    }
-  },
-});
+// Public (website) uploads are held in memory: keep them small. The form tells customers "max 10 MB".
+const PUBLIC_MAX_BYTES = 10 * 1024 * 1024;
+// A website applicant may upload documents for a lead created within this window (lets them finish next day)
+const PUBLIC_UPLOAD_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+const allowedTypesOnly: multer.Options['fileFilter'] = (_req, file, cb) => {
+  if (ALLOWED_MIME.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(Object.assign(new Error(`File type not allowed: ${file.mimetype}`), { status: 415 }));
+  }
+};
+
+// Staff uploads (authenticated)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 }, fileFilter: allowedTypesOnly });
 
 // Magic byte signatures for each allowed MIME type (CRIT-4)
 // Prevents Content-Type spoofing — client-supplied headers are not trusted alone.
@@ -81,12 +86,19 @@ const publicUploadLimiter = rateLimit({
 // Public upload (no auth — used during onboarding). Rate-limited and MIME-guarded.
 // loanId is optional at the lead stage — a loan does not exist yet.
 // Accepts either ownerId or customerId (frontend alias) as the owner identifier.
-router.post('/public/upload', publicUploadLimiter, upload.single('file'), async (req: Request, res: Response) => {
+const publicUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: PUBLIC_MAX_BYTES }, fileFilter: allowedTypesOnly });
+
+router.post('/public/upload', publicUploadLimiter, publicUpload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) { res.status(400).json(fail('File is required')); return; }
   const { loanId, ownerId, customerId, documentType, folderPath } = req.body;
   const resolvedOwner = ownerId || customerId;
   if (!documentType) { res.status(400).json(fail('documentType is required')); return; }
   if (!resolvedOwner) { res.status(400).json(fail('ownerId is required')); return; }
+  // Anonymous uploads may only attach to a real, recent website lead — not to arbitrary ids
+  const lead = await customerDb.lead.findUnique({ where: { id: String(resolvedOwner) }, select: { createdAt: true } }).catch(() => null);
+  if (!lead || Date.now() - lead.createdAt.getTime() > PUBLIC_UPLOAD_WINDOW_MS) {
+    res.status(403).json(fail('Uploads for this application are closed — please contact us to add documents')); return;
+  }
   const ALLOWED_DOC_TYPES = ['PAN', 'AADHAAR', 'INCOME_PROOF', 'BANK_STATEMENT', 'PHOTO', 'SIGNATURE', 'OTHER'];
   if (!ALLOWED_DOC_TYPES.includes(documentType)) { res.status(400).json(fail(`documentType must be one of: ${ALLOWED_DOC_TYPES.join(', ')}`)); return; }
 

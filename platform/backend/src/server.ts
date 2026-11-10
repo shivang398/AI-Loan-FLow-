@@ -8,10 +8,13 @@ import { connectRedis, disconnectRedis } from './config/redis';
 import { connectRabbitMQ, disconnectRabbitMQ } from './config/rabbitmq';
 import { setSocketServer } from './services/communications.service';
 import { resumeCampaigns } from './services/whatsapp.service';
+import { checkEnvironment } from './config/checkEnv';
 
 const PORT = parseInt(process.env.PORT ?? '8080');
 
 async function bootstrap() {
+  checkEnvironment();   // exits on missing essentials; warns on everything else
+
   console.log('[Boot] Connecting to databases...');
   try {
     await connectAllDatabases();
@@ -22,8 +25,10 @@ async function bootstrap() {
   console.log('[Boot] Connecting to Redis...');
   await connectRedis();
 
+  // RabbitMQ is optional: events are published for future consumers, nothing reads them today,
+  // so an unavailable broker must not stop the API.
   console.log('[Boot] Connecting to RabbitMQ...');
-  await connectRabbitMQ();
+  await connectRabbitMQ().catch(err => console.warn('[Boot] RabbitMQ unavailable — continuing without event publishing:', err.message));
 
   const server = http.createServer(app);
 

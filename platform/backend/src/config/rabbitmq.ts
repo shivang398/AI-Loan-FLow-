@@ -20,11 +20,13 @@ export async function disconnectRabbitMQ() {
   connection = null;
 }
 
-export function getChannel(): Channel {
-  if (!channel) throw new Error('RabbitMQ channel not initialised');
-  return channel;
-}
 
+/** Best-effort: a missing or closed broker never fails the request that triggered the event. */
 export async function publish(routingKey: string, payload: object) {
-  getChannel().publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), { persistent: true });
+  if (!channel) return;
+  try {
+    channel.publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), { persistent: true });
+  } catch (err) {
+    console.warn(`[RabbitMQ] publish ${routingKey} failed:`, err instanceof Error ? err.message : err);
+  }
 }

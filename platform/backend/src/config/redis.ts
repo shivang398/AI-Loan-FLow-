@@ -9,6 +9,9 @@ const redis = new Redis({
 
 redis.on('error', (err) => console.error('[Redis]', err.message));
 
+/** Used by the readiness check */
+export const pingRedis = () => redis.ping();
+
 export async function connectRedis() {
   await redis.connect();
   console.log('[Redis] Connected');

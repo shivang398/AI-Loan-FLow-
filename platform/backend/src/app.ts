@@ -20,6 +20,8 @@ import commissionRoutes from './routes/commission.routes';
 import foirRoutes from './routes/foir.routes';
 import routingRoutes from './routes/routing.routes';
 import commsRoutes from './routes/communications.routes';
+import { authDb, loanDb, customerDb, salesOpsDb, commsDb, analyticsDb } from './config/prisma';
+import { pingRedis } from './config/redis';
 import whatsappRoutes, { whatsappWebhookRouter, interaktWebhookRouter } from './routes/whatsapp.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import analyticsRoutes from './routes/analytics.routes';
@@ -31,7 +33,10 @@ import { errorHandler, notFound } from './middleware/error.middleware';
 const app = express();
 
 // Trust the first proxy hop so req.ip reflects the real client IP
-app.set('trust proxy', 1);
+// Number of reverse proxies in front of the API, so req.ip (rate limits, audit logs) is the real client.
+// Default 1 = the frontend nginx container. If another proxy sits in front of it on the host
+// (e.g. something forwarding public 443 to 127.0.0.1:8443), set TRUST_PROXY_HOPS=2.
+app.set('trust proxy', Math.max(0, parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10) || 0));
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -85,7 +90,19 @@ const writeLimiter = rateLimit({
 });
 
 // ── Health ────────────────────────────────────────────────────────────────────
+// Liveness: the process is up (used by the container healthcheck — must not depend on other services)
 app.get('/health', (_req, res) => res.json({ status: 'UP', timestamp: new Date().toISOString() }));
+
+// Readiness: the databases and Redis answer. Use for post-deploy checks and monitoring.
+app.get('/health/ready', async (_req, res) => {
+  const probe = async (fn: () => Promise<unknown>) => { try { await fn(); return 'UP'; } catch { return 'DOWN'; } };
+  const checks = {
+    database: await probe(() => Promise.all([authDb, loanDb, customerDb, salesOpsDb, commsDb, analyticsDb].map(db => db.$queryRaw`SELECT 1`))),
+    redis: await probe(() => pingRedis()),
+  };
+  const ready = Object.values(checks).every(v => v === 'UP');
+  res.status(ready ? 200 : 503).json({ status: ready ? 'READY' : 'NOT_READY', checks, timestamp: new Date().toISOString() });
+});
 
 // Monolith svc-health — all services live in this process, respond UP for each
 app.get('/svc-health/:service', (_req, res) => res.json({ status: 'UP', timestamp: new Date().toISOString() }));

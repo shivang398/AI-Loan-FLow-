@@ -150,7 +150,19 @@ Notifications.
   mounted **before** the limiter (delivery-receipt bursts).
 - **Raw body** is kept (`req.rawBody`) for webhook HMAC checks: Meta `X-Hub-Signature-256` (`WHATSAPP_APP_SECRET`),
   Interakt `Interakt-Signature` (`INTERAKT_WEBHOOK_SECRET`). In production unsigned webhooks are rejected.
-- **Errors** (`middleware/error.middleware.ts`): `err.status` 4xx messages reach the client; 5xx become
+- **Startup config check** (`config/checkEnv.ts`): exits if `JWT_SECRET` (≥32) or any DB URL is missing; warns for
+  missing `CORS_ORIGIN`/`AWS_S3_BUCKET`, a set `AWS_S3_ENDPOINT` in production, WhatsApp dry-run, missing webhook
+  secrets, leftover `REPLACE_` placeholders, and `ALLOW_SCHEMA_DATA_LOSS` left on.
+- **Health**: `GET /health` = liveness (container healthcheck). `GET /health/ready` = databases + Redis (200/503).
+- **Client IP**: `TRUST_PROXY_HOPS` (code default 1 = frontend nginx). Production is **2**: host Apache `httpd` owns
+  80/443 → frontend nginx (127.0.0.1:8443, appends to X-Forwarded-For) → backend. Wrong value = every visitor shares
+  one IP for rate limiting.
+- **RabbitMQ is optional**: connection failure is a warning and publishing is best-effort (nothing consumes events today).
+- **S3** (`config/s3.ts`): explicit keys if both set, else the EC2 IAM role; objects stored with SSE (AES256);
+  document links expire in 5 minutes (CVs 15).
+- **Public uploads**: max 10 MB, magic-byte checked, and only for a lead created in the last 48 hours.
+- **Container**: backend runs as the non-root `node` user.
+- **Errors** (`middleware/error.middleware.ts`): upload too large → 413; `err.status` 4xx messages reach the client; 5xx become
   "Internal server error". Prisma P2002 → **409** "A record with this <field> already exists", P2003 → 400, P2025 → 404.
 - **WhatsApp provider switch** (`config/whatsapp.ts`): `meta` (interactive buttons, in-app template creation) or
   `interakt` (`config/interakt.ts`; templates managed in Interakt; options sent as numbered text and mapped back;
@@ -172,8 +184,11 @@ Notifications.
 | `analytics` | `ANALYTICS_DATABASE_URL` | platform_analytics_reporting | AnalyticsSnapshot, AggregationLog, ReportJob, MisReport, EmailConfig |
 
 - **No cross-database joins**; references across domains (e.g. `Lead.assignedTo` email, `Connector.userId`) are plain columns.
-- **Schema sync**: `start.sh` runs `prisma db push --accept-data-loss` for all six on container start. Failures are
-  only warnings — always check the backend log after a deploy (see §11).
+- **Schema sync**: `start.sh` runs `prisma db push` for all six on container start. Destructive changes (dropping
+  tables/columns) are **refused** unless `ALLOW_SCHEMA_DATA_LOSS=true` (set it for one deploy only). A failed sync
+  logs `[Schema] ERROR …` but the API still starts — always check for that line after a deploy (see §11).
+- **Indexes** on hot tables: leads (createdAt, status, mobile, assignedTo, source), documents (ownerId, loanId),
+  eligibility_submissions (assignedConnectorId, submittedAt), loan_applications (connectorId, customerId, status, createdAt).
 - Credit-bureau table `cibil_checks` was **removed** (Nov 2026) and is dropped by the next push.
 - One-off SQL in `backend/scripts/`: `pre-deploy.sql` (collation fix), `merge-roles.sql` (role consolidation). Both idempotent.
 
@@ -447,13 +462,22 @@ Local logins: `admin@realmoneygroups.in` / `Admin@123`; QA accounts (local DB on
 
 ### Production (EC2 via AWS SSM, code from GitHub `shivang398/AI-Loan-FLow-`, branch `main`)
 Order matters for the Nov 2026 release:
+0. **Safety net**: RDS snapshot + `docker tag realmoney/backend:latest realmoney/backend:pre-<date>` (same for frontend).
 1. **Before**: `mysql -h <rds> -u <user> -p < platform/backend/scripts/pre-deploy.sql` (collation fix so schema sync completes).
+   For **this** release add `ALLOW_SCHEMA_DATA_LOSS=true` to `.env.production` (it drops `cibil_checks`); remove it afterwards.
 2. **Deploy**: on the instance, `git pull --ff-only` then
    `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build backend frontend`
    (in the checkout directory — `/opt/AI-Loan-FLow-/platform` per `platform/CLAUDE.md`; note `deploy/update.sh` assumes `/opt/realmoney`).
-3. **Check** `docker logs <backend-container> | grep -E "Warn|push failed|Running on"` — no "push failed" lines.
+3. **Check** `docker logs realmoney-prod-backend-1 | grep -E "^\[Config\]|^\[Schema\]|Running on"` — expect
+   `[Schema] all schemas in sync`, no `[Schema] ERROR`; and `curl -s localhost:8080/health/ready` inside the container network.
 4. **After**: `mysql … < platform/backend/scripts/merge-roles.sql` (roles 8→4; affected users sign in again).
-5. Smoke test: `/api/health`, staff login per role, submit a website application, see it in Ops Queue.
+5. Remove `ALLOW_SCHEMA_DATA_LOSS` from `.env.production` (and `up -d backend` again).
+6. Smoke test: `https://<domain>/api/health/ready`, staff login per role, submit a website application, see it in Ops Queue.
+
+Production layout (Nov 2026): EC2 `i-045918d47755bdb30` (ap-south-1), checkout `/opt/AI-Loan-FLow-`, compose project
+`realmoney-prod` (containers `realmoney-prod-{backend,frontend,rabbitmq,redis}-1`), MySQL on RDS, documents on S3.
+The server's `docker-compose.prod.yml` is locally modified (frontend published on `127.0.0.1:8443` behind a host-level
+proxy) — keep that edit; never `git reset --hard` on the server.
 
 `start.sh` drops tables removed from the schemas (`--accept-data-loss`) — e.g. `cibil_checks` in this release.
 
@@ -505,3 +529,6 @@ restarting the backend clears both (in-memory).
 - Website: DSA positioning, royal navy/gold/ivory design, hero quick-offer form, Borrower's Charter with fraud
   warning, channel-partner section, bank names removed.
 - Dev setup: LocalStack auto-creates the S3 bucket; stale auth tests fixed.
+- Production hardening (10 Nov 2026): S3 IAM-role support + encryption + 5-min links, opt-in destructive schema sync,
+  startup config check, `/health/ready`, configurable proxy hops, optional RabbitMQ, public upload limits (10 MB,
+  recent leads only), DB indexes, non-root backend container, 413 for oversized files.

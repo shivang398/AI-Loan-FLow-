@@ -23,6 +23,10 @@ model LoanApplication {
   updatedBy     String?                 @map("updated_by") @db.Char(36)
   statusHistory ApplicationStatusHistory[]
 
+  @@index([connectorId])
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
   @@map("loan_applications")
 }
 
@@ -69,6 +73,8 @@ model EligibilitySubmission {
   submittedAt         DateTime  @default(now()) @map("submitted_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
+  @@index([assignedConnectorId])
+  @@index([submittedAt])
   @@map("eligibility_submissions")
 }
 

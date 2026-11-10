@@ -121,6 +121,11 @@ model Lead {
   customer             Customer? @relation(fields: [customerId], references: [id])
   callLogs             CallLog[]
 
+  @@index([createdAt])
+  @@index([status])
+  @@index([mobile])
+  @@index([assignedTo])
+  @@index([source])
   @@map("leads")
 }
 
@@ -163,6 +168,8 @@ model Document {
   versions       DocumentVersion[]
   accessLogs     DocumentAccessLog[]
 
+  @@index([ownerId])
+  @@index([loanId])
   @@map("documents")
 }
 

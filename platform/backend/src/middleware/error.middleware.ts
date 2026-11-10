@@ -16,6 +16,13 @@ function uniqueTarget(meta: { target?: unknown } | undefined): string {
 }
 
 export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
+  // Upload limits (multer): a client mistake, not a server fault
+  if (err.name === 'MulterError') {
+    const tooBig = (err as Error & { code?: string }).code === 'LIMIT_FILE_SIZE';
+    res.status(tooBig ? 413 : 400).json(fail(tooBig ? 'File is too large' : err.message));
+    return;
+  }
+
   const prisma = err as Error & { code?: string; meta?: { target?: unknown } };
   const known = prisma.code ? PRISMA_CLIENT_ERRORS[prisma.code] : undefined;
   if (known) {

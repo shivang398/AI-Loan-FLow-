@@ -25,7 +25,10 @@ COPY --from=builder /app/dist ./dist
 # Place generated clients where compiled JS expects them (dist/generated/)
 RUN mkdir -p dist/generated && cp -r src/generated/. dist/generated/
 COPY start.sh ./start.sh
-RUN chmod +x start.sh
+RUN chmod +x start.sh && chown -R node:node /app
+
+# Run as the unprivileged "node" user (uid 1000) shipped with the base image
+USER node
 
 EXPOSE 8080
 CMD ["sh", "start.sh"]
