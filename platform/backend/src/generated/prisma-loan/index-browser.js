@@ -219,18 +219,6 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.CibilCheckScalarFieldEnum = {
-  id: 'id',
-  requestedBy: 'requestedBy',
-  fullName: 'fullName',
-  mobileNumber: 'mobileNumber',
-  panNumber: 'panNumber',
-  cibilScore: 'cibilScore',
-  scoreBand: 'scoreBand',
-  demoMode: 'demoMode',
-  createdAt: 'createdAt'
-};
-
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -260,8 +248,7 @@ exports.Prisma.ModelName = {
   BankPolicy: 'BankPolicy',
   PolicyRule: 'PolicyRule',
   PolicyDocument: 'PolicyDocument',
-  AuditLog: 'AuditLog',
-  CibilCheck: 'CibilCheck'
+  AuditLog: 'AuditLog'
 };
 
 /**

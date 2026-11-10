@@ -32,7 +32,7 @@ const REFRESH_MAX_AGE = 7 * 24 * 3600;
 const RegisterSchema = z.object({ email: z.string().email(), password: z.string().min(8), role: z.string() });
 const LoginSchema = z.object({ email: z.string().email(), password: z.string() });
 
-router.post('/register', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.post('/register', authenticate, requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const body = RegisterSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map((e) => e.message))); return; }
   const result = await authService.registerUser(body.data.email, body.data.password, body.data.role);
@@ -77,7 +77,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
   res.json(ok('OK', result));
 });
 
-router.get('/users/lookup', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.get('/users/lookup', authenticate, requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const email = req.query.email as string;
   if (!email) { res.status(400).json(fail('email query param required')); return; }
   const result = await authService.lookupUserByEmail(email);

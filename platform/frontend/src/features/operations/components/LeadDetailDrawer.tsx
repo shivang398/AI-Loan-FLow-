@@ -238,7 +238,7 @@ const LeadDetailDrawer: React.FC<Props> = ({
             onClick={onAssign}
             style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 800, border: '1.5px solid #a5f3fc', color: '#0e7490', background: '#ecfeff', fontSize: 13 }}
           >
-            Assign Telecaller
+            Assign Caller
           </Button>
           {Object.keys(leadDocs).length > 0 && (
             <Button

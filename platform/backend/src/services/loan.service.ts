@@ -95,13 +95,16 @@ export async function getEligibilityRules() {
 
 export async function submitEligibility(data: {
   fullName: string; mobileNumber: string; loanAmount?: number; loanPurpose?: string;
-  monthlyIncome?: number; employmentType?: string; city?: string; panNumber?: string;
+  monthlyIncome?: number; employmentType?: string; city?: string; panNumber?: string; assignedConnectorId?: string;
 }) {
-  return loanDb.eligibilitySubmission.create({ data: { fullName: data.fullName, mobileNumber: data.mobileNumber, loanAmount: data.loanAmount, loanPurpose: data.loanPurpose, monthlyIncome: data.monthlyIncome, employmentType: data.employmentType, city: data.city, panNumber: data.panNumber } });
+  return loanDb.eligibilitySubmission.create({ data: { fullName: data.fullName, mobileNumber: data.mobileNumber, loanAmount: data.loanAmount, loanPurpose: data.loanPurpose, monthlyIncome: data.monthlyIncome, employmentType: data.employmentType, city: data.city, panNumber: data.panNumber, assignedConnectorId: data.assignedConnectorId } });
 }
 
-export async function getEligibilitySubmissions(filters: { status?: string; page: number; size: number }) {
-  const where = filters.status ? { status: filters.status } : {};
+export async function getEligibilitySubmissions(filters: { status?: string; connectorId?: string; page: number; size: number }) {
+  const where = {
+    ...(filters.status && { status: filters.status }),
+    ...(filters.connectorId && { assignedConnectorId: filters.connectorId }),
+  };
   const [items, total] = await Promise.all([
     loanDb.eligibilitySubmission.findMany({ where, skip: filters.page * filters.size, take: filters.size, orderBy: { submittedAt: 'desc' } }),
     loanDb.eligibilitySubmission.count({ where }),

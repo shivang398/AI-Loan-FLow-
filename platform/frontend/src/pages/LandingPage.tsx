@@ -2,23 +2,24 @@ import React from 'react';
 import { ConfigProvider, App as AntdApp } from 'antd';
 import Navbar              from '../features/landing/components/Navbar';
 import Hero                from '../features/landing/components/Hero';
-import LoanProducts        from '../features/landing/components/LoanProducts';
-import LenderPartners      from '../features/landing/components/LenderPartners';
+import TrustBand           from '../features/landing/components/TrustBand';
 import HowItWorks          from '../features/landing/components/HowItWorks';
+import Charter             from '../features/landing/components/Charter';
 import CustomerRegistrationSection from '../features/landing/components/CustomerRegistrationSection';
+import Loans               from '../features/landing/components/Loans';
 import Testimonials        from '../features/landing/components/Testimonials';
-import Stats               from '../features/landing/components/Stats';
+import PartnerProgram      from '../features/landing/components/PartnerProgram';
 import FAQ                 from '../features/landing/components/FAQ';
-import ChannelPartnerCTA   from '../features/landing/components/ChannelPartnerCTA';
 import Footer              from '../features/landing/components/Footer';
 import WhatsAppFloat       from '../features/landing/components/WhatsAppFloat';
 import MobileStickyBar     from '../features/landing/components/MobileStickyBar';
+import { C } from '../features/landing/theme';
 import '../features/landing/styles/landing.css';
 
 const landingTheme = {
   token: {
     colorPrimary:    '#0B1E3D',
-    colorLink:       '#C4993A',
+    colorLink:       C.gold,
     colorSuccess:    '#15803D',
     colorWarning:    '#C4993A',
     colorError:      '#DC2626',
@@ -28,7 +29,7 @@ const landingTheme = {
     fontFamily:      'Inter, -apple-system, sans-serif',
     colorBgBase:     '#FFFFFF',
     colorTextBase:   '#0B1E3D',
-    colorBorder:     '#D4DCE8',
+    colorBorder:     C.line,
   },
   components: {
     Button: { borderRadius: 2 },
@@ -41,17 +42,18 @@ const landingTheme = {
 const LandingPage: React.FC = () => (
   <ConfigProvider theme={landingTheme}>
     <AntdApp>
-      <div style={{ minHeight: '100vh', background: '#F3F6FA', fontFamily: 'Inter, sans-serif' }}>
+      {/* Borrowers: hero → lending network → how it works → charter → apply → loans → reviews; then channel partners; then FAQ */}
+      <div style={{ minHeight: '100vh', background: C.white, fontFamily: 'Inter, sans-serif' }}>
         <Navbar />
         <Hero />
-        <LoanProducts />
-        <LenderPartners />
+        <TrustBand />
         <HowItWorks />
+        <Charter />
         <CustomerRegistrationSection />
+        <Loans />
         <Testimonials />
-        <Stats />
+        <PartnerProgram />
         <FAQ />
-        <ChannelPartnerCTA />
         <Footer />
         <WhatsAppFloat />
         <MobileStickyBar />

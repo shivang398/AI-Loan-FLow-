@@ -5401,6 +5401,7 @@ export namespace Prisma {
     loanAmount: Decimal | null
     assignedTo: string | null
     status: string | null
+    source: string | null
     customerId: string | null
     createdAt: Date | null
     profession: string | null
@@ -5455,6 +5456,7 @@ export namespace Prisma {
     loanAmount: Decimal | null
     assignedTo: string | null
     status: string | null
+    source: string | null
     customerId: string | null
     createdAt: Date | null
     profession: string | null
@@ -5509,6 +5511,7 @@ export namespace Prisma {
     loanAmount: number
     assignedTo: number
     status: number
+    source: number
     customerId: number
     createdAt: number
     profession: number
@@ -5579,6 +5582,7 @@ export namespace Prisma {
     loanAmount?: true
     assignedTo?: true
     status?: true
+    source?: true
     customerId?: true
     createdAt?: true
     profession?: true
@@ -5633,6 +5637,7 @@ export namespace Prisma {
     loanAmount?: true
     assignedTo?: true
     status?: true
+    source?: true
     customerId?: true
     createdAt?: true
     profession?: true
@@ -5687,6 +5692,7 @@ export namespace Prisma {
     loanAmount?: true
     assignedTo?: true
     status?: true
+    source?: true
     customerId?: true
     createdAt?: true
     profession?: true
@@ -5828,6 +5834,7 @@ export namespace Prisma {
     loanAmount: Decimal | null
     assignedTo: string | null
     status: string
+    source: string
     customerId: string | null
     createdAt: Date
     profession: string | null
@@ -5901,6 +5908,7 @@ export namespace Prisma {
     loanAmount?: boolean
     assignedTo?: boolean
     status?: boolean
+    source?: boolean
     customerId?: boolean
     createdAt?: boolean
     profession?: boolean
@@ -5959,6 +5967,7 @@ export namespace Prisma {
     loanAmount?: boolean
     assignedTo?: boolean
     status?: boolean
+    source?: boolean
     customerId?: boolean
     createdAt?: boolean
     profession?: boolean
@@ -6025,6 +6034,7 @@ export namespace Prisma {
       loanAmount: Prisma.Decimal | null
       assignedTo: string | null
       status: string
+      source: string
       customerId: string | null
       createdAt: Date
       profession: string | null
@@ -6447,6 +6457,7 @@ export namespace Prisma {
     readonly loanAmount: FieldRef<"Lead", 'Decimal'>
     readonly assignedTo: FieldRef<"Lead", 'String'>
     readonly status: FieldRef<"Lead", 'String'>
+    readonly source: FieldRef<"Lead", 'String'>
     readonly customerId: FieldRef<"Lead", 'String'>
     readonly createdAt: FieldRef<"Lead", 'DateTime'>
     readonly profession: FieldRef<"Lead", 'String'>
@@ -10799,6 +10810,7 @@ export namespace Prisma {
     loanAmount: 'loanAmount',
     assignedTo: 'assignedTo',
     status: 'status',
+    source: 'source',
     customerId: 'customerId',
     createdAt: 'createdAt',
     profession: 'profession',
@@ -11267,6 +11279,7 @@ export namespace Prisma {
     loanAmount?: DecimalNullableFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableFilter<"Lead"> | string | null
     status?: StringFilter<"Lead"> | string
+    source?: StringFilter<"Lead"> | string
     customerId?: StringNullableFilter<"Lead"> | string | null
     createdAt?: DateTimeFilter<"Lead"> | Date | string
     profession?: StringNullableFilter<"Lead"> | string | null
@@ -11323,6 +11336,7 @@ export namespace Prisma {
     loanAmount?: SortOrderInput | SortOrder
     assignedTo?: SortOrderInput | SortOrder
     status?: SortOrder
+    source?: SortOrder
     customerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     profession?: SortOrderInput | SortOrder
@@ -11382,6 +11396,7 @@ export namespace Prisma {
     loanAmount?: DecimalNullableFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableFilter<"Lead"> | string | null
     status?: StringFilter<"Lead"> | string
+    source?: StringFilter<"Lead"> | string
     customerId?: StringNullableFilter<"Lead"> | string | null
     createdAt?: DateTimeFilter<"Lead"> | Date | string
     profession?: StringNullableFilter<"Lead"> | string | null
@@ -11438,6 +11453,7 @@ export namespace Prisma {
     loanAmount?: SortOrderInput | SortOrder
     assignedTo?: SortOrderInput | SortOrder
     status?: SortOrder
+    source?: SortOrder
     customerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     profession?: SortOrderInput | SortOrder
@@ -11500,6 +11516,7 @@ export namespace Prisma {
     loanAmount?: DecimalNullableWithAggregatesFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableWithAggregatesFilter<"Lead"> | string | null
     status?: StringWithAggregatesFilter<"Lead"> | string
+    source?: StringWithAggregatesFilter<"Lead"> | string
     customerId?: StringNullableWithAggregatesFilter<"Lead"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Lead"> | Date | string
     profession?: StringNullableWithAggregatesFilter<"Lead"> | string | null
@@ -12168,6 +12185,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     createdAt: Date | string
     profession?: string | null
     netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
@@ -12223,6 +12241,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     customerId?: string | null
     createdAt: Date | string
     profession?: string | null
@@ -12278,6 +12297,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
     netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -12333,6 +12353,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12388,6 +12409,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     customerId?: string | null
     createdAt: Date | string
     profession?: string | null
@@ -12442,6 +12464,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
     netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -12495,6 +12518,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13227,6 +13251,7 @@ export namespace Prisma {
     loanAmount?: SortOrder
     assignedTo?: SortOrder
     status?: SortOrder
+    source?: SortOrder
     customerId?: SortOrder
     createdAt?: SortOrder
     profession?: SortOrder
@@ -13288,6 +13313,7 @@ export namespace Prisma {
     loanAmount?: SortOrder
     assignedTo?: SortOrder
     status?: SortOrder
+    source?: SortOrder
     customerId?: SortOrder
     createdAt?: SortOrder
     profession?: SortOrder
@@ -13342,6 +13368,7 @@ export namespace Prisma {
     loanAmount?: SortOrder
     assignedTo?: SortOrder
     status?: SortOrder
+    source?: SortOrder
     customerId?: SortOrder
     createdAt?: SortOrder
     profession?: SortOrder
@@ -14495,6 +14522,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     createdAt: Date | string
     profession?: string | null
     netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
@@ -14549,6 +14577,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     createdAt: Date | string
     profession?: string | null
     netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
@@ -14717,6 +14746,7 @@ export namespace Prisma {
     loanAmount?: DecimalNullableFilter<"Lead"> | Decimal | DecimalJsLike | number | string | null
     assignedTo?: StringNullableFilter<"Lead"> | string | null
     status?: StringFilter<"Lead"> | string
+    source?: StringFilter<"Lead"> | string
     customerId?: StringNullableFilter<"Lead"> | string | null
     createdAt?: DateTimeFilter<"Lead"> | Date | string
     profession?: StringNullableFilter<"Lead"> | string | null
@@ -15141,6 +15171,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     createdAt: Date | string
     profession?: string | null
     netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
@@ -15195,6 +15226,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     customerId?: string | null
     createdAt: Date | string
     profession?: string | null
@@ -15265,6 +15297,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
     netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -15319,6 +15352,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15688,6 +15722,7 @@ export namespace Prisma {
     loanAmount?: Decimal | DecimalJsLike | number | string | null
     assignedTo?: string | null
     status?: string
+    source?: string
     createdAt: Date | string
     profession?: string | null
     netMonthlySalary?: Decimal | DecimalJsLike | number | string | null
@@ -15795,6 +15830,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
     netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -15849,6 +15885,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
     netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
@@ -15903,6 +15940,7 @@ export namespace Prisma {
     loanAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
+    source?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     profession?: NullableStringFieldUpdateOperationsInput | string | null
     netMonthlySalary?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null

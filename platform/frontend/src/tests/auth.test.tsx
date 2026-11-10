@@ -21,6 +21,8 @@ describe('Authentication & RBAC Integration', () => {
   });
 
   it('handles successful login and redirects', async () => {
+    // "/" is the public landing page; staff sign in at /login
+    window.history.pushState({}, 'Login', '/login');
     render(
       <Provider store={store}>
         <App />
@@ -32,7 +34,8 @@ describe('Authentication & RBAC Integration', () => {
     const passwordInput = screen.getByPlaceholderText(/••••••••/i);
     const submitButton = screen.getByRole('button', { name: /Sign In to Dashboard/i });
 
-    fireEvent.change(emailInput, { target: { value: 'admin@example.com' } });
+    // only company domains are accepted by the login form
+    fireEvent.change(emailInput, { target: { value: 'admin@realmoneygroups.in' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.click(submitButton);
 

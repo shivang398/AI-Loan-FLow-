@@ -1,224 +1,181 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Award, Clock, BadgeCheck } from 'lucide-react';
-import HeroForm from './HeroForm';
-import '../styles/landing.css';
+import React, { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Check, Phone, MessageCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { C, DISPLAY, SANS, scrollToId } from '../theme';
+import { GoldCorners } from './Royal';
+import { sendPrefill } from '../prefill';
 
-const NAVY  = '#0B1E3D';
-const GOLD  = '#C4993A';
-const GOLD_L = '#E8C870';
-
-const TRUST = [
-  { icon: ShieldCheck, text: 'RBI-Compliant DSA' },
-  { icon: Award,       text: '4.8 / 5 Customer Rating' },
-  { icon: Clock,       text: '48-Hour Disbursal' },
-  { icon: BadgeCheck,  text: 'Zero Advisory Fees' },
+// Facts about Real Money itself — rates and disbursal times belong to the lenders, not the DSA
+const FACTS = [
+  { value: '50+', label: 'Lending partners' },
+  { value: '22+', label: 'Years in lending' },
+  { value: '₹0',  label: 'Advisory fee' },
 ];
 
-const scrollTo = (id: string) => {
-  const el = document.querySelector(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
+const POINTS = [
+  'Offers from 50+ banks & NBFCs with one application',
+  'Free for borrowers — lenders pay our fee',
+  'A personal advisor from application to disbursal',
+];
+
+/** Faint engraved line pattern, static — texture, not decoration */
+const Engraving: React.FC = () => (
+  <svg viewBox="-400 -400 800 800" aria-hidden
+    style={{ position: 'absolute', right: -260, top: '50%', width: 900, height: 900, marginTop: -450, opacity: 0.07, pointerEvents: 'none' }}>
+    {Array.from({ length: 48 }, (_, i) => (
+      <ellipse key={i} rx="360" ry="140" fill="none" stroke={C.gold} strokeWidth="0.8" transform={`rotate(${i * 3.75})`} />
+    ))}
+  </svg>
+);
+
+const digits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max);
+const inrDisplay = (v: string) => (v ? Number(v).toLocaleString('en-IN') : '');
+
+const field: React.CSSProperties = {
+  width: '100%', height: 48, padding: '0 14px', border: `1px solid ${C.line}`, borderRadius: 2, background: C.white,
+  fontFamily: SANS, fontSize: 15, color: C.navy, outline: 'none', boxSizing: 'border-box',
+};
+const labelStyle: React.CSSProperties = { display: 'block', fontFamily: SANS, fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.muted, marginBottom: 7 };
+
+const QuickOffer: React.FC = () => {
+  const [profession, setProfession] = useState<'SALARIED' | 'SELF_EMPLOYED'>('SALARIED');
+  const [amount, setAmount] = useState('');
+  const [income, setIncome] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [error, setError] = useState('');
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (Number(amount) < 50000) return setError('Enter a loan amount of at least ₹50,000.');
+    if (!Number(income)) return setError('Enter your monthly income.');
+    if (!/^[6-9]\d{9}$/.test(mobile)) return setError('Enter a valid 10-digit mobile number.');
+    setError('');
+    sendPrefill({ loanAmount: amount, netMonthlySalary: income, profession, mobile });
+    scrollToId('apply');
+  };
+
+  return (
+    <form onSubmit={submit} noValidate style={{ position: 'relative', background: C.ivory, padding: 'clamp(26px, 3vw, 36px)', borderTop: `3px solid ${C.gold}`, boxShadow: '0 30px 70px rgba(0,0,0,0.35)' }}>
+      <GoldCorners inset={8} size={14} />
+      <h2 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 30, color: C.navy, margin: 0, lineHeight: 1.15 }}>Check your loan offer</h2>
+      <p style={{ fontFamily: SANS, fontSize: 13.5, color: C.muted, margin: '6px 0 22px' }}>Personal loans · takes under a minute</p>
+
+      <span style={labelStyle}>I am</span>
+      <div role="radiogroup" aria-label="Employment type" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginBottom: 18, border: `1px solid ${C.line}` }}>
+        {([['SALARIED', 'Salaried'], ['SELF_EMPLOYED', 'Self-employed']] as const).map(([value, text]) => {
+          const on = profession === value;
+          return (
+            <button key={value} type="button" role="radio" aria-checked={on} onClick={() => setProfession(value)} style={{
+              height: 44, border: 'none', cursor: 'pointer', fontFamily: SANS, fontSize: 14, fontWeight: 600,
+              background: on ? C.navy : C.white, color: on ? C.goldLight : C.ink, transition: 'background .2s',
+            }}>{text}</button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
+        <label>
+          <span style={labelStyle}>Loan amount</span>
+          <input style={field} inputMode="numeric" placeholder="₹ 5,00,000" value={amount ? `₹ ${inrDisplay(amount)}` : ''} onChange={e => setAmount(digits(e.target.value, 8))} />
+        </label>
+        <label>
+          <span style={labelStyle}>Monthly income</span>
+          <input style={field} inputMode="numeric" placeholder="₹ 50,000" value={income ? `₹ ${inrDisplay(income)}` : ''} onChange={e => setIncome(digits(e.target.value, 8))} />
+        </label>
+      </div>
+
+      <label style={{ display: 'block', marginBottom: 6 }}>
+        <span style={labelStyle}>Mobile number</span>
+        <div style={{ display: 'flex' }}>
+          <span style={{ ...field, width: 'auto', display: 'flex', alignItems: 'center', borderRight: 'none', background: C.parchment, color: C.muted }}>+91</span>
+          <input style={field} inputMode="tel" autoComplete="tel-national" placeholder="98xxxxxxxx" value={mobile} onChange={e => setMobile(digits(e.target.value, 10))} />
+        </div>
+      </label>
+
+      <div role="alert" style={{ minHeight: 20, fontFamily: SANS, fontSize: 12.5, color: '#9B2C2C', margin: '6px 0 8px' }}>{error}</div>
+
+      <button type="submit" className="lp-btn lp-btn-gold" style={{ width: '100%', height: 52 }}>
+        Check my offers <ArrowRight size={15} />
+      </button>
+      <p style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontFamily: SANS, fontSize: 12, lineHeight: 1.55, color: C.muted, margin: '14px 0 0' }}>
+        <ShieldCheck size={15} color={C.goldDeep} style={{ flexShrink: 0, marginTop: 1 }} />
+        Free and no obligation. By continuing you agree to be contacted by Real Money about your loan.
+      </p>
+    </form>
+  );
 };
 
-const Hero: React.FC = () => (
-  <section
-    id="hero"
-    style={{
-      background: `linear-gradient(160deg, #060F20 0%, ${NAVY} 50%, #0E2545 100%)`,
-      paddingTop: 88,
-      paddingBottom: 88,
-      overflow: 'hidden',
-      position: 'relative',
-    }}
-  >
-    {/* Subtle diagonal grid pattern */}
-    <div style={{
-      position: 'absolute', inset: 0, pointerEvents: 'none',
-      backgroundImage: `linear-gradient(rgba(196,153,58,0.04) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(196,153,58,0.04) 1px, transparent 1px)`,
-      backgroundSize: '48px 48px',
-    }} />
+const Hero: React.FC = () => {
+  const reduce = useReducedMotion();
+  const enter = (delay: number) => reduce ? {} : {
+    initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] as const },
+  };
 
-    {/* Large circle accent — top right */}
-    <div style={{
-      position: 'absolute', top: -160, right: -160,
-      width: 520, height: 520,
-      borderRadius: '50%',
-      border: '1px solid rgba(196,153,58,0.08)',
-      pointerEvents: 'none',
-    }} />
-    <div style={{
-      position: 'absolute', top: -80, right: -80,
-      width: 340, height: 340,
-      borderRadius: '50%',
-      border: '1px solid rgba(196,153,58,0.06)',
-      pointerEvents: 'none',
-    }} />
+  return (
+    <section id="hero" style={{
+      position: 'relative', overflow: 'hidden',
+      background: `radial-gradient(ellipse 60% 70% at 85% 50%, ${C.navySoft} 0%, ${C.midnight} 65%)`,
+      padding: 'clamp(56px, 7vw, 96px) 0',
+    }}>
+      <Engraving />
+      <div className="lp-hero-grid" style={{ position: 'relative', maxWidth: 1180, margin: '0 auto', padding: '0 24px' }}>
+        {/* Promise */}
+        <div className="lp-hero-copy">
+          <motion.p {...enter(0)} style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 600, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.gold, margin: 0 }}>
+            Authorised Corporate DSA · Personal loans
+          </motion.p>
 
-    {/* Bottom border glow */}
-    <div style={{
-      position: 'absolute', bottom: 0, left: 0, right: 0,
-      height: 1,
-      background: `linear-gradient(90deg, transparent, ${GOLD}40, transparent)`,
-    }} />
+          <motion.h1 {...enter(0.08)} style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 'clamp(42px, 5.4vw, 70px)', lineHeight: 1.04, color: C.onDark, margin: '18px 0 0' }}>
+            The right lender,<br />
+            <em className="lp-gold-text" style={{ fontStyle: 'italic' }}>found for you.</em>
+          </motion.h1>
 
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 28px', position: 'relative', zIndex: 1 }}>
-      <div className="hero-grid">
+          <motion.p {...enter(0.16)} style={{ fontFamily: SANS, fontSize: 'clamp(16px, 1.4vw, 18px)', lineHeight: 1.7, color: C.onDarkDim, margin: '22px 0 0', maxWidth: 520 }}>
+            Apply once. We compare personal-loan offers from leading banks and NBFCs,
+            help you choose the best one and handle the paperwork until the money reaches you.
+          </motion.p>
+        </div>
 
-        {/* LEFT */}
-        <motion.div
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        >
-          {/* Authority badge */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 10,
-            padding: '6px 16px 6px 8px',
-            background: 'rgba(196,153,58,0.08)',
-            border: `1px solid rgba(196,153,58,0.22)`,
-            borderRadius: 2, marginBottom: 32,
-          }}>
-            <span style={{
-              background: GOLD, color: '#fff', fontSize: 9, fontWeight: 700,
-              letterSpacing: '0.08em', padding: '2px 7px', borderRadius: 1,
-              fontFamily: 'Inter', textTransform: 'uppercase',
-            }}>
-              Corporate DSA
-            </span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter', letterSpacing: '0.02em' }}>
-              Personal Loan Specialists
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 style={{
-            fontFamily: '"Playfair Display", Georgia, serif',
-            fontWeight: 700,
-            fontSize: 'clamp(34px, 4.5vw, 54px)',
-            lineHeight: 1.12,
-            color: '#FFFFFF',
-            margin: '0 0 24px',
-            letterSpacing: '-0.01em',
-          }}>
-            Personal Loans,<br />
-            <span style={{
-              background: `linear-gradient(90deg, ${GOLD} 0%, ${GOLD_L} 100%)`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
-              Simplified.
-            </span>
-            <br />Disbursed in 48 Hours.
-          </h1>
-
-          <p style={{
-            fontSize: 16,
-            color: 'rgba(255,255,255,0.55)',
-            lineHeight: 1.85,
-            margin: '0 0 36px',
-            maxWidth: 460,
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 400,
-          }}>
-            India's trusted personal loan advisory for salaried and self-employed professionals.
-            Expert guidance, competitive rates, and zero advisory fees — always.
-          </p>
-
-          {/* Key metrics */}
-          <div style={{
-            display: 'flex', gap: 0, marginBottom: 40,
-            flexWrap: 'wrap',
-            borderTop: '1px solid rgba(196,153,58,0.15)',
-            borderBottom: '1px solid rgba(196,153,58,0.15)',
-            padding: '24px 0',
-          }}>
-            {[
-              { value: '₹50L',   label: 'Maximum Loan Amount' },
-              { value: '10.5%',  label: 'Interest Rate p.a.' },
-              { value: '48 hrs', label: 'Average Disbursal' },
-            ].map((s, i) => (
-              <div key={s.label} style={{
-                paddingLeft: i === 0 ? 0 : 32,
-                marginLeft:  i === 0 ? 0 : 32,
-                borderLeft:  i === 0 ? 'none' : '1px solid rgba(196,153,58,0.18)',
-                marginBottom: 8,
-              }}>
-                <div style={{
-                  fontFamily: '"Playfair Display", serif',
-                  fontWeight: 700, fontSize: 28,
-                  color: GOLD_L,
-                  lineHeight: 1,
-                }}>
-                  {s.value}
-                </div>
-                <div style={{
-                  fontSize: 11, color: 'rgba(255,255,255,0.35)',
-                  fontWeight: 500, marginTop: 6,
-                  letterSpacing: '0.04em', fontFamily: 'Inter',
-                  textTransform: 'uppercase',
-                }}>
-                  {s.label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* CTAs */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 36 }}>
-            <button
-              onClick={() => scrollTo('#customer-register')}
-              className="btn-gold-formal"
-              style={{ height: 48, paddingInline: 32, fontSize: 14, fontWeight: 700, letterSpacing: '0.03em' }}
-            >
-              Apply Now
-            </button>
-            <a
-              href="tel:+919876543210"
-              style={{
-                height: 48, paddingInline: 24, display: 'inline-flex',
-                alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 500, letterSpacing: '0.02em',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.22)',
-                borderRadius: 3, color: 'rgba(255,255,255,0.75)',
-                textDecoration: 'none', fontFamily: 'Inter',
-                transition: 'border-color .15s, color .15s',
-              }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(196,153,58,0.50)'; el.style.color = '#fff'; }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.22)'; el.style.color = 'rgba(255,255,255,0.75)'; }}
-            >
-              Speak to an Advisor
-            </a>
-          </div>
-
-          {/* Trust strip */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 28px' }}>
-            {TRUST.map(({ icon: Icon, text }) => (
-              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <Icon size={12} color={GOLD} />
-                <span style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.45)',
-                  fontFamily: 'Inter', fontWeight: 500,
-                }}>
-                  {text}
+        {/* Proof — on phones this drops below the form */}
+        <div className="lp-hero-proof">
+          <motion.ul {...enter(0.24)} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
+            {POINTS.map(p => (
+              <li key={p} style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: SANS, fontSize: 15, color: C.onDark }}>
+                <span style={{ width: 22, height: 22, flexShrink: 0, borderRadius: '50%', border: `1px solid ${C.gold}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Check size={13} color={C.goldLight} strokeWidth={2.4} />
                 </span>
+                {p}
+              </li>
+            ))}
+          </motion.ul>
+
+          <motion.div {...enter(0.32)} style={{ display: 'flex', gap: 'clamp(24px, 4vw, 48px)', marginTop: 36, paddingTop: 26, borderTop: '1px solid rgba(201,160,74,0.22)', flexWrap: 'wrap' }}>
+            {FACTS.map(f => (
+              <div key={f.label}>
+                <div style={{ fontFamily: DISPLAY, fontSize: 38, fontWeight: 600, lineHeight: 1, color: C.goldLight }}>{f.value}</div>
+                <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.onDarkDim, marginTop: 8 }}>{f.label}</div>
               </div>
             ))}
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* RIGHT — Application teaser */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.18, ease: 'easeOut' }}
-        >
-          <HeroForm />
+          <motion.div {...enter(0.4)} style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginTop: 28, fontFamily: SANS, fontSize: 14 }}>
+            <a href="tel:+919876543210" style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.onDark, textDecoration: 'none' }}>
+              <Phone size={15} color={C.gold} /> +91 98765 43210
+            </a>
+            <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.onDark, textDecoration: 'none' }}>
+              <MessageCircle size={15} color={C.gold} /> Chat with an advisor
+            </a>
+          </motion.div>
+        </div>
+
+        {/* Lead capture */}
+        <motion.div {...enter(0.2)} className="lp-hero-form">
+          <QuickOffer />
         </motion.div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default Hero;

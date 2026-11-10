@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, Spin, Empty, Row, Col } from 'antd';
 import {
-  TrendingUp, TrendingDown, Wallet, BarChart3, ShieldCheck, Calculator,
+  TrendingUp, TrendingDown, Wallet, BarChart3, Calculator,
   BookOpen, MessageSquare, ArrowRight, FileText, Briefcase, Target,
   Activity, ChevronRight,
 } from 'lucide-react';
@@ -202,11 +202,10 @@ const ConnectorDashboard: React.FC = () => {
   const displayName = name.charAt(0).toUpperCase() + name.slice(1);
 
   const tools = [
-    { icon: <ShieldCheck />, label: 'CIBIL Check',        sub: 'Generate bureau PDF report',   accent: '#3b82f6', path: '/connector/cibil' },
-    { icon: <BarChart3 />,   label: 'Check Eligibility',  sub: 'Leads from eligibility form',   accent: '#10b981', path: '/connector/foir' },
-    { icon: <Calculator />,  label: 'EMI Calculator',      sub: 'All loan types & banks',        accent: '#f59e0b', path: '/connector/emi-calculator' },
-    { icon: <FileText />,    label: 'Statement Analyzer',  sub: 'PDF bank statement analysis',  accent: '#8b5cf6', path: '/connector/bsa' },
-    { icon: <BookOpen />,    label: 'Policies',            sub: 'Bank & compliance guidelines', accent: '#06b6d4', path: '/connector/policies' },
+    { icon: <BarChart3 />,   label: 'Check Eligibility',  sub: 'Leads from eligibility form',   accent: '#10b981', path: '/tools?tab=eligibility' },
+    { icon: <Calculator />,  label: 'EMI Calculator',      sub: 'All loan types & banks',        accent: '#f59e0b', path: '/tools?tab=emi' },
+    { icon: <FileText />,    label: 'Statement Analyzer',  sub: 'PDF bank statement analysis',  accent: '#8b5cf6', path: '/tools?tab=statement' },
+    { icon: <BookOpen />,    label: 'Policies',            sub: 'Bank & compliance guidelines', accent: '#06b6d4', path: '/policies' },
   ];
 
   return (
@@ -228,7 +227,7 @@ const ConnectorDashboard: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/connector/team-meeting')}
+          onClick={() => navigate('/team-meeting')}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '9px 18px', borderRadius: 12, border: '1px solid var(--surface-3)',
@@ -365,7 +364,7 @@ const ConnectorDashboard: React.FC = () => {
                 View Earnings
               </button>
               <button
-                onClick={() => navigate('/connector/cibil')}
+                onClick={() => navigate('/tools?tab=eligibility')}
                 style={{
                   height: 44, borderRadius: 12, cursor: 'pointer', fontWeight: 700, fontSize: 13,
                   background: 'linear-gradient(135deg,#4f46e5,#6366f1)', border: 'none', color: 'white',
@@ -374,7 +373,7 @@ const ConnectorDashboard: React.FC = () => {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 18px rgba(79,70,229,.5)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(79,70,229,.4)'; }}
               >
-                CIBIL Check
+                Check Eligibility
               </button>
             </div>
           </div>

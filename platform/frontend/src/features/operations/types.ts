@@ -11,6 +11,7 @@ export interface Lead {
   status: string;
   customerId: string;
   createdAt: string;
+  source?: string;
   profession?: string;
   netMonthlySalary?: number;
   gender?: string;

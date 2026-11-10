@@ -1,6 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'TEAM_LEADER' | 'CONNECTOR' | 'PARTNER_MANAGER' | 'TELECALLER' | 'CREDIT_BUREAU';
+export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'CONNECTOR';
+
+/** Landing page for each role after sign-in */
+export const ROLE_HOME: Record<UserRole, string> = {
+  ADMIN:      '/dashboard',
+  RM:         '/rm/dashboard',
+  OPERATIONS: '/ops/dashboard',
+  CONNECTOR:  '/connector/dashboard',
+};
 
 interface User {
   id: string;
@@ -67,11 +75,6 @@ const authSlice = createSlice({
       sessionStorage.setItem('user', JSON.stringify(user));
       sessionStorage.setItem('token', token);
     },
-    setToken: (state, action: PayloadAction<string>) => {
-      state.token = action.payload;
-      state.isAuthenticated = true;
-      sessionStorage.setItem('token', action.payload);
-    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -88,5 +91,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setToken, logout, setLoading, setError } = authSlice.actions;
+export const { setCredentials, logout, setLoading, setError } = authSlice.actions;
 export default authSlice.reducer;

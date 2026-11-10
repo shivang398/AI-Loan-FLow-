@@ -309,7 +309,7 @@ const WorkflowMonitor: React.FC = () => {
             columns={columns}
             rowKey="id"
             pagination={{ pageSize: 12, showSizeChanger: false, showQuickJumper: true }}
-            className="premium-table"
+
             onRow={r => ({ onClick: () => setDetail(r), style: { cursor: 'pointer' } })}
             rowClassName={r => r.status === 'NEW' && daysSince(r.submittedAt) > 7 ? 'sla-risk-row' : ''}
           />

@@ -109,7 +109,7 @@ const PartnerProfileDrawer: React.FC<Props> = ({
         <Tabs
           activeKey={drawerTab}
           onChange={onChangeTab}
-          className="premium-tabs"
+
           items={[
             {
               key: 'profile',

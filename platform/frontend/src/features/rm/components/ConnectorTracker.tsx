@@ -293,7 +293,7 @@ const ConnectorTracker: React.FC = () => {
             columns={columns}
             rowKey="id"
             pagination={{ pageSize: 10, showSizeChanger: false }}
-            className="premium-table"
+
             onRow={r => ({ onClick: () => setSelected(r), style: { cursor: 'pointer' } })}
           />
         )}

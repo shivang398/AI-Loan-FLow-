@@ -175,6 +175,7 @@ exports.Prisma.LeadScalarFieldEnum = {
   loanAmount: 'loanAmount',
   assignedTo: 'assignedTo',
   status: 'status',
+  source: 'source',
   customerId: 'customerId',
   createdAt: 'createdAt',
   profession: 'profession',

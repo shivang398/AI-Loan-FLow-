@@ -76,7 +76,7 @@ const OperationsDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    api.get('/connectors', { params: { roles: 'TELECALLER', size: 200 } })
+    api.get('/connectors', { params: { roles: 'OPERATIONS', size: 200 } })
       .then(res => {
         const items: any[] = res.data?.data?.items ?? res.data?.data ?? [];
         setTelecallers(items.map(t => ({
@@ -343,7 +343,7 @@ const OperationsDashboard: React.FC = () => {
         onCancel={() => setReviewTarget(null)}
       />
 
-      {/* Assign Telecaller Modal */}
+      {/* Assign Caller Modal */}
       <AssignTelecallerModal
         lead={assignModalLead}
         telecallers={telecallers}

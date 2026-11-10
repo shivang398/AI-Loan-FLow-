@@ -23,7 +23,7 @@ const AssignTelecallerModal: React.FC<Props> = ({
     title={
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <PhoneCall size={16} color="#06b6d4" />
-        <span style={{ fontWeight: 900, fontSize: 15, color: '#1e293b' }}>Assign to Telecaller</span>
+        <span style={{ fontWeight: 900, fontSize: 15, color: '#1e293b' }}>Assign to a caller</span>
       </div>
     }
     footer={
@@ -58,12 +58,12 @@ const AssignTelecallerModal: React.FC<Props> = ({
           showSearch
           value={assignEmail || undefined}
           onChange={onChangeEmail}
-          placeholder={telecallers.length === 0 ? 'No telecallers found — add one first' : 'Search by name or email…'}
+          placeholder={telecallers.length === 0 ? 'No operations users found' : 'Search by name or email…'}
           style={{ width: '100%' }}
           size="large"
           options={telecallers}
           filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-          notFoundContent={telecallers.length === 0 ? 'No telecallers yet. Create one in HR → User Management.' : 'No match'}
+          notFoundContent={telecallers.length === 0 ? 'No operations users yet. Add one in User Management.' : 'No match'}
         />
       </div>
       {lead?.assignedTo && (

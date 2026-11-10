@@ -28,18 +28,3 @@ export function getChannel(): Channel {
 export async function publish(routingKey: string, payload: object) {
   getChannel().publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), { persistent: true });
 }
-
-export async function subscribe(queue: string, routingKey: string, handler: (msg: object) => Promise<void>) {
-  const ch = getChannel();
-  await ch.assertQueue(queue, { durable: true });
-  await ch.bindQueue(queue, EXCHANGE, routingKey);
-  ch.consume(queue, async (msg) => {
-    if (!msg) return;
-    try {
-      await handler(JSON.parse(msg.content.toString()));
-      ch.ack(msg);
-    } catch {
-      ch.nack(msg, false, false);
-    }
-  });
-}

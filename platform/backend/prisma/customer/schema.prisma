@@ -77,6 +77,7 @@ model Lead {
   loanAmount           Decimal?  @map("loan_amount") @db.Decimal(15, 2)
   assignedTo           String?   @map("assigned_to") @db.VarChar(255)
   status               String    @default("NEW") @db.VarChar(50)
+  source               String    @default("WEBSITE") @db.VarChar(30)
   customerId           String?   @map("customer_id") @db.Char(36)
   createdAt            DateTime  @map("created_at")
   profession           String?   @db.VarChar(50)

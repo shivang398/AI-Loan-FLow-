@@ -8,32 +8,19 @@ import {
   LayoutGrid, List as ListIcon, GitBranch
 } from 'lucide-react';
 import apiClient from '../../../shared/services/apiClient';
+import { ROLE_COLORS } from '../../../shared/constants/statusStyles';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const { Option } = Select;
 
-const ROLE_COLORS: Record<string, string> = {
-  ADMIN: '#3b82f6',
-  RM: '#10b981',
-  OPERATIONS: '#f59e0b',
-  TEAM_LEADER: '#ec4899',
-  PARTNER_MANAGER: '#8b5cf6',
-  TELECALLER: '#06b6d4',
-  CREDIT_BUREAU: '#0B1E3D',
-};
-
 const DEPT_MAP: Record<string, string> = {
   ADMIN: 'Executive',
   RM: 'Sales & Growth',
   OPERATIONS: 'Credit Ops',
-  TEAM_LEADER: 'Sales & Growth',
-  PARTNER_MANAGER: 'Partner Management',
-  TELECALLER: 'Tele Sales',
-  CREDIT_BUREAU: 'Credit Bureau',
 };
 
-const STAFF_ROLES = ['RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER', 'TELECALLER', 'CREDIT_BUREAU'];
+const STAFF_ROLES = ['ADMIN', 'RM', 'OPERATIONS'];
 
 function connectorToRow(c: any) {
   const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.firstName || 'Unknown';
@@ -151,9 +138,6 @@ const UserManagement: React.FC = () => {
           'ADMIN': { bg: '#eff6ff', text: '#2563eb' },
           'RM': { bg: '#f0fdf4', text: '#16a34a' },
           'OPERATIONS': { bg: '#fefce8', text: '#a16207' },
-          'TEAM_LEADER': { bg: '#fff1f2', text: '#e11d48' },
-          'PARTNER_MANAGER': { bg: '#f5f3ff', text: '#7c3aed' },
-          'TELECALLER': { bg: '#ecfeff', text: '#0e7490' },
         };
         const style = roleStyles[params.value] || { bg: '#f1f5f9', text: '#475569' };
         return (
@@ -378,7 +362,6 @@ const UserManagement: React.FC = () => {
         </div>
         {[
           { label: 'Channel Partner', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-          { label: 'Team Leader', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
           { label: 'Relationship Manager', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
         ].map((item, i, arr) => (
           <React.Fragment key={item.label}>
@@ -414,7 +397,7 @@ const UserManagement: React.FC = () => {
         </Col>
         <Col span={6}>
           <Card variant="borderless" className="pro-card">
-            <Statistic title="Team Leaders" value={staffData.filter(s => s.role === 'TEAM_LEADER').length} prefix={<Calendar size={18} />} valueStyle={{ color: '#3b82f6', fontWeight: 800 }} />
+            <Statistic title="Admins" value={staffData.filter(s => s.role === 'ADMIN').length} prefix={<Calendar size={18} />} valueStyle={{ color: '#3b82f6', fontWeight: 800 }} />
           </Card>
         </Col>
       </Row>
@@ -509,24 +492,11 @@ const UserManagement: React.FC = () => {
               <Form.Item name="role" label="Access Role" rules={[{ required: true }]}>
                 <Select
                   placeholder="Select Role"
-                  onChange={(val) => {
-                    const deptMap: Record<string, string> = {
-                      RM: 'Sales & Growth',
-                      TEAM_LEADER: 'Sales & Growth',
-                      OPERATIONS: 'Credit Ops',
-                      PARTNER_MANAGER: 'Partner Management',
-                      TELECALLER: 'Tele Sales',
-                      CREDIT_BUREAU: 'Credit Bureau',
-                    };
-                    if (deptMap[val]) form.setFieldValue('department', deptMap[val]);
-                  }}
+                  onChange={(val) => { if (DEPT_MAP[val]) form.setFieldValue('department', DEPT_MAP[val]); }}
                 >
                   <Option value="RM">Relationship Manager</Option>
                   <Option value="OPERATIONS">Operations User</Option>
-                  <Option value="TEAM_LEADER">Team Leader</Option>
-                  <Option value="PARTNER_MANAGER">Partner Manager</Option>
-                  <Option value="TELECALLER">Telecaller</Option>
-                  <Option value="CREDIT_BUREAU">Credit Bureau</Option>
+                  <Option value="ADMIN">Admin</Option>
                 </Select>
               </Form.Item>
             </Col>

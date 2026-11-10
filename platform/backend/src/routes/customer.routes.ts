@@ -85,8 +85,11 @@ router.post('/leads', async (req: Request, res: Response) => {
   res.status(201).json(ok('Lead created', await customerService.createLead({ ...parsed.data, createdBy: 'website_form' })));
 });
 
-// ── All routes below require authentication ────────────────────────────────
+// ── All routes below require a staff login ─────────────────────────────────
+// Leads and customers hold PAN, contact and income data: channel partners (CONNECTOR) must not read or
+// edit other people's records, so everything past the public website form is staff-only.
 router.use(authenticate);
+router.use(requireRoles('ADMIN', 'RM', 'OPERATIONS'));
 
 router.post('/', async (req: Request, res: Response) => {
   const parsed = customerSchema.safeParse(req.body);
@@ -106,7 +109,7 @@ router.get('/leads', async (req: Request, res: Response) => {
   res.json(ok('Leads fetched', await customerService.getLeads({ status: req.query.status as string, assignedTo: req.query.assignedTo as string, page, size })));
 });
 
-router.post('/leads/reassign', requireRoles('ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.post('/leads/reassign', requireRoles('ADMIN', 'RM', 'OPERATIONS'), async (req: Request, res: Response) => {
   const { leadIds, assignTo, fromEmail } = req.body;
 
   // Offboarding path: unassign all open leads belonging to a departing user
@@ -137,13 +140,13 @@ router.put('/leads/:id', async (req: Request, res: Response) => {
 });
 
 // Sub-routes used by the Ops Dashboard for targeted single-field updates
-router.put('/leads/:id/notes', requireRoles('ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER'), async (req: Request, res: Response) => {
+router.put('/leads/:id/notes', requireRoles('ADMIN', 'OPERATIONS', 'RM'), async (req: Request, res: Response) => {
   const { notes } = req.body;
   if (notes === undefined) { res.status(400).json(fail('notes is required')); return; }
   res.json(ok('Notes updated', await customerService.updateLead(req.params.id, { notes })));
 });
 
-router.put('/leads/:id/status', requireRoles('ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.put('/leads/:id/status', requireRoles('ADMIN', 'OPERATIONS', 'RM'), async (req: Request, res: Response) => {
   const { status } = req.body;
   if (!status) { res.status(400).json(fail('status is required')); return; }
   res.json(ok('Status updated', await customerService.updateLead(req.params.id, { status })));

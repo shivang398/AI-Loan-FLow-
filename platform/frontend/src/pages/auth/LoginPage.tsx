@@ -6,7 +6,7 @@ import { Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginSchema, LoginFormValues } from '../../schemas/authSchemas';
-import { setCredentials, setLoading, setError } from '../../store/slices/authSlice';
+import { setCredentials, setLoading, setError, ROLE_HOME, UserRole } from '../../store/slices/authSlice';
 import api from '../../shared/services/apiClient';
 import { RootState } from '../../store';
 import { RealMoneyMark } from '../../shared/components/RealMoneyLogo';
@@ -28,12 +28,7 @@ const LoginPage: React.FC = () => {
 
   React.useEffect(() => {
     if (isAuthenticated && user) {
-      const paths: Record<string, string> = {
-        RM: '/rm/dashboard', TEAM_LEADER: '/tl/dashboard',
-        OPERATIONS: '/ops/dashboard', CONNECTOR: '/connector/dashboard',
-        PARTNER_MANAGER: '/pm/partners',
-      };
-      navigate(paths[user.role] ?? '/dashboard', { replace: true });
+      navigate(ROLE_HOME[user.role] ?? '/dashboard', { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -53,12 +48,7 @@ const LoginPage: React.FC = () => {
       const email = data?.email || formData.email;
       if (!token || !role) throw new Error('Invalid login response from server');
       dispatch(setCredentials({ user: { id: data?.id || email, email, role }, token }));
-      const paths: Record<string, string> = {
-        RM: '/rm/dashboard', TEAM_LEADER: '/tl/dashboard',
-        OPERATIONS: '/ops/dashboard', CONNECTOR: '/connector/dashboard',
-        PARTNER_MANAGER: '/pm/partners', ADMIN: '/dashboard',
-      };
-      navigate(paths[role] ?? '/dashboard', { replace: true });
+      navigate(ROLE_HOME[role as UserRole] ?? '/dashboard', { replace: true });
     } catch (err: any) {
       const serverMsg = err.response?.data?.message;
       const displayMsg = serverMsg && serverMsg.length < 120 ? serverMsg : 'An error occurred. Please try again.';

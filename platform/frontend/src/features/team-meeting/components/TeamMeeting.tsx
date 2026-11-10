@@ -13,12 +13,7 @@ import {
 import type { TeamRoom, TeamMessage, UserRole } from '../../../store/slices/teamMeetingSlice';
 import { useTeamMeetingWS } from '../../../hooks/useTeamMeetingWS';
 import apiClient from '../../../shared/services/apiClient';
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: 'Admin', RM: 'Relationship Manager',
-  OPERATIONS: 'Operations', TEAM_LEADER: 'Team Leader', CONNECTOR: 'Connector',
-  PARTNER_MANAGER: 'Partner Manager', TELECALLER: 'Telecaller',
-};
+import { ROLE_LABELS } from '../../../shared/constants/statusStyles';
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -200,8 +195,7 @@ const Bubble: React.FC<{ msg: TeamMessage; isMine: boolean; showAvatar: boolean 
 };
 
 const ROLE_MAP: Record<string, UserRole> = {
-  ADMIN: 'ADMIN', RM: 'RM', OPERATIONS: 'OPERATIONS',
-  TEAM_LEADER: 'TEAM_LEADER', CONNECTOR: 'CONNECTOR', PARTNER_MANAGER: 'PARTNER_MANAGER', TELECALLER: 'TELECALLER',
+  ADMIN: 'ADMIN', RM: 'RM', OPERATIONS: 'OPERATIONS', CONNECTOR: 'CONNECTOR',
 };
 
 const TeamMeeting: React.FC = () => {
@@ -363,9 +357,6 @@ const TeamMeeting: React.FC = () => {
     CONNECTOR:       ['Documents uploaded', 'Client confirmed', 'New lead ready', 'Query resolved'],
     OPERATIONS:      ['Processing now', 'Query raised', 'Approved — disbursing', 'Doc mismatch'],
     ADMIN:           ['Target updated', 'Review Q2', 'Compliance due', 'Good performance'],
-    TEAM_LEADER:     ['Check your target', 'Training Friday', 'Payout processed', 'New product live'],
-    PARTNER_MANAGER: ['Onboarding approved', 'Payout released', 'Review connector', 'Slab updated'],
-    TELECALLER:      ['Called customer', 'Callback scheduled', 'Interested lead', 'Not reachable'],
   };
 
   const onlineCount = myRooms.filter(r => r.isOnline).length;

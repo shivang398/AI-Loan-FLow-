@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'TEAM_LEADER' | 'CONNECTOR' | 'PARTNER_MANAGER' | 'TELECALLER';
+export type UserRole = 'ADMIN' | 'RM' | 'OPERATIONS' | 'CONNECTOR';
 export type WSConnectionStatus = 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED' | 'SIMULATED';
 
 export interface RoomParticipant {
@@ -55,10 +55,7 @@ const ROLE_COLOR: Record<UserRole, string> = {
   ADMIN:           '#6366f1',
   RM:              '#3b82f6',
   OPERATIONS:      '#f59e0b',
-  TEAM_LEADER:     '#8b5cf6',
   CONNECTOR:       '#10b981',
-  PARTNER_MANAGER: '#ec4899',
-  TELECALLER:      '#06b6d4',
 };
 
 export function buildParticipant(id: string, name: string, role: UserRole): RoomParticipant {
@@ -135,10 +132,6 @@ const teamMeetingSlice = createSlice({
         if (state.activeRoomId !== m.roomId) room.unreadCount += 1;
       }
     },
-    markRoomRead: (state, action: PayloadAction<string>) => {
-      const room = state.rooms.find(r => r.id === action.payload);
-      if (room) room.unreadCount = 0;
-    },
     setTyping: (state, action: PayloadAction<{ roomId: string; isTyping: boolean }>) => {
       state.typingByRoom[action.payload.roomId] = action.payload.isTyping;
     },
@@ -149,18 +142,11 @@ const teamMeetingSlice = createSlice({
       const room = state.rooms.find(r => r.id === action.payload.roomId);
       if (room) room.isOnline = action.payload.isOnline;
     },
-    updateMessageStatus: (state, action: PayloadAction<{ messageId: string; roomId: string; status: TeamMessage['status'] }>) => {
-      const msgs = state.messagesByRoom[action.payload.roomId];
-      if (msgs) {
-        const m = msgs.find(m => m.id === action.payload.messageId);
-        if (m) m.status = action.payload.status;
-      }
-    },
   },
 });
 
 export const {
-  setRooms, setActiveRoom, sendMessage, receiveMessage, markRoomRead,
-  setTyping, setWSStatus, setRoomOnline, updateMessageStatus,
+  setRooms, setActiveRoom, sendMessage, receiveMessage,
+  setTyping, setWSStatus, setRoomOnline,
 } = teamMeetingSlice.actions;
 export default teamMeetingSlice.reducer;

@@ -147,12 +147,13 @@ Stateless JWT. Secret from `JWT_SECRET` env var (min 32 chars). Roles encoded as
 
 | Role | Access |
 |---|---|
-| `ADMIN` | Everything |
-| `PARTNER_MANAGER` | Connector onboarding, payout slabs |
-| `RM` | Regional dashboard, connector tracking |
-| `TEAM_LEADER` | Team-level views |
-| `CONNECTOR` | Own dashboard, lead submission |
-| `OPERATIONS` | WhatsApp console, ops dashboard |
+| `ADMIN` | Everything (includes the former Partner Manager screens under /partners) |
+| `RM` | Regional dashboard, connector tracking, workflow, routing, commissions |
+| `OPERATIONS` | Ops queue, document review, call queue, WhatsApp inbox & broadcasts |
+| `CONNECTOR` | Own dashboard, loan tools, own earnings — no access to the lead/customer CRM |
+
+Roles were consolidated 8 → 4 in Nov 2026 (`backend/scripts/merge-roles.sql`). Full application reference,
+API table and deploy runbook: `../reference/CLAUDE.md`.
 
 Public endpoints (no JWT): `POST /auth/login`, `POST /auth/refresh`, `POST /auth/register/partner`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `GET/POST /messaging/whatsapp/webhook`, `GET /health`.
 

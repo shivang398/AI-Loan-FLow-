@@ -182,7 +182,7 @@ const PayoutTracker: React.FC = () => {
         <Button 
           type="text" 
           icon={<Edit2 size={16} />} 
-          className="text-blue-600" 
+ 
           onClick={() => handleUpdateClick(p.data)}
         />
       )
@@ -196,12 +196,12 @@ const PayoutTracker: React.FC = () => {
           <h1 className="page-header-title">Commission & Payout Tracker</h1>
           <span className="page-header-subtitle">Manage partial and full settlements for channel partner commissions.</span>
         </div>
-        <Button icon={<Download size={16} />} type="primary" className="bg-blue-600 font-bold" onClick={handleDownloadReport}>Download Commission Report</Button>
+        <Button icon={<Download size={16} />} type="primary" onClick={handleDownloadReport}>Download Commission Report</Button>
       </div>
 
       <Row gutter={16}>
         <Col span={8}>
-          <Card variant="borderless" className="pro-card shadow-sm" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+          <Card variant="borderless" className="pro-card" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
             <Statistic
               title={<span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Total Commission Outflow</span>}
               value={rowData.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)}
@@ -211,7 +211,7 @@ const PayoutTracker: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card variant="borderless" className="pro-card shadow-sm">
+          <Card variant="borderless" className="pro-card">
             <Statistic 
               title="Pending Settlements (To Be Paid)" 
               value={rowData.reduce((acc, curr) => acc + curr.remainingAmount, 0)} 
@@ -221,7 +221,7 @@ const PayoutTracker: React.FC = () => {
           </Card>
         </Col>
         <Col span={8}>
-          <Card variant="borderless" className="pro-card shadow-sm">
+          <Card variant="borderless" className="pro-card">
             <Statistic 
               title="Amount Successfully Paid" 
               value={rowData.reduce((acc, curr) => acc + curr.amountPaid, 0)} 
@@ -232,11 +232,11 @@ const PayoutTracker: React.FC = () => {
         </Col>
       </Row>
 
-      <div className="pro-card shadow-sm" style={{ padding: 0 }}>
+      <div className="pro-card" style={{ padding: 0 }}>
         <div className="page-toolbar" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Input
             placeholder="Search by Channel Partner or Payout ID..."
-            prefix={<Search size={18} className="text-slate-400" />}
+            prefix={<Search size={18} />}
             style={{ maxWidth: 400, borderRadius: 10 }}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -245,7 +245,7 @@ const PayoutTracker: React.FC = () => {
           <Space>
             <Tag
               color={statusFilter === 'PENDING' ? 'blue' : undefined}
-              className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg border-none"
+
               style={statusFilter !== 'PENDING' ? { background: '#f1f5f9', color: '#64748b' } : {}}
               onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
             >
@@ -253,7 +253,7 @@ const PayoutTracker: React.FC = () => {
             </Tag>
             <Tag
               color={statusFilter === 'ALL' ? 'blue' : undefined}
-              className="cursor-pointer px-3 py-1 text-sm font-bold rounded-lg border-none"
+
               style={statusFilter !== 'ALL' ? { background: '#f1f5f9', color: '#64748b' } : {}}
               onClick={() => setStatusFilter('ALL')}
             >
@@ -275,25 +275,25 @@ const PayoutTracker: React.FC = () => {
 
       {/* Payment Update Modal */}
       <Modal
-        title={<div className="flex items-center gap-2"><Wallet size={20} className="text-blue-600" /> Update Settlement Status</div>}
+        title={<div><Wallet size={20} /> Update Settlement Status</div>}
         open={isUpdateModalOpen}
         onCancel={() => setIsUpdateModalOpen(false)}
         footer={null}
         width={450}
       >
         {selectedPayout && (
-          <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-500 font-medium">Channel Partner:</span>
-              <span className="font-bold text-slate-800">{selectedPayout.connector}</span>
+          <div>
+            <div>
+              <span>Channel Partner:</span>
+              <span>{selectedPayout.connector}</span>
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-500 font-medium">Total Comm:</span>
-              <span className="font-bold text-blue-600">₹{selectedPayout.totalAmount.toLocaleString()}</span>
+            <div>
+              <span>Total Comm:</span>
+              <span>₹{selectedPayout.totalAmount.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-medium">Pending:</span>
-              <span className="font-bold text-red-500">₹{selectedPayout.remainingAmount.toLocaleString()}</span>
+            <div>
+              <span>Pending:</span>
+              <span>₹{selectedPayout.remainingAmount.toLocaleString()}</span>
             </div>
           </div>
         )}
@@ -309,13 +309,13 @@ const PayoutTracker: React.FC = () => {
           </Form.Item>
 
           {/* Dynamic field based on status selection could be handled here, but we will just show amount paid */}
-          <Form.Item shouldUpdate className="mb-0">
+          <Form.Item shouldUpdate>
             {() => {
               const currentStatus = form.getFieldValue('status');
               if (currentStatus === 'PARTIALLY_PAID') {
                 return (
                   <Form.Item name="amountPaid" label="Total Amount Paid So Far (₹)" rules={[{ required: true }]}>
-                    <InputNumber className="w-full" max={selectedPayout?.totalAmount} min={0} />
+                    <InputNumber max={selectedPayout?.totalAmount} min={0} />
                   </Form.Item>
                 );
               }
@@ -324,13 +324,13 @@ const PayoutTracker: React.FC = () => {
           </Form.Item>
 
           <Form.Item name="paymentDate" label="Payment Date" rules={[{ required: true }]}>
-            <DatePicker className="w-full" />
+            <DatePicker />
           </Form.Item>
 
-          <Form.Item className="mb-0 text-right mt-6">
+          <Form.Item>
             <Space>
               <Button onClick={() => setIsUpdateModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" className="bg-blue-600 font-bold">Confirm Update</Button>
+              <Button type="primary" htmlType="submit">Confirm Update</Button>
             </Space>
           </Form.Item>
         </Form>

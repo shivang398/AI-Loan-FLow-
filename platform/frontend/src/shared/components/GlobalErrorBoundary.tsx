@@ -28,17 +28,17 @@ class GlobalErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div>
           <Result
             status="error"
-            title={<span className="font-bold">Something went wrong</span>}
+            title={<span>Something went wrong</span>}
             subTitle={
-              <div className="space-y-4">
+              <div>
                 <Text type="secondary">
                   An unexpected error occurred in the application. Please try refreshing the page.
                 </Text>
-                <div className="bg-red-50 p-4 rounded-xl border border-red-100 mt-4">
-                  <Text type="danger" className="font-mono text-xs italic">
+                <div>
+                  <Text type="danger">
                     Error Code: ERR_PLATFORM_CRASH_01
                   </Text>
                 </div>
@@ -50,11 +50,11 @@ class GlobalErrorBoundary extends Component<Props, State> {
                 key="refresh" 
                 icon={<RefreshCcw size={16} />}
                 onClick={() => window.location.reload()}
-                className="bg-blue-600 h-12 px-8 rounded-xl font-bold"
+
               >
                 Refresh Dashboard
               </Button>,
-              <Button key="support" ghost className="h-12 border-slate-200 text-slate-600">
+              <Button key="support" ghost>
                 Contact Support
               </Button>
             ]}

@@ -68,8 +68,10 @@ services:
       - DEFAULT_REGION=us-east-1
       - AWS_DEFAULT_REGION=us-east-1
       - PERSISTENCE=1
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-realmoney-document-personal-loan}
     volumes:
       - localstack_data:/var/lib/localstack
+      - ./localstack-init/create-buckets.sh:/etc/localstack/init/ready.d/create-buckets.sh:ro   # creates the documents bucket
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:4566/_localstack/health || exit 1"]
       interval: 10s

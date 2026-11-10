@@ -20,6 +20,7 @@ import commissionRoutes from './routes/commission.routes';
 import foirRoutes from './routes/foir.routes';
 import routingRoutes from './routes/routing.routes';
 import commsRoutes from './routes/communications.routes';
+import whatsappRoutes, { whatsappWebhookRouter, interaktWebhookRouter } from './routes/whatsapp.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import reportsRoutes from './routes/reports.routes';
@@ -52,7 +53,8 @@ app.use(cors({ origin: corsOrigins, credentials: true }));
 // Strip Authorization header from access logs to prevent JWT token leakage
 morgan.token('redacted-auth', () => '[REDACTED]');
 app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
-app.use(express.json({ limit: '10mb' }));
+// Keep the raw bytes for webhook signature verification (WhatsApp HMAC)
+app.use(express.json({ limit: '10mb', verify: (req, _res, buf) => { (req as express.Request & { rawBody?: Buffer }).rawBody = buf; } }));
 app.use(cookieParser());
 
 // Cap pagination size to 100 to prevent DB abuse
@@ -107,7 +109,10 @@ app.use('/foir', apiLimiter, foirRoutes);
 app.use('/routing', writeLimiter, routingRoutes);
 
 // ── Communications & Notifications ───────────────────────────────────────────
+app.use('/messaging/whatsapp/webhook', whatsappWebhookRouter);   // public, no rate limit — see whatsapp.routes.ts
+app.use('/messaging/whatsapp/interakt-webhook', interaktWebhookRouter);
 app.use('/messaging', apiLimiter, commsRoutes);
+app.use('/whatsapp', apiLimiter, whatsappRoutes);
 app.use('/notifications', apiLimiter, notificationsRoutes);
 
 // ── Analytics & Reports ───────────────────────────────────────────────────────

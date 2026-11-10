@@ -145,13 +145,13 @@ const DocumentLibrary: React.FC = () => {
 
   const getBreadcrumbs = () => {
     const parts = currentPath.split('/').filter(Boolean);
-    const breadcrumbs = [{ title: <Home size={14} className="cursor-pointer" onClick={() => setCurrentPath('/')} />, path: '/' }];
+    const breadcrumbs = [{ title: <Home size={14} onClick={() => setCurrentPath('/')} />, path: '/' }];
     let builtPath = '';
     parts.forEach(p => {
       builtPath += `/${p}`;
       const pCopy = builtPath;
       breadcrumbs.push({
-        title: <span className="cursor-pointer font-medium hover:text-blue-600" onClick={() => setCurrentPath(pCopy)}>{p}</span>,
+        title: <span onClick={() => setCurrentPath(pCopy)}>{p}</span>,
         path: builtPath
       });
     });
@@ -199,12 +199,16 @@ const DocumentLibrary: React.FC = () => {
           ].map(({ label, path, icon: Icon }) => (
             <div
               key={path}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${currentPath === path ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
-              style={{ paddingLeft: path.split('/').length > 2 ? 28 : undefined }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 3, cursor: 'pointer',
+                paddingLeft: path.split('/').length > 2 ? 28 : 12,
+                background: currentPath === path ? 'var(--gold-pale)' : undefined,
+                color: currentPath === path ? 'var(--navy)' : 'var(--text-secondary)',
+              }}
               onClick={() => setCurrentPath(path)}
             >
               <Icon size={path.split('/').length > 2 ? 14 : 18} />
-              <span className={`font-semibold ${path.split('/').length > 2 ? 'text-xs' : 'text-sm'}`}>{label}</span>
+              <span style={{ fontWeight: 600, fontSize: path.split('/').length > 2 ? 12 : 14 }}>{label}</span>
             </div>
           ))}
         </div>
@@ -214,11 +218,11 @@ const DocumentLibrary: React.FC = () => {
           {/* Toolbar */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--surface-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <Breadcrumb items={getBreadcrumbs()} separator={<ChevronRight size={14} className="text-slate-400" />} />
+              <Breadcrumb items={getBreadcrumbs()} separator={<ChevronRight size={14} />} />
             </div>
             <Input 
               placeholder="Search in folder..." 
-              prefix={<Search size={16} className="text-slate-400" />}
+              prefix={<Search size={16} />}
               style={{ width: 250, borderRadius: 8 }}
             />
           </div>
@@ -226,30 +230,30 @@ const DocumentLibrary: React.FC = () => {
           {/* File Grid */}
           <div style={{ padding: 24, flex: 1, overflowY: 'auto' }}>
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
+              <div>
                 <FolderOpen size={48} strokeWidth={1} />
-                <span className="font-medium">This folder is empty</span>
+                <span>This folder is empty</span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div>
                 {items.map((item: any, i: number) => (
                   <div 
                     key={i}
-                    className="group flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200"
+
                     onClick={() => handleNavigate(item)}
                   >
-                    <div className="relative">
+                    <div>
                       {item.type === 'folder' ? (
-                        <Folder size={64} className="text-blue-500 fill-blue-100" strokeWidth={1.5} />
+                        <Folder size={64} strokeWidth={1.5} />
                       ) : item.mime?.includes('pdf') ? (
-                        <FileText size={64} className="text-red-500 fill-red-50" strokeWidth={1.5} />
+                        <FileText size={64} strokeWidth={1.5} />
                       ) : (
-                        <FileImage size={64} className="text-emerald-500 fill-emerald-50" strokeWidth={1.5} />
+                        <FileImage size={64} strokeWidth={1.5} />
                       )}
                     </div>
-                    <div className="text-center w-full">
-                      <div className="font-semibold text-slate-700 text-sm truncate w-full" title={item.name}>{item.name}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">
+                    <div>
+                      <div title={item.name}>{item.name}</div>
+                      <div>
                         {item.type === 'folder' ? `${item.children?.length || 0} items` : item.size}
                       </div>
                     </div>
@@ -268,7 +272,7 @@ const DocumentLibrary: React.FC = () => {
             <div style={{ width: 32, height: 32, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FileCode size={16} color="#3b82f6" />
             </div>
-            <div className="font-bold text-slate-800">{previewFile?.name}</div>
+            <div>{previewFile?.name}</div>
           </div>
         }
         open={!!previewFile}
@@ -285,9 +289,9 @@ const DocumentLibrary: React.FC = () => {
         }}
       >
         <div style={{ background: '#f8fafc', height: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <FileText size={64} className="text-slate-300 mb-4" strokeWidth={1} />
-          <h3 className="font-bold text-slate-700 text-lg mb-2">No Preview Available</h3>
-          <p className="text-slate-500 text-sm max-w-sm text-center">
+          <FileText size={64} strokeWidth={1} />
+          <h3>No Preview Available</h3>
+          <p>
             This file type cannot be previewed directly in the browser. Please download the file to view its contents securely.
           </p>
         </div>

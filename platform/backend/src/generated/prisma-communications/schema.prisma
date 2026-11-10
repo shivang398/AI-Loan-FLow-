@@ -19,6 +19,10 @@ model Conversation {
   conversationType   String                  @default("EXTERNAL_CONNECTOR_OPS") @map("conversation_type") @db.VarChar(50)
   customerName       String?                 @map("customer_name") @db.VarChar(255)
   customerPhone      String?                 @map("customer_phone") @db.VarChar(20)
+  // WhatsApp only: BOT = journey bot replies, HUMAN = an ops agent has taken over
+  botMode            String                  @default("BOT") @map("bot_mode") @db.VarChar(10)
+  leadId             String?                 @map("lead_id") @db.Char(36)
+  lastInboundAt      DateTime?               @map("last_inbound_at")
   createdAt          DateTime                @map("created_at")
   updatedAt          DateTime                @map("updated_at")
   messages           Message[]
@@ -26,6 +30,7 @@ model Conversation {
 
   @@index([connectorId])
   @@index([loanApplicationId])
+  @@index([customerPhone])
   @@map("conversations")
 }
 
@@ -46,6 +51,7 @@ model Message {
   deliveryStatuses  MessageDeliveryStatus[]
 
   @@index([conversationId])
+  @@index([whatsappMessageId])
   @@map("messages")
 }
 
@@ -142,6 +148,16 @@ model WhatsappMessageTemplate {
   templateName     String   @unique @map("template_name") @db.VarChar(100)
   templateBody     String   @map("template_body") @db.Text
   templateCategory String   @default("UTILITY") @map("template_category") @db.VarChar(50)
+  language         String   @default("en") @db.VarChar(20)
+  paramCount       Int      @default(0) @map("param_count")
+  // Meta review state: PENDING | APPROVED | REJECTED | PAUSED | DISABLED — only APPROVED can be sent
+  status           String   @default("APPROVED") @db.VarChar(20)
+  rejectedReason   String?  @map("rejected_reason") @db.VarChar(255)
+  headerText       String?  @map("header_text") @db.VarChar(60)
+  footerText       String?  @map("footer_text") @db.VarChar(60)
+  buttons          Json?
+  metaTemplateId   String?  @map("meta_template_id") @db.VarChar(64)
+  createdBy        String?  @map("created_by") @db.VarChar(255)
   isActive         Boolean  @default(true) @map("is_active")
   createdAt        DateTime @default(now()) @map("created_at")
 
@@ -174,4 +190,57 @@ model NotificationDeliveryLog {
   notification     Notification? @relation(fields: [notificationId], references: [id])
 
   @@map("notification_delivery_logs")
+}
+
+// ── WhatsApp bot + campaigns ──────────────────────────────────────────────────
+
+// One row per customer WhatsApp number: where they are in the lead journey
+model WhatsappBotSession {
+  phone     String   @id @db.VarChar(20)
+  step      String   @db.VarChar(30)
+  data      Json
+  optedOut  Boolean  @default(false) @map("opted_out")
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  @@map("whatsapp_bot_sessions")
+}
+
+model WhatsappCampaign {
+  id               String                      @id @db.Char(36)
+  name             String                      @db.VarChar(150)
+  templateName     String                      @map("template_name") @db.VarChar(100)
+  templateLanguage String                      @map("template_language") @db.VarChar(20)
+  templateParams   Json                        @map("template_params")
+  audience         Json
+  status           String                      @db.VarChar(20)
+  totalRecipients  Int                         @map("total_recipients")
+  createdBy        String                      @map("created_by") @db.VarChar(255)
+  createdAt        DateTime                    @map("created_at")
+  startedAt        DateTime?                   @map("started_at")
+  completedAt      DateTime?                   @map("completed_at")
+  recipients       WhatsappCampaignRecipient[]
+
+  @@map("whatsapp_campaigns")
+}
+
+model WhatsappCampaignRecipient {
+  id                String           @id @db.Char(36)
+  campaignId        String           @map("campaign_id") @db.Char(36)
+  phone             String           @db.VarChar(20)
+  name              String?          @db.VarChar(255)
+  leadId            String?          @map("lead_id") @db.Char(36)
+  status            String           @db.VarChar(20)
+  whatsappMessageId String?          @map("whatsapp_message_id") @db.VarChar(255)
+  errorMessage      String?          @map("error_message") @db.VarChar(500)
+  sentAt            DateTime?        @map("sent_at")
+  repliedAt         DateTime?        @map("replied_at")
+  convertedLeadId   String?          @map("converted_lead_id") @db.Char(36)
+  updatedAt         DateTime         @map("updated_at")
+  campaign          WhatsappCampaign @relation(fields: [campaignId], references: [id])
+
+  @@unique([campaignId, phone])
+  @@index([whatsappMessageId])
+  @@index([phone])
+  @@map("whatsapp_campaign_recipients")
 }

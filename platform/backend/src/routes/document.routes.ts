@@ -19,7 +19,7 @@ const ALLOWED_MIME = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]);
 
-const PRIVILEGED_ROLES = ['ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER', 'PARTNER_MANAGER'];
+const PRIVILEGED_ROLES = ['ADMIN', 'OPERATIONS', 'RM'];
 
 const upload = multer({
   storage: multer.memoryStorage(),

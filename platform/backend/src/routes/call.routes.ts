@@ -7,10 +7,10 @@ import { ok, fail } from '../utils/response';
 const router = Router();
 router.use(authenticate);
 
-const SUPERVISOR_ROLES = ['ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS', 'PARTNER_MANAGER'] as const;
+const SUPERVISOR_ROLES = ['ADMIN', 'RM', 'OPERATIONS'] as const;
 
 // POST /calls/log — telecaller logs outcome of a call
-router.post('/log', requireRoles('TELECALLER', 'ADMIN', 'OPERATIONS'), async (req: Request, res: Response) => {
+router.post('/log', requireRoles('ADMIN', 'OPERATIONS'), async (req: Request, res: Response) => {
   const { leadId, disposition, notes, durationSeconds, nextCallbackAt } = req.body;
   if (!leadId) { res.status(400).json(fail('leadId is required')); return; }
   if (!disposition) { res.status(400).json(fail('disposition is required')); return; }
@@ -30,7 +30,7 @@ router.post('/log', requireRoles('TELECALLER', 'ADMIN', 'OPERATIONS'), async (re
 });
 
 // GET /calls/my-queue — telecaller's assigned lead queue
-router.get('/my-queue', requireRoles('TELECALLER', 'ADMIN', 'OPERATIONS'), async (req: Request, res: Response) => {
+router.get('/my-queue', requireRoles('ADMIN', 'OPERATIONS'), async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string ?? '0');
   const size = parseInt(req.query.size as string ?? '30');
   res.json(ok('Queue fetched', await callService.getTelecallerQueue(req.user!.id, req.user!.email, page, size)));

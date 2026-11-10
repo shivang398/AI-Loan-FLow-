@@ -8,14 +8,19 @@ const WhatsAppFloat: React.FC = () => {
       href="https://wa.me/919876543210"
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg whatsapp-pulse"
-      style={{ background: '#25D366', textDecoration: 'none' }}
+      className="whatsapp-pulse"
+      style={{
+        position: 'fixed', right: 20, bottom: 24, zIndex: 950,
+        width: 56, height: 56, borderRadius: '50%', background: '#25D366',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+      }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 1.5, duration: 0.4, type: 'spring' }}
       title="Chat on WhatsApp"
+      aria-label="Chat with us on WhatsApp"
     >
       {/* WhatsApp SVG */}
       <svg

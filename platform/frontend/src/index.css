@@ -1,9 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS — Real Money Brand (Deep Navy × True Gold)
    ═══════════════════════════════════════════════════════════════ */
@@ -345,6 +341,14 @@ body {
 
 .ant-btn-primary:active {
   background: #0B1E3D !important;
+}
+
+/* Disabled must override the forced navy above, or antd's grey label is invisible on navy */
+.ant-btn-primary:disabled,
+.ant-btn-primary:disabled:hover {
+  background: var(--surface-2) !important;
+  border-color: var(--surface-3) !important;
+  color: var(--text-muted) !important;
 }
 
 /* Inputs */

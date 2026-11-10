@@ -30,13 +30,13 @@ const UpdateConnectorStatusSchema = z.object({
 
 const AssignManagerSchema = z.object({
   managerId: z.string().min(1),
-  role: z.enum(['RM', 'TEAM_LEADER', 'PARTNER_MANAGER']).optional(),
+  role: z.enum(['RM']).optional(),
 });
 
 const router = Router();
 router.use(authenticate);
 
-const PRIVILEGED_ROLES = ['ADMIN', 'PARTNER_MANAGER', 'RM', 'TEAM_LEADER', 'OPERATIONS'];
+const PRIVILEGED_ROLES = ['ADMIN', 'RM', 'OPERATIONS'];
 
 function isPrivileged(roles: string[]): boolean {
   return roles.some(r => PRIVILEGED_ROLES.includes(r));
@@ -81,7 +81,7 @@ router.post('/self-register', async (req: Request, res: Response) => {
 });
 
 // POST /connectors
-router.post('/', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.post('/', requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const body = CreateConnectorSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
   const { userId, firstName, lastName, phone, email, region, platformRole } = body.data;
@@ -116,13 +116,13 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // PUT /connectors/:id
-router.put('/:id', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.put('/:id', requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const { firstName, lastName, phone, email, region, platformRole } = req.body;
   res.json(ok('Connector updated', await salesOpsService.updateConnector(req.params.id, { firstName, lastName, phone, email, region, platformRole }, req.user!.email)));
 });
 
 // PUT /connectors/:id/status
-router.put('/:id/status', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.put('/:id/status', requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const body = UpdateConnectorStatusSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
   await salesOpsService.updateConnectorStatus(req.params.id, body.data.status, body.data.remarks ?? '', req.user!.email);
@@ -130,10 +130,10 @@ router.put('/:id/status', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: 
 });
 
 // POST /connectors/:id/assign-manager
-router.post('/:id/assign-manager', requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.post('/:id/assign-manager', requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const body = AssignManagerSchema.safeParse(req.body);
   if (!body.success) { res.status(400).json(fail('Validation error', body.error.errors.map(e => e.message))); return; }
-  res.json(ok('Manager assigned', await salesOpsService.assignManager(req.params.id, body.data.managerId, body.data.role ?? 'TEAM_LEADER', req.user!.id)));
+  res.json(ok('Manager assigned', await salesOpsService.assignManager(req.params.id, body.data.managerId, body.data.role ?? 'RM', req.user!.id)));
 });
 
 export default router;

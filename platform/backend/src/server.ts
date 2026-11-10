@@ -7,7 +7,7 @@ import { connectAllDatabases, disconnectAllDatabases } from './config/prisma';
 import { connectRedis, disconnectRedis } from './config/redis';
 import { connectRabbitMQ, disconnectRabbitMQ } from './config/rabbitmq';
 import { setSocketServer } from './services/communications.service';
-import { startDataRetentionPurge } from './jobs/dataRetention.job';
+import { resumeCampaigns } from './services/whatsapp.service';
 
 const PORT = parseInt(process.env.PORT ?? '8080');
 
@@ -24,9 +24,6 @@ async function bootstrap() {
 
   console.log('[Boot] Connecting to RabbitMQ...');
   await connectRabbitMQ();
-
-  console.log('[Boot] Starting data-retention purge job...');
-  startDataRetentionPurge();
 
   const server = http.createServer(app);
 
@@ -63,7 +60,7 @@ async function bootstrap() {
     if (roomKey) socket.join(`room:${roomKey}`);
 
     // Only allow joining conversations/rooms that the user's role can access (LOW-3)
-    const ROOM_ROLES = ['ADMIN', 'OPERATIONS', 'RM', 'TEAM_LEADER', 'PARTNER_MANAGER', 'CONNECTOR'];
+    const ROOM_ROLES = ['ADMIN', 'OPERATIONS', 'RM', 'CONNECTOR'];
     socket.on('join_conversation', (id: string) => {
       if (typeof id === 'string' && id.length <= 64) socket.join(`conv:${id}`);
     });
@@ -76,6 +73,7 @@ async function bootstrap() {
   });
 
   server.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
+  resumeCampaigns().catch(err => console.error('[WhatsApp] Could not resume campaigns:', err.message));
 
   let shutdownInProgress = false;
   const shutdown = async () => {

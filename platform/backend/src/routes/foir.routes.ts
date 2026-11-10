@@ -17,7 +17,7 @@ router.post('/calculate', async (req: Request, res: Response) => {
 
 router.get('/assessments', async (req: Request, res: Response) => {
   const roles = req.user!.roles;
-  const isPrivileged = roles.some((r) => ['ADMIN', 'RM', 'TEAM_LEADER', 'OPERATIONS'].includes(r));
+  const isPrivileged = roles.some((r) => ['ADMIN', 'RM', 'OPERATIONS'].includes(r));
   // Privileged roles may query any userId; connectors can only see their own
   const userId = isPrivileged && req.query.userId
     ? (req.query.userId as string)

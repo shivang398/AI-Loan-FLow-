@@ -39,50 +39,6 @@ export const LOAN_PRODUCTS = [
   },
 ];
 
-export const PARTNERS = [
-  {
-    id: 'saral-vidya',
-    brand: 'Saral Vidya',
-    tagline: 'Education Loans Made Simple',
-    url: 'https://saralvidya.in',
-    domain: 'saralvidya.in',
-    lender: 'Poonawala Fincorp',
-    lenderNote: 'Exclusive banking partner',
-    product: 'Education Loans',
-    highlight: 'Up to ₹1.5 Cr',
-    rate: 'From 9.50% p.a.',
-    color: '#1a3a5c',
-    accentColor: '#3B82F6',
-    description: 'Saral Vidya is our dedicated education loan brand — helping students fund their dreams at top institutions in India and abroad, backed exclusively by Poonawala Fincorp.',
-    features: [
-      'Courses in India & overseas',
-      'Up to ₹1.5 Cr loan amount',
-      'Moratorium till course completion',
-      'Covers tuition, living & travel expenses',
-    ],
-  },
-  {
-    id: 'real-finserv',
-    brand: 'Real Finserv',
-    tagline: 'Business Loans. Real Fast.',
-    url: null,
-    domain: null,
-    lender: 'Real Finserv',
-    lenderNote: 'Our business lending arm',
-    product: 'Business Loans',
-    highlight: 'Up to ₹5 Cr',
-    rate: 'From 14.00% p.a.',
-    color: '#0A1F44',
-    accentColor: '#D4AF37',
-    description: 'Real Finserv is our exclusive business lending partner — providing working capital, term loans, and OD facilities to fuel business growth across India.',
-    features: [
-      'Working capital & term loans',
-      'Up to ₹5 Cr sanction',
-      'Minimal documentation',
-      'Decision in 48 hours',
-    ],
-  },
-];
 
 export const TESTIMONIALS = [
   {
@@ -151,7 +107,7 @@ export const FAQ_ITEMS = [
   {
     key: '1',
     label: 'What is Real Money?',
-    children: 'Real Money is a Corporate Direct Selling Agent (DSA) headquartered in Jaipur, Rajasthan, with over 22 years of experience in the lending industry. We are empanelled with leading banks and NBFCs across India — including HDFC Bank, ICICI Bank, Axis Bank, Kotak Mahindra Bank, Bajaj Finance, Tata Capital, Piramal Finance, Poonawala Fincorp, and 40+ other lenders. We specialize in Personal Loans and help borrowers get access to the best rates and fastest approvals by leveraging our deep relationships with these lending institutions.',
+    children: 'Real Money is a Corporate Direct Selling Agent (DSA) headquartered in Jaipur, Rajasthan, with over 22 years of experience in the lending industry. We are empanelled with 50+ leading banks and NBFCs across India. We specialize in Personal Loans and help borrowers get access to the best rates and fastest approvals by leveraging our deep relationships with these lending institutions.',
   },
   {
     key: '2',
@@ -190,9 +146,3 @@ export const FAQ_ITEMS = [
   },
 ];
 
-export const STATS = [
-  { label: 'Years in the Industry', value: 22, suffix: '+', prefix: '' },
-  { label: 'Personal Loans Disbursed', value: 7500, suffix: '+', prefix: '' },
-  { label: 'Customer Rating', value: 4.8, suffix: '/5', prefix: '' },
-  { label: 'Advisory Fee', value: 0, suffix: '', prefix: '₹' },
-];

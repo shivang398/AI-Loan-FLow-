@@ -540,7 +540,7 @@ const ConnectorHub: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultActiveKey="1" className="premium-tabs" items={[
+      <Tabs defaultActiveKey="1" items={[
         {
           key: '1',
           label: <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16} /> Partner Network</div>,
@@ -602,7 +602,7 @@ const ConnectorHub: React.FC = () => {
                   dataSource={payoutSlabs}
                   rowKey="id"
                   pagination={false}
-                  className="premium-table"
+
                   locale={{ emptyText: 'No payout slabs configured yet.' }}
                 />
                 <div style={{ marginTop: 20, padding: '16px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>

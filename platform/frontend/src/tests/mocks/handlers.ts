@@ -8,7 +8,7 @@ export const handlers = [
       data: {
         token: 'mock-jwt-token',
         id: '1',
-        email: 'admin@example.com',
+        email: 'admin@realmoneygroups.in',
         role: 'ADMIN',
       }
     });

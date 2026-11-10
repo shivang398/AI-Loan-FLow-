@@ -1,242 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Button } from 'antd';
-import { Menu, X, LogIn, ChevronRight } from 'lucide-react';
+import { Drawer } from 'antd';
+import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { RealMoneyLogo } from '../../../shared/components/RealMoneyLogo';
+import { RealMoneyLogoWhite } from '../../../shared/components/RealMoneyLogo';
+import { C, SANS, scrollToId } from '../theme';
 import '../styles/landing.css';
 
-const NAVY = '#0B1E3D';
-const GOLD = '#C4993A';
-
 const NAV_LINKS = [
-  { label: 'Home',          href: '#hero' },
-  { label: 'Loan Products', href: '#loan-products' },
-  { label: 'Our Partners',  href: '#partners' },
-  { label: 'How It Works',  href: '#how-it-works' },
-  { label: 'About Us',      href: '#why-us' },
-  { label: 'Contact',       href: '#footer' },
+  { label: 'How it works', id: 'how-it-works' },
+  { label: 'Loans',        id: 'loans' },
+  { label: 'Partner with us', id: 'partners' },
+  { label: 'FAQ',          id: 'faq' },
 ];
 
-const scrollTo = (href: string) => {
-  const el = document.querySelector(href);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
+const linkStyle: React.CSSProperties = {
+  background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0',
+  fontFamily: SANS, fontSize: 12.5, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.onDarkDim,
 };
 
 const Navbar: React.FC = () => {
-  const [scrolled, setScrolled]     = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const navigate                     = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const go = (id: string) => { setOpen(false); scrollToId(id); };
+
   return (
     <>
-      {/* Announcement bar */}
-      <div style={{
-        background: '#060F1E',
-        padding: '7px 24px',
-        textAlign: 'center',
-        fontSize: 11.5,
-        color: 'rgba(255,255,255,0.45)',
-        fontFamily: 'Inter, sans-serif',
-        letterSpacing: '0.02em',
-        borderBottom: `1px solid rgba(196,153,58,0.15)`,
-      }}>
-        <span style={{ color: GOLD, fontWeight: 700 }}>Authorised Corporate DSA</span>
-        {' · '}Personal Loans · Education Loans · Business Loans
-        {' · '}
-        <a href="tel:+919876543210" style={{
-          color: 'rgba(255,255,255,0.45)',
-          textDecoration: 'none', fontWeight: 500,
-        }}>
-          +91 98765 43210
-        </a>
-      </div>
-
-      {/* Main navbar */}
       <header style={{
-        position: 'sticky',
-        top: 0, left: 0, right: 0,
-        zIndex: 1000,
-        height: 64,
-        background: '#FFFFFF',
-        borderBottom: `1px solid ${scrolled ? '#CDD4EC' : '#E4E9F7'}`,
-        boxShadow: scrolled ? '0 2px 16px rgba(10,30,110,0.08)' : 'none',
-        transition: 'box-shadow 0.22s, border-color 0.22s',
+        position: 'sticky', top: 0, zIndex: 1000, height: 72,
+        background: scrolled ? 'rgba(6,13,31,0.88)' : C.midnight,
+        backdropFilter: scrolled ? 'blur(10px)' : undefined,
+        WebkitBackdropFilter: scrolled ? 'blur(10px)' : undefined,
+        borderBottom: '1px solid rgba(201,160,74,0.22)',
+        transition: 'background .3s',
       }}>
-        <div style={{
-          maxWidth: 1280, margin: '0 auto', padding: '0 28px',
-          height: '100%',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-
-          {/* Logo */}
-          <button
-            onClick={() => scrollTo('#hero')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            aria-label="Go to top"
-          >
-            <RealMoneyLogo
-              markSize={40}
-              fontSize={16}
-              subSize={9}
-              subtitle="Personal Loan Advisory"
-              id="nav-logo"
-            />
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <RealMoneyLogoWhite markSize={36} fontSize={16} subtitle="Personal Loan Advisory" id="nav-logo" />
           </button>
 
-          {/* Desktop nav */}
-          <nav className="nav-desktop" style={{ gap: '1.75rem' }}>
-            {NAV_LINKS.map(link => (
-              <button
-                key={link.label}
-                onClick={() => scrollTo(link.href)}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 13.5, fontWeight: 500, color: '#3A4F80',
-                  fontFamily: 'Inter, sans-serif', padding: '4px 0',
-                  letterSpacing: '0.01em', transition: 'color 0.14s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = NAVY)}
-                onMouseLeave={e => (e.currentTarget.style.color = '#3A4F80')}
-              >
-                {link.label}
+          <nav className="nav-desktop" style={{ gap: 34 }}>
+            {NAV_LINKS.map(l => (
+              <button key={l.id} onClick={() => go(l.id)} className="lp-navlink" style={linkStyle}
+                onMouseEnter={e => (e.currentTarget.style.color = C.goldLight)}
+                onMouseLeave={e => (e.currentTarget.style.color = C.onDarkDim)}>
+                {l.label}
               </button>
             ))}
-
-            {/* Careers */}
-            <button
-              onClick={() => navigate('/careers')}
-              style={{
-                background: 'none',
-                border: `1px solid ${GOLD}`,
-                cursor: 'pointer',
-                color: GOLD, fontWeight: 600,
-                borderRadius: 2,
-                height: 36, paddingInline: 16,
-                fontSize: 13,
-                fontFamily: 'Inter, sans-serif',
-                letterSpacing: '0.03em',
-                transition: 'all 0.14s',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = GOLD;
-                (e.currentTarget as HTMLElement).style.color = '#fff';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'none';
-                (e.currentTarget as HTMLElement).style.color = GOLD;
-              }}
-            >
-              Careers
-            </button>
-
-            {/* Login */}
-            <button
-              onClick={() => navigate('/login')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 7,
-                background: NAVY,
-                border: `1px solid ${NAVY}`,
-                cursor: 'pointer',
-                color: '#fff', fontWeight: 600,
-                borderRadius: 2,
-                height: 36, paddingInline: 16,
-                fontSize: 13,
-                fontFamily: 'Inter, sans-serif',
-                letterSpacing: '0.03em',
-                transition: 'background 0.14s',
-              }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#1A3256')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = NAVY)}
-            >
-              <LogIn size={13} />
-              Login
+            <span style={{ width: 1, height: 18, background: 'rgba(201,160,74,0.35)' }} />
+            <button onClick={() => navigate('/login')} className="lp-navlink" style={{ ...linkStyle, color: C.onDark }}>Log in</button>
+            <button onClick={() => go('apply')} className="lp-btn lp-btn-gold" style={{ height: 42, padding: '0 22px', fontSize: 12 }}>
+              Apply now
             </button>
           </nav>
 
-          {/* Mobile hamburger */}
-          <button
-            className="nav-mobile-btn"
-            onClick={() => setDrawerOpen(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}
-            aria-label="Open menu"
-          >
-            <Menu size={22} color={NAVY} />
+          <button className="nav-mobile-btn" onClick={() => setOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}>
+            <Menu size={22} color={C.goldLight} />
           </button>
         </div>
       </header>
 
-      {/* Mobile drawer */}
       <Drawer
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <RealMoneyLogo
-              markSize={32}
-              fontSize={14}
-              subSize={8}
-              subtitle="Loan Advisory"
-              id="nav-drawer-logo"
-            />
-          </div>
-        }
-        placement="right"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        closeIcon={<X size={17} />}
-        width={288}
-        styles={{ body: { padding: '8px 0' } }}
+        placement="right" width={290} open={open} onClose={() => setOpen(false)} closeIcon={<X size={18} color={C.goldLight} />}
+        title={<RealMoneyLogoWhite markSize={30} fontSize={14} subtitle="Loan Advisory" id="nav-drawer-logo" />}
+        styles={{
+          header: { background: C.midnight, borderBottom: '1px solid rgba(201,160,74,0.22)' },
+          body: { padding: '8px 0', background: C.midnight },
+        }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {NAV_LINKS.map(link => (
-            <button
-              key={link.label}
-              onClick={() => { scrollTo(link.href); setDrawerOpen(false); }}
-              style={{
-                textAlign: 'left',
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 14, fontWeight: 500, color: NAVY,
-                padding: '13px 24px',
-                fontFamily: 'Inter, sans-serif',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                borderBottom: '1px solid #EEF2FF',
-                transition: 'background 0.12s',
-              }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#F5F7FC')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'none')}
-            >
-              {link.label}
-              <ChevronRight size={14} color="#7A8FB0" />
-            </button>
-          ))}
-
-          <div style={{ padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <Button
-              block size="large"
-              onClick={() => { navigate('/careers'); setDrawerOpen(false); }}
-              style={{
-                borderColor: GOLD, color: GOLD, fontWeight: 600,
-                borderRadius: 2, letterSpacing: '0.03em',
-              }}
-            >
-              Careers
-            </Button>
-            <Button
-              block size="large"
-              icon={<LogIn size={13} />}
-              onClick={() => { navigate('/login'); setDrawerOpen(false); }}
-              style={{
-                background: NAVY, borderColor: NAVY,
-                color: '#ffffff', fontWeight: 600, borderRadius: 2,
-              }}
-            >
-              Login
-            </Button>
-          </div>
+        {NAV_LINKS.map(l => (
+          <button key={l.id} onClick={() => go(l.id)} style={{ ...linkStyle, display: 'block', width: '100%', textAlign: 'left', padding: '16px 24px', color: C.onDark, borderBottom: '1px solid rgba(201,160,74,0.14)' }}>
+            {l.label}
+          </button>
+        ))}
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button onClick={() => go('apply')} className="lp-btn lp-btn-gold" style={{ height: 48 }}>Apply now</button>
+          <button onClick={() => navigate('/login')} className="lp-btn lp-btn-on-dark" style={{ height: 48 }}>Log in</button>
+          <button onClick={() => navigate('/careers')} style={{ ...linkStyle, marginTop: 8 }}>Careers</button>
         </div>
       </Drawer>
     </>

@@ -39,7 +39,6 @@ interface Lead {
   createdAt: string;
   // Connector-action fields (stored on lead or updated)
   bankStatementChecked?: boolean;
-  cibilChecked?: boolean;
 }
 
 const ReportingDashboard: React.FC = () => {
@@ -168,7 +167,6 @@ const ReportingDashboard: React.FC = () => {
       l.existingEmi ? `₹${l.existingEmi}` : 'No',
       l.hasPriorPersonalLoan ? 'Yes' : 'No',
       l.bankStatementChecked ? '✓ Done' : 'Pending',
-      l.cibilChecked ? '✓ Done' : 'Pending',
       l.status,
       l.createdAt ? new Date(l.createdAt).toLocaleDateString('en-IN') : '—',
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')));
@@ -177,7 +175,7 @@ const ReportingDashboard: React.FC = () => {
       'Lead ID', 'Full Name', 'Email', 'Mobile', 'PAN',
       'Loan Type', 'Loan Amount', 'Profession', 'Monthly Salary',
       'Location', 'Existing EMI', 'Prior Loan',
-      'Bank Statement', 'CIBIL Check', 'Status', 'Date'
+      'Bank Statement', 'Status', 'Date'
     ].join(',');
 
     const csv = [headers, ...rows].join('\n');
@@ -277,16 +275,6 @@ const ReportingDashboard: React.FC = () => {
       )
     },
     {
-      title: 'CIBIL Check',
-      key: 'cibil',
-      width: 120,
-      render: (_: any, r: Lead) => (
-        r.cibilChecked
-          ? <Tag icon={<CheckCircle2 size={12} />} color="success">Done</Tag>
-          : <Tag icon={<AlertCircle size={12} />} color="error">Not Done</Tag>
-      )
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -310,13 +298,13 @@ const ReportingDashboard: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <Title level={2} style={{ margin: 0, fontWeight: 800, color: '#0f172a' }}>MIS &amp; Lead Reports</Title>
-          <Text style={{ color: '#64748b' }}>Download landing page leads, track bank statement &amp; CIBIL checks, consolidate RM business volume.</Text>
+          <Text style={{ color: '#64748b' }}>Download landing page leads, track bank statement checks, consolidate RM business volume.</Text>
         </div>
       </div>
 
       <Tabs
         defaultActiveKey="leads"
-        className="premium-tabs"
+
         items={[
           {
             key: 'leads',
@@ -338,7 +326,7 @@ const ReportingDashboard: React.FC = () => {
                     { label: 'Resolved', value: leads.filter(l => l.status === 'RESOLVED').length, color: '#10b981' },
                   ].map(s => (
                     <Col key={s.label} span={6}>
-                      <Card className="pro-card shadow-sm" style={{ borderRadius: 14, border: 'none' }}>
+                      <Card className="pro-card" style={{ borderRadius: 14, border: 'none' }}>
                         <Statistic title={<span style={{ color: '#64748b', fontWeight: 600 }}>{s.label}</span>} value={s.value} valueStyle={{ fontWeight: 900, color: s.color }} />
                       </Card>
                     </Col>
@@ -346,7 +334,7 @@ const ReportingDashboard: React.FC = () => {
                 </Row>
 
                 <Card
-                  className="pro-card shadow-sm"
+                  className="pro-card"
                   style={{ borderRadius: 16, border: 'none' }}
                   title={<span style={{ fontWeight: 800, color: '#0f172a' }}>All Applications from Landing Page</span>}
                   extra={
@@ -407,7 +395,7 @@ const ReportingDashboard: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <Row gutter={16}>
                   <Col span={8}>
-                    <Card className="pro-card shadow-sm" style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', borderRadius: 16, border: 'none' }}>
+                    <Card className="pro-card" style={{ background: 'linear-gradient(135deg,#2563eb,#4f46e5)', borderRadius: 16, border: 'none' }}>
                       <Statistic title={<span style={{ color: '#bfdbfe', fontWeight: 600 }}>Total Master Volume</span>} value={totalVolume} prefix="₹" valueStyle={{ color: '#fff', fontWeight: 900, fontSize: 28 }} />
                       <div style={{ marginTop: 12, color: '#bfdbfe', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <TrendingUp size={14} /> From {rmReports.length} RM report{rmReports.length !== 1 ? 's' : ''}
@@ -415,12 +403,12 @@ const ReportingDashboard: React.FC = () => {
                     </Card>
                   </Col>
                   <Col span={8}>
-                    <Card className="pro-card shadow-sm" style={{ borderRadius: 16, border: 'none' }}>
+                    <Card className="pro-card" style={{ borderRadius: 16, border: 'none' }}>
                       <Statistic title={<span style={{ color: '#64748b', fontWeight: 600 }}>Reports Submitted</span>} value={rmReports.length} prefix={<FileSpreadsheet size={18} color="#10b981" style={{ marginRight: 4 }} />} valueStyle={{ fontWeight: 800, color: '#0f172a' }} />
                     </Card>
                   </Col>
                   <Col span={8}>
-                    <Card className="pro-card shadow-sm" style={{ borderRadius: 16, border: 'none' }}>
+                    <Card className="pro-card" style={{ borderRadius: 16, border: 'none' }}>
                       <Statistic title={<span style={{ color: '#64748b', fontWeight: 600 }}>Pending Review</span>} value={rmReports.filter(r => r.status === 'PENDING_REVIEW').length} prefix={<Clock size={18} color="#f59e0b" style={{ marginRight: 4 }} />} valueStyle={{ fontWeight: 800, color: '#0f172a' }} />
                     </Card>
                   </Col>

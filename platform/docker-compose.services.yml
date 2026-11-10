@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile
     image: realmoney/backend:${APP_VERSION:-latest}
     restart: unless-stopped
-    # backend/.env has all DB URLs, JWT_SECRET, AWS keys, SMTP, WhatsApp, CRIF
+    # backend/.env has all DB URLs, JWT_SECRET, AWS keys, SMTP, WhatsApp
     env_file: ./backend/.env
     environment:
       PORT: "8080"

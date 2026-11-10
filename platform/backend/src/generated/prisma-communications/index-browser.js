@@ -132,6 +132,9 @@ exports.Prisma.ConversationScalarFieldEnum = {
   conversationType: 'conversationType',
   customerName: 'customerName',
   customerPhone: 'customerPhone',
+  botMode: 'botMode',
+  leadId: 'leadId',
+  lastInboundAt: 'lastInboundAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -222,6 +225,15 @@ exports.Prisma.WhatsappMessageTemplateScalarFieldEnum = {
   templateName: 'templateName',
   templateBody: 'templateBody',
   templateCategory: 'templateCategory',
+  language: 'language',
+  paramCount: 'paramCount',
+  status: 'status',
+  rejectedReason: 'rejectedReason',
+  headerText: 'headerText',
+  footerText: 'footerText',
+  buttons: 'buttons',
+  metaTemplateId: 'metaTemplateId',
+  createdBy: 'createdBy',
   isActive: 'isActive',
   createdAt: 'createdAt'
 };
@@ -248,12 +260,56 @@ exports.Prisma.NotificationDeliveryLogScalarFieldEnum = {
   attemptedAt: 'attemptedAt'
 };
 
+exports.Prisma.WhatsappBotSessionScalarFieldEnum = {
+  phone: 'phone',
+  step: 'step',
+  data: 'data',
+  optedOut: 'optedOut',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WhatsappCampaignScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  templateName: 'templateName',
+  templateLanguage: 'templateLanguage',
+  templateParams: 'templateParams',
+  audience: 'audience',
+  status: 'status',
+  totalRecipients: 'totalRecipients',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt'
+};
+
+exports.Prisma.WhatsappCampaignRecipientScalarFieldEnum = {
+  id: 'id',
+  campaignId: 'campaignId',
+  phone: 'phone',
+  name: 'name',
+  leadId: 'leadId',
+  status: 'status',
+  whatsappMessageId: 'whatsappMessageId',
+  errorMessage: 'errorMessage',
+  sentAt: 'sentAt',
+  repliedAt: 'repliedAt',
+  convertedLeadId: 'convertedLeadId',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
 };
 
 exports.Prisma.JsonNullValueInput = {
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull
 };
 
@@ -282,7 +338,10 @@ exports.Prisma.ModelName = {
   TeamMeetingMessage: 'TeamMeetingMessage',
   WhatsappMessageTemplate: 'WhatsappMessageTemplate',
   Notification: 'Notification',
-  NotificationDeliveryLog: 'NotificationDeliveryLog'
+  NotificationDeliveryLog: 'NotificationDeliveryLog',
+  WhatsappBotSession: 'WhatsappBotSession',
+  WhatsappCampaign: 'WhatsappCampaign',
+  WhatsappCampaignRecipient: 'WhatsappCampaignRecipient'
 };
 
 /**

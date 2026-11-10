@@ -88,7 +88,7 @@ router.post('/apply', applyLimiter, upload.single('cv'), async (req: Request, re
 });
 
 // ADMIN only — list all applications
-router.get('/', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.get('/', authenticate, requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const page   = Math.max(1, parseInt(req.query.page   as string || '1',  10));
   const size   = Math.min(50, Math.max(1, parseInt(req.query.size as string || '20', 10)));
   const status = req.query.status as string | undefined;
@@ -102,7 +102,7 @@ router.get('/', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), async (r
 });
 
 // ADMIN only — get presigned download URL for a CV
-router.get('/:id/cv', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.get('/:id/cv', authenticate, requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const app = await salesOpsDb.careerApplication.findUnique({ where: { id: req.params.id } });
   if (!app) { res.status(404).json(fail('Application not found')); return; }
   if (!app.cvUrl) { res.status(404).json(fail('No CV uploaded for this application')); return; }
@@ -111,7 +111,7 @@ router.get('/:id/cv', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), as
 });
 
 // ADMIN only — update status (NEW → REVIEWING → SHORTLISTED → REJECTED)
-router.patch('/:id/status', authenticate, requireRoles('ADMIN', 'PARTNER_MANAGER'), async (req: Request, res: Response) => {
+router.patch('/:id/status', authenticate, requireRoles('ADMIN'), async (req: Request, res: Response) => {
   const { status } = req.body;
   const allowed = ['NEW', 'REVIEWING', 'SHORTLISTED', 'REJECTED'];
   if (!allowed.includes(status)) {

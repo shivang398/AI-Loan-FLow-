@@ -7,7 +7,7 @@ import { ok, fail } from '../utils/response';
 const router = Router();
 router.use(authenticate);
 
-const ANALYTICS_ROLES = ['ADMIN', 'RM', 'OPERATIONS', 'TEAM_LEADER', 'PARTNER_MANAGER'] as const;
+const ANALYTICS_ROLES = ['ADMIN', 'RM', 'OPERATIONS'] as const;
 
 // Flat KPI summary — restricted to internal roles (MED-11)
 router.get('/summary', requireRoles(...ANALYTICS_ROLES), async (_req: Request, res: Response) => {

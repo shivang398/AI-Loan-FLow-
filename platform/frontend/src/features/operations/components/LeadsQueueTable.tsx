@@ -37,7 +37,12 @@ const LeadsQueueTable: React.FC<Props> = ({ leads, loading, onRefresh, onViewDet
           <Text style={{ fontWeight: 800, color: '#0f172a', fontSize: 13 }}>
             {record.firstName} {record.lastName}
           </Text>
-          <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{record.mobile}</Text>
+          <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+            {record.mobile}
+            {record.source === 'WHATSAPP' && (
+              <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', color: '#15803D', background: '#F0FAF4', border: '1px solid #A3D9B8', padding: '0 5px' }}>WHATSAPP</span>
+            )}
+          </Text>
         </div>
       ),
     },
@@ -107,7 +112,7 @@ const LeadsQueueTable: React.FC<Props> = ({ leads, loading, onRefresh, onViewDet
               style={{ color: '#6366f1', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             />
           </Tooltip>
-          <Tooltip title="Assign to Telecaller">
+          <Tooltip title="Assign to a caller">
             <Button
               type="text"
               icon={<PhoneCall size={15} />}

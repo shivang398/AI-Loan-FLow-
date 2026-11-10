@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Spin, Empty } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, FileText, Users, IndianRupee, Clock, RefreshCw, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -60,14 +59,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const DashboardOverview: React.FC = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [loans, setLoans] = useState<any[]>([]);
   const [connectors, setConnectors] = useState<any[]>([]);
   const [serviceHealth, setServiceHealth] = useState<Record<number, boolean | null>>({});
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [chartData, setChartData] = useState<any[]>([]);
-  const [cibilStats, setCibilStats] = useState<any>(null);
 
   const buildWeekChart = (loanList: any[]) => {
     const now = new Date();
@@ -88,10 +85,9 @@ const DashboardOverview: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [loansRes, connRes, cibilRes] = await Promise.allSettled([
+      const [loansRes, connRes] = await Promise.allSettled([
         apiClient.get('/loans'),
         apiClient.get('/connectors?roles=CONNECTOR'),
-        apiClient.get('/eligibility/cibil/stats'),
       ]);
       const loanList = loansRes.status === 'fulfilled' ? (loansRes.value.data?.data?.items ?? loansRes.value.data?.data ?? []) : [];
       const connList = connRes.status === 'fulfilled' ? (connRes.value.data?.data?.items ?? connRes.value.data?.data ?? []) : [];
@@ -99,7 +95,6 @@ const DashboardOverview: React.FC = () => {
       setLoans(Array.isArray(loanList) ? loanList : []);
       setConnectors(Array.isArray(connList) ? connList : []);
       setChartData(buildWeekChart(Array.isArray(loanList) ? loanList : []));
-      if (cibilRes.status === 'fulfilled') setCibilStats(cibilRes.value.data?.data ?? null);
       setLastRefresh(new Date());
     } finally {
       setLoading(false);
@@ -249,98 +244,6 @@ const DashboardOverview: React.FC = () => {
               </Col>
             ))}
           </Row>
-
-          {/* CIBIL Pulls Today */}
-          {cibilStats && (
-            <div className="pro-card" style={{ padding: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: '"Playfair Display", Georgia, serif' }}>CIBIL Soft Pulls — Today</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'Inter, sans-serif' }}>
-                    {cibilStats.liveChecks > 0
-                      ? `${cibilStats.liveChecks} live · ${cibilStats.demoChecks} demo · ${cibilStats.allTimeTotal} all time`
-                      : `${cibilStats.demoChecks} demo mode · ${cibilStats.allTimeTotal} all time`}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {cibilStats.liveChecks > 0 ? (
-                    <span style={{ padding: '3px 10px', background: '#F0FAF4', color: '#1A7A4A', fontSize: 11, fontWeight: 700, border: '1px solid #A3D9B8', letterSpacing: '0.06em' }}>LIVE</span>
-                  ) : (
-                    <span style={{ padding: '3px 10px', background: '#FFF8E7', color: '#B45309', fontSize: 11, fontWeight: 700, border: '1px solid #F6D86B', letterSpacing: '0.06em' }}>DEMO MODE</span>
-                  )}
-                  <button
-                    onClick={() => navigate('/cibil/history')}
-                    style={{ padding: '4px 12px', background: 'transparent', border: '1px solid var(--surface-3)', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', borderRadius: 2, fontFamily: 'Inter, sans-serif' }}
-                  >
-                    Full History →
-                  </button>
-                </div>
-              </div>
-
-              <Row gutter={[16, 16]}>
-                {/* Summary numbers */}
-                <Col xs={24} sm={6}>
-                  <div style={{ textAlign: 'center', padding: '16px 12px', background: 'var(--surface-1)', borderRadius: 4, border: '1px solid var(--surface-2)' }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: '#0B1E3D', fontFamily: 'Inter, sans-serif' }}>{cibilStats.totalToday}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Checks Today</div>
-                  </div>
-                </Col>
-                <Col xs={24} sm={6}>
-                  <div style={{ textAlign: 'center', padding: '16px 12px', background: 'var(--surface-1)', borderRadius: 4, border: '1px solid var(--surface-2)' }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: cibilStats.avgScore >= 750 ? '#1A7A4A' : cibilStats.avgScore >= 650 ? '#B45309' : '#DC2626', fontFamily: 'Inter, sans-serif' }}>{cibilStats.totalToday > 0 ? cibilStats.avgScore : '—'}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Avg Score</div>
-                  </div>
-                </Col>
-                {/* Score band breakdown */}
-                <Col xs={24} sm={12}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    {[
-                      { band: 'EXCELLENT', label: 'Excellent', color: '#1A7A4A', bg: '#F0FAF4' },
-                      { band: 'GOOD', label: 'Good', color: '#2563EB', bg: '#EFF6FF' },
-                      { band: 'FAIR', label: 'Fair', color: '#B45309', bg: '#FFFBEB' },
-                      { band: 'POOR', label: 'Poor / No History', color: '#DC2626', bg: '#FEF2F2' },
-                    ].map(({ band, label, color, bg }) => (
-                      <div key={band} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: bg, borderRadius: 4 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color, fontFamily: 'Inter, sans-serif' }}>{label}</span>
-                        <span style={{ fontSize: 16, fontWeight: 800, color, fontFamily: 'Inter, sans-serif' }}>
-                          {(cibilStats.bandCounts?.[band] ?? 0) + (band === 'POOR' ? (cibilStats.bandCounts?.['NO_HISTORY'] ?? 0) : 0)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </Col>
-              </Row>
-
-              {/* Recent checks table */}
-              {cibilStats.recentChecks?.length > 0 && (
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Recent Checks</div>
-                  <div style={{ borderRadius: 4, border: '1px solid var(--surface-2)', overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr', padding: '8px 14px', background: 'var(--surface-1)', borderBottom: '1px solid var(--surface-2)' }}>
-                      {['Customer', 'Mobile', 'Score', 'Band', 'Time'].map(h => (
-                        <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Inter, sans-serif' }}>{h}</span>
-                      ))}
-                    </div>
-                    {cibilStats.recentChecks.slice(0, 5).map((c: any) => {
-                      const bandColor = c.cibilScore >= 750 ? '#1A7A4A' : c.cibilScore >= 650 ? '#B45309' : '#DC2626';
-                      return (
-                        <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1.5fr', padding: '11px 14px', borderBottom: '1px solid var(--surface-1)' }}>
-                          <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>{c.fullName}</span>
-                          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{c.mobileNumber}</span>
-                          <span style={{ fontWeight: 800, fontSize: 14, color: bandColor, fontFamily: 'Inter, sans-serif' }}>{c.cibilScore}</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: bandColor, fontFamily: 'Inter, sans-serif' }}>{c.scoreBand}</span>
-                          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
-                            {new Date(c.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                            {c.demoMode && <span style={{ marginLeft: 6, fontSize: 10, background: '#FFF8E7', color: '#B45309', padding: '1px 5px', fontWeight: 700 }}>DEMO</span>}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Charts Row */}
           <Row gutter={[20, 20]}>

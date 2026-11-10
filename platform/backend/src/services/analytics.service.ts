@@ -55,12 +55,6 @@ export async function createMisReport(data: { rmName: string; fileName?: string;
   });
 }
 
-export async function updateMisReportStatus(id: string, status: string) {
-  const report = await analyticsDb.misReport.findUnique({ where: { id } });
-  if (!report) throw Object.assign(new Error('MIS report not found'), { status: 404 });
-  return analyticsDb.misReport.update({ where: { id }, data: { status } });
-}
-
 export async function getEmailConfig() {
   return analyticsDb.emailConfig.findFirst();
 }

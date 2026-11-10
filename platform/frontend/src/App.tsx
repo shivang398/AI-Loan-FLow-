@@ -14,17 +14,12 @@ import UserManagement from './features/users/components/UserManagement';
 import RegionalDashboard from './features/rm/components/RegionalDashboard';
 import ConnectorTracker from './features/rm/components/ConnectorTracker';
 import WorkflowMonitor from './features/rm/components/WorkflowMonitor';
-import TeamLeaderDashboard from './features/team-leader/components/TeamLeaderDashboard';
 import OperationsDashboard from './features/operations/components/OperationsDashboard';
 import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
 import EmiCalculator from './features/connector/components/EmiCalculator';
-import EquifaxCheckPage from './features/connector/components/EquifaxCheckPage';
-import CibilBureauCheckPage from './features/connector/components/CibilBureauCheckPage';
 import { BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
-import CibilHistoryPage from './features/eligibility/components/CibilHistoryPage';
 import CheckEligibility from './features/connector/components/CheckEligibility';
 import TeamMeeting from './features/team-meeting/components/TeamMeeting';
-import OpsTeamMeetingPage from './features/team-meeting/components/OpsTeamMeetingPage';
 import DocumentLibrary from './features/documents/components/DocumentLibrary';
 import CommissionDashboard from './features/commissions/components/CommissionDashboard';
 import BusinessAnalytics from './features/analytics/components/BusinessAnalytics';
@@ -34,28 +29,72 @@ import PayoutTracker from './features/admin/components/PayoutTracker';
 import CareerApplications from './features/admin/components/CareerApplications';
 import PoliciesPage from './features/policies/components/PoliciesPage';
 import TelecallerDashboard from './features/telecaller/components/TelecallerDashboard';
+import WhatsAppPage from './features/operations/components/WhatsAppPage';
+import WhatsAppCampaigns from './features/operations/components/WhatsAppCampaigns';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
 import FeatureErrorBoundary from './shared/components/FeatureErrorBoundary';
+import TabbedPage from './shared/components/TabbedPage';
+import { ROLE_HOME } from './store/slices/authSlice';
 import './index.css';
 
 const queryClient = new QueryClient();
+
+// ── Combined pages: one sidebar entry each, related tools as tabs ──────────────
+const WhatsAppHub: React.FC = () => (
+  <TabbedPage tabs={[
+    { key: 'chats',      label: 'Chats',      element: <WhatsAppPage /> },
+    { key: 'broadcasts', label: 'Broadcasts', element: <WhatsAppCampaigns view="campaigns" /> },
+    { key: 'templates',  label: 'Templates',  element: <WhatsAppCampaigns view="templates" /> },
+  ]} />
+);
+
+const ReportsHub: React.FC = () => (
+  <TabbedPage tabs={[
+    { key: 'mis',       label: 'MIS Reports', element: <ReportingDashboard /> },
+    { key: 'analytics', label: 'Analytics',   element: <BusinessAnalytics /> },
+  ]} />
+);
+
+const PartnersHub: React.FC = () => (
+  <TabbedPage tabs={[
+    { key: 'partners',    label: 'Partner Hub',      element: <ConnectorHub /> },
+    { key: 'payouts',     label: 'Payouts',          element: <PayoutTracker /> },
+  ]} />
+);
+
+const LoanToolsHub: React.FC = () => (
+  <TabbedPage tabs={[
+    { key: 'eligibility', label: 'Check Eligibility',  element: <CheckEligibility /> },
+    { key: 'statement',   label: 'Statement Analyser', element: <BankStatementAnalyzerPage /> },
+    { key: 'emi',         label: 'EMI Calculator',     element: <EmiCalculator /> },
+  ]} />
+);
+
+const LEGACY_REDIRECTS: Record<string, string> = {
+  '/whatsapp/inbox':           '/whatsapp?tab=chats',
+  '/whatsapp/campaigns':       '/whatsapp?tab=broadcasts',
+  '/admin/reports':            '/reports?tab=mis',
+  '/admin/analytics':          '/reports?tab=analytics',
+  '/connector/foir':           '/tools?tab=eligibility',
+  '/connector/bsa':            '/tools?tab=statement',
+  '/connector/emi-calculator': '/tools?tab=emi',
+  '/pm/partners':              '/partners?tab=partners',
+  '/pm/payouts':               '/partners?tab=payouts',
+  '/pm/commissions':           '/partners?tab=partners',   // slab settings live in Partner Hub → Bank Payout Slabs
+  '/tl/dashboard':             '/rm/dashboard',
+  '/telecaller/queue':         '/calls',
+  ...Object.fromEntries(['admin', 'pm', 'rm', 'tl', 'ops', 'connector'].flatMap(p => [
+    [`/${p}/policies`, '/policies'],
+    [`/${p}/team-meeting`, '/team-meeting'],
+  ])),
+};
 
 // Smart 404 — authenticated users go to their role home, others go to login
 const SmartRedirect: React.FC = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   if (!isAuthenticated || !user) return <Navigate to="/login" replace />;
-  const roleHome: Record<string, string> = {
-    ADMIN:           '/dashboard',
-    RM:              '/rm/dashboard',
-    TEAM_LEADER:     '/tl/dashboard',
-    OPERATIONS:      '/ops/dashboard',
-    CONNECTOR:       '/connector/dashboard',
-    PARTNER_MANAGER: '/pm/partners',
-    TELECALLER:      '/telecaller/queue',
-    CREDIT_BUREAU:   '/connector/cibil',
-  };
-  return <Navigate to={roleHome[user.role] ?? '/dashboard'} replace />;
+  return <Navigate to={ROLE_HOME[user.role] ?? '/dashboard'} replace />;
 };
 
 /* Formal Ant Design theme — navy primary, minimal radius */
@@ -107,78 +146,47 @@ const App: React.FC = () => {
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<FeatureErrorBoundary feature="Dashboard"><DashboardOverview /></FeatureErrorBoundary>} />
 
-              {/* Equifax Check — all authenticated roles */}
-              <Route path="/connector/cibil" element={<FeatureErrorBoundary feature="Equifax Check"><EquifaxCheckPage /></FeatureErrorBoundary>} />
-              {/* CIBIL Bureau — all authenticated roles */}
-              <Route path="/connector/cibil-bureau" element={<FeatureErrorBoundary feature="CIBIL Bureau"><CibilBureauCheckPage /></FeatureErrorBoundary>} />
+              {/* ── Shared by every role ── */}
+              <Route path="/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
+              <Route path="/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
 
-              {/* CIBIL History — ADMIN, RM, OPERATIONS, CREDIT_BUREAU */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS', 'CREDIT_BUREAU']} />}>
-                <Route path="/cibil/history" element={<FeatureErrorBoundary feature="CIBIL History"><CibilHistoryPage /></FeatureErrorBoundary>} />
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'OPERATIONS']} />}>
+                <Route path="/whatsapp" element={<WhatsAppHub />} />
               </Route>
 
-              {/* Shared ADMIN + PARTNER_MANAGER routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PARTNER_MANAGER']} />}>
-                <Route path="/admin/careers" element={<FeatureErrorBoundary feature="Career Applications"><CareerApplications /></FeatureErrorBoundary>} />
-              </Route>
-
-              {/* Admin Specific Routes */}
+              {/* ── Admin ── */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                <Route path="/admin/users"        element={<FeatureErrorBoundary feature="User Management"><UserManagement /></FeatureErrorBoundary>} />
-                <Route path="/admin/documents"    element={<FeatureErrorBoundary feature="Document Library"><DocumentLibrary /></FeatureErrorBoundary>} />
-                <Route path="/admin/reports"      element={<FeatureErrorBoundary feature="Reports"><ReportingDashboard /></FeatureErrorBoundary>} />
-                <Route path="/admin/analytics"    element={<FeatureErrorBoundary feature="Analytics"><BusinessAnalytics /></FeatureErrorBoundary>} />
-                <Route path="/admin/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
-                <Route path="/admin/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
+                <Route path="/admin/users"     element={<FeatureErrorBoundary feature="User Management"><UserManagement /></FeatureErrorBoundary>} />
+                <Route path="/admin/documents" element={<FeatureErrorBoundary feature="Document Library"><DocumentLibrary /></FeatureErrorBoundary>} />
+                <Route path="/reports"         element={<ReportsHub />} />
+                <Route path="/partners"        element={<PartnersHub />} />
+                <Route path="/admin/careers"   element={<FeatureErrorBoundary feature="Career Applications"><CareerApplications /></FeatureErrorBoundary>} />
               </Route>
 
-              {/* Partner Manager Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['PARTNER_MANAGER']} />}>
-                <Route path="/pm/partners"     element={<FeatureErrorBoundary feature="Partners"><ConnectorHub /></FeatureErrorBoundary>} />
-                <Route path="/pm/payouts"      element={<FeatureErrorBoundary feature="Payouts"><PayoutTracker /></FeatureErrorBoundary>} />
-                <Route path="/pm/commissions"  element={<FeatureErrorBoundary feature="Commissions"><CommissionDashboard /></FeatureErrorBoundary>} />
-                <Route path="/pm/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
-                <Route path="/pm/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
-              </Route>
-
-              {/* RM Specific Routes */}
+              {/* ── RM ── */}
               <Route element={<ProtectedRoute allowedRoles={['RM']} />}>
-                <Route path="/rm/dashboard"    element={<FeatureErrorBoundary feature="RM Dashboard"><RegionalDashboard /></FeatureErrorBoundary>} />
-                <Route path="/rm/connectors"   element={<FeatureErrorBoundary feature="Connector Tracker"><ConnectorTracker /></FeatureErrorBoundary>} />
-                <Route path="/rm/workflow"     element={<FeatureErrorBoundary feature="Workflow Monitor"><WorkflowMonitor /></FeatureErrorBoundary>} />
-                <Route path="/rm/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
-                <Route path="/rm/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
+                <Route path="/rm/dashboard"  element={<FeatureErrorBoundary feature="RM Dashboard"><RegionalDashboard /></FeatureErrorBoundary>} />
+                <Route path="/rm/connectors" element={<FeatureErrorBoundary feature="Connector Tracker"><ConnectorTracker /></FeatureErrorBoundary>} />
+                <Route path="/rm/workflow"   element={<FeatureErrorBoundary feature="Workflow Monitor"><WorkflowMonitor /></FeatureErrorBoundary>} />
               </Route>
 
-              {/* Team Leader Specific Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['TEAM_LEADER']} />}>
-                <Route path="/tl/dashboard"    element={<FeatureErrorBoundary feature="TL Dashboard"><TeamLeaderDashboard /></FeatureErrorBoundary>} />
-                <Route path="/tl/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
-                <Route path="/tl/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
-              </Route>
-
-              {/* Operations Specific Routes */}
+              {/* ── Operations ── */}
               <Route element={<ProtectedRoute allowedRoles={['OPERATIONS']} />}>
-                <Route path="/ops/dashboard"    element={<FeatureErrorBoundary feature="Operations Dashboard"><OperationsDashboard /></FeatureErrorBoundary>} />
-                <Route path="/ops/policies"     element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
-                <Route path="/ops/team-meeting" element={<FeatureErrorBoundary feature="Team Meeting"><OpsTeamMeetingPage /></FeatureErrorBoundary>} />
+                <Route path="/ops/dashboard" element={<FeatureErrorBoundary feature="Operations Dashboard"><OperationsDashboard /></FeatureErrorBoundary>} />
+                <Route path="/calls"         element={<FeatureErrorBoundary feature="Call Queue"><TelecallerDashboard /></FeatureErrorBoundary>} />
               </Route>
 
-              {/* Telecaller Specific Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['TELECALLER']} />}>
-                <Route path="/telecaller/queue" element={<FeatureErrorBoundary feature="Call Queue"><TelecallerDashboard /></FeatureErrorBoundary>} />
-              </Route>
-
-              {/* Connector Specific Routes */}
+              {/* ── Connector ── */}
               <Route element={<ProtectedRoute allowedRoles={['CONNECTOR']} />}>
-                <Route path="/connector/dashboard"      element={<FeatureErrorBoundary feature="Connector Dashboard"><ConnectorDashboard /></FeatureErrorBoundary>} />
-                <Route path="/connector/bsa"            element={<FeatureErrorBoundary feature="Bank Statement Analyzer"><BankStatementAnalyzerPage /></FeatureErrorBoundary>} />
-                <Route path="/connector/foir"           element={<FeatureErrorBoundary feature="Check Eligibility"><CheckEligibility /></FeatureErrorBoundary>} />
-                <Route path="/connector/emi-calculator" element={<FeatureErrorBoundary feature="EMI Calculator"><EmiCalculator /></FeatureErrorBoundary>} />
-                <Route path="/connector/earnings"       element={<FeatureErrorBoundary feature="Earnings"><CommissionDashboard /></FeatureErrorBoundary>} />
-                <Route path="/connector/policies"       element={<FeatureErrorBoundary feature="Policies"><PoliciesPage /></FeatureErrorBoundary>} />
-                <Route path="/connector/team-meeting"   element={<FeatureErrorBoundary feature="Team Meeting"><TeamMeeting /></FeatureErrorBoundary>} />
+                <Route path="/connector/dashboard" element={<FeatureErrorBoundary feature="Connector Dashboard"><ConnectorDashboard /></FeatureErrorBoundary>} />
+                <Route path="/tools"               element={<LoanToolsHub />} />
+                <Route path="/connector/earnings"  element={<FeatureErrorBoundary feature="Earnings"><CommissionDashboard /></FeatureErrorBoundary>} />
               </Route>
+
+              {/* Old addresses → new pages, so bookmarks and shared links keep working */}
+              {Object.entries(LEGACY_REDIRECTS).map(([from, to]) => (
+                <Route key={from} path={from} element={<Navigate to={to} replace />} />
+              ))}
             </Route>
           </Route>
 

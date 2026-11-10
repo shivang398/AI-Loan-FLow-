@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Typography, Drawer, List, Spin } from 'antd';
 import {
-  LayoutDashboard, Users, ShieldCheck, ClipboardList, BarChart3,
+  LayoutDashboard, Users, ClipboardList,
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, UsersRound, Network,
   BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck, Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/slices/authSlice';
+import { logout, UserRole } from '../store/slices/authSlice';
 import { RootState } from '../store';
 import api from '../shared/services/apiClient';
 import { RealMoneyLogoWhite, RealMoneyMark } from '../shared/components/RealMoneyLogo';
@@ -87,93 +88,33 @@ const DashboardLayout: React.FC = () => {
     setUnreadCount(0);
   };
 
-  const adminItems = [
-    { key: '/dashboard',             icon: <LayoutDashboard size={16} />, label: 'Overview' },
-    { key: '/admin/users',           icon: <Users size={16} />,           label: 'User Management' },
-    { key: '/connector/cibil',       icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau',icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
-    { key: '/cibil/history',         icon: <ClipboardList size={16} />,   label: 'CIBIL History' },
-    { key: '/admin/reports',      icon: <FileText size={16} />,        label: 'MIS Reports' },
-    { key: '/admin/documents',    icon: <Files size={16} />,           label: 'Document Library' },
-    { key: '/admin/analytics',    icon: <BarChart3 size={16} />,       label: 'Analytics' },
-    { key: '/admin/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
-    { key: '/admin/careers',      icon: <UserCheck size={16} />,       label: 'Career Applications' },
-    { key: '/admin/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
+  // One list for every role: home first, then role tools, then shared pages.
+  // Related tools live as tabs inside one page (WhatsApp, Reports, Loan Tools).
+  const navItems: { key: string; icon: React.ReactNode; label: string; roles?: UserRole[] }[] = [
+    { key: '/dashboard',           icon: <LayoutDashboard size={16} />, label: 'Overview',          roles: ['ADMIN'] },
+    { key: '/rm/dashboard',        icon: <LayoutDashboard size={16} />, label: 'Regional Hub',      roles: ['RM'] },
+    { key: '/ops/dashboard',       icon: <ClipboardList size={16} />,   label: 'Ops Queue',         roles: ['OPERATIONS'] },
+    { key: '/connector/dashboard', icon: <LayoutDashboard size={16} />, label: 'Overview',          roles: ['CONNECTOR'] },
+
+    { key: '/admin/users',         icon: <Users size={16} />,           label: 'User Management',   roles: ['ADMIN'] },
+    { key: '/partners',            icon: <Network size={16} />,         label: 'Partners',          roles: ['ADMIN'] },
+    { key: '/calls',               icon: <Phone size={16} />,           label: 'Call Queue',        roles: ['OPERATIONS'] },
+    { key: '/whatsapp',            icon: <MessageCircle size={16} />,   label: 'WhatsApp',          roles: ['ADMIN', 'OPERATIONS'] },
+    { key: '/rm/connectors',       icon: <Users size={16} />,           label: 'Connector Tracker', roles: ['RM'] },
+    { key: '/rm/workflow',         icon: <ClipboardList size={16} />,   label: 'Workflow Monitor',  roles: ['RM'] },
+    { key: '/tools',               icon: <Calculator size={16} />,      label: 'Loan Tools',        roles: ['CONNECTOR'] },
+    { key: '/connector/earnings',  icon: <Wallet size={16} />,          label: 'My Earnings',       roles: ['CONNECTOR'] },
+
+    { key: '/reports',             icon: <FileText size={16} />,        label: 'Reports',           roles: ['ADMIN'] },
+    { key: '/admin/documents',     icon: <Files size={16} />,           label: 'Document Library',  roles: ['ADMIN'] },
+    { key: '/admin/careers',       icon: <UserCheck size={16} />,       label: 'Career Applications', roles: ['ADMIN'] },
+    { key: '/policies',            icon: <BookOpen size={16} />,        label: 'Policies' },
+    { key: '/team-meeting',        icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];
 
-  const partnerManagerItems = [
-    { key: '/pm/partners',            icon: <Network size={16} />,     label: 'Partner Hub' },
-    { key: '/pm/payouts',             icon: <Wallet size={16} />,      label: 'Payout Tracker' },
-    { key: '/pm/commissions',         icon: <BarChart3 size={16} />,   label: 'Commission Slabs' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
-    { key: '/pm/policies',     icon: <BookOpen size={16} />,       label: 'Policies' },
-    { key: '/admin/careers',   icon: <UserCheck size={16} />,      label: 'Career Applications' },
-    { key: '/pm/team-meeting', icon: <UsersRound size={16} />,     label: 'Team Meeting' },
-  ];
-
-  const rmItems = [
-    { key: '/rm/dashboard',           icon: <LayoutDashboard size={16} />, label: 'Regional Hub' },
-    { key: '/rm/connectors',          icon: <Users size={16} />,           label: 'Connector Tracker' },
-    { key: '/rm/workflow',            icon: <ClipboardList size={16} />,   label: 'Workflow Monitor' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
-    { key: '/cibil/history',          icon: <FileText size={16} />,        label: 'CIBIL History' },
-    { key: '/rm/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
-    { key: '/rm/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
-  ];
-
-  const opsItems = [
-    { key: '/ops/dashboard',          icon: <ClipboardList size={16} />, label: 'Ops Queue' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,   label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />,   label: 'CIBIL Bureau' },
-    { key: '/cibil/history',          icon: <FileText size={16} />,      label: 'CIBIL History' },
-    { key: '/ops/policies',     icon: <BookOpen size={16} />,      label: 'Policies' },
-    { key: '/ops/team-meeting', icon: <UsersRound size={16} />,    label: 'Team Meeting' },
-  ];
-
-  const connectorItems = [
-    { key: '/connector/dashboard',      icon: <LayoutDashboard size={16} />, label: 'Overview' },
-    { key: '/connector/cibil',          icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau',   icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
-    { key: '/connector/bsa',            icon: <Files size={16} />,           label: 'Statement Analyser' },
-    { key: '/connector/foir',           icon: <BarChart3 size={16} />,       label: 'Check Eligibility' },
-    { key: '/connector/emi-calculator', icon: <Calculator size={16} />,      label: 'EMI Calculator' },
-    { key: '/connector/earnings',       icon: <Wallet size={16} />,          label: 'My Earnings' },
-    { key: '/connector/policies',       icon: <BookOpen size={16} />,        label: 'Policies' },
-    { key: '/connector/team-meeting',   icon: <UsersRound size={16} />,      label: 'Team Meeting' },
-  ];
-
-  const tlItems = [
-    { key: '/tl/dashboard',           icon: <LayoutDashboard size={16} />, label: 'Team Leader Hub' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />,     label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />,     label: 'CIBIL Bureau' },
-    { key: '/tl/policies',     icon: <BookOpen size={16} />,        label: 'Policies' },
-    { key: '/tl/team-meeting', icon: <UsersRound size={16} />,      label: 'Team Meeting' },
-  ];
-
-  const telecallerItems = [
-    { key: '/telecaller/queue',       icon: <Phone size={16} />,       label: 'My Call Queue' },
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
-  ];
-
-  const creditBureauItems = [
-    { key: '/connector/cibil',        icon: <ShieldCheck size={16} />, label: 'Equifax Check' },
-    { key: '/connector/cibil-bureau', icon: <ShieldCheck size={16} />, label: 'CIBIL Bureau' },
-    { key: '/cibil/history',          icon: <ClipboardList size={16} />, label: 'CIBIL History' },
-  ];
-
-  const menuItems = [
-    ...(user?.role === 'ADMIN'           ? adminItems          : []),
-    ...(user?.role === 'PARTNER_MANAGER' ? partnerManagerItems : []),
-    ...(user?.role === 'RM'              ? rmItems             : []),
-    ...(user?.role === 'TEAM_LEADER'     ? tlItems             : []),
-    ...(user?.role === 'OPERATIONS'      ? opsItems            : []),
-    ...(user?.role === 'CONNECTOR'       ? connectorItems      : []),
-    ...(user?.role === 'TELECALLER'      ? telecallerItems     : []),
-    ...(user?.role === 'CREDIT_BUREAU'   ? creditBureauItems   : []),
-  ];
+  const menuItems = navItems
+    .filter(i => !i.roles || (user?.role && i.roles.includes(user.role)))
+    .map(({ key, icon, label }) => ({ key, icon, label }));
 
   const handleLogout = () => { dispatch(logout()); navigate('/login'); };
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Input, Select, Alert, App as AntdApp, ConfigProvider } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle2, Send, Paperclip, X } from 'lucide-react';
 import { RealMoneyLogoWhite } from '../shared/components/RealMoneyLogo';
@@ -26,7 +26,9 @@ const EMPTY: AppForm = { name: '', email: '', mobile: '', role: '', experience: 
 
 const CareersInner: React.FC = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState<AppForm>(EMPTY);
+  // ?role=Channel%20Partner pre-fills the role (the landing page's "Become a partner" button)
+  const [params] = useSearchParams();
+  const [form, setForm] = useState<AppForm>({ ...EMPTY, role: (params.get('role') ?? '').slice(0, 100) });
   const [cv, setCv] = useState<File | null>(null);
   const [cvErr, setCvErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);

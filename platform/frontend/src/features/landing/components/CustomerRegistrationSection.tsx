@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import { C } from '../theme';
+import { SectionHeading, GoldCorners } from './Royal';
+import React, { useState, useEffect } from 'react';
+import { onPrefill } from '../prefill';
 import axios from 'axios';
 import { INDIA_STATES, getDistricts, getCities } from '../constants/indiaLocations';
 
@@ -84,7 +87,7 @@ const INITIAL: FormData = {
 
 // ── Styles ─────────────────────────────────────────────────────────────────
 const inp: React.CSSProperties = {
-  padding: '10px 14px', borderRadius: 10, border: '1.5px solid #e2e8f0',
+  padding: '10px 14px', borderRadius: 4, border: '1.5px solid #e2e8f0',
   fontSize: 13, color: '#0f172a', background: '#f8fafc', outline: 'none',
   fontFamily: 'Inter, sans-serif', width: '100%', boxSizing: 'border-box',
   transition: 'border-color 200ms',
@@ -116,7 +119,7 @@ const Input = ({
     maxLength={maxLength} inputMode={inputMode}
     onChange={e => onChange(e.target.value)}
     style={{ ...inp, ...(disabled ? { background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed' } : {}) }}
-    onFocus={e => { if (!disabled) e.currentTarget.style.borderColor = '#D4AF37'; }}
+    onFocus={e => { if (!disabled) e.currentTarget.style.borderColor = '#C9A04A'; }}
     onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
   />
 );
@@ -137,7 +140,7 @@ const Sel = ({ value, onChange, options }: {
   value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
 }) => (
   <select value={value} onChange={e => onChange(e.target.value)} style={sel}
-    onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+    onFocus={e => (e.currentTarget.style.borderColor = '#C9A04A')}
     onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
     <option value="">— Select —</option>
     {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -189,7 +192,7 @@ const LocationPicker: React.FC<{
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <F label="State *">
           <select value={stateVal} onChange={e => handleStateChange(e.target.value)} style={sel}
-            onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+            onFocus={e => (e.currentTarget.style.borderColor = '#C9A04A')}
             onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
             <option value="">— Select State —</option>
             {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -198,7 +201,7 @@ const LocationPicker: React.FC<{
         <F label="District" required>
           <select value={districtVal} onChange={e => handleDistrictChange(e.target.value)} style={sel}
             disabled={!stateVal}
-            onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+            onFocus={e => (e.currentTarget.style.borderColor = '#C9A04A')}
             onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
             <option value="">— Select District —</option>
             {districts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -209,7 +212,7 @@ const LocationPicker: React.FC<{
         <F label="City *">
           <select value={cityVal} onChange={e => onCity(e.target.value)} style={sel}
             disabled={!districtVal}
-            onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+            onFocus={e => (e.currentTarget.style.borderColor = '#C9A04A')}
             onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
             <option value="">— Select City —</option>
             {cities.map(c => <option key={c} value={c}>{c}</option>)}
@@ -221,7 +224,7 @@ const LocationPicker: React.FC<{
               type="text" value={cityCustomVal} placeholder="Enter your city name"
               onChange={e => onCityCustom(e.target.value)}
               style={inp}
-              onFocus={e => (e.currentTarget.style.borderColor = '#D4AF37')}
+              onFocus={e => (e.currentTarget.style.borderColor = '#C9A04A')}
               onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
             />
           </F>
@@ -312,6 +315,9 @@ const validateStep = (step: number, f: FormData): string => {
 // ── Main Component ─────────────────────────────────────────────────────────
 const CustomerRegistrationSection: React.FC = () => {
   const [form, setForm] = useState<FormData>(INITIAL);
+
+  // Details typed into the hero's quick form carry over, so the visitor never re-enters them
+  useEffect(() => onPrefill(d => { setForm(f => ({ ...f, ...d })); setStep(0); }), []);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -444,25 +450,17 @@ const CustomerRegistrationSection: React.FC = () => {
   const grid3: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 };
 
   return (
-    <section id="customer-register" style={{ padding: '80px 0', background: 'linear-gradient(180deg,#F0F4FF 0%,#F8FAFC 100%)' }}>
+    <section id="apply" style={{ padding: 'clamp(72px, 9vw, 112px) 0', background: `radial-gradient(ellipse 60% 50% at 50% 30%, ${C.navySoft} 0%, ${C.midnight} 75%)` }}>
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px' }}>
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#FEF9EC', borderRadius: 100, padding: '6px 18px', border: '1px solid #D4AF3740', marginBottom: 14 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#D4AF37' }} />
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Apply Now · Free</span>
-          </div>
-          <h2 style={{ fontSize: 'clamp(1.75rem,4vw,2.4rem)', fontWeight: 900, color: '#0A1F44', margin: '0 0 12px', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-            Apply for Your Personal Loan
-          </h2>
-          <p style={{ fontSize: 15, color: '#64748b', maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>
-            Complete the 5-step form below. Our advisor will contact you within 24 hours.
-          </p>
+        <div style={{ marginBottom: 48 }}>
+          <SectionHeading onDark eyebrow="Apply · free, no obligation" title="Apply for your personal loan" intro="A short 5-step form. An advisor will call you within 24 hours." />
         </div>
 
         {/* Card */}
-        <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #e2e8f0', boxShadow: '0 8px 48px rgba(10,31,68,0.09)', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', background: '#fff', borderRadius: 2, border: '1px solid rgba(201,160,74,0.45)', borderTop: `3px solid ${C.gold}`, boxShadow: '0 30px 80px rgba(0,0,0,0.35)' }}>
+          <GoldCorners inset={8} size={14} />
 
           {success ? (
             <div style={{ textAlign: 'center', padding: '60px 40px' }}>
@@ -472,7 +470,7 @@ const CustomerRegistrationSection: React.FC = () => {
                 Thank you! Your personal loan application is in our queue. A Real Money advisor will call you within 24 hours.
               </p>
               <button onClick={() => { setSuccess(false); setForm(INITIAL); setStep(0); }}
-                style={{ padding: '12px 32px', borderRadius: 14, border: '1.5px solid #0A1F44', background: 'transparent', fontSize: 14, fontWeight: 700, color: '#0A1F44', cursor: 'pointer' }}>
+                style={{ padding: '12px 32px', borderRadius: 4, border: '1.5px solid #0B1E3D', background: 'transparent', fontSize: 14, fontWeight: 700, color: '#0B1E3D', cursor: 'pointer' }}>
                 Submit Another Application
               </button>
             </div>
@@ -485,21 +483,21 @@ const CustomerRegistrationSection: React.FC = () => {
                     {i < STEPS.length - 1 && (
                       <div style={{
                         position: 'absolute', top: 16, left: '50%', width: '100%', height: 2,
-                        background: i < step ? '#D4AF37' : '#e2e8f0', zIndex: 0,
+                        background: i < step ? '#C9A04A' : '#e2e8f0', zIndex: 0,
                       }} />
                     )}
                     <div style={{
                       width: 32, height: 32, borderRadius: '50%', zIndex: 1,
-                      background: i < step ? '#D4AF37' : i === step ? '#0A1F44' : '#f1f5f9',
+                      background: i < step ? '#C9A04A' : i === step ? '#0B1E3D' : '#f1f5f9',
                       color: i <= step ? '#fff' : '#94a3b8',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 13, fontWeight: 800, marginBottom: 6,
-                      border: i === step ? '2px solid #0A1F44' : 'none',
+                      border: i === step ? '2px solid #0B1E3D' : 'none',
                       transition: 'all 300ms',
                     }}>
                       {i < step ? '✓' : i + 1}
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: i === step ? '#0A1F44' : i < step ? '#D4AF37' : '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: i === step ? '#0B1E3D' : i < step ? '#C9A04A' : '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                       {s.title}
                     </span>
                     <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 500 }}>{s.subtitle}</span>
@@ -510,7 +508,7 @@ const CustomerRegistrationSection: React.FC = () => {
               {/* Form Body */}
               <div style={{ padding: '28px 32px 24px' }}>
                 {error && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#b91c1c', fontWeight: 600 }}>
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 4, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#b91c1c', fontWeight: 600 }}>
                     {error}
                   </div>
                 )}
@@ -526,16 +524,16 @@ const CustomerRegistrationSection: React.FC = () => {
                         {/* Personal Loan only */}
                         <div style={{
                           ...inp, display: 'flex', alignItems: 'center', gap: 10,
-                          background: '#f0fdf4', borderColor: '#86efac', cursor: 'default',
+                          background: '#FBF6EA', borderColor: '#E6D9BC', cursor: 'default',
                         }}>
                           <span style={{
-                            width: 8, height: 8, borderRadius: '50%', background: '#16a34a', flexShrink: 0,
-                            boxShadow: '0 0 0 2px #bbf7d0',
+                            width: 8, height: 8, borderRadius: '50%', background: '#C9A04A', flexShrink: 0,
+                            boxShadow: '0 0 0 2px #F3E8CC',
                           }} />
-                          <span style={{ fontWeight: 700, color: '#15803d', fontSize: 13 }}>Personal Loan</span>
+                          <span style={{ fontWeight: 700, color: '#0B1E3D', fontSize: 13 }}>Personal Loan</span>
                           <span style={{
-                            marginLeft: 'auto', fontSize: 10, fontWeight: 700, background: '#dcfce7',
-                            color: '#16a34a', borderRadius: 100, padding: '2px 8px', letterSpacing: '0.05em',
+                            marginLeft: 'auto', fontSize: 10, fontWeight: 700, background: '#F3E8CC',
+                            color: '#C9A04A', borderRadius: 100, padding: '2px 8px', letterSpacing: '0.05em',
                           }}>OUR CORE PRODUCT</span>
                         </div>
                       </F>
@@ -638,7 +636,7 @@ const CustomerRegistrationSection: React.FC = () => {
                         <label style={{
                           display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
                           fontSize: 13, fontWeight: 600, color: '#334155',
-                          padding: '9px 12px', borderRadius: 10,
+                          padding: '9px 12px', borderRadius: 4,
                           background: form.whatsappSameAsMobile ? '#f0fdf4' : '#f8fafc',
                           border: `1.5px solid ${form.whatsappSameAsMobile ? '#86efac' : '#e2e8f0'}`,
                           transition: 'all 200ms',
@@ -710,7 +708,7 @@ const CustomerRegistrationSection: React.FC = () => {
                 {step === 2 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 800, color: '#0A1F44', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #f1f5f9' }}>
+                      <p style={{ fontSize: 12, fontWeight: 800, color: '#0B1E3D', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #f1f5f9' }}>
                         Current Address
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -749,13 +747,13 @@ const CustomerRegistrationSection: React.FC = () => {
                     <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#334155' }}>
                       <input type="checkbox" checked={form.sameAsPermanent}
                         onChange={e => set('sameAsPermanent')(e.target.checked)}
-                        style={{ width: 16, height: 16, accentColor: '#D4AF37', cursor: 'pointer' }} />
+                        style={{ width: 16, height: 16, accentColor: '#C9A04A', cursor: 'pointer' }} />
                       Permanent address is same as current address
                     </label>
 
                     {!form.sameAsPermanent && (
                       <div>
-                        <p style={{ fontSize: 12, fontWeight: 800, color: '#0A1F44', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #f1f5f9' }}>
+                        <p style={{ fontSize: 12, fontWeight: 800, color: '#0B1E3D', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px', paddingBottom: 8, borderBottom: '1px solid #f1f5f9' }}>
                           Permanent Address
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -840,8 +838,8 @@ const CustomerRegistrationSection: React.FC = () => {
                     </F>
 
                     {/* Prior Loan / EMI section */}
-                    <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#0A1F44', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    <div style={{ background: '#f8fafc', borderRadius: 4, border: '1px solid #e2e8f0', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: '#0B1E3D', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         Existing Loan / EMI Details
                       </p>
                       <F label="Do you have any existing running loans or EMIs?" required>
@@ -871,11 +869,11 @@ const CustomerRegistrationSection: React.FC = () => {
                 {/* ── Step 4: Documents ── */}
                 {step === 4 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <div style={{ background: '#F6EEDC', border: '1px solid #E7D6AE', borderRadius: 4, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <span style={{ fontSize: 18 }}>📋</span>
                       <div>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>Upload your KYC documents to complete the application</p>
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#1e40af' }}>All 4 documents are required. Your application will be submitted once all are uploaded.</p>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#0B1E3D' }}>Upload your KYC documents to complete the application</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748B' }}>All 4 documents are required. Your application will be submitted once all are uploaded.</p>
                       </div>
                     </div>
                     {DOC_TYPES.map(doc => {
@@ -887,11 +885,11 @@ const CustomerRegistrationSection: React.FC = () => {
                       return (
                         <div key={doc.key} style={{
                           border: `1.5px solid ${isDone ? '#86efac' : isError ? '#fca5a5' : '#e2e8f0'}`,
-                          borderRadius: 14, padding: '14px 16px',
+                          borderRadius: 4, padding: '14px 16px',
                           background: isDone ? '#f0fdf4' : isError ? '#fef2f2' : '#f8fafc',
                           display: 'flex', alignItems: 'center', gap: 14, transition: 'all 200ms',
                         }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: isDone ? '#dcfce7' : isError ? '#fee2e2' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 4, flexShrink: 0, background: isDone ? '#dcfce7' : isError ? '#fee2e2' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
                             {isDone ? '✓' : isError ? '✗' : isUploading ? '⏳' : '📄'}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -909,14 +907,14 @@ const CustomerRegistrationSection: React.FC = () => {
                           </div>
                           {!isDone && (
                             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                              <label style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <label style={{ padding: '8px 14px', borderRadius: 4, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 {file ? 'Change' : 'Choose File'}
                                 <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }}
                                   onChange={e => handleDocFileChange(doc.key, e.target.files?.[0] ?? null)} />
                               </label>
                               {file && (
                                 <button onClick={() => handleDocUpload(doc.key)} disabled={isUploading}
-                                  style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: isUploading ? '#94a3b8' : 'linear-gradient(135deg,#0A1F44,#1e3a6e)', color: '#fff', fontSize: 12, fontWeight: 800, cursor: isUploading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
+                                  style={{ padding: '8px 16px', borderRadius: 4, border: 'none', background: isUploading ? '#94a3b8' : '#0B1E3D', color: '#fff', fontSize: 12, fontWeight: 800, cursor: isUploading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
                                   {isUploading ? 'Uploading…' : 'Upload'}
                                 </button>
                               )}
@@ -938,7 +936,7 @@ const CustomerRegistrationSection: React.FC = () => {
                   onClick={back}
                   disabled={step === 0 || step === 4}
                   style={{
-                    padding: '12px 28px', borderRadius: 12, border: '1.5px solid #e2e8f0',
+                    padding: '12px 28px', borderRadius: 4, border: '1.5px solid #e2e8f0',
                     background: (step === 0 || step === 4) ? '#f8fafc' : '#fff', fontSize: 14, fontWeight: 700,
                     color: (step === 0 || step === 4) ? '#cbd5e1' : '#475569',
                     cursor: (step === 0 || step === 4) ? 'default' : 'pointer',
@@ -950,16 +948,16 @@ const CustomerRegistrationSection: React.FC = () => {
                   <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>Step {step + 1} of {STEPS.length}</span>
                   {step < 3 && (
                     <button onClick={next} style={{
-                      padding: '12px 32px', borderRadius: 12, border: 'none',
-                      background: 'linear-gradient(135deg,#0A1F44,#1e3a6e)', color: '#fff',
+                      padding: '12px 32px', borderRadius: 4, border: 'none',
+                      background: '#0B1E3D', color: '#fff',
                       fontSize: 14, fontWeight: 800, cursor: 'pointer',
                       boxShadow: '0 6px 20px rgba(10,31,68,0.22)',
                     }}>Continue →</button>
                   )}
                   {step === 3 && (
                     <button onClick={handleSubmit} disabled={loading} style={{
-                      padding: '12px 32px', borderRadius: 12, border: 'none',
-                      background: loading ? '#94a3b8' : 'linear-gradient(135deg,#0A1F44,#1e3a6e)',
+                      padding: '12px 32px', borderRadius: 4, border: 'none',
+                      background: loading ? '#94a3b8' : '#0B1E3D',
                       color: '#fff', fontSize: 14, fontWeight: 800,
                       cursor: loading ? 'not-allowed' : 'pointer',
                       boxShadow: loading ? 'none' : '0 6px 20px rgba(10,31,68,0.22)',
@@ -978,14 +976,14 @@ const CustomerRegistrationSection: React.FC = () => {
                         onClick={() => { if (allRequiredUploaded) setSuccess(true); }}
                         disabled={!allRequiredUploaded}
                         style={{
-                          padding: '12px 32px', borderRadius: 12, border: 'none',
+                          padding: '12px 32px', borderRadius: 4, border: 'none',
                           background: allRequiredUploaded
-                            ? 'linear-gradient(135deg,#D4AF37,#B8960C)'
+                            ? '#C9A04A'
                             : '#e2e8f0',
-                          color: allRequiredUploaded ? '#0A1F44' : '#94a3b8',
+                          color: allRequiredUploaded ? '#0B1E3D' : '#94a3b8',
                           fontSize: 14, fontWeight: 800,
                           cursor: allRequiredUploaded ? 'pointer' : 'not-allowed',
-                          boxShadow: allRequiredUploaded ? '0 6px 20px rgba(212,175,55,0.35)' : 'none',
+                          boxShadow: allRequiredUploaded ? '0 6px 20px rgba(201,160,74,0.30)' : 'none',
                           transition: 'all 300ms',
                         }}
                       >
@@ -999,7 +997,7 @@ const CustomerRegistrationSection: React.FC = () => {
           )}
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: 11.5, color: '#94a3b8', marginTop: 14, fontWeight: 500 }}>
+        <p style={{ textAlign: 'center', fontSize: 11.5, color: C.onDarkDim, marginTop: 18, fontWeight: 500 }}>
           By submitting you agree to our Terms & Privacy Policy. Your data is encrypted and secure.
         </p>
       </div>

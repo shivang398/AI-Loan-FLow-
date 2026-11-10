@@ -365,7 +365,7 @@ const RegionalDashboard: React.FC = () => {
             columns={columns}
             rowKey="id"
             pagination={{ pageSize: 8, showSizeChanger: false }}
-            className="premium-table"
+
           />
         )}
       </div>
