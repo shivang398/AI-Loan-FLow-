@@ -370,26 +370,6 @@ const LoginPage: React.FC = () => {
               </a>
             </p>
           </div>
-
-          {/* Compliance strip */}
-          <div style={{
-            marginTop: 32, paddingTop: 20,
-            borderTop: '1px solid var(--surface-3)',
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: 24,
-          }}>
-            {['ISO 27001', 'SOC 2 Type II', '256-bit TLS'].map(badge => (
-              <span key={badge} style={{
-                fontSize: 10, fontWeight: 700,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                fontFamily: 'Inter, sans-serif',
-              }}>
-                {badge}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
     </div>
