@@ -26,18 +26,12 @@ export interface AuthState {
   error: string | null;
 }
 
-// Remove legacy tokens and any stale user with a non-allowed email domain
+// Remove legacy tokens and any unreadable stored user
 localStorage.removeItem('token');
 localStorage.removeItem('refreshToken');
 try {
   const _u = localStorage.getItem('user');
-  if (_u) {
-    const _parsed = JSON.parse(_u);
-    const _domain = (_parsed?.email ?? '').split('@')[1]?.toLowerCase();
-    if (_domain !== 'realmoneygroups.in' && _domain !== 'realfinserv.com') {
-      localStorage.removeItem('user');
-    }
-  }
+  if (_u) JSON.parse(_u);
 } catch { localStorage.removeItem('user'); }
 
 // Restore session from sessionStorage (cleared on tab/browser close)
