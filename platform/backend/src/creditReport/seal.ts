@@ -23,4 +23,19 @@ export function unseal(cipherText: Buffer, iv: Buffer, tag: Buffer, aad: string)
   return Buffer.concat([decipher.update(cipherText), decipher.final()]).toString('utf8');
 }
 
+/** One-string form for short values (e.g. the mobile number): base64url "iv.tag.cipher". */
+export function sealToString(plain: string, aad: string): string {
+  const { cipherText, iv, tag } = seal(plain, aad);
+  return [iv, tag, cipherText].map(b => b.toString('base64url')).join('.');
+}
+
+export function unsealFromString(sealed: string, aad: string): string | null {
+  try {
+    const [iv, tag, cipherText] = sealed.split('.').map(p => Buffer.from(p, 'base64url'));
+    return unseal(cipherText!, iv!, tag!, aad);
+  } catch {
+    return null;
+  }
+}
+
 export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');

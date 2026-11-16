@@ -16,6 +16,7 @@ interface CreditReportRow {
   id: string;
   name: string;
   mobileLast4: string;
+  mobile?: string | null;   // full number (pulls since it was stored); older rows have only the last 4
   status: 'SUCCESS' | 'NOT_FOUND' | 'UNAVAILABLE';
   errorCode: string | null;
   score: number | null;
@@ -164,7 +165,7 @@ const CreditReportPage: React.FC = () => {
       render: (_, r) => (
         <div>
           <div style={{ fontWeight: 600, color: NAVY }}>{r.name}</div>
-          <div style={{ fontSize: 12, color: MUTED }}>Mobile ••••••{r.mobileLast4}</div>
+          <div style={{ fontSize: 12, color: MUTED }}>Mobile {r.mobile ? `+91 ${r.mobile}` : `••••••${r.mobileLast4}`}</div>
         </div>
       ),
     },
@@ -246,7 +247,7 @@ const CreditReportPage: React.FC = () => {
         </div>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-        <Input.Search allowClear placeholder="Search customer name" style={{ width: 220 }} onSearch={q => setFilter({ q })} />
+        <Input.Search allowClear placeholder="Search name or mobile" style={{ width: 220 }} onSearch={q => setFilter({ q })} />
         {isAdmin && (
           <Select allowClear placeholder="All portals" style={{ width: 160 }} value={filters.portal} onChange={portal => setFilter({ portal })}
             options={Object.entries(PORTALS).map(([value, label]) => ({ value, label }))} />

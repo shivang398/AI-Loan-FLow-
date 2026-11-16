@@ -234,7 +234,7 @@ export function decodeIndividualFullReportFromCrif(raw: unknown, report: CrifRep
     })),
     addresses: addressesOf(variation),
     // CRIF sends no phone "type" at all — every number comes back with type: null.
-    phones: str(request['PHONE-1']) !== null ? [{ type: null, numberMasked: maskLast4(str(request['PHONE-1'])) }] : []
+    phones: str(request['PHONE-1']) !== null ? [{ type: 'Mobile', numberMasked: maskLast4(str(request['PHONE-1'])) }] : []
   };
 }
 

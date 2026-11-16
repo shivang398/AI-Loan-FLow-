@@ -4,7 +4,7 @@ import { createCrifAdapter, hasCrifDetails, loadCrifConfigFromEnv, normalizeCrif
 import { buildPaidReportFromCrif, decodeIndividualFullReportFromCrif } from './individualFullReportFromCrif';
 import { renderIndividualReportPdf, type IndividualReportInput } from './pdf/individualReportPdf';
 import { mockCrifResponse } from './mockCrifResponse';
-import { seal, sha256, unseal } from './seal';
+import { seal, sealToString, sha256, unseal, unsealFromString } from './seal';
 
 /** RBI: credit information obtained from a bureau may be kept for at most 180 days. */
 export const RETENTION_DAYS = 180;
@@ -61,6 +61,7 @@ export async function pullCreditReport(input: { name: string; mobile: string; le
       name: input.name,
       mobileLast4: input.mobile.slice(-4),
       mobileHash: sha256(input.mobile),
+      mobileEnc: sealToString(input.mobile, `${id}:mobile`),
       status,
       errorCode,
       score: typeof stored?.score === 'number' ? stored.score : null,
@@ -100,7 +101,8 @@ function whereFor(f: CreditReportFilters) {
     ...(f.requestedBy ? { requestedBy: f.requestedBy } : {}),
     ...(f.portal ? { requestedByRole: f.portal } : {}),
     ...(f.status ? { status: f.status } : {}),
-    ...(f.q ? { name: { contains: f.q } } : {}),
+    // A 10-digit search is a mobile number (matched by hash); anything else searches the name
+    ...(f.q ? (/^[6-9]\d{9}$/.test(f.q) ? { mobileHash: sha256(f.q) } : { name: { contains: f.q } }) : {}),
     ...(f.from || f.to ? { createdAt: { ...(f.from ? { gte: f.from } : {}), ...(f.to ? { lte: f.to } : {}) } } : {}),
   };
 }
@@ -108,20 +110,26 @@ function whereFor(f: CreditReportFilters) {
 /** Admins see every pull from every portal and the landing page; everyone else only their own. */
 export async function listCreditReports(opts: CreditReportFilters & { page: number; size: number }) {
   const where = whereFor(opts);
-  const [items, total] = await Promise.all([
-    customerDb.creditReport.findMany({ where, select: listFields, orderBy: { createdAt: 'desc' }, skip: opts.page * opts.size, take: opts.size }),
+  const [rows, total] = await Promise.all([
+    customerDb.creditReport.findMany({ where, select: { ...listFields, mobileEnc: true }, orderBy: { createdAt: 'desc' }, skip: opts.page * opts.size, take: opts.size }),
     customerDb.creditReport.count({ where }),
   ]);
-  return { items, total, page: opts.page, size: opts.size };
+  return { items: rows.map(withMobile), total, page: opts.page, size: opts.size };
+}
+
+/** Decrypts the stored mobile for display; rows pulled before it was stored have only the last 4 digits. */
+function withMobile<T extends { id: string; mobileEnc: string | null }>(row: T) {
+  const { mobileEnc, ...rest } = row;
+  return { ...rest, mobile: mobileEnc ? unsealFromString(mobileEnc, `${row.id}:mobile`) : null };
 }
 
 const EXPORT_LIMIT = 50_000;
 
-/** CSV of the pull log for the admin. Holds no report contents and no full mobile number (only the last 4 are stored). */
+/** CSV of the pull log for the admin (no report contents). */
 export async function exportCreditReportsCsv(filters: CreditReportFilters) {
   const rows = await customerDb.creditReport.findMany({
     where: whereFor(filters),
-    select: { ...listFields, consentAt: true, requestIp: true },
+    select: { ...listFields, mobileEnc: true, consentAt: true, requestIp: true },
     orderBy: { createdAt: 'desc' },
     take: EXPORT_LIMIT,
   });
@@ -131,9 +139,9 @@ export async function exportCreditReportsCsv(filters: CreditReportFilters) {
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return `"${s.replace(/"/g, '""')}"`;
   };
-  const header = ['Report ID', 'Customer name', 'Mobile (last 4)', 'Score', 'Status', 'Error code', 'Data source', 'Portal',
+  const header = ['Report ID', 'Customer name', 'Mobile', 'Score', 'Status', 'Error code', 'Data source', 'Portal',
     'Pulled by', 'Lead ID', 'Consent at', 'Request IP', 'Pulled on', 'Auto-delete on'];
-  const lines = rows.map(r => [r.id, r.name, r.mobileLast4, r.score, r.status, r.errorCode, r.source, r.requestedByRole,
+  const lines = rows.map(withMobile).map(r => [r.id, r.name, r.mobile ?? `XXXXXX${r.mobileLast4}`, r.score, r.status, r.errorCode, r.source, r.requestedByRole,
     r.requestedByName, r.leadId, r.consentAt, r.requestIp, r.createdAt, r.expiresAt].map(cell).join(','));
   // BOM so Excel opens it as UTF-8
   return '﻿' + [header.map(cell).join(','), ...lines].join('\r\n');
