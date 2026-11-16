@@ -734,6 +734,14 @@ function interestRateOrNotReported(raw: number | null): number | null {
   return raw === 0 ? null : raw;
 }
 
+/** INSTALLMENT-AMT arrives as "23085/Monthly" (amount/frequency) or a bare amount. */
+function parseInstallment(value: unknown): { amount: number | null; frequency: string | null } {
+  if (typeof value !== 'string') return { amount: finiteNumber(value), frequency: null };
+  const [amountPart, frequencyPart] = value.split('/');
+  const frequency = frequencyPart?.trim() || null;
+  return { amount: finiteNumber(amountPart), frequency };
+}
+
 function mapFullAccount(account: Record<string, unknown>): CrifFullAccount {
   const status = firstString(account, ['ACCOUNT-STATUS']) ?? 'Not reported';
   // 2026-08-28+ fix -- see `isReportedClosedStatus`'s own comment (same real bug, same fix, in the
@@ -741,7 +749,8 @@ function mapFullAccount(account: Record<string, unknown>): CrifFullAccount {
   // CRIF has NOT reported as Closed. OBLIGATION (see `emiFromObligation`'s own comment) is tried
   // BEFORE ACTUAL-PAYMENT -- a genuinely computed monthly figure is a stronger EMI proxy than "the
   // last actual payment", which can diverge from the true EMI even on a healthy active account.
-  const installmentAmt = firstNumber(account, ['INSTALLMENT-AMT']);
+  const installment = parseInstallment(account['INSTALLMENT-AMT']);
+  const installmentAmt = installment.amount;
   const emi = installmentAmt ?? emiFromObligation(account) ?? (isReportedClosedStatus(status) ? null : firstNumber(account, ['ACTUAL-PAYMENT']));
   return {
     lenderCategory: firstString(account, ['CREDIT-GRANTOR-GROUP', 'CREDIT-GRANTOR-TYPE']) ?? 'Not reported',
@@ -778,7 +787,7 @@ function mapFullAccount(account: Record<string, unknown>): CrifFullAccount {
     repaymentTenure: firstNumber(account, ['REPAYMENT-TENURE']),
     originalTerm: firstNumber(account, ['ORIGINAL-TERM']),
     termToMaturity: firstNumber(account, ['TERM-TO-MATURITY']),
-    paymentFrequency: null,
+    paymentFrequency: installment.frequency,
     status,
     settlementAmount: firstNumber(account, ['SETTLEMENT-AMT']),
     writtenOffSettledStatus: firstString(account, ['WRITTEN-OFF-SETTLED-STATUS']) ?? null,
@@ -813,13 +822,13 @@ export function normalizeCrifResponse(raw: unknown, identity: CrifIdentity, now:
     // 2026-08-28+ fix -- see `isReportedClosedStatus`'s own comment: ACTUAL-PAYMENT is only tried
     // as an EMI fallback for an account CRIF has NOT reported as Closed. OBLIGATION (see
     // `emiFromObligation`'s own comment) is tried BEFORE ACTUAL-PAYMENT here too, same reasoning.
-    const installmentAmt = firstNumber(account, ['emi', 'monthlyEmi', 'installmentAmount', 'monthlyInstallment', 'INSTALLMENT-AMT']);
+    const installmentAmt = firstNumber(account, ['emi', 'monthlyEmi', 'installmentAmount', 'monthlyInstallment']) ?? parseInstallment(account['INSTALLMENT-AMT']).amount;
     const emi = installmentAmt ?? emiFromObligation(account) ?? (isReportedClosedStatus(status) ? null : firstNumber(account, ['ACTUAL-PAYMENT']));
     return [{
       // CRIF's LOAN-DETAILS carries no separate "lender name" field -- CREDIT-GRANTOR-GROUP/-TYPE
       // are the closest confirmed fields (a categorisation, not a proper name); falls through to
       // 'Not reported' rather than fabricating a name CRIF never actually sent.
-      lenderName: firstString(account, ['lenderName', 'institution', 'memberName', 'creditorName', 'subscriberName', 'CREDIT-GRANTOR-GROUP', 'CREDIT-GRANTOR-TYPE']) ?? 'Not reported',
+      lenderName: firstString(account, ['lenderName', 'institution', 'memberName', 'creditorName', 'subscriberName', 'CREDIT-GUARANTOR', 'CREDIT-GRANTOR-GROUP', 'CREDIT-GRANTOR-TYPE']) ?? 'Not reported',
       accountType: firstString(account, ['accountType', 'loanType', 'type', 'accountTypeDescription', 'ACCT-TYPE']) ?? 'Not reported',
       status,
       currentBalance: firstNumber(account, ['currentBalance', 'balance', 'outstanding', 'outstandingBalance', 'CURRENT-BAL']),

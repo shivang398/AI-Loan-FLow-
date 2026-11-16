@@ -9,6 +9,7 @@ import '../styles/landing.css';
 const NAV_LINKS = [
   { label: 'How it works', id: 'how-it-works' },
   { label: 'Loans',        id: 'loans' },
+  { label: 'Credit score', id: 'credit-report' },
   { label: 'Partner with us', id: 'partners' },
   { label: 'FAQ',          id: 'faq' },
 ];

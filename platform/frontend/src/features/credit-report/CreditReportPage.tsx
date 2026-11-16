@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Table, Button, Form, Input, Checkbox, App } from 'antd';
-import { Download, FileSearch, RefreshCw } from 'lucide-react';
+import { Table, Button, Form, Input, Checkbox, App, Select, DatePicker } from 'antd';
+import { Download, FileSearch, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import type { Dayjs } from 'dayjs';
+import type { RootState } from '../../store';
 import type { ColumnsType } from 'antd/es/table';
 import api from '../../shared/services/apiClient';
 
@@ -32,6 +35,20 @@ const STATUS: Record<CreditReportRow['status'], { label: string; color: string }
 // Score bands shown in the PDF (CRIF range 300-900)
 const scoreColour = (s: number) => (s >= 750 ? '#1a7f4b' : s >= 700 ? '#1656b8' : s >= 650 ? '#8f6300' : '#c0392b');
 
+const PORTALS: Record<string, string> = {
+  PUBLIC: 'Landing page', ADMIN: 'Admin', RM: 'RM', OPERATIONS: 'Operations', CONNECTOR: 'Connector',
+};
+
+interface Filters { portal?: string; status?: string; q?: string; range?: [Dayjs, Dayjs] | null }
+
+const filterParams = (f: Filters) => ({
+  portal: f.portal || undefined,
+  status: f.status || undefined,
+  q: f.q?.trim() || undefined,
+  from: f.range?.[0]?.format('YYYY-MM-DD'),
+  to: f.range?.[1]?.format('YYYY-MM-DD'),
+});
+
 const fmtDate = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 interface PullForm { name: string; mobile: string; consent: boolean }
@@ -46,11 +63,14 @@ const CreditReportPage: React.FC = () => {
   const [pulling, setPulling] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [consentText, setConsentText] = useState('');
+  const isAdmin = useSelector((s: RootState) => s.auth.user?.role) === 'ADMIN';
+  const [filters, setFilters] = useState<Filters>({});
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async (p = page) => {
     setLoading(true);
     try {
-      const { data } = await api.get('/credit-reports', { params: { page: p, size: 20 } });
+      const { data } = await api.get('/credit-reports', { params: { page: p, size: 20, ...filterParams(filters) } });
       setRows(data.data.items);
       setTotal(data.data.total);
     } catch {
@@ -58,7 +78,7 @@ const CreditReportPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, message]);
+  }, [page, filters, message]);
 
   useEffect(() => { load(page); }, [page, load]);
   useEffect(() => {
@@ -82,6 +102,26 @@ const CreditReportPage: React.FC = () => {
       setDownloading(null);
     }
   };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get('/credit-reports/export', { params: filterParams(filters), responseType: 'blob' });
+      const name = /filename="([^"]+)"/.exec(res.headers['content-disposition'] ?? '')?.[1] ?? 'credit-reports.csv';
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch {
+      message.error('Could not export the credit reports');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const setFilter = (patch: Partial<Filters>) => { setFilters(f => ({ ...f, ...patch })); setPage(0); };
 
   const pull = async (values: PullForm, force = false) => {
     setPulling(true);
@@ -140,7 +180,15 @@ const CreditReportPage: React.FC = () => {
         </span>
       ),
     },
-    { title: 'Pulled by', dataIndex: 'requestedByName', render: (v: string | null) => <span style={{ fontSize: 13 }}>{v ?? '—'}</span> },
+    {
+      title: 'Pulled by', dataIndex: 'requestedByName',
+      render: (v: string | null, r) => (
+        <div style={{ fontSize: 13 }}>
+          <div>{v ?? '—'}</div>
+          {isAdmin && <div style={{ fontSize: 12, color: MUTED }}>{PORTALS[r.requestedByRole] ?? r.requestedByRole}</div>}
+        </div>
+      ),
+    },
     { title: 'Pulled on', dataIndex: 'createdAt', width: 170, render: (v: string) => <span style={{ fontSize: 13 }}>{fmtDate(v)}</span> },
     {
       title: '', key: 'pdf', width: 130, align: 'right',
@@ -156,7 +204,7 @@ const CreditReportPage: React.FC = () => {
         Credit Report
       </div>
       <div style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>
-        Soft pull from CRIF High Mark — does not affect the customer's score. Reports are deleted automatically after 180 days.
+        Soft pull from CRIF High Mark — does not affect the customer's score. Reports are deleted automatically after 180 days (6 months).
       </div>
 
       <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderTop: `3px solid ${GOLD}`, padding: 20, marginBottom: 20 }}>
@@ -191,8 +239,21 @@ const CreditReportPage: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontWeight: 600, color: NAVY }}>Pulled reports</div>
-        <Button size="small" icon={<RefreshCw size={13} />} onClick={() => load(page)}>Refresh</Button>
+        <div style={{ fontWeight: 600, color: NAVY }}>{isAdmin ? 'All pulled reports — every portal and the landing page' : 'Reports you pulled'}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isAdmin && <Button size="small" icon={<FileSpreadsheet size={13} />} loading={exporting} onClick={exportCsv}>Export CSV</Button>}
+          <Button size="small" icon={<RefreshCw size={13} />} onClick={() => load(page)}>Refresh</Button>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <Input.Search allowClear placeholder="Search customer name" style={{ width: 220 }} onSearch={q => setFilter({ q })} />
+        {isAdmin && (
+          <Select allowClear placeholder="All portals" style={{ width: 160 }} value={filters.portal} onChange={portal => setFilter({ portal })}
+            options={Object.entries(PORTALS).map(([value, label]) => ({ value, label }))} />
+        )}
+        <Select allowClear placeholder="All statuses" style={{ width: 170 }} value={filters.status} onChange={status => setFilter({ status })}
+          options={Object.entries(STATUS).map(([value, v]) => ({ value, label: v.label }))} />
+        <DatePicker.RangePicker value={filters.range ?? null} onChange={range => setFilter({ range: range as [Dayjs, Dayjs] | null })} format="DD MMM YYYY" />
       </div>
       <div style={{ background: '#fff', border: `1px solid ${BORDER}` }}>
         <Table<CreditReportRow>

@@ -5,6 +5,7 @@ import Hero                from '../features/landing/components/Hero';
 import TrustBand           from '../features/landing/components/TrustBand';
 import HowItWorks          from '../features/landing/components/HowItWorks';
 import Charter             from '../features/landing/components/Charter';
+import CreditReportCheck   from '../features/landing/components/CreditReportCheck';
 import CustomerRegistrationSection from '../features/landing/components/CustomerRegistrationSection';
 import Loans               from '../features/landing/components/Loans';
 import Testimonials        from '../features/landing/components/Testimonials';
@@ -49,6 +50,7 @@ const LandingPage: React.FC = () => (
         <TrustBand />
         <HowItWorks />
         <Charter />
+        <CreditReportCheck />
         <CustomerRegistrationSection />
         <Loans />
         <Testimonials />

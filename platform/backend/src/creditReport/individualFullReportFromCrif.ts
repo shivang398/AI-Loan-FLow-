@@ -41,7 +41,7 @@
  *     reported with `type: null`.
  */
 import { maskEmail, maskLast4, type FullReportAccount, type IndividualFullReport } from './individualFullReport.js';
-import { toBureauDetails, toPaidFullAccount, toPaidSummaryAccount } from './recordentPaidReport.js';
+import { toBureauDetails, toIsoDate, toPaidFullAccount, toPaidSummaryAccount } from './recordentPaidReport.js';
 import type { CrifFullAccount, CrifPaymentHistoryEntry, CrifReport } from './crifAdapter.js';
 
 type Bag = Record<string, unknown>;
@@ -107,11 +107,22 @@ function addressesOf(personalInfoVariation: Bag): IndividualFullReport['addresse
   });
 }
 
+const MONTH_NUMBER: Record<string, string> = {
+  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+};
+
+/** "Oct:2026,015/STD" → "015" (the DPD part between the comma and the slash). */
+function crifDpdToken(raw: string): string | null {
+  const afterComma = raw.slice(raw.indexOf(',') + 1);
+  const token = afterComma.split('/')[0]!.trim();
+  return token || null;
+}
+
 function mapAccount(full: CrifFullAccount): FullReportAccount {
   return {
-    // CRIF's LOAN-DETAILS carries no proper lender name (see CrifFullAccount.lenderCategory's own
-    // doc comment) — the same categorisation Personal Loan/Business Loan already live with.
-    lenderName: full.lenderCategory === 'Not reported' ? null : full.lenderCategory,
+    // CREDIT-GUARANTOR carries the lender's own name in CRIF's consumer report; CREDIT-GRANTOR-GROUP
+    // is only a category ("Category D"), used when no name was sent.
+    lenderName: full.creditGuarantor ?? (full.lenderCategory === 'Not reported' ? null : full.lenderCategory),
     accountNumber: full.maskedAccountNumber,
     ownership: full.ownership,
     accountType: full.accountType === 'Not reported' ? null : full.accountType,
@@ -140,10 +151,10 @@ function mapAccount(full: CrifFullAccount): FullReportAccount {
     suitFiledStatus: full.suitFiledWilfulDefaultStatus,
     accountStatus: full.status === 'Not reported' ? null : full.status,
     history: full.paymentHistory.map((entry: CrifPaymentHistoryEntry) => ({
-      key: `${entry.month}-${entry.year}`,
-      // CRIF's month-by-month history carries only a DPD count and an asset-classification code —
-      // no separate "payment status" string the way Equifax's History48Months has; null, not guessed.
-      paymentStatus: null,
+      // CRIF names the month ("Oct"); the shared history cell expects "MM-YYYY"
+      key: `${MONTH_NUMBER[entry.month.trim().slice(0, 3).toLowerCase()] ?? entry.month}-${entry.year}`,
+      // The month's days-past-due exactly as CRIF sent it ("000", "015", "XXX") — printed in the grid cell
+      paymentStatus: crifDpdToken(entry.raw),
       assetClassification: entry.assetClassification || null,
       // No per-month suit-filed flag in CRIF's history — only the account-level SUIT-FILED-DT above.
       suitFiled: null
@@ -250,7 +261,13 @@ export function buildPaidReportFromCrif(report: CrifReport, typedName: string, f
     providerName: 'CRIF',
     accounts: full.accounts.map(toPaidSummaryAccount),
     fullAccounts: full.accounts.map((a) => toPaidFullAccount(a)),
-    enquiries: full.enquiries,
+    // The PDF reads enquiries as { member, enquiryDate, amount, purpose }
+    enquiries: full.enquiries.map((e) => ({
+      member: e.institution ?? 'Not reported',
+      enquiryDate: toIsoDate(e.date) ?? e.date ?? 'Not reported',
+      ...(e.amount !== null && e.amount !== undefined ? { amount: e.amount } : {}),
+      ...(e.purpose ? { purpose: e.purpose } : {}),
+    })),
     subject: { name: nameFrom(full.personal.name) ?? nameFrom(report.subject?.name) ?? typedName },
     bureauDetails: toBureauDetails(full, null)
   };

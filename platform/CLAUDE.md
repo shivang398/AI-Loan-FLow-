@@ -155,7 +155,9 @@ Stateless JWT. Secret from `JWT_SECRET` env var (min 32 chars). Roles encoded as
 Roles were consolidated 8 → 4 in Nov 2026 (`backend/scripts/merge-roles.sql`). Full application reference,
 API table and deploy runbook: `../reference/CLAUDE.md`.
 
-Public endpoints (no JWT): `POST /auth/login`, `POST /auth/refresh`, `POST /auth/register/partner`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `GET/POST /messaging/whatsapp/webhook`, `GET /health`.
+Public endpoints (no JWT): `POST /auth/login`, `POST /auth/refresh`, `POST /auth/register/partner`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `GET/POST /messaging/whatsapp/webhook`, `GET /health`, `GET /public/credit-report/consent`, `POST /public/credit-report` (landing-page credit report — no OTP; bounded by `PUBLIC_CREDIT_REPORT_PER_IP` / `PUBLIC_CREDIT_REPORT_DAILY_CAP`, off with `PUBLIC_CREDIT_REPORT_ENABLED=false`), `GET /public/credit-report/:id/pdf?token=` (30-minute signed link).
+
+Credit reports (`/credit-reports`): ADMIN sees every pull from all portals and the landing page and can export CSV (`/credit-reports/export`); RM, OPERATIONS and CONNECTOR see only their own. Reports auto-delete 180 days after the pull.
 
 ### JWT revocation
 
