@@ -167,7 +167,8 @@ export async function renderCreditReportPdf(id: string, viewer: { id: string; ca
     throw Object.assign(new Error('No report is available for this request'), { status: 409 });
   }
   const report = JSON.parse(unseal(Buffer.from(row.reportCipher), Buffer.from(row.reportIv), Buffer.from(row.reportTag), row.id)) as IndividualReportInput;
-  const pdf = await renderIndividualReportPdf(report, { reference: row.id, generatedAt: row.createdAt });
+  const customerMobile = row.mobileEnc ? unsealFromString(row.mobileEnc, `${row.id}:mobile`) : null;
+  const pdf = await renderIndividualReportPdf(report, { reference: row.id, generatedAt: row.createdAt, customerMobile });
   return { pdf, fileName: `credit-report-${row.name.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'customer'}-${row.createdAt.toISOString().slice(0, 10)}.pdf` };
 }
 
@@ -217,8 +218,35 @@ export async function purgeExpiredCreditReports() {
   if (count) console.log(`[CreditReport] purged ${count} report(s) past ${RETENTION_DAYS}-day retention`);
 }
 
+/**
+ * Pulls made before the full mobile was stored kept only its last 4 digits and its SHA-256. With the last 4
+ * known there are at most 4 × 10^5 candidate Indian mobiles, so the full number is recovered by matching
+ * the hash, then stored encrypted like new pulls. Runs at startup; rows already filled are skipped.
+ */
+export async function backfillMissingMobiles() {
+  const rows = await customerDb.creditReport.findMany({
+    where: { mobileEnc: null }, select: { id: true, mobileLast4: true, mobileHash: true }, take: 500,
+  });
+  let filled = 0;
+  for (const row of rows) {
+    let found: string | null = null;
+    for (let first = 6; first <= 9 && !found; first++) {
+      for (let mid = 0; mid < 100_000; mid++) {
+        const candidate = `${first}${String(mid).padStart(5, '0')}${row.mobileLast4}`;
+        if (sha256(candidate) === row.mobileHash) { found = candidate; break; }
+      }
+      await new Promise(r => setImmediate(r));   // let requests through between batches
+    }
+    if (!found) continue;
+    await customerDb.creditReport.update({ where: { id: row.id }, data: { mobileEnc: sealToString(found, `${row.id}:mobile`) } });
+    filled++;
+  }
+  if (filled) console.log(`[CreditReport] stored the full mobile for ${filled} older report(s)`);
+}
+
 export function startCreditReportRetentionJob() {
   const run = () => purgeExpiredCreditReports().catch(err => console.warn('[CreditReport] retention purge failed:', err.message));
   run();
+  backfillMissingMobiles().catch(err => console.warn('[CreditReport] mobile backfill failed:', err.message));
   setInterval(run, 6 * 3600 * 1000).unref();
 }

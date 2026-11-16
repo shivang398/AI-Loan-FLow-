@@ -531,6 +531,8 @@ export interface RenderOptions {
   /** Printed on page 1 so a support query can be tied to the purchase. */
   reference: string;
   generatedAt: Date;
+  /** The customer's own mobile (as entered for the pull). When set, it is printed in full instead of masked. */
+  customerMobile?: string | null;
 }
 
 /* Page geometry. A4, in points. */
