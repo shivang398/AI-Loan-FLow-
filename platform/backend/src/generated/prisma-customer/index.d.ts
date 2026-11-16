@@ -58,6 +58,12 @@ export type DocumentVersion = $Result.DefaultSelection<Prisma.$DocumentVersionPa
  * 
  */
 export type DocumentAccessLog = $Result.DefaultSelection<Prisma.$DocumentAccessLogPayload>
+/**
+ * Model CreditReport
+ * CRIF credit reports pulled through Tenacio (soft pull, customer consent recorded).
+ * The parsed report is stored AES-256-GCM encrypted and deleted after 180 days (RBI retention).
+ */
+export type CreditReport = $Result.DefaultSelection<Prisma.$CreditReportPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -271,6 +277,16 @@ export class PrismaClient<
     * ```
     */
   get documentAccessLog(): Prisma.DocumentAccessLogDelegate<ExtArgs>;
+
+  /**
+   * `prisma.creditReport`: Exposes CRUD operations for the **CreditReport** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CreditReports
+    * const creditReports = await prisma.creditReport.findMany()
+    * ```
+    */
+  get creditReport(): Prisma.CreditReportDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -720,7 +736,8 @@ export namespace Prisma {
     CallLog: 'CallLog',
     Document: 'Document',
     DocumentVersion: 'DocumentVersion',
-    DocumentAccessLog: 'DocumentAccessLog'
+    DocumentAccessLog: 'DocumentAccessLog',
+    CreditReport: 'CreditReport'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -736,7 +753,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "customer" | "customerKyc" | "customerAddress" | "customerHistory" | "lead" | "callLog" | "document" | "documentVersion" | "documentAccessLog"
+      modelProps: "customer" | "customerKyc" | "customerAddress" | "customerHistory" | "lead" | "callLog" | "document" | "documentVersion" | "documentAccessLog" | "creditReport"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1331,6 +1348,72 @@ export namespace Prisma {
           count: {
             args: Prisma.DocumentAccessLogCountArgs<ExtArgs>
             result: $Utils.Optional<DocumentAccessLogCountAggregateOutputType> | number
+          }
+        }
+      }
+      CreditReport: {
+        payload: Prisma.$CreditReportPayload<ExtArgs>
+        fields: Prisma.CreditReportFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CreditReportFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CreditReportFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>
+          }
+          findFirst: {
+            args: Prisma.CreditReportFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CreditReportFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>
+          }
+          findMany: {
+            args: Prisma.CreditReportFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>[]
+          }
+          create: {
+            args: Prisma.CreditReportCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>
+          }
+          createMany: {
+            args: Prisma.CreditReportCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CreditReportDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>
+          }
+          update: {
+            args: Prisma.CreditReportUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>
+          }
+          deleteMany: {
+            args: Prisma.CreditReportDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CreditReportUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CreditReportUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CreditReportPayload>
+          }
+          aggregate: {
+            args: Prisma.CreditReportAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCreditReport>
+          }
+          groupBy: {
+            args: Prisma.CreditReportGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CreditReportGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CreditReportCountArgs<ExtArgs>
+            result: $Utils.Optional<CreditReportCountAggregateOutputType> | number
           }
         }
       }
@@ -10732,6 +10815,1037 @@ export namespace Prisma {
 
 
   /**
+   * Model CreditReport
+   */
+
+  export type AggregateCreditReport = {
+    _count: CreditReportCountAggregateOutputType | null
+    _avg: CreditReportAvgAggregateOutputType | null
+    _sum: CreditReportSumAggregateOutputType | null
+    _min: CreditReportMinAggregateOutputType | null
+    _max: CreditReportMaxAggregateOutputType | null
+  }
+
+  export type CreditReportAvgAggregateOutputType = {
+    score: number | null
+  }
+
+  export type CreditReportSumAggregateOutputType = {
+    score: number | null
+  }
+
+  export type CreditReportMinAggregateOutputType = {
+    id: string | null
+    name: string | null
+    mobileLast4: string | null
+    mobileHash: string | null
+    status: string | null
+    errorCode: string | null
+    score: number | null
+    source: string | null
+    reportCipher: Buffer | null
+    reportIv: Buffer | null
+    reportTag: Buffer | null
+    leadId: string | null
+    requestedBy: string | null
+    requestedByName: string | null
+    requestedByRole: string | null
+    consentText: string | null
+    consentAt: Date | null
+    requestIp: string | null
+    createdAt: Date | null
+    expiresAt: Date | null
+  }
+
+  export type CreditReportMaxAggregateOutputType = {
+    id: string | null
+    name: string | null
+    mobileLast4: string | null
+    mobileHash: string | null
+    status: string | null
+    errorCode: string | null
+    score: number | null
+    source: string | null
+    reportCipher: Buffer | null
+    reportIv: Buffer | null
+    reportTag: Buffer | null
+    leadId: string | null
+    requestedBy: string | null
+    requestedByName: string | null
+    requestedByRole: string | null
+    consentText: string | null
+    consentAt: Date | null
+    requestIp: string | null
+    createdAt: Date | null
+    expiresAt: Date | null
+  }
+
+  export type CreditReportCountAggregateOutputType = {
+    id: number
+    name: number
+    mobileLast4: number
+    mobileHash: number
+    status: number
+    errorCode: number
+    score: number
+    source: number
+    reportCipher: number
+    reportIv: number
+    reportTag: number
+    leadId: number
+    requestedBy: number
+    requestedByName: number
+    requestedByRole: number
+    consentText: number
+    consentAt: number
+    requestIp: number
+    createdAt: number
+    expiresAt: number
+    _all: number
+  }
+
+
+  export type CreditReportAvgAggregateInputType = {
+    score?: true
+  }
+
+  export type CreditReportSumAggregateInputType = {
+    score?: true
+  }
+
+  export type CreditReportMinAggregateInputType = {
+    id?: true
+    name?: true
+    mobileLast4?: true
+    mobileHash?: true
+    status?: true
+    errorCode?: true
+    score?: true
+    source?: true
+    reportCipher?: true
+    reportIv?: true
+    reportTag?: true
+    leadId?: true
+    requestedBy?: true
+    requestedByName?: true
+    requestedByRole?: true
+    consentText?: true
+    consentAt?: true
+    requestIp?: true
+    createdAt?: true
+    expiresAt?: true
+  }
+
+  export type CreditReportMaxAggregateInputType = {
+    id?: true
+    name?: true
+    mobileLast4?: true
+    mobileHash?: true
+    status?: true
+    errorCode?: true
+    score?: true
+    source?: true
+    reportCipher?: true
+    reportIv?: true
+    reportTag?: true
+    leadId?: true
+    requestedBy?: true
+    requestedByName?: true
+    requestedByRole?: true
+    consentText?: true
+    consentAt?: true
+    requestIp?: true
+    createdAt?: true
+    expiresAt?: true
+  }
+
+  export type CreditReportCountAggregateInputType = {
+    id?: true
+    name?: true
+    mobileLast4?: true
+    mobileHash?: true
+    status?: true
+    errorCode?: true
+    score?: true
+    source?: true
+    reportCipher?: true
+    reportIv?: true
+    reportTag?: true
+    leadId?: true
+    requestedBy?: true
+    requestedByName?: true
+    requestedByRole?: true
+    consentText?: true
+    consentAt?: true
+    requestIp?: true
+    createdAt?: true
+    expiresAt?: true
+    _all?: true
+  }
+
+  export type CreditReportAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CreditReport to aggregate.
+     */
+    where?: CreditReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditReports to fetch.
+     */
+    orderBy?: CreditReportOrderByWithRelationInput | CreditReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CreditReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditReports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditReports.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CreditReports
+    **/
+    _count?: true | CreditReportCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CreditReportAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CreditReportSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CreditReportMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CreditReportMaxAggregateInputType
+  }
+
+  export type GetCreditReportAggregateType<T extends CreditReportAggregateArgs> = {
+        [P in keyof T & keyof AggregateCreditReport]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCreditReport[P]>
+      : GetScalarType<T[P], AggregateCreditReport[P]>
+  }
+
+
+
+
+  export type CreditReportGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CreditReportWhereInput
+    orderBy?: CreditReportOrderByWithAggregationInput | CreditReportOrderByWithAggregationInput[]
+    by: CreditReportScalarFieldEnum[] | CreditReportScalarFieldEnum
+    having?: CreditReportScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CreditReportCountAggregateInputType | true
+    _avg?: CreditReportAvgAggregateInputType
+    _sum?: CreditReportSumAggregateInputType
+    _min?: CreditReportMinAggregateInputType
+    _max?: CreditReportMaxAggregateInputType
+  }
+
+  export type CreditReportGroupByOutputType = {
+    id: string
+    name: string
+    mobileLast4: string
+    mobileHash: string
+    status: string
+    errorCode: string | null
+    score: number | null
+    source: string
+    reportCipher: Buffer | null
+    reportIv: Buffer | null
+    reportTag: Buffer | null
+    leadId: string | null
+    requestedBy: string
+    requestedByName: string | null
+    requestedByRole: string
+    consentText: string
+    consentAt: Date
+    requestIp: string | null
+    createdAt: Date
+    expiresAt: Date
+    _count: CreditReportCountAggregateOutputType | null
+    _avg: CreditReportAvgAggregateOutputType | null
+    _sum: CreditReportSumAggregateOutputType | null
+    _min: CreditReportMinAggregateOutputType | null
+    _max: CreditReportMaxAggregateOutputType | null
+  }
+
+  type GetCreditReportGroupByPayload<T extends CreditReportGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CreditReportGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CreditReportGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CreditReportGroupByOutputType[P]>
+            : GetScalarType<T[P], CreditReportGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CreditReportSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    mobileLast4?: boolean
+    mobileHash?: boolean
+    status?: boolean
+    errorCode?: boolean
+    score?: boolean
+    source?: boolean
+    reportCipher?: boolean
+    reportIv?: boolean
+    reportTag?: boolean
+    leadId?: boolean
+    requestedBy?: boolean
+    requestedByName?: boolean
+    requestedByRole?: boolean
+    consentText?: boolean
+    consentAt?: boolean
+    requestIp?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+  }, ExtArgs["result"]["creditReport"]>
+
+
+  export type CreditReportSelectScalar = {
+    id?: boolean
+    name?: boolean
+    mobileLast4?: boolean
+    mobileHash?: boolean
+    status?: boolean
+    errorCode?: boolean
+    score?: boolean
+    source?: boolean
+    reportCipher?: boolean
+    reportIv?: boolean
+    reportTag?: boolean
+    leadId?: boolean
+    requestedBy?: boolean
+    requestedByName?: boolean
+    requestedByRole?: boolean
+    consentText?: boolean
+    consentAt?: boolean
+    requestIp?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+  }
+
+
+  export type $CreditReportPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CreditReport"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      name: string
+      mobileLast4: string
+      mobileHash: string
+      status: string
+      errorCode: string | null
+      score: number | null
+      source: string
+      reportCipher: Buffer | null
+      reportIv: Buffer | null
+      reportTag: Buffer | null
+      leadId: string | null
+      requestedBy: string
+      requestedByName: string | null
+      requestedByRole: string
+      consentText: string
+      consentAt: Date
+      requestIp: string | null
+      createdAt: Date
+      expiresAt: Date
+    }, ExtArgs["result"]["creditReport"]>
+    composites: {}
+  }
+
+  type CreditReportGetPayload<S extends boolean | null | undefined | CreditReportDefaultArgs> = $Result.GetResult<Prisma.$CreditReportPayload, S>
+
+  type CreditReportCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CreditReportFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CreditReportCountAggregateInputType | true
+    }
+
+  export interface CreditReportDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CreditReport'], meta: { name: 'CreditReport' } }
+    /**
+     * Find zero or one CreditReport that matches the filter.
+     * @param {CreditReportFindUniqueArgs} args - Arguments to find a CreditReport
+     * @example
+     * // Get one CreditReport
+     * const creditReport = await prisma.creditReport.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CreditReportFindUniqueArgs>(args: SelectSubset<T, CreditReportFindUniqueArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CreditReport that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CreditReportFindUniqueOrThrowArgs} args - Arguments to find a CreditReport
+     * @example
+     * // Get one CreditReport
+     * const creditReport = await prisma.creditReport.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CreditReportFindUniqueOrThrowArgs>(args: SelectSubset<T, CreditReportFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CreditReport that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportFindFirstArgs} args - Arguments to find a CreditReport
+     * @example
+     * // Get one CreditReport
+     * const creditReport = await prisma.creditReport.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CreditReportFindFirstArgs>(args?: SelectSubset<T, CreditReportFindFirstArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CreditReport that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportFindFirstOrThrowArgs} args - Arguments to find a CreditReport
+     * @example
+     * // Get one CreditReport
+     * const creditReport = await prisma.creditReport.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CreditReportFindFirstOrThrowArgs>(args?: SelectSubset<T, CreditReportFindFirstOrThrowArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CreditReports that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CreditReports
+     * const creditReports = await prisma.creditReport.findMany()
+     * 
+     * // Get first 10 CreditReports
+     * const creditReports = await prisma.creditReport.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const creditReportWithIdOnly = await prisma.creditReport.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CreditReportFindManyArgs>(args?: SelectSubset<T, CreditReportFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CreditReport.
+     * @param {CreditReportCreateArgs} args - Arguments to create a CreditReport.
+     * @example
+     * // Create one CreditReport
+     * const CreditReport = await prisma.creditReport.create({
+     *   data: {
+     *     // ... data to create a CreditReport
+     *   }
+     * })
+     * 
+     */
+    create<T extends CreditReportCreateArgs>(args: SelectSubset<T, CreditReportCreateArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CreditReports.
+     * @param {CreditReportCreateManyArgs} args - Arguments to create many CreditReports.
+     * @example
+     * // Create many CreditReports
+     * const creditReport = await prisma.creditReport.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CreditReportCreateManyArgs>(args?: SelectSubset<T, CreditReportCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CreditReport.
+     * @param {CreditReportDeleteArgs} args - Arguments to delete one CreditReport.
+     * @example
+     * // Delete one CreditReport
+     * const CreditReport = await prisma.creditReport.delete({
+     *   where: {
+     *     // ... filter to delete one CreditReport
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CreditReportDeleteArgs>(args: SelectSubset<T, CreditReportDeleteArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CreditReport.
+     * @param {CreditReportUpdateArgs} args - Arguments to update one CreditReport.
+     * @example
+     * // Update one CreditReport
+     * const creditReport = await prisma.creditReport.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CreditReportUpdateArgs>(args: SelectSubset<T, CreditReportUpdateArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CreditReports.
+     * @param {CreditReportDeleteManyArgs} args - Arguments to filter CreditReports to delete.
+     * @example
+     * // Delete a few CreditReports
+     * const { count } = await prisma.creditReport.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CreditReportDeleteManyArgs>(args?: SelectSubset<T, CreditReportDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CreditReports.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CreditReports
+     * const creditReport = await prisma.creditReport.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CreditReportUpdateManyArgs>(args: SelectSubset<T, CreditReportUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CreditReport.
+     * @param {CreditReportUpsertArgs} args - Arguments to update or create a CreditReport.
+     * @example
+     * // Update or create a CreditReport
+     * const creditReport = await prisma.creditReport.upsert({
+     *   create: {
+     *     // ... data to create a CreditReport
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CreditReport we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CreditReportUpsertArgs>(args: SelectSubset<T, CreditReportUpsertArgs<ExtArgs>>): Prisma__CreditReportClient<$Result.GetResult<Prisma.$CreditReportPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CreditReports.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportCountArgs} args - Arguments to filter CreditReports to count.
+     * @example
+     * // Count the number of CreditReports
+     * const count = await prisma.creditReport.count({
+     *   where: {
+     *     // ... the filter for the CreditReports we want to count
+     *   }
+     * })
+    **/
+    count<T extends CreditReportCountArgs>(
+      args?: Subset<T, CreditReportCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CreditReportCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CreditReport.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CreditReportAggregateArgs>(args: Subset<T, CreditReportAggregateArgs>): Prisma.PrismaPromise<GetCreditReportAggregateType<T>>
+
+    /**
+     * Group by CreditReport.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CreditReportGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CreditReportGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CreditReportGroupByArgs['orderBy'] }
+        : { orderBy?: CreditReportGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CreditReportGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCreditReportGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CreditReport model
+   */
+  readonly fields: CreditReportFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CreditReport.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CreditReportClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CreditReport model
+   */ 
+  interface CreditReportFieldRefs {
+    readonly id: FieldRef<"CreditReport", 'String'>
+    readonly name: FieldRef<"CreditReport", 'String'>
+    readonly mobileLast4: FieldRef<"CreditReport", 'String'>
+    readonly mobileHash: FieldRef<"CreditReport", 'String'>
+    readonly status: FieldRef<"CreditReport", 'String'>
+    readonly errorCode: FieldRef<"CreditReport", 'String'>
+    readonly score: FieldRef<"CreditReport", 'Int'>
+    readonly source: FieldRef<"CreditReport", 'String'>
+    readonly reportCipher: FieldRef<"CreditReport", 'Bytes'>
+    readonly reportIv: FieldRef<"CreditReport", 'Bytes'>
+    readonly reportTag: FieldRef<"CreditReport", 'Bytes'>
+    readonly leadId: FieldRef<"CreditReport", 'String'>
+    readonly requestedBy: FieldRef<"CreditReport", 'String'>
+    readonly requestedByName: FieldRef<"CreditReport", 'String'>
+    readonly requestedByRole: FieldRef<"CreditReport", 'String'>
+    readonly consentText: FieldRef<"CreditReport", 'String'>
+    readonly consentAt: FieldRef<"CreditReport", 'DateTime'>
+    readonly requestIp: FieldRef<"CreditReport", 'String'>
+    readonly createdAt: FieldRef<"CreditReport", 'DateTime'>
+    readonly expiresAt: FieldRef<"CreditReport", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CreditReport findUnique
+   */
+  export type CreditReportFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * Filter, which CreditReport to fetch.
+     */
+    where: CreditReportWhereUniqueInput
+  }
+
+  /**
+   * CreditReport findUniqueOrThrow
+   */
+  export type CreditReportFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * Filter, which CreditReport to fetch.
+     */
+    where: CreditReportWhereUniqueInput
+  }
+
+  /**
+   * CreditReport findFirst
+   */
+  export type CreditReportFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * Filter, which CreditReport to fetch.
+     */
+    where?: CreditReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditReports to fetch.
+     */
+    orderBy?: CreditReportOrderByWithRelationInput | CreditReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CreditReports.
+     */
+    cursor?: CreditReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditReports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditReports.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CreditReports.
+     */
+    distinct?: CreditReportScalarFieldEnum | CreditReportScalarFieldEnum[]
+  }
+
+  /**
+   * CreditReport findFirstOrThrow
+   */
+  export type CreditReportFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * Filter, which CreditReport to fetch.
+     */
+    where?: CreditReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditReports to fetch.
+     */
+    orderBy?: CreditReportOrderByWithRelationInput | CreditReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CreditReports.
+     */
+    cursor?: CreditReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditReports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditReports.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CreditReports.
+     */
+    distinct?: CreditReportScalarFieldEnum | CreditReportScalarFieldEnum[]
+  }
+
+  /**
+   * CreditReport findMany
+   */
+  export type CreditReportFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * Filter, which CreditReports to fetch.
+     */
+    where?: CreditReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CreditReports to fetch.
+     */
+    orderBy?: CreditReportOrderByWithRelationInput | CreditReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CreditReports.
+     */
+    cursor?: CreditReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CreditReports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CreditReports.
+     */
+    skip?: number
+    distinct?: CreditReportScalarFieldEnum | CreditReportScalarFieldEnum[]
+  }
+
+  /**
+   * CreditReport create
+   */
+  export type CreditReportCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * The data needed to create a CreditReport.
+     */
+    data: XOR<CreditReportCreateInput, CreditReportUncheckedCreateInput>
+  }
+
+  /**
+   * CreditReport createMany
+   */
+  export type CreditReportCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CreditReports.
+     */
+    data: CreditReportCreateManyInput | CreditReportCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CreditReport update
+   */
+  export type CreditReportUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * The data needed to update a CreditReport.
+     */
+    data: XOR<CreditReportUpdateInput, CreditReportUncheckedUpdateInput>
+    /**
+     * Choose, which CreditReport to update.
+     */
+    where: CreditReportWhereUniqueInput
+  }
+
+  /**
+   * CreditReport updateMany
+   */
+  export type CreditReportUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CreditReports.
+     */
+    data: XOR<CreditReportUpdateManyMutationInput, CreditReportUncheckedUpdateManyInput>
+    /**
+     * Filter which CreditReports to update
+     */
+    where?: CreditReportWhereInput
+  }
+
+  /**
+   * CreditReport upsert
+   */
+  export type CreditReportUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * The filter to search for the CreditReport to update in case it exists.
+     */
+    where: CreditReportWhereUniqueInput
+    /**
+     * In case the CreditReport found by the `where` argument doesn't exist, create a new CreditReport with this data.
+     */
+    create: XOR<CreditReportCreateInput, CreditReportUncheckedCreateInput>
+    /**
+     * In case the CreditReport was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CreditReportUpdateInput, CreditReportUncheckedUpdateInput>
+  }
+
+  /**
+   * CreditReport delete
+   */
+  export type CreditReportDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+    /**
+     * Filter which CreditReport to delete.
+     */
+    where: CreditReportWhereUniqueInput
+  }
+
+  /**
+   * CreditReport deleteMany
+   */
+  export type CreditReportDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CreditReports to delete
+     */
+    where?: CreditReportWhereInput
+  }
+
+  /**
+   * CreditReport without action
+   */
+  export type CreditReportDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CreditReport
+     */
+    select?: CreditReportSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -10917,6 +12031,32 @@ export namespace Prisma {
   export type DocumentAccessLogScalarFieldEnum = (typeof DocumentAccessLogScalarFieldEnum)[keyof typeof DocumentAccessLogScalarFieldEnum]
 
 
+  export const CreditReportScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    mobileLast4: 'mobileLast4',
+    mobileHash: 'mobileHash',
+    status: 'status',
+    errorCode: 'errorCode',
+    score: 'score',
+    source: 'source',
+    reportCipher: 'reportCipher',
+    reportIv: 'reportIv',
+    reportTag: 'reportTag',
+    leadId: 'leadId',
+    requestedBy: 'requestedBy',
+    requestedByName: 'requestedByName',
+    requestedByRole: 'requestedByRole',
+    consentText: 'consentText',
+    consentAt: 'consentAt',
+    requestIp: 'requestIp',
+    createdAt: 'createdAt',
+    expiresAt: 'expiresAt'
+  };
+
+  export type CreditReportScalarFieldEnum = (typeof CreditReportScalarFieldEnum)[keyof typeof CreditReportScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -10977,6 +12117,13 @@ export namespace Prisma {
    * Reference to a field of type 'BigInt'
    */
   export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+    
+
+
+  /**
+   * Reference to a field of type 'Bytes'
+   */
+  export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
     
 
 
@@ -11871,6 +13018,135 @@ export namespace Prisma {
     accessedBy?: StringWithAggregatesFilter<"DocumentAccessLog"> | string
     accessType?: StringWithAggregatesFilter<"DocumentAccessLog"> | string
     accessedAt?: DateTimeWithAggregatesFilter<"DocumentAccessLog"> | Date | string
+  }
+
+  export type CreditReportWhereInput = {
+    AND?: CreditReportWhereInput | CreditReportWhereInput[]
+    OR?: CreditReportWhereInput[]
+    NOT?: CreditReportWhereInput | CreditReportWhereInput[]
+    id?: StringFilter<"CreditReport"> | string
+    name?: StringFilter<"CreditReport"> | string
+    mobileLast4?: StringFilter<"CreditReport"> | string
+    mobileHash?: StringFilter<"CreditReport"> | string
+    status?: StringFilter<"CreditReport"> | string
+    errorCode?: StringNullableFilter<"CreditReport"> | string | null
+    score?: IntNullableFilter<"CreditReport"> | number | null
+    source?: StringFilter<"CreditReport"> | string
+    reportCipher?: BytesNullableFilter<"CreditReport"> | Buffer | null
+    reportIv?: BytesNullableFilter<"CreditReport"> | Buffer | null
+    reportTag?: BytesNullableFilter<"CreditReport"> | Buffer | null
+    leadId?: StringNullableFilter<"CreditReport"> | string | null
+    requestedBy?: StringFilter<"CreditReport"> | string
+    requestedByName?: StringNullableFilter<"CreditReport"> | string | null
+    requestedByRole?: StringFilter<"CreditReport"> | string
+    consentText?: StringFilter<"CreditReport"> | string
+    consentAt?: DateTimeFilter<"CreditReport"> | Date | string
+    requestIp?: StringNullableFilter<"CreditReport"> | string | null
+    createdAt?: DateTimeFilter<"CreditReport"> | Date | string
+    expiresAt?: DateTimeFilter<"CreditReport"> | Date | string
+  }
+
+  export type CreditReportOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    mobileLast4?: SortOrder
+    mobileHash?: SortOrder
+    status?: SortOrder
+    errorCode?: SortOrderInput | SortOrder
+    score?: SortOrderInput | SortOrder
+    source?: SortOrder
+    reportCipher?: SortOrderInput | SortOrder
+    reportIv?: SortOrderInput | SortOrder
+    reportTag?: SortOrderInput | SortOrder
+    leadId?: SortOrderInput | SortOrder
+    requestedBy?: SortOrder
+    requestedByName?: SortOrderInput | SortOrder
+    requestedByRole?: SortOrder
+    consentText?: SortOrder
+    consentAt?: SortOrder
+    requestIp?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type CreditReportWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CreditReportWhereInput | CreditReportWhereInput[]
+    OR?: CreditReportWhereInput[]
+    NOT?: CreditReportWhereInput | CreditReportWhereInput[]
+    name?: StringFilter<"CreditReport"> | string
+    mobileLast4?: StringFilter<"CreditReport"> | string
+    mobileHash?: StringFilter<"CreditReport"> | string
+    status?: StringFilter<"CreditReport"> | string
+    errorCode?: StringNullableFilter<"CreditReport"> | string | null
+    score?: IntNullableFilter<"CreditReport"> | number | null
+    source?: StringFilter<"CreditReport"> | string
+    reportCipher?: BytesNullableFilter<"CreditReport"> | Buffer | null
+    reportIv?: BytesNullableFilter<"CreditReport"> | Buffer | null
+    reportTag?: BytesNullableFilter<"CreditReport"> | Buffer | null
+    leadId?: StringNullableFilter<"CreditReport"> | string | null
+    requestedBy?: StringFilter<"CreditReport"> | string
+    requestedByName?: StringNullableFilter<"CreditReport"> | string | null
+    requestedByRole?: StringFilter<"CreditReport"> | string
+    consentText?: StringFilter<"CreditReport"> | string
+    consentAt?: DateTimeFilter<"CreditReport"> | Date | string
+    requestIp?: StringNullableFilter<"CreditReport"> | string | null
+    createdAt?: DateTimeFilter<"CreditReport"> | Date | string
+    expiresAt?: DateTimeFilter<"CreditReport"> | Date | string
+  }, "id">
+
+  export type CreditReportOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    mobileLast4?: SortOrder
+    mobileHash?: SortOrder
+    status?: SortOrder
+    errorCode?: SortOrderInput | SortOrder
+    score?: SortOrderInput | SortOrder
+    source?: SortOrder
+    reportCipher?: SortOrderInput | SortOrder
+    reportIv?: SortOrderInput | SortOrder
+    reportTag?: SortOrderInput | SortOrder
+    leadId?: SortOrderInput | SortOrder
+    requestedBy?: SortOrder
+    requestedByName?: SortOrderInput | SortOrder
+    requestedByRole?: SortOrder
+    consentText?: SortOrder
+    consentAt?: SortOrder
+    requestIp?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    _count?: CreditReportCountOrderByAggregateInput
+    _avg?: CreditReportAvgOrderByAggregateInput
+    _max?: CreditReportMaxOrderByAggregateInput
+    _min?: CreditReportMinOrderByAggregateInput
+    _sum?: CreditReportSumOrderByAggregateInput
+  }
+
+  export type CreditReportScalarWhereWithAggregatesInput = {
+    AND?: CreditReportScalarWhereWithAggregatesInput | CreditReportScalarWhereWithAggregatesInput[]
+    OR?: CreditReportScalarWhereWithAggregatesInput[]
+    NOT?: CreditReportScalarWhereWithAggregatesInput | CreditReportScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CreditReport"> | string
+    name?: StringWithAggregatesFilter<"CreditReport"> | string
+    mobileLast4?: StringWithAggregatesFilter<"CreditReport"> | string
+    mobileHash?: StringWithAggregatesFilter<"CreditReport"> | string
+    status?: StringWithAggregatesFilter<"CreditReport"> | string
+    errorCode?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
+    score?: IntNullableWithAggregatesFilter<"CreditReport"> | number | null
+    source?: StringWithAggregatesFilter<"CreditReport"> | string
+    reportCipher?: BytesNullableWithAggregatesFilter<"CreditReport"> | Buffer | null
+    reportIv?: BytesNullableWithAggregatesFilter<"CreditReport"> | Buffer | null
+    reportTag?: BytesNullableWithAggregatesFilter<"CreditReport"> | Buffer | null
+    leadId?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
+    requestedBy?: StringWithAggregatesFilter<"CreditReport"> | string
+    requestedByName?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
+    requestedByRole?: StringWithAggregatesFilter<"CreditReport"> | string
+    consentText?: StringWithAggregatesFilter<"CreditReport"> | string
+    consentAt?: DateTimeWithAggregatesFilter<"CreditReport"> | Date | string
+    requestIp?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"CreditReport"> | Date | string
+    expiresAt?: DateTimeWithAggregatesFilter<"CreditReport"> | Date | string
   }
 
   export type CustomerCreateInput = {
@@ -12909,6 +14185,167 @@ export namespace Prisma {
     accessedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CreditReportCreateInput = {
+    id: string
+    name: string
+    mobileLast4: string
+    mobileHash: string
+    status: string
+    errorCode?: string | null
+    score?: number | null
+    source: string
+    reportCipher?: Buffer | null
+    reportIv?: Buffer | null
+    reportTag?: Buffer | null
+    leadId?: string | null
+    requestedBy: string
+    requestedByName?: string | null
+    requestedByRole: string
+    consentText: string
+    consentAt: Date | string
+    requestIp?: string | null
+    createdAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type CreditReportUncheckedCreateInput = {
+    id: string
+    name: string
+    mobileLast4: string
+    mobileHash: string
+    status: string
+    errorCode?: string | null
+    score?: number | null
+    source: string
+    reportCipher?: Buffer | null
+    reportIv?: Buffer | null
+    reportTag?: Buffer | null
+    leadId?: string | null
+    requestedBy: string
+    requestedByName?: string | null
+    requestedByRole: string
+    consentText: string
+    consentAt: Date | string
+    requestIp?: string | null
+    createdAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type CreditReportUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobileLast4?: StringFieldUpdateOperationsInput | string
+    mobileHash?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    errorCode?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    source?: StringFieldUpdateOperationsInput | string
+    reportCipher?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportIv?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportTag?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    leadId?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    requestedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedByRole?: StringFieldUpdateOperationsInput | string
+    consentText?: StringFieldUpdateOperationsInput | string
+    consentAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestIp?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditReportUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobileLast4?: StringFieldUpdateOperationsInput | string
+    mobileHash?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    errorCode?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    source?: StringFieldUpdateOperationsInput | string
+    reportCipher?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportIv?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportTag?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    leadId?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    requestedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedByRole?: StringFieldUpdateOperationsInput | string
+    consentText?: StringFieldUpdateOperationsInput | string
+    consentAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestIp?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditReportCreateManyInput = {
+    id: string
+    name: string
+    mobileLast4: string
+    mobileHash: string
+    status: string
+    errorCode?: string | null
+    score?: number | null
+    source: string
+    reportCipher?: Buffer | null
+    reportIv?: Buffer | null
+    reportTag?: Buffer | null
+    leadId?: string | null
+    requestedBy: string
+    requestedByName?: string | null
+    requestedByRole: string
+    consentText: string
+    consentAt: Date | string
+    requestIp?: string | null
+    createdAt?: Date | string
+    expiresAt: Date | string
+  }
+
+  export type CreditReportUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobileLast4?: StringFieldUpdateOperationsInput | string
+    mobileHash?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    errorCode?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    source?: StringFieldUpdateOperationsInput | string
+    reportCipher?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportIv?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportTag?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    leadId?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    requestedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedByRole?: StringFieldUpdateOperationsInput | string
+    consentText?: StringFieldUpdateOperationsInput | string
+    consentAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestIp?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CreditReportUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobileLast4?: StringFieldUpdateOperationsInput | string
+    mobileHash?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    errorCode?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    source?: StringFieldUpdateOperationsInput | string
+    reportCipher?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportIv?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    reportTag?: NullableBytesFieldUpdateOperationsInput | Buffer | null
+    leadId?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedBy?: StringFieldUpdateOperationsInput | string
+    requestedByName?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedByRole?: StringFieldUpdateOperationsInput | string
+    consentText?: StringFieldUpdateOperationsInput | string
+    consentAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    requestIp?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -13715,6 +15152,100 @@ export namespace Prisma {
     accessedAt?: SortOrder
   }
 
+  export type BytesNullableFilter<$PrismaModel = never> = {
+    equals?: Buffer | BytesFieldRefInput<$PrismaModel> | null
+    in?: Buffer[] | null
+    notIn?: Buffer[] | null
+    not?: NestedBytesNullableFilter<$PrismaModel> | Buffer | null
+  }
+
+  export type CreditReportCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    mobileLast4?: SortOrder
+    mobileHash?: SortOrder
+    status?: SortOrder
+    errorCode?: SortOrder
+    score?: SortOrder
+    source?: SortOrder
+    reportCipher?: SortOrder
+    reportIv?: SortOrder
+    reportTag?: SortOrder
+    leadId?: SortOrder
+    requestedBy?: SortOrder
+    requestedByName?: SortOrder
+    requestedByRole?: SortOrder
+    consentText?: SortOrder
+    consentAt?: SortOrder
+    requestIp?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type CreditReportAvgOrderByAggregateInput = {
+    score?: SortOrder
+  }
+
+  export type CreditReportMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    mobileLast4?: SortOrder
+    mobileHash?: SortOrder
+    status?: SortOrder
+    errorCode?: SortOrder
+    score?: SortOrder
+    source?: SortOrder
+    reportCipher?: SortOrder
+    reportIv?: SortOrder
+    reportTag?: SortOrder
+    leadId?: SortOrder
+    requestedBy?: SortOrder
+    requestedByName?: SortOrder
+    requestedByRole?: SortOrder
+    consentText?: SortOrder
+    consentAt?: SortOrder
+    requestIp?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type CreditReportMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    mobileLast4?: SortOrder
+    mobileHash?: SortOrder
+    status?: SortOrder
+    errorCode?: SortOrder
+    score?: SortOrder
+    source?: SortOrder
+    reportCipher?: SortOrder
+    reportIv?: SortOrder
+    reportTag?: SortOrder
+    leadId?: SortOrder
+    requestedBy?: SortOrder
+    requestedByName?: SortOrder
+    requestedByRole?: SortOrder
+    consentText?: SortOrder
+    consentAt?: SortOrder
+    requestIp?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type CreditReportSumOrderByAggregateInput = {
+    score?: SortOrder
+  }
+
+  export type BytesNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Buffer | BytesFieldRefInput<$PrismaModel> | null
+    in?: Buffer[] | null
+    notIn?: Buffer[] | null
+    not?: NestedBytesNullableWithAggregatesFilter<$PrismaModel> | Buffer | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBytesNullableFilter<$PrismaModel>
+    _max?: NestedBytesNullableFilter<$PrismaModel>
+  }
+
   export type CustomerKycCreateNestedOneWithoutCustomerInput = {
     create?: XOR<CustomerKycCreateWithoutCustomerInput, CustomerKycUncheckedCreateWithoutCustomerInput>
     connectOrCreate?: CustomerKycCreateOrConnectWithoutCustomerInput
@@ -14165,6 +15696,10 @@ export namespace Prisma {
     update?: XOR<XOR<DocumentUpdateToOneWithWhereWithoutAccessLogsInput, DocumentUpdateWithoutAccessLogsInput>, DocumentUncheckedUpdateWithoutAccessLogsInput>
   }
 
+  export type NullableBytesFieldUpdateOperationsInput = {
+    set?: Buffer | null
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -14431,6 +15966,23 @@ export namespace Prisma {
     _sum?: NestedBigIntNullableFilter<$PrismaModel>
     _min?: NestedBigIntNullableFilter<$PrismaModel>
     _max?: NestedBigIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedBytesNullableFilter<$PrismaModel = never> = {
+    equals?: Buffer | BytesFieldRefInput<$PrismaModel> | null
+    in?: Buffer[] | null
+    notIn?: Buffer[] | null
+    not?: NestedBytesNullableFilter<$PrismaModel> | Buffer | null
+  }
+
+  export type NestedBytesNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Buffer | BytesFieldRefInput<$PrismaModel> | null
+    in?: Buffer[] | null
+    notIn?: Buffer[] | null
+    not?: NestedBytesNullableWithAggregatesFilter<$PrismaModel> | Buffer | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBytesNullableFilter<$PrismaModel>
+    _max?: NestedBytesNullableFilter<$PrismaModel>
   }
 
   export type CustomerKycCreateWithoutCustomerInput = {
@@ -16143,6 +17695,10 @@ export namespace Prisma {
      * @deprecated Use DocumentAccessLogDefaultArgs instead
      */
     export type DocumentAccessLogArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DocumentAccessLogDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CreditReportDefaultArgs instead
+     */
+    export type CreditReportArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CreditReportDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

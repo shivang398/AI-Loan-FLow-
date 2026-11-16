@@ -195,3 +195,34 @@ model DocumentAccessLog {
 
   @@map("document_access_logs")
 }
+
+/// CRIF credit reports pulled through Tenacio (soft pull, customer consent recorded).
+/// The parsed report is stored AES-256-GCM encrypted and deleted after 180 days (RBI retention).
+model CreditReport {
+  id              String   @id @db.Char(36)
+  name            String   @db.VarChar(100)
+  mobileLast4     String   @map("mobile_last4") @db.VarChar(4)
+  mobileHash      String   @map("mobile_hash") @db.Char(64)
+  status          String   @db.VarChar(20)
+  errorCode       String?  @map("error_code") @db.VarChar(50)
+  score           Int?
+  source          String   @db.VarChar(10)
+  reportCipher    Bytes?   @map("report_cipher") @db.LongBlob
+  reportIv        Bytes?   @map("report_iv") @db.Binary(12)
+  reportTag       Bytes?   @map("report_tag") @db.Binary(16)
+  leadId          String?  @map("lead_id") @db.Char(36)
+  requestedBy     String   @map("requested_by") @db.Char(36)
+  requestedByName String?  @map("requested_by_name") @db.VarChar(200)
+  requestedByRole String   @map("requested_by_role") @db.VarChar(30)
+  consentText     String   @map("consent_text") @db.Text
+  consentAt       DateTime @map("consent_at")
+  requestIp       String?  @map("request_ip") @db.VarChar(64)
+  createdAt       DateTime @default(now()) @map("created_at")
+  expiresAt       DateTime @map("expires_at")
+
+  @@index([requestedBy])
+  @@index([mobileHash])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("credit_reports")
+}

@@ -24,6 +24,8 @@ export function checkEnvironment(): void {
     if (!isWhatsappConfigured()) warn.push(`WhatsApp (${whatsappProvider()}) has no credentials — messages are only logged (dry-run)`);
     else if (whatsappProvider() === 'meta' && !process.env.WHATSAPP_APP_SECRET) warn.push('WHATSAPP_APP_SECRET is not set — WhatsApp webhooks will be rejected');
     else if (whatsappProvider() === 'interakt' && !process.env.INTERAKT_WEBHOOK_SECRET) warn.push('INTERAKT_WEBHOOK_SECRET is not set — Interakt webhooks will be rejected');
+    if (process.env.CRIF_LIVE_MODE !== 'true') warn.push('CRIF_LIVE_MODE is not true — credit reports return fictional test data');
+    else if (!process.env.CRIF_API_KEY || !process.env.CRIF_CLIENT_ID || !process.env.CRIF_WORKFLOW_ID || !process.env.CRIF_API_BASE_URL) warn.push('CRIF_API_BASE_URL / CRIF_CLIENT_ID / CRIF_WORKFLOW_ID / CRIF_API_KEY incomplete — credit report pulls will fail');
     if (process.env.ALLOW_SCHEMA_DATA_LOSS === 'true') warn.push('ALLOW_SCHEMA_DATA_LOSS=true — unset it after this deploy');
   }
 

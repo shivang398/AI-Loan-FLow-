@@ -28,6 +28,7 @@ import analyticsRoutes from './routes/analytics.routes';
 import reportsRoutes from './routes/reports.routes';
 import careersRoutes from './routes/careers.routes';
 import callRoutes from './routes/call.routes';
+import creditReportRoutes from './routes/creditReport.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
 const app = express();
@@ -117,6 +118,7 @@ app.use('/policies', apiLimiter, policyRoutes);
 
 // ── Customers & Documents ─────────────────────────────────────────────────────
 app.use('/customers', apiLimiter, customerRoutes);
+app.use('/credit-reports', apiLimiter, creditReportRoutes);
 app.use('/documents', apiLimiter, documentRoutes);
 
 // ── Sales Ops (Connectors, Commissions, FOIR, Routing) ───────────────────────

@@ -1,0 +1,213 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { Table, Button, Form, Input, Checkbox, App } from 'antd';
+import { Download, FileSearch, RefreshCw } from 'lucide-react';
+import type { ColumnsType } from 'antd/es/table';
+import api from '../../shared/services/apiClient';
+
+const NAVY = '#0B1E3D';
+const GOLD = '#C4993A';
+const MUTED = '#7A92B5';
+const BORDER = '#D4DCE8';
+
+interface CreditReportRow {
+  id: string;
+  name: string;
+  mobileLast4: string;
+  status: 'SUCCESS' | 'NOT_FOUND' | 'UNAVAILABLE';
+  errorCode: string | null;
+  score: number | null;
+  source: 'LIVE' | 'MOCK';
+  requestedByName: string | null;
+  requestedByRole: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+const STATUS: Record<CreditReportRow['status'], { label: string; color: string }> = {
+  SUCCESS:     { label: 'Report ready',      color: '#15803D' },
+  NOT_FOUND:   { label: 'No credit history', color: '#6B7280' },
+  UNAVAILABLE: { label: 'Bureau unavailable', color: '#DC2626' },
+};
+
+// Score bands shown in the PDF (CRIF range 300-900)
+const scoreColour = (s: number) => (s >= 750 ? '#1a7f4b' : s >= 700 ? '#1656b8' : s >= 650 ? '#8f6300' : '#c0392b');
+
+const fmtDate = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+interface PullForm { name: string; mobile: string; consent: boolean }
+
+const CreditReportPage: React.FC = () => {
+  const { message, modal } = App.useApp();
+  const [form] = Form.useForm<PullForm>();
+  const [rows, setRows] = useState<CreditReportRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [pulling, setPulling] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [consentText, setConsentText] = useState('');
+
+  const load = useCallback(async (p = page) => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/credit-reports', { params: { page: p, size: 20 } });
+      setRows(data.data.items);
+      setTotal(data.data.total);
+    } catch {
+      message.error('Could not load credit reports');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, message]);
+
+  useEffect(() => { load(page); }, [page, load]);
+  useEffect(() => {
+    api.get('/credit-reports/consent').then(r => setConsentText(r.data.data.text)).catch(() => {});
+  }, []);
+
+  const download = async (row: CreditReportRow) => {
+    setDownloading(row.id);
+    try {
+      const res = await api.get(`/credit-reports/${row.id}/pdf`, { responseType: 'blob' });
+      const name = /filename="([^"]+)"/.exec(res.headers['content-disposition'] ?? '')?.[1] ?? `credit-report-${row.id}.pdf`;
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch {
+      message.error('Could not download the report');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const pull = async (values: PullForm, force = false) => {
+    setPulling(true);
+    try {
+      const { data } = await api.post('/credit-reports', { name: values.name, mobile: values.mobile, consent: values.consent === true, force });
+      const row: CreditReportRow = data.data;
+      if (row.status === 'SUCCESS') message.success(`Report fetched${row.score !== null ? ` — score ${row.score}` : ''}`);
+      else message.info(data.message);
+      form.resetFields();
+      setPage(0);
+      load(0);
+      if (row.status === 'SUCCESS') download(row);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const recent: CreditReportRow | undefined = err?.response?.data?.data;
+      if (status === 409 && recent) {
+        modal.confirm({
+          title: 'A report was pulled recently',
+          content: `${recent.name}'s report was pulled on ${fmtDate(recent.createdAt)}. Download that one, or pull a fresh report (a new bureau charge)?`,
+          okText: 'Download existing',
+          cancelText: 'Pull fresh report',
+          // Cancel = a paid bureau call, so Esc / clicking outside must not trigger it
+          keyboard: false,
+          maskClosable: false,
+          onOk: () => download(recent),
+          onCancel: () => pull(values, true),
+        });
+      } else {
+        message.error(err?.response?.data?.message ?? 'Could not fetch the credit report');
+        if (status === 502) load(0);
+      }
+    } finally {
+      setPulling(false);
+    }
+  };
+
+  const columns: ColumnsType<CreditReportRow> = [
+    {
+      title: 'Customer', key: 'name',
+      render: (_, r) => (
+        <div>
+          <div style={{ fontWeight: 600, color: NAVY }}>{r.name}</div>
+          <div style={{ fontSize: 12, color: MUTED }}>Mobile ••••••{r.mobileLast4}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Score', dataIndex: 'score', width: 90,
+      render: (s: number | null) => s === null ? <span style={{ color: MUTED }}>—</span> : <span style={{ fontWeight: 700, color: scoreColour(s) }}>{s}</span>,
+    },
+    {
+      title: 'Status', dataIndex: 'status', width: 210,
+      render: (s: CreditReportRow['status'], r) => (
+        <span style={{ color: STATUS[s].color, fontWeight: 600, fontSize: 13 }}>
+          {STATUS[s].label}{r.source === 'MOCK' && <span style={{ color: MUTED, fontWeight: 400 }}> (test data)</span>}
+        </span>
+      ),
+    },
+    { title: 'Pulled by', dataIndex: 'requestedByName', render: (v: string | null) => <span style={{ fontSize: 13 }}>{v ?? '—'}</span> },
+    { title: 'Pulled on', dataIndex: 'createdAt', width: 170, render: (v: string) => <span style={{ fontSize: 13 }}>{fmtDate(v)}</span> },
+    {
+      title: '', key: 'pdf', width: 130, align: 'right',
+      render: (_, r) => r.status === 'SUCCESS' && (
+        <Button size="small" icon={<Download size={13} />} loading={downloading === r.id} onClick={() => download(r)}>PDF</Button>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 700, fontSize: 22, color: NAVY, letterSpacing: '-0.02em' }}>
+        Credit Report
+      </div>
+      <div style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>
+        Soft pull from CRIF High Mark — does not affect the customer's score. Reports are deleted automatically after 180 days.
+      </div>
+
+      <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderTop: `3px solid ${GOLD}`, padding: 20, marginBottom: 20 }}>
+        <Form<PullForm> form={form} layout="vertical" onFinish={v => pull(v)} requiredMark={false}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0 16px' }}>
+            <Form.Item name="name" label="Full name (as on PAN)" rules={[{ required: true, min: 2, message: 'Enter the customer\'s full name' }]}>
+              <Input placeholder="e.g. Rahul Sharma" maxLength={100} autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="mobile" label="Mobile number"
+              normalize={(v: string) => (v ?? '').replace(/\D/g, '').slice(0, 10)}
+              rules={[{ required: true, pattern: /^[6-9]\d{9}$/, message: 'Enter a valid 10-digit mobile number' }]}
+            >
+              <Input placeholder="10-digit mobile" inputMode="numeric" prefix={<span style={{ color: MUTED }}>+91</span>} autoComplete="off" />
+            </Form.Item>
+          </div>
+          <Form.Item
+            name="consent" valuePropName="checked"
+            rules={[{ validator: (_, v) => (v ? Promise.resolve() : Promise.reject(new Error('The customer\'s consent is required'))) }]}
+          >
+            <Checkbox>
+              <span style={{ fontSize: 13 }}>
+                The customer has given consent to the following:{' '}
+                <span style={{ color: MUTED }}>{consentText || 'consent to obtain their credit information for their loan application.'}</span>
+              </span>
+            </Checkbox>
+          </Form.Item>
+          <Button type="primary" htmlType="submit" loading={pulling} icon={<FileSearch size={15} />}>
+            Fetch credit report
+          </Button>
+        </Form>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ fontWeight: 600, color: NAVY }}>Pulled reports</div>
+        <Button size="small" icon={<RefreshCw size={13} />} onClick={() => load(page)}>Refresh</Button>
+      </div>
+      <div style={{ background: '#fff', border: `1px solid ${BORDER}` }}>
+        <Table<CreditReportRow>
+          columns={columns}
+          dataSource={rows}
+          rowKey="id"
+          loading={loading}
+          size="middle"
+          scroll={{ x: 760 }}
+          pagination={{ current: page + 1, pageSize: 20, total, showSizeChanger: false, onChange: p => setPage(p - 1) }}
+          locale={{ emptyText: <div style={{ padding: 40, color: MUTED, textAlign: 'center' }}>No credit reports pulled yet</div> }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default CreditReportPage;

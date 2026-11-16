@@ -135,7 +135,18 @@ Website **"Become a partner"** → Careers form with role pre-filled `Channel Pa
 Connectors use Loan Tools; an eligibility check they submit is stamped with their partner id
 (`EligibilitySubmission.assignedConnectorId`) so only they (and staff) see it.
 
-### 5.5 Other
+### 5.5 Credit report (CRIF High Mark soft pull)
+Sidebar **Credit Report** (ADMIN, RM, OPERATIONS, CONNECTOR). Staff enter the customer's name (as on PAN) and mobile,
+tick that the customer consented (consent text stored with every pull), and the backend calls Tenacio
+`crif-soft-pull`. The parsed report is stored **AES-256-GCM encrypted** in `credit_reports` and the PDF downloads
+straight away — the same 6–7 page "Individual Credit Report" layout as Credit Babu, branded Real Money, rendered by
+pdfkit from the stored data (`backend/src/creditReport/`, ported unchanged from Credit Babu except branding).
+- A second pull for the same mobile within 30 days asks first (download the existing one, or pay for a fresh pull).
+- Connectors see only reports they pulled; staff see all. 30 pulls per user per hour.
+- **Retention:** rows are deleted after 180 days (RBI) by a job started in `server.ts` (every 6 h).
+- `CRIF_LIVE_MODE` not `true` → fictional test data (`mockCrifResponse.ts`), shown as "(test data)" in the list.
+
+### 5.6 Other
 Team Meeting (role chat rooms) · Policies library · MIS reports & analytics · Career applications (CV to S3) ·
 Notifications.
 
@@ -191,12 +202,13 @@ Notifications.
   logs `[Schema] ERROR …` but the API still starts — always check for that line after a deploy (see §11).
 - **Indexes** on hot tables: leads (createdAt, status, mobile, assignedTo, source), documents (ownerId, loanId),
   eligibility_submissions (assignedConnectorId, submittedAt), loan_applications (connectorId, customerId, status, createdAt).
-- Credit-bureau table `cibil_checks` was **removed** (Nov 2026) and is dropped by the next push.
+- Old credit-bureau table `cibil_checks` was removed (Nov 2026). Credit reports now live in `credit_reports`
+  (customer DB, encrypted report, 180-day `expires_at`).
 - One-off SQL in `backend/scripts/`: `pre-deploy.sql` (collation fix), `merge-roles.sql` (role consolidation). Both idempotent.
 
 ---
 
-## 8. API reference (134 endpoints)
+## 8. API reference (138 endpoints)
 
 Paths are backend paths — prefix `/api` from the browser/nginx. "any logged-in user" = valid JWT, any role.
 Generated from `backend/src/routes/*.ts` on 10 Nov 2026.
@@ -399,6 +411,15 @@ Generated from `backend/src/routes/*.ts` on 10 Nov 2026.
 | GET | `/whatsapp/campaigns` | ADMIN, OPERATIONS |
 | GET | `/whatsapp/campaigns/:id` | ADMIN, OPERATIONS |
 
+**`/credit-reports`** (creditReport.routes.ts) — ADMIN, RM, OPERATIONS, CONNECTOR (connectors: own reports only)
+
+| Method | Path | Access |
+|---|---|---|
+| GET | `/credit-reports/consent` | all four roles |
+| POST | `/credit-reports` | all four roles — body `{ name, mobile, consent: true, leadId?, force? }`; 409 + existing report if pulled in last 30 days |
+| GET | `/credit-reports` | all four roles (paged) |
+| GET | `/credit-reports/:id/pdf` | owner or staff |
+
 **`/messaging/whatsapp/webhook`** (whatsapp.routes.ts)
 
 | Method | Path | Access |
@@ -445,6 +466,7 @@ Templates: `platform/.env.production.example` (production, used by `docker-compo
 | S3 | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, `AWS_S3_ENDPOINT` (LocalStack only) |
 | WhatsApp | `WHATSAPP_PROVIDER` (`meta`/`interakt`) · Meta: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_API_URL` · Interakt: `INTERAKT_API_KEY`, `INTERAKT_WEBHOOK_SECRET`, `INTERAKT_RATE_PER_MIN` |
 | Email | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` |
+| Credit report | `CRIF_LIVE_MODE` (`true` = real, charged pulls), `CRIF_API_BASE_URL`, `CRIF_CLIENT_ID`, `CRIF_WORKFLOW_ID`, `CRIF_API_KEY` (Tenacio `x-api-key`, secret), `CRIF_REQUEST_TIMEOUT_MS`, `CREDIT_REPORT_ENCRYPTION_KEY` (optional, 64 hex) |
 
 Webhook URLs to register: Meta `https://<domain>/api/messaging/whatsapp/webhook` (subscribe `messages` and
 `message_template_status_update`); Interakt `https://<domain>/api/messaging/whatsapp/interakt-webhook`.
@@ -515,7 +537,6 @@ restarting the backend clears both (in-memory).
 - **Website content to confirm**: phone `+91 98765 43210` looks like a placeholder; testimonials are illustrative;
   grievance inbox `grievance@realmoneygroups.in` must exist and be monitored (the Charter promises 7 days).
 - **Login page** shows "ISO 27001 / SOC 2" badges — remove unless certified.
-- **Credit bureau checks** were removed for a rebuild; re-add RBI 180-day retention when they return.
 
 ---
 
@@ -534,3 +555,5 @@ restarting the backend clears both (in-memory).
 - Production hardening (10 Nov 2026): S3 IAM-role support + encryption + 5-min links, opt-in destructive schema sync,
   startup config check, `/health/ready`, configurable proxy hops, optional RabbitMQ, public upload limits (10 MB,
   recent leads only), DB indexes, non-root backend container, 413 for oversized files.
+- Credit report (16 Nov 2026): CRIF soft pull via Tenacio, encrypted storage, 180-day purge, Real Money-branded PDF
+  (Credit Babu renderer), `/credit-report` page for all four roles.

@@ -5,7 +5,7 @@ import {
   LogOut, PanelLeftClose, PanelLeft, Bell, Settings,
   Wallet, Files, FileText, ChevronDown, UsersRound, Network,
   BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck, Phone,
-  MessageCircle,
+  MessageCircle, FileSearch,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -100,6 +100,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/partners',            icon: <Network size={16} />,         label: 'Partners',          roles: ['ADMIN'] },
     { key: '/calls',               icon: <Phone size={16} />,           label: 'Call Queue',        roles: ['OPERATIONS'] },
     { key: '/whatsapp',            icon: <MessageCircle size={16} />,   label: 'WhatsApp',          roles: ['ADMIN', 'OPERATIONS'] },
+    { key: '/credit-report',       icon: <FileSearch size={16} />,      label: 'Credit Report',     roles: ['ADMIN', 'RM', 'OPERATIONS', 'CONNECTOR'] },
     { key: '/rm/connectors',       icon: <Users size={16} />,           label: 'Connector Tracker', roles: ['RM'] },
     { key: '/rm/workflow',         icon: <ClipboardList size={16} />,   label: 'Workflow Monitor',  roles: ['RM'] },
     { key: '/tools',               icon: <Calculator size={16} />,      label: 'Loan Tools',        roles: ['CONNECTOR'] },

@@ -267,6 +267,29 @@ exports.Prisma.DocumentAccessLogScalarFieldEnum = {
   accessedAt: 'accessedAt'
 };
 
+exports.Prisma.CreditReportScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  mobileLast4: 'mobileLast4',
+  mobileHash: 'mobileHash',
+  status: 'status',
+  errorCode: 'errorCode',
+  score: 'score',
+  source: 'source',
+  reportCipher: 'reportCipher',
+  reportIv: 'reportIv',
+  reportTag: 'reportTag',
+  leadId: 'leadId',
+  requestedBy: 'requestedBy',
+  requestedByName: 'requestedByName',
+  requestedByRole: 'requestedByRole',
+  consentText: 'consentText',
+  consentAt: 'consentAt',
+  requestIp: 'requestIp',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -287,7 +310,8 @@ exports.Prisma.ModelName = {
   CallLog: 'CallLog',
   Document: 'Document',
   DocumentVersion: 'DocumentVersion',
-  DocumentAccessLog: 'DocumentAccessLog'
+  DocumentAccessLog: 'DocumentAccessLog',
+  CreditReport: 'CreditReport'
 };
 
 /**

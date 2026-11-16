@@ -9,6 +9,7 @@ import { connectRabbitMQ, disconnectRabbitMQ } from './config/rabbitmq';
 import { setSocketServer } from './services/communications.service';
 import { resumeCampaigns } from './services/whatsapp.service';
 import { checkEnvironment } from './config/checkEnv';
+import { startCreditReportRetentionJob } from './creditReport/creditReport.service';
 
 const PORT = parseInt(process.env.PORT ?? '8080');
 
@@ -29,6 +30,8 @@ async function bootstrap() {
   // so an unavailable broker must not stop the API.
   console.log('[Boot] Connecting to RabbitMQ...');
   await connectRabbitMQ().catch(err => console.warn('[Boot] RabbitMQ unavailable — continuing without event publishing:', err.message));
+
+  startCreditReportRetentionJob();   // RBI: delete bureau reports after 180 days
 
   const server = http.createServer(app);
 

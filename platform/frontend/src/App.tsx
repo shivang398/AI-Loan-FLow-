@@ -31,6 +31,7 @@ import PoliciesPage from './features/policies/components/PoliciesPage';
 import TelecallerDashboard from './features/telecaller/components/TelecallerDashboard';
 import WhatsAppPage from './features/operations/components/WhatsAppPage';
 import WhatsAppCampaigns from './features/operations/components/WhatsAppCampaigns';
+import CreditReportPage from './features/credit-report/CreditReportPage';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
 import FeatureErrorBoundary from './shared/components/FeatureErrorBoundary';
@@ -152,6 +153,10 @@ const App: React.FC = () => {
 
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'OPERATIONS']} />}>
                 <Route path="/whatsapp" element={<WhatsAppHub />} />
+              </Route>
+
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'RM', 'OPERATIONS', 'CONNECTOR']} />}>
+                <Route path="/credit-report" element={<FeatureErrorBoundary feature="Credit Report"><CreditReportPage /></FeatureErrorBoundary>} />
               </Route>
 
               {/* ── Admin ── */}
