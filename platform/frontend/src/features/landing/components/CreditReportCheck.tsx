@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Input, Checkbox, App } from 'antd';
-import { Download, FileSearch, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Download, FileSearch, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 import { C, SANS } from '../theme';
 import { SectionHeading, GoldCorners } from './Royal';
@@ -120,9 +120,17 @@ const CreditReportCheck: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div style={{ color: C.ink }}>
-                  No credit history was found for this name and mobile number. Check that the name matches your PAN exactly, or{' '}
-                  <a href="#apply">apply for a loan</a> and our team will help.
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: '#FFF8E6', border: '1px solid #F1D48A', padding: '16px 18px' }}>
+                  <AlertCircle size={22} color="#9A6B00" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ color: C.ink, fontSize: 14, lineHeight: 1.6 }}>
+                    <div style={{ fontWeight: 700, color: C.navy, fontSize: 16, marginBottom: 4 }}>You do not have any credit history yet</div>
+                    The credit bureau has no loans or credit cards on record for <b>{name}</b> with this mobile number. Please check:
+                    <ul style={{ margin: '6px 0 6px 18px', padding: 0 }}>
+                      <li>your name is exactly as on your PAN card</li>
+                      <li>this is the mobile number linked to your bank accounts or loans</li>
+                    </ul>
+                    If both are correct, you can still <a href="#apply">apply for a loan</a> — our team will help you get started.
+                  </div>
                 </div>
               )}
             </div>

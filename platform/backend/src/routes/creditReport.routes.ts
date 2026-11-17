@@ -26,7 +26,7 @@ function parseIdentity(body: any) {
 }
 
 const resultMessage = (status: string) => status === 'SUCCESS' ? 'Credit report fetched'
-  : status === 'NOT_FOUND' ? 'No credit history found for this name and mobile'
+  : status === 'NOT_FOUND' ? 'No credit history is present with the credit bureau for this name and mobile number. Please check the details.'
   : 'The credit bureau could not be reached — please try again shortly';
 
 // What staff see when a pull fails, by the adapter's failure code (the public page keeps the generic message)

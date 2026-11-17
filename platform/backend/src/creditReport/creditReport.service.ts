@@ -24,6 +24,12 @@ const listFields = {
   leadId: true, requestedBy: true, requestedByName: true, requestedByRole: true, createdAt: true, expiresAt: true,
 } as const;
 
+function hasNoCreditHistory(report: Record<string, unknown>) {
+  const score = typeof report.score === 'number' && report.score > 0 ? report.score : null;
+  const count = (v: unknown) => (Array.isArray(v) ? v.length : 0);
+  return score === null && count(report.accounts) === 0 && count(report.fullAccounts) === 0;
+}
+
 export async function pullCreditReport(input: { name: string; mobile: string; leadId?: string | null }, by: Requester) {
   const identity: CrifIdentity = { fullName: input.name, mobileNumber: input.mobile, consent: true };
   const id = randomUUID();
@@ -52,6 +58,13 @@ export async function pullCreditReport(input: { name: string; mobile: string; le
       stored = buildPaidReportFromCrif(report, input.name, decodeIndividualFullReportFromCrif(raw, report, 'MOCK'));
       status = 'SUCCESS';
     }
+  }
+
+  // The bureau answered but holds nothing on this person (no score, no accounts): no credit history.
+  // Nothing is stored — an empty report would only produce a blank PDF.
+  if (status === 'SUCCESS' && stored && hasNoCreditHistory(stored)) {
+    status = 'NOT_FOUND';
+    stored = null;
   }
 
   const sealed = stored ? seal(JSON.stringify(stored), id) : null;

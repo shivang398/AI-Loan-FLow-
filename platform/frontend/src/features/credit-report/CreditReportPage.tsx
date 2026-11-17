@@ -140,7 +140,12 @@ const CreditReportPage: React.FC = () => {
       const { data } = await api.post('/credit-reports', { name: values.name, mobile: values.mobile, consent: values.consent === true, force }, { timeout: 60_000 });
       const row: CreditReportRow = data.data;
       if (row.status === 'SUCCESS') message.success(`Report fetched${row.score !== null ? ` — score ${row.score}` : ''}`);
-      else message.info(data.message);
+      else if (row.status === 'NOT_FOUND') {
+        modal.warning({
+          title: 'No credit history',
+          content: `${row.name} does not have any credit history with the credit bureau for this mobile number. Please check that the name matches the PAN exactly and that this is the mobile linked to the customer's loans or bank accounts.`,
+        });
+      } else message.info(data.message);
       form.resetFields();
       setPage(0);
       load(0);
