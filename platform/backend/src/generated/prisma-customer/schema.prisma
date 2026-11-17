@@ -203,6 +203,7 @@ model CreditReport {
   name            String   @db.VarChar(100)
   mobileLast4     String   @map("mobile_last4") @db.VarChar(4)
   mobileHash      String   @map("mobile_hash") @db.Char(64)
+  mobileEnc       String?  @map("mobile_enc") @db.VarChar(255) // full mobile, AES-256-GCM (seal.ts)
   status          String   @db.VarChar(20)
   errorCode       String?  @map("error_code") @db.VarChar(50)
   score           Int?

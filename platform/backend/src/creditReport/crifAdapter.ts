@@ -216,7 +216,7 @@ export function loadCrifConfigFromEnv(env: NodeJS.ProcessEnv = process.env): Cri
     clientId: env.CRIF_CLIENT_ID,
     apiKey: env.CRIF_API_KEY,
     workflowId: env.CRIF_WORKFLOW_ID,
-    requestTimeoutMs: Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 15_000,
+    requestTimeoutMs: Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 30_000,   // Real Money: Tenacio needed up to 30 s in the earlier live integration
     debugLogging: env.CRIF_DEBUG_LOGGING === 'true'
   };
 }
@@ -230,6 +230,14 @@ function classifyHttpFailure(status: number): CrifFailureCode {
   if (status === 400 || status === 422) return 'INVALID_PROVIDER_REQUEST';
   if (status === 429) return 'RATE_LIMITED';
   return 'PROVIDER_UNAVAILABLE';
+}
+
+/** Tenacio's "no credit data found" reply: `status: "error"` with a "no data" message (serviceError or error). */
+function isTenacioNoData(value: unknown): boolean {
+  const root = asRecord(value);
+  if (!root || root.status !== 'error') return false;
+  const message = stringValue(asRecord(root.serviceError)?.message) ?? stringValue(asRecord(root.error)?.message) ?? '';
+  return message.toLowerCase().includes('no data');
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -975,15 +983,26 @@ export class LiveCrifAdapter implements CrifDetailsCapableAdapter {
     } finally {
       clearTimeout(timer);
     }
+    // Real Money: read the body even on a non-2xx reply — Tenacio reports "no credit data" for a customer
+    // with no bureau record as status "error" / serviceStatusCode 422 (seen live in the earlier
+    // integration), which must surface as NOT_FOUND, not as a provider failure.
+    let body: unknown;
+    let bodyReadable = true;
+    try {
+      body = await response.json();
+    } catch {
+      bodyReadable = false;
+    }
+    if (isTenacioNoData(body)) {
+      this.logDiagnostic(`step=lookup httpStatus=${response.status} classifiedAs=NOT_FOUND (provider reported no data)`);
+      return { kind: 'not_found' };
+    }
     if (!response.ok) {
       const errorCode = classifyHttpFailure(response.status);
       this.logDiagnostic(`step=lookup httpStatus=${response.status} classifiedAs=${errorCode}`);
       return { kind: 'unavailable', errorCode };
     }
-    let body: unknown;
-    try {
-      body = await response.json();
-    } catch {
+    if (!bodyReadable) {
       this.logDiagnostic(`step=lookup httpStatus=${response.status} classifiedAs=PROVIDER_UNAVAILABLE`);
       return { kind: 'unavailable', errorCode: 'PROVIDER_UNAVAILABLE' };
     }

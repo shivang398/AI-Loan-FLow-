@@ -33,6 +33,15 @@ const STATUS: Record<CreditReportRow['status'], { label: string; color: string }
   UNAVAILABLE: { label: 'Bureau unavailable', color: '#DC2626' },
 };
 
+// Short reason under a failed pull (codes from the backend's CRIF adapter)
+const FAILURE_REASON: Record<string, string> = {
+  AUTH_OR_CONFIGURATION_FAILED: 'Access details rejected (API key / client ID / workflow ID)',
+  INVALID_PROVIDER_REQUEST: 'Request rejected by the bureau',
+  RATE_LIMITED: 'Bureau rate limit',
+  NETWORK_OR_TIMEOUT: 'Bureau timed out',
+  PROVIDER_UNAVAILABLE: 'Bureau returned an error',
+};
+
 // Score bands shown in the PDF (CRIF range 300-900)
 const scoreColour = (s: number) => (s >= 750 ? '#1a7f4b' : s >= 700 ? '#1656b8' : s >= 650 ? '#8f6300' : '#c0392b');
 
@@ -127,7 +136,8 @@ const CreditReportPage: React.FC = () => {
   const pull = async (values: PullForm, force = false) => {
     setPulling(true);
     try {
-      const { data } = await api.post('/credit-reports', { name: values.name, mobile: values.mobile, consent: values.consent === true, force });
+      // The bureau can take up to 30 s; allow longer than the default 30 s client timeout
+      const { data } = await api.post('/credit-reports', { name: values.name, mobile: values.mobile, consent: values.consent === true, force }, { timeout: 60_000 });
       const row: CreditReportRow = data.data;
       if (row.status === 'SUCCESS') message.success(`Report fetched${row.score !== null ? ` — score ${row.score}` : ''}`);
       else message.info(data.message);
@@ -178,6 +188,9 @@ const CreditReportPage: React.FC = () => {
       render: (s: CreditReportRow['status'], r) => (
         <span style={{ color: STATUS[s].color, fontWeight: 600, fontSize: 13 }}>
           {STATUS[s].label}{r.source === 'MOCK' && <span style={{ color: MUTED, fontWeight: 400 }}> (test data)</span>}
+          {s === 'UNAVAILABLE' && r.errorCode && (
+            <div style={{ color: MUTED, fontWeight: 400, fontSize: 12 }}>{FAILURE_REASON[r.errorCode] ?? r.errorCode}</div>
+          )}
         </span>
       ),
     },

@@ -29,6 +29,15 @@ const resultMessage = (status: string) => status === 'SUCCESS' ? 'Credit report 
   : status === 'NOT_FOUND' ? 'No credit history found for this name and mobile'
   : 'The credit bureau could not be reached — please try again shortly';
 
+// What staff see when a pull fails, by the adapter's failure code (the public page keeps the generic message)
+const FAILURE_MESSAGES: Record<string, string> = {
+  AUTH_OR_CONFIGURATION_FAILED: 'The credit bureau rejected our access details — ask the admin to check the CRIF API key, client ID and workflow ID',
+  INVALID_PROVIDER_REQUEST: 'The credit bureau rejected this request — check the name and mobile number',
+  RATE_LIMITED: 'The credit bureau is limiting requests — please try again in a few minutes',
+  NETWORK_OR_TIMEOUT: 'The credit bureau took too long to respond — please try again',
+  PROVIDER_UNAVAILABLE: 'The credit bureau returned an error — please try again shortly',
+};
+
 function sendPdf(res: Response, pdf: Buffer, fileName: string) {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -93,7 +102,9 @@ router.post('/', pullLimiter, async (req: Request, res: Response) => {
     { name: id.name, mobile: id.mobile, leadId },
     { id: req.user!.id, email: req.user!.email, role: req.user!.roles[0] ?? 'UNKNOWN', ip: req.ip },
   );
-  const message = resultMessage(report.status);
+  const message = report.status === 'UNAVAILABLE'
+    ? (FAILURE_MESSAGES[report.errorCode ?? ''] ?? resultMessage(report.status))
+    : resultMessage(report.status);
   res.status(report.status === 'UNAVAILABLE' ? 502 : 201).json(report.status === 'UNAVAILABLE' ? { success: false, message, data: report } : ok(message, report));
 });
 

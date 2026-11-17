@@ -10839,6 +10839,7 @@ export namespace Prisma {
     name: string | null
     mobileLast4: string | null
     mobileHash: string | null
+    mobileEnc: string | null
     status: string | null
     errorCode: string | null
     score: number | null
@@ -10862,6 +10863,7 @@ export namespace Prisma {
     name: string | null
     mobileLast4: string | null
     mobileHash: string | null
+    mobileEnc: string | null
     status: string | null
     errorCode: string | null
     score: number | null
@@ -10885,6 +10887,7 @@ export namespace Prisma {
     name: number
     mobileLast4: number
     mobileHash: number
+    mobileEnc: number
     status: number
     errorCode: number
     score: number
@@ -10918,6 +10921,7 @@ export namespace Prisma {
     name?: true
     mobileLast4?: true
     mobileHash?: true
+    mobileEnc?: true
     status?: true
     errorCode?: true
     score?: true
@@ -10941,6 +10945,7 @@ export namespace Prisma {
     name?: true
     mobileLast4?: true
     mobileHash?: true
+    mobileEnc?: true
     status?: true
     errorCode?: true
     score?: true
@@ -10964,6 +10969,7 @@ export namespace Prisma {
     name?: true
     mobileLast4?: true
     mobileHash?: true
+    mobileEnc?: true
     status?: true
     errorCode?: true
     score?: true
@@ -11074,6 +11080,7 @@ export namespace Prisma {
     name: string
     mobileLast4: string
     mobileHash: string
+    mobileEnc: string | null
     status: string
     errorCode: string | null
     score: number | null
@@ -11116,6 +11123,7 @@ export namespace Prisma {
     name?: boolean
     mobileLast4?: boolean
     mobileHash?: boolean
+    mobileEnc?: boolean
     status?: boolean
     errorCode?: boolean
     score?: boolean
@@ -11140,6 +11148,7 @@ export namespace Prisma {
     name?: boolean
     mobileLast4?: boolean
     mobileHash?: boolean
+    mobileEnc?: boolean
     status?: boolean
     errorCode?: boolean
     score?: boolean
@@ -11167,6 +11176,7 @@ export namespace Prisma {
       name: string
       mobileLast4: string
       mobileHash: string
+      mobileEnc: string | null
       status: string
       errorCode: string | null
       score: number | null
@@ -11556,6 +11566,7 @@ export namespace Prisma {
     readonly name: FieldRef<"CreditReport", 'String'>
     readonly mobileLast4: FieldRef<"CreditReport", 'String'>
     readonly mobileHash: FieldRef<"CreditReport", 'String'>
+    readonly mobileEnc: FieldRef<"CreditReport", 'String'>
     readonly status: FieldRef<"CreditReport", 'String'>
     readonly errorCode: FieldRef<"CreditReport", 'String'>
     readonly score: FieldRef<"CreditReport", 'Int'>
@@ -12036,6 +12047,7 @@ export namespace Prisma {
     name: 'name',
     mobileLast4: 'mobileLast4',
     mobileHash: 'mobileHash',
+    mobileEnc: 'mobileEnc',
     status: 'status',
     errorCode: 'errorCode',
     score: 'score',
@@ -13028,6 +13040,7 @@ export namespace Prisma {
     name?: StringFilter<"CreditReport"> | string
     mobileLast4?: StringFilter<"CreditReport"> | string
     mobileHash?: StringFilter<"CreditReport"> | string
+    mobileEnc?: StringNullableFilter<"CreditReport"> | string | null
     status?: StringFilter<"CreditReport"> | string
     errorCode?: StringNullableFilter<"CreditReport"> | string | null
     score?: IntNullableFilter<"CreditReport"> | number | null
@@ -13051,6 +13064,7 @@ export namespace Prisma {
     name?: SortOrder
     mobileLast4?: SortOrder
     mobileHash?: SortOrder
+    mobileEnc?: SortOrderInput | SortOrder
     status?: SortOrder
     errorCode?: SortOrderInput | SortOrder
     score?: SortOrderInput | SortOrder
@@ -13077,6 +13091,7 @@ export namespace Prisma {
     name?: StringFilter<"CreditReport"> | string
     mobileLast4?: StringFilter<"CreditReport"> | string
     mobileHash?: StringFilter<"CreditReport"> | string
+    mobileEnc?: StringNullableFilter<"CreditReport"> | string | null
     status?: StringFilter<"CreditReport"> | string
     errorCode?: StringNullableFilter<"CreditReport"> | string | null
     score?: IntNullableFilter<"CreditReport"> | number | null
@@ -13100,6 +13115,7 @@ export namespace Prisma {
     name?: SortOrder
     mobileLast4?: SortOrder
     mobileHash?: SortOrder
+    mobileEnc?: SortOrderInput | SortOrder
     status?: SortOrder
     errorCode?: SortOrderInput | SortOrder
     score?: SortOrderInput | SortOrder
@@ -13131,6 +13147,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"CreditReport"> | string
     mobileLast4?: StringWithAggregatesFilter<"CreditReport"> | string
     mobileHash?: StringWithAggregatesFilter<"CreditReport"> | string
+    mobileEnc?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
     status?: StringWithAggregatesFilter<"CreditReport"> | string
     errorCode?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
     score?: IntNullableWithAggregatesFilter<"CreditReport"> | number | null
@@ -14190,6 +14207,7 @@ export namespace Prisma {
     name: string
     mobileLast4: string
     mobileHash: string
+    mobileEnc?: string | null
     status: string
     errorCode?: string | null
     score?: number | null
@@ -14213,6 +14231,7 @@ export namespace Prisma {
     name: string
     mobileLast4: string
     mobileHash: string
+    mobileEnc?: string | null
     status: string
     errorCode?: string | null
     score?: number | null
@@ -14236,6 +14255,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobileLast4?: StringFieldUpdateOperationsInput | string
     mobileHash?: StringFieldUpdateOperationsInput | string
+    mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -14259,6 +14279,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobileLast4?: StringFieldUpdateOperationsInput | string
     mobileHash?: StringFieldUpdateOperationsInput | string
+    mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -14282,6 +14303,7 @@ export namespace Prisma {
     name: string
     mobileLast4: string
     mobileHash: string
+    mobileEnc?: string | null
     status: string
     errorCode?: string | null
     score?: number | null
@@ -14305,6 +14327,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobileLast4?: StringFieldUpdateOperationsInput | string
     mobileHash?: StringFieldUpdateOperationsInput | string
+    mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -14328,6 +14351,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobileLast4?: StringFieldUpdateOperationsInput | string
     mobileHash?: StringFieldUpdateOperationsInput | string
+    mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -15164,6 +15188,7 @@ export namespace Prisma {
     name?: SortOrder
     mobileLast4?: SortOrder
     mobileHash?: SortOrder
+    mobileEnc?: SortOrder
     status?: SortOrder
     errorCode?: SortOrder
     score?: SortOrder
@@ -15191,6 +15216,7 @@ export namespace Prisma {
     name?: SortOrder
     mobileLast4?: SortOrder
     mobileHash?: SortOrder
+    mobileEnc?: SortOrder
     status?: SortOrder
     errorCode?: SortOrder
     score?: SortOrder
@@ -15214,6 +15240,7 @@ export namespace Prisma {
     name?: SortOrder
     mobileLast4?: SortOrder
     mobileHash?: SortOrder
+    mobileEnc?: SortOrder
     status?: SortOrder
     errorCode?: SortOrder
     score?: SortOrder

@@ -81,6 +81,8 @@ export async function pullCreditReport(input: { name: string; mobile: string; le
     },
     select: listFields,
   });
+  // Status and reason only — never the customer's name, mobile or report
+  console.log(`[CreditReport] pull ${id} by ${by.role}: ${status}${errorCode ? ` (${errorCode})` : ''}`);
   return row;
 }
 
