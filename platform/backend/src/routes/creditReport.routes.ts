@@ -26,7 +26,7 @@ function parseIdentity(body: any) {
 }
 
 const resultMessage = (status: string) => status === 'SUCCESS' ? 'Credit report fetched'
-  : status === 'NOT_FOUND' ? 'No credit history is present with the credit bureau for this name and mobile number. Please check the details.'
+  : status === 'NOT_FOUND' ? 'No credit history is present.'
   : 'The credit bureau could not be reached — please try again shortly';
 
 // What staff see when a pull fails, by the adapter's failure code (the public page keeps the generic message)
@@ -138,7 +138,7 @@ export const publicCreditReportRouter = Router();
 // Per-IP cap on public pulls; the global daily cap (PUBLIC_CREDIT_REPORT_DAILY_CAP) bounds the bureau bill
 const publicPullLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000,
-  max: parseInt(process.env.PUBLIC_CREDIT_REPORT_PER_IP ?? '3', 10) || 3,
+  max: parseInt(process.env.PUBLIC_CREDIT_REPORT_PER_IP ?? '50', 10) || 50,   // offices share one IP
   message: { success: false, message: 'You have reached today\'s limit for credit report requests. Please try again tomorrow.' },
   standardHeaders: true,
   legacyHeaders: false,
