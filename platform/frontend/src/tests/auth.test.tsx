@@ -56,9 +56,7 @@ describe('Authentication & RBAC Integration', () => {
       </Provider>
     );
 
-    await waitFor(() => {
-      // Find the heading specifically to avoid sidebar match
-      expect(screen.getByRole('heading', { name: /User Management/i })).toBeInTheDocument();
-    });
-  });
+    // Staff screens are lazy-loaded, so allow time for the chunk to load
+    expect(await screen.findByRole('heading', { name: /User Management/i }, { timeout: 15000 })).toBeInTheDocument();
+  }, 20000);
 });
