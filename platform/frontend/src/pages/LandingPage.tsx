@@ -15,6 +15,7 @@ import WhatsAppFloat       from '../features/landing/components/WhatsAppFloat';
 import MobileStickyBar     from '../features/landing/components/MobileStickyBar';
 import { C } from '../features/landing/theme';
 import '../features/landing/styles/landing.css';
+import { usePageMeta } from '../shared/hooks/usePageMeta';
 
 const landingTheme = {
   token: {
@@ -39,7 +40,13 @@ const landingTheme = {
   },
 };
 
-const LandingPage: React.FC = () => (
+const LandingPage: React.FC = () => {
+  usePageMeta({
+    title: 'Real Money | Personal Loan Advisor & Free Credit Score Check, Jaipur',
+    description: 'Apply once and compare personal-loan offers from leading banks and NBFCs. Check your credit score free — it does not affect your score. No fee for borrowers.',
+    path: '/',
+  });
+  return (
   <ConfigProvider theme={landingTheme}>
     <AntdApp>
       {/* Borrowers: hero → lending network → how it works → charter → apply → loans → reviews; then channel partners; then FAQ */}
@@ -60,6 +67,7 @@ const LandingPage: React.FC = () => (
       </div>
     </AntdApp>
   </ConfigProvider>
-);
+  );
+};
 
 export default LandingPage;

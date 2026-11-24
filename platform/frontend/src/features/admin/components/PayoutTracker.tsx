@@ -4,6 +4,8 @@ import { App, Card, Row, Col, Statistic, Tag, Input, Space, Button, Modal, Form,
 import { Wallet, Search, AlertCircle, CheckCircle2, Clock, Download, Edit2, History } from 'lucide-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import apiClient from '../../../shared/services/apiClient';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import PartnerProfileDrawer from './PartnerProfileDrawer';
 import apiClient from '../../../shared/services/apiClient';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

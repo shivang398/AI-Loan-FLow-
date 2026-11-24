@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle2, Send, Paperclip, X } from 'lucide-react';
 import { RealMoneyLogoWhite } from '../shared/components/RealMoneyLogo';
+import { usePageMeta } from '../shared/hooks/usePageMeta';
 
 const NAVY  = '#0B1E3D';
 const GOLD  = '#C4993A';
@@ -25,6 +26,11 @@ interface AppForm { name: string; email: string; mobile: string; role: string; e
 const EMPTY: AppForm = { name: '', email: '', mobile: '', role: '', experience: '', message: '' };
 
 const CareersInner: React.FC = () => {
+  usePageMeta({
+    title: 'Careers at Real Money, Jaipur | Jobs & Channel Partner Programme',
+    description: 'Work with Real Money in Jaipur — loan officers, sales, operations, developers — or join as a channel partner. Apply online with your CV.',
+    path: '/careers',
+  });
   const navigate = useNavigate();
   // ?role=Channel%20Partner pre-fills the role (the landing page's "Become a partner" button)
   const [params] = useSearchParams();

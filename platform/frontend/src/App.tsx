@@ -1,5 +1,5 @@
-import React from 'react';
-import { App as AntApp, ConfigProvider } from 'antd';
+import React, { lazy, Suspense } from 'react';
+import { App as AntApp, ConfigProvider, Spin } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LandingPage from './pages/LandingPage';
@@ -8,36 +8,38 @@ import LoginPage from './pages/auth/LoginPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import DashboardLayout from './layouts/DashboardLayout';
-import DashboardOverview from './features/dashboard/components/DashboardOverview';
-import UserManagement from './features/users/components/UserManagement';
-import RegionalDashboard from './features/rm/components/RegionalDashboard';
-import ConnectorTracker from './features/rm/components/ConnectorTracker';
-import WorkflowMonitor from './features/rm/components/WorkflowMonitor';
-import OperationsDashboard from './features/operations/components/OperationsDashboard';
-import ConnectorDashboard from './features/connector/components/ConnectorDashboard';
-import EmiCalculator from './features/connector/components/EmiCalculator';
-import { BankStatementAnalyzerPage } from './features/connector/components/ConnectorTools';
-import CheckEligibility from './features/connector/components/CheckEligibility';
-import TeamMeeting from './features/team-meeting/components/TeamMeeting';
-import DocumentLibrary from './features/documents/components/DocumentLibrary';
-import CommissionDashboard from './features/commissions/components/CommissionDashboard';
-import BusinessAnalytics from './features/analytics/components/BusinessAnalytics';
-import ReportingDashboard from './features/reporting/components/ReportingDashboard';
-import ConnectorHub from './features/admin/components/ConnectorHub';
-import PayoutTracker from './features/admin/components/PayoutTracker';
-import CareerApplications from './features/admin/components/CareerApplications';
-import PoliciesPage from './features/policies/components/PoliciesPage';
-import TelecallerDashboard from './features/telecaller/components/TelecallerDashboard';
-import WhatsAppPage from './features/operations/components/WhatsAppPage';
-import WhatsAppCampaigns from './features/operations/components/WhatsAppCampaigns';
-import CreditReportPage from './features/credit-report/CreditReportPage';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
 import FeatureErrorBoundary from './shared/components/FeatureErrorBoundary';
 import TabbedPage from './shared/components/TabbedPage';
 import { ROLE_HOME } from './store/slices/authSlice';
 import './index.css';
+
+// Staff screens load only after sign-in, so the public pages stay small and fast
+const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
+const DashboardOverview = lazy(() => import('./features/dashboard/components/DashboardOverview'));
+const UserManagement = lazy(() => import('./features/users/components/UserManagement'));
+const RegionalDashboard = lazy(() => import('./features/rm/components/RegionalDashboard'));
+const ConnectorTracker = lazy(() => import('./features/rm/components/ConnectorTracker'));
+const WorkflowMonitor = lazy(() => import('./features/rm/components/WorkflowMonitor'));
+const OperationsDashboard = lazy(() => import('./features/operations/components/OperationsDashboard'));
+const ConnectorDashboard = lazy(() => import('./features/connector/components/ConnectorDashboard'));
+const EmiCalculator = lazy(() => import('./features/connector/components/EmiCalculator'));
+const BankStatementAnalyzerPage = lazy(() => import('./features/connector/components/ConnectorTools').then(m => ({ default: m.BankStatementAnalyzerPage })));
+const CheckEligibility = lazy(() => import('./features/connector/components/CheckEligibility'));
+const TeamMeeting = lazy(() => import('./features/team-meeting/components/TeamMeeting'));
+const DocumentLibrary = lazy(() => import('./features/documents/components/DocumentLibrary'));
+const CommissionDashboard = lazy(() => import('./features/commissions/components/CommissionDashboard'));
+const BusinessAnalytics = lazy(() => import('./features/analytics/components/BusinessAnalytics'));
+const ReportingDashboard = lazy(() => import('./features/reporting/components/ReportingDashboard'));
+const ConnectorHub = lazy(() => import('./features/admin/components/ConnectorHub'));
+const PayoutTracker = lazy(() => import('./features/admin/components/PayoutTracker'));
+const CareerApplications = lazy(() => import('./features/admin/components/CareerApplications'));
+const PoliciesPage = lazy(() => import('./features/policies/components/PoliciesPage'));
+const TelecallerDashboard = lazy(() => import('./features/telecaller/components/TelecallerDashboard'));
+const WhatsAppPage = lazy(() => import('./features/operations/components/WhatsAppPage'));
+const WhatsAppCampaigns = lazy(() => import('./features/operations/components/WhatsAppCampaigns'));
+const CreditReportPage = lazy(() => import('./features/credit-report/CreditReportPage'));
 
 const queryClient = new QueryClient();
 
@@ -135,6 +137,7 @@ const App: React.FC = () => {
       <ConfigProvider theme={formalTheme}>
       <AntApp>
       <BrowserRouter>
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Spin /></div>}>
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -205,6 +208,7 @@ const App: React.FC = () => {
           <Route path="/unauthorized" element={<div>Unauthorized Access</div>} />
           <Route path="*" element={<SmartRedirect />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
       </AntApp>
       </ConfigProvider>

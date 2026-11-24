@@ -10,6 +10,7 @@ import { setCredentials, setLoading, setError, ROLE_HOME, UserRole } from '../..
 import api from '../../shared/services/apiClient';
 import { RootState } from '../../store';
 import { RealMoneyMark } from '../../shared/components/RealMoneyLogo';
+import { usePageMeta } from '../../shared/hooks/usePageMeta';
 
 const NAVY = '#0B1E3D';
 const GOLD = '#C4993A';
@@ -22,6 +23,7 @@ const TRUST_STATS = [
 ];
 
 const LoginPage: React.FC = () => {
+  usePageMeta({ title: 'Staff sign in | Real Money', path: '/login' });
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);

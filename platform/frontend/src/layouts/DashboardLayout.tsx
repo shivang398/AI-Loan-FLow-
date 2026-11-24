@@ -13,6 +13,7 @@ import { logout, UserRole } from '../store/slices/authSlice';
 import { RootState } from '../store';
 import api from '../shared/services/apiClient';
 import { RealMoneyLogoWhite, RealMoneyMark } from '../shared/components/RealMoneyLogo';
+import { usePageMeta } from '../shared/hooks/usePageMeta';
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -20,6 +21,7 @@ const { Text, Title } = Typography;
 const MOBILE_BREAKPOINT = 768;
 
 const DashboardLayout: React.FC = () => {
+  usePageMeta({ title: 'Real Money | Staff platform' });
   const [collapsed, setCollapsed]             = useState(false);
   const [isMobile, setIsMobile]               = useState(window.innerWidth < MOBILE_BREAKPOINT);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
