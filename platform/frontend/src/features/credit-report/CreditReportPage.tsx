@@ -165,7 +165,7 @@ const CreditReportPage: React.FC = () => {
         });
       } else {
         message.error(err?.response?.data?.message ?? 'Could not fetch the credit report');
-        if (status === 502) load(0);
+        if (status === 422) load(0);   // a failed pull is still recorded in the list
       }
     } finally {
       setPulling(false);

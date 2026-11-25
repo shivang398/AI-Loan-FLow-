@@ -110,7 +110,8 @@ router.post('/', pullLimiter, async (req: Request, res: Response) => {
   const message = report.status === 'UNAVAILABLE'
     ? (FAILURE_MESSAGES[report.errorCode ?? ''] ?? resultMessage(report.status))
     : resultMessage(report.status);
-  res.status(report.status === 'UNAVAILABLE' ? 502 : 201).json(report.status === 'UNAVAILABLE' ? { success: false, message, data: report } : ok(message, report));
+  // 422, not 502: Cloudflare replaces a 502 from the server with its own page, hiding this message
+  res.status(report.status === 'UNAVAILABLE' ? 422 : 201).json(report.status === 'UNAVAILABLE' ? { success: false, message, data: report } : ok(message, report));
 });
 
 // GET /credit-reports — pulled reports. Admin: all, filterable by portal. Others: their own.
@@ -176,7 +177,7 @@ publicCreditReportRouter.post('/', publicPullLimiter, async (req: Request, res: 
 
   const message = resultMessage(report.status);
   if (report.status === 'UNAVAILABLE') {
-    res.status(502).json(fail(report.errorCode === 'INVALID_PROVIDER_REQUEST'
+    res.status(422).json(fail(report.errorCode === 'INVALID_PROVIDER_REQUEST'   // 422 so Cloudflare passes the message through
       ? 'We could not match these details. Please check your name (exactly as on PAN), mobile number and PAN.'
       : report.errorCode === 'UNREADABLE_REPORT'
         ? 'We received your report but could not prepare it right now. Our team will contact you shortly.'
