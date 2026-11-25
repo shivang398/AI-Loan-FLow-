@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import { ok, fail } from '../utils/response';
 import {
-  CONSENT_TEXT, MOBILE_PATTERN, PAN_PATTERN, PUBLIC_REQUESTER, exportCreditReportsCsv, findRecentPublicMatch, findRecentReport,
+  BUREAU, CONSENT_TEXT, MOBILE_PATTERN, PAN_PATTERN, PUBLIC_REQUESTER, exportCreditReportsCsv, findRecentPublicMatch, findRecentReport,
   listCreditReports, publicDailyCapReached, publicPullsEnabled, pullCreditReport, renderCreditReportPdf,
   signDownloadToken, verifyDownloadToken, type CreditReportFilters,
 } from '../creditReport/creditReport.service';
@@ -22,8 +22,9 @@ function parseIdentity(body: any) {
   if (body?.consent !== true) return { error: 'Consent is required before pulling a credit report' };
   if (name.length < 2 || name.length > 100) return { error: 'Enter the full name as on PAN' };
   if (!MOBILE_PATTERN.test(mobile)) return { error: 'Enter a valid 10-digit Indian mobile number' };
-  // PAN is optional; when given it must be a valid PAN (sent to CIBIL as panNumber)
+  // PAN is sent to CIBIL as panNumber; Tenacio's CIBIL soft pull rejects a request without it
   const pan = typeof body?.pan === 'string' ? body.pan.replace(/\s+/g, '').toUpperCase() : '';
+  if (!pan && BUREAU() === 'CIBIL') return { error: 'Enter your PAN number' };
   if (pan && !PAN_PATTERN.test(pan)) return { error: 'Enter a valid PAN (e.g. ABCDE1234F)' };
   return { name, mobile, pan: pan || null };
 }
@@ -35,7 +36,7 @@ const resultMessage = (status: string) => status === 'SUCCESS' ? 'Credit report 
 // What staff see when a pull fails, by the adapter's failure code (the public page keeps the generic message)
 const FAILURE_MESSAGES: Record<string, string> = {
   AUTH_OR_CONFIGURATION_FAILED: 'The credit bureau rejected our access details — ask the admin to check the CRIF API key, client ID and workflow ID',
-  INVALID_PROVIDER_REQUEST: 'The credit bureau rejected this request — check the name and mobile number',
+  INVALID_PROVIDER_REQUEST: 'The credit bureau rejected this request — check the name (as on PAN), mobile number and PAN',
   RATE_LIMITED: 'The credit bureau is limiting requests — please try again in a few minutes',
   NETWORK_OR_TIMEOUT: 'The credit bureau took too long to respond — please try again',
   PROVIDER_UNAVAILABLE: 'The credit bureau returned an error — please try again shortly',
@@ -173,7 +174,12 @@ publicCreditReportRouter.post('/', publicPullLimiter, async (req: Request, res: 
   }
 
   const message = resultMessage(report.status);
-  if (report.status === 'UNAVAILABLE') { res.status(502).json(fail(message)); return; }
+  if (report.status === 'UNAVAILABLE') {
+    res.status(502).json(fail(report.errorCode === 'INVALID_PROVIDER_REQUEST'
+      ? 'We could not match these details. Please check your name (exactly as on PAN), mobile number and PAN.'
+      : message));
+    return;
+  }
   res.status(201).json(ok(message, {
     id: report.id,
     status: report.status,

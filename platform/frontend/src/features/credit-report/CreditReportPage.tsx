@@ -36,7 +36,7 @@ const STATUS: Record<CreditReportRow['status'], { label: string; color: string }
 // Short reason under a failed pull (codes from the backend's bureau adapter)
 const FAILURE_REASON: Record<string, string> = {
   AUTH_OR_CONFIGURATION_FAILED: 'Access details rejected (API key / client ID / workflow ID)',
-  INVALID_PROVIDER_REQUEST: 'Request rejected by the bureau',
+  INVALID_PROVIDER_REQUEST: 'Details rejected by the bureau (check name, mobile, PAN)',
   RATE_LIMITED: 'Bureau rate limit',
   NETWORK_OR_TIMEOUT: 'Bureau timed out',
   PROVIDER_UNAVAILABLE: 'Bureau returned an error',
@@ -236,7 +236,7 @@ const CreditReportPage: React.FC = () => {
             >
               <Input placeholder="10-digit mobile" inputMode="numeric" prefix={<span style={{ color: MUTED }}>+91</span>} autoComplete="off" />
             </Form.Item>
-            <Form.Item name="pan" label="PAN number (optional)" normalize={(v: string) => (v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)} rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}>
+            <Form.Item name="pan" label="PAN number" normalize={(v: string) => (v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)} rules={[{ required: true, message: 'Enter your PAN number' }, { pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}>
               <Input placeholder="ABCDE1234F" maxLength={10} autoComplete="off" style={{ textTransform: 'uppercase' }} />
             </Form.Item>
           </div>

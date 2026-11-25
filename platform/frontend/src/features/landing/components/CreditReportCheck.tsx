@@ -78,7 +78,7 @@ const CreditReportCheck: React.FC = () => {
         >
           <Input size="large" placeholder="10-digit mobile" inputMode="numeric" prefix={<span style={{ color: C.muted }}>+91</span>} autoComplete="tel-national" />
         </Form.Item>
-        <Form.Item name="pan" label="PAN number (optional)" style={{ marginBottom: 14 }} normalize={(v: string) => (v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)} rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}>
+        <Form.Item name="pan" label="PAN number" style={{ marginBottom: 14 }} normalize={(v: string) => (v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)} rules={[{ required: true, message: 'Enter your PAN number' }, { pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}>
           <Input size="large" placeholder="ABCDE1234F" maxLength={10} autoComplete="off" style={{ textTransform: 'uppercase' }} />
         </Form.Item>
         <Form.Item

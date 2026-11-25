@@ -100,6 +100,9 @@ export async function pullCibil(identity: CibilIdentity, fetchImpl: typeof fetch
     log(`step=lookup httpStatus=${response.status} classifiedAs=NOT_FOUND (provider reported no data)`);
     return { status: 'NOT_FOUND' };
   }
+  if (message !== null || !response.ok) {
+    console.warn(`[CIBIL] provider replied HTTP ${response.status}: ${(message || 'no message').slice(0, 120)}`);
+  }
   if (!response.ok) {
     const errorCode = classifyHttpFailure(response.status);
     log(`step=lookup httpStatus=${response.status} classifiedAs=${errorCode}`);
