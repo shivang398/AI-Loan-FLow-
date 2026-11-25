@@ -4,7 +4,7 @@
 //   docker exec -w /app realmoney-prod-backend-1 node shape.js <credit report id>
 const { PrismaClient } = require('./dist/generated/prisma-customer');
 const { unsealFromString } = require('./dist/creditReport/seal.js');
-const SENSITIVE = /^(forename|surname|middlename|firstname|lastname|fullname|name|number|accountnumber|email|emailaddress|streetaddress|street|address|addressline\d*|line\d|city|postalcode|pincode|panid|pan|idnumber|uid|telephone|phonenumber|borrowerkey|referencekey|responsekey|serialnumber|creditorname|subscribername|employer|statement|value|riskscore|score|id|idvalue|identifier|identificationnumber|voterid|passportnumber|licensenumber)$/i;
+const SENSITIVE = /^(forename|surname|middlename|firstname|lastname|fullname|name|number|accountnumber|email|emailaddress|streetaddress|street|address|addressline\d*|line\d|city|postalcode|pincode|panid|pan|idnumber|uid|telephone|phonenumber|borrowerkey|referencekey|responsekey|serialnumber|creditorname|subscribername|employer|statement|value|riskscore|score|id|idvalue|identifier|identificationnumber|voterid|passportnumber|licensenumber|day|month|year)$/i;
 const mask = (k, v) => {
   if (typeof v === 'number') return typeof k === 'string' && SENSITIVE.test(k) ? '<n>' : (Number.isInteger(v) && Math.abs(v) < 1000 ? v : '<number>');
   if (typeof v === 'boolean' || v === null) return v;

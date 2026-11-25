@@ -6,7 +6,8 @@ import { renderIndividualReportPdf, type IndividualReportInput } from './pdf/ind
 import { mockCrifResponse } from './mockCrifResponse';
 import { describeShape, pullCibil } from './cibilAdapter';
 import { buildPaidReportFromCibil, cibilCcrRoot } from './individualFullReportFromCibil';
-import { mockCibilResponse } from './mockCibilResponse';
+import { mockTrueLinkResponse } from './mockTrueLinkResponse';
+import { buildPaidReportFromTrueLink, trueLinkOf } from './individualFullReportFromTrueLink';
 import { keyedHash, seal, sealToString, sha256, unseal, unsealFromString } from './seal';
 
 /** RBI: credit information obtained from a bureau may be kept for at most 180 days. */
@@ -38,6 +39,42 @@ function hasNoCreditHistory(report: Record<string, unknown>) {
   return score === null && count(report.accounts) === 0 && count(report.fullAccounts) === 0;
 }
 
+/** Tenacio's CIBIL reply in a layout we read: TrueLink (what Tenacio sends) or the older CCR layout. */
+const readableCibil = (raw: unknown) => trueLinkOf(raw) !== null || Object.keys(cibilCcrRoot(raw)).length > 0;
+
+function buildCibilReport(raw: unknown, typedName: string, source: 'LIVE' | 'MOCK') {
+  return trueLinkOf(raw) ? buildPaidReportFromTrueLink(raw, typedName, source) : buildPaidReportFromCibil(raw, typedName, source);
+}
+
+/**
+ * Re-reads a pull's saved bureau reply (raw_enc) and stores the report from it — for pulls whose reply
+ * could not be read at the time (UNREADABLE_REPORT). No new bureau call, so no new charge.
+ */
+export async function rebuildFromSavedReply(id: string) {
+  const row = await customerDb.creditReport.findUnique({ where: { id } });
+  if (!row) throw Object.assign(new Error('Report not found'), { status: 404 });
+  if (!row.rawEnc) throw Object.assign(new Error('No saved bureau reply for this pull'), { status: 409 });
+  const plain = unsealFromString(row.rawEnc, `${id}:raw`);
+  if (plain === null) throw Object.assign(new Error('Saved reply could not be decrypted'), { status: 409 });
+  const raw = JSON.parse(plain);
+  if (!readableCibil(raw)) return { id, status: row.status, errorCode: row.errorCode, rebuilt: false };
+
+  let stored: Record<string, unknown> | null = buildCibilReport(raw, row.name, row.source === 'LIVE' ? 'LIVE' : 'MOCK');
+  let status: 'SUCCESS' | 'NOT_FOUND' = 'SUCCESS';
+  if (hasNoCreditHistory(stored)) { status = 'NOT_FOUND'; stored = null; }
+  const sealed = stored ? seal(JSON.stringify(stored), id) : null;
+  await customerDb.creditReport.update({
+    where: { id },
+    data: {
+      status, errorCode: null,
+      score: typeof stored?.score === 'number' ? stored.score : null,
+      reportCipher: sealed?.cipherText ?? null, reportIv: sealed?.iv ?? null, reportTag: sealed?.tag ?? null,
+    },
+  });
+  console.log(`[CreditReport] rebuilt ${id} from saved reply: ${status}`);
+  return { id, status, rebuilt: true };
+}
+
 export async function pullCreditReport(input: { name: string; mobile: string; pan?: string | null; leadId?: string | null }, by: Requester) {
   const identity: CrifIdentity = { fullName: input.name, mobileNumber: input.mobile, consent: true };
   const id = randomUUID();
@@ -51,15 +88,15 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
   if (BUREAU() === 'CIBIL') {
     const result = LIVE()
       ? await pullCibil({ name: input.name, mobile: input.mobile, pan: input.pan })
-      : { status: 'SUCCESS' as const, raw: mockCibilResponse(input.name, input.mobile, input.pan) };
-    if (result.status === 'SUCCESS' && Object.keys(cibilCcrRoot(result.raw)).length === 0) {
+      : { status: 'SUCCESS' as const, raw: mockTrueLinkResponse(input.name, input.mobile, input.pan) };
+    if (result.status === 'SUCCESS' && !readableCibil(result.raw)) {
       // A reply that is not in the layout we read must never be shown as "no credit history"
       raw = result.raw;
       errorCode = 'UNREADABLE_REPORT';
       console.warn(`[CIBIL] reply not in the expected layout; keys: ${describeShape(result.raw).join(',').slice(0, 4000)}`);
     } else if (result.status === 'SUCCESS') {
       raw = result.raw;
-      stored = buildPaidReportFromCibil(result.raw, input.name, LIVE() ? 'LIVE' : 'MOCK');
+      stored = buildCibilReport(result.raw, input.name, LIVE() ? 'LIVE' : 'MOCK');
       status = 'SUCCESS';
     } else if (result.status === 'NOT_FOUND') {
       status = 'NOT_FOUND';
