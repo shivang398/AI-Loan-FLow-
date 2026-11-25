@@ -226,10 +226,7 @@ export function decodeTrueLink(raw: unknown, source: 'LIVE' | 'MOCK'): { full: I
   const extras: RecordentExtras = {
     scoreType: text(b, 'CreditScore.CreditScoreModel.symbol'),
     scoreVersion: null,
-    scoreReasons: list(get(b, 'CreditScore.CreditScoreFactor')).flatMap((f) => {
-      const reason = (Array.isArray(f.FactorText) ? f.FactorText : [f.FactorText]).find((x): x is string => typeof x === 'string' && x.trim() !== '');
-      return reason ? [{ label: `Reason ${text(f, 'bureauCode') ?? ''}`.trim(), value: reason.trim() }] : [];
-    }),
+    scoreReasons: [],   // not printed in the report
     enquirySummary: [],
     otherKeyIndicators: indicators,
     recentActivities: [],
