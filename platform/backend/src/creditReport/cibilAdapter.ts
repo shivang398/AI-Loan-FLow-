@@ -9,7 +9,8 @@ import type { CrifFailureCode } from './crifAdapter';
  *
  * Tenacio returns the report in the CCR layout (`CCRResponse.CIRReportDataLst[0].CIRReportData`), the
  * same layout `decodeIndividualFullReport` reads — see individualFullReportFromCibil.ts.
- * A customer with no bureau record comes back as `status: "error"` with a "no data" message.
+ * A customer with no bureau record comes back as `status: "error"` with a message such as
+ * "No credit history found for the provided details." (seen live, HTTP 200) or "no data".
  */
 
 export interface CibilIdentity { name: string; mobile: string; pan?: string | null }
@@ -31,6 +32,9 @@ export function loadCibilConfigFromEnv(env: NodeJS.ProcessEnv = process.env) {
     debug: env.CRIF_DEBUG_LOGGING === 'true' || env.CIBIL_DEBUG_LOGGING === 'true',
   };
 }
+
+/** Tenacio's wording for "this person has no bureau record". */
+export const NO_HISTORY_MESSAGE = /no (credit )?(data|history|record)|not found|no hit/i;
 
 const isBag = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -96,7 +100,7 @@ export async function pullCibil(identity: CibilIdentity, fetchImpl: typeof fetch
   try { body = await response.json(); } catch { /* handled below */ }
 
   const message = errorMessage(body);
-  if (message !== null && message.toLowerCase().includes('no data')) {
+  if (message !== null && NO_HISTORY_MESSAGE.test(message)) {
     log(`step=lookup httpStatus=${response.status} classifiedAs=NOT_FOUND (provider reported no data)`);
     return { status: 'NOT_FOUND' };
   }

@@ -237,7 +237,7 @@ function isTenacioNoData(value: unknown): boolean {
   const root = asRecord(value);
   if (!root || root.status !== 'error') return false;
   const message = stringValue(asRecord(root.serviceError)?.message) ?? stringValue(asRecord(root.error)?.message) ?? '';
-  return message.toLowerCase().includes('no data');
+  return /no (credit )?(data|history|record)|not found|no hit/i.test(message);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
