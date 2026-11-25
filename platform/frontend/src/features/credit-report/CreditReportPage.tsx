@@ -36,6 +36,7 @@ const STATUS: Record<CreditReportRow['status'], { label: string; color: string }
 // Short reason under a failed pull (codes from the backend's bureau adapter)
 const FAILURE_REASON: Record<string, string> = {
   AUTH_OR_CONFIGURATION_FAILED: 'Access details rejected (API key / client ID / workflow ID)',
+  UNREADABLE_REPORT: 'Report received but not readable — saved, do not pull again',
   INVALID_PROVIDER_REQUEST: 'Details rejected by the bureau (check name, mobile, PAN)',
   RATE_LIMITED: 'Bureau rate limit',
   NETWORK_OR_TIMEOUT: 'Bureau timed out',

@@ -205,6 +205,7 @@ model CreditReport {
   mobileHash      String   @map("mobile_hash") @db.Char(64)
   mobileEnc       String?  @map("mobile_enc") @db.VarChar(255)   // full mobile, AES-256-GCM (seal.ts)
   panHash         String?  @map("pan_hash") @db.Char(64)         // keyed hash of the PAN sent (seal.ts keyedHash); the PAN itself is not stored
+  rawEnc          String?  @map("raw_enc") @db.LongText          // the bureau's reply, AES-256-GCM (seal.ts) — re-read without a new paid pull; same 180-day deletion
   status          String   @db.VarChar(20)
   errorCode       String?  @map("error_code") @db.VarChar(50)
   score           Int?

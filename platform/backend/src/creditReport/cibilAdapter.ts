@@ -51,7 +51,7 @@ function errorMessage(body: unknown): string | null {
 
 /** Key paths only (no values), so the first live replies show the layout without exposing customer data. */
 export function describeShape(node: unknown, prefix = '', depth = 0, out: string[] = []): string[] {
-  if (depth > 4 || out.length > 80) return out;
+  if (depth > 8 || out.length > 200) return out;
   if (Array.isArray(node)) {
     out.push(`${prefix}[${node.length}]`);
     if (node.length > 0) describeShape(node[0], `${prefix}[0]`, depth + 1, out);
@@ -98,7 +98,7 @@ export async function pullCibil(identity: CibilIdentity, fetchImpl: typeof fetch
 
   const message = errorMessage(body);
   if (message !== null && NO_HISTORY_MESSAGE.test(message)) {
-    log(`step=lookup httpStatus=${response.status} classifiedAs=NOT_FOUND (provider reported no data)`);
+    console.info(`[CIBIL] provider reported no history (HTTP ${response.status}): ${message.slice(0, 120)}`);
     return { status: 'NOT_FOUND' };
   }
   if (message !== null || !response.ok) {

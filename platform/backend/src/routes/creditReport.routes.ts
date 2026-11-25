@@ -40,6 +40,7 @@ const FAILURE_MESSAGES: Record<string, string> = {
   RATE_LIMITED: 'The credit bureau is limiting requests — please try again in a few minutes',
   NETWORK_OR_TIMEOUT: 'The credit bureau took too long to respond — please try again',
   PROVIDER_UNAVAILABLE: 'The credit bureau returned an error — please try again shortly',
+  UNREADABLE_REPORT: 'The bureau sent a report we could not read — it has been saved; ask the admin before pulling again (each pull is charged)',
 };
 
 function sendPdf(res: Response, pdf: Buffer, fileName: string) {
@@ -177,7 +178,9 @@ publicCreditReportRouter.post('/', publicPullLimiter, async (req: Request, res: 
   if (report.status === 'UNAVAILABLE') {
     res.status(502).json(fail(report.errorCode === 'INVALID_PROVIDER_REQUEST'
       ? 'We could not match these details. Please check your name (exactly as on PAN), mobile number and PAN.'
-      : message));
+      : report.errorCode === 'UNREADABLE_REPORT'
+        ? 'We received your report but could not prepare it right now. Our team will contact you shortly.'
+        : message));
     return;
   }
   res.status(201).json(ok(message, {

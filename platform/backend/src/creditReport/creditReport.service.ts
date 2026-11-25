@@ -4,8 +4,8 @@ import { createCrifAdapter, hasCrifDetails, loadCrifConfigFromEnv, normalizeCrif
 import { buildPaidReportFromCrif, decodeIndividualFullReportFromCrif } from './individualFullReportFromCrif';
 import { renderIndividualReportPdf, type IndividualReportInput } from './pdf/individualReportPdf';
 import { mockCrifResponse } from './mockCrifResponse';
-import { pullCibil } from './cibilAdapter';
-import { buildPaidReportFromCibil } from './individualFullReportFromCibil';
+import { describeShape, pullCibil } from './cibilAdapter';
+import { buildPaidReportFromCibil, cibilCcrRoot } from './individualFullReportFromCibil';
 import { mockCibilResponse } from './mockCibilResponse';
 import { keyedHash, seal, sealToString, sha256, unseal, unsealFromString } from './seal';
 
@@ -46,12 +46,19 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
   let status: 'SUCCESS' | 'NOT_FOUND' | 'UNAVAILABLE' = 'UNAVAILABLE';
   let errorCode: string | null = null;
   let stored: Record<string, unknown> | null = null;
+  let raw: unknown = null;   // the bureau's reply, kept encrypted so it can be re-read later
 
   if (BUREAU() === 'CIBIL') {
     const result = LIVE()
       ? await pullCibil({ name: input.name, mobile: input.mobile, pan: input.pan })
       : { status: 'SUCCESS' as const, raw: mockCibilResponse(input.name, input.mobile, input.pan) };
-    if (result.status === 'SUCCESS') {
+    if (result.status === 'SUCCESS' && Object.keys(cibilCcrRoot(result.raw)).length === 0) {
+      // A reply that is not in the layout we read must never be shown as "no credit history"
+      raw = result.raw;
+      errorCode = 'UNREADABLE_REPORT';
+      console.warn(`[CIBIL] reply not in the expected layout; keys: ${describeShape(result.raw).join(',').slice(0, 4000)}`);
+    } else if (result.status === 'SUCCESS') {
+      raw = result.raw;
       stored = buildPaidReportFromCibil(result.raw, input.name, LIVE() ? 'LIVE' : 'MOCK');
       status = 'SUCCESS';
     } else if (result.status === 'NOT_FOUND') {
@@ -96,6 +103,7 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
       mobileHash: sha256(input.mobile),
       mobileEnc: sealToString(input.mobile, `${id}:mobile`),
       panHash: input.pan ? keyedHash(input.pan, 'pan') : null,
+      rawEnc: raw !== null ? sealToString(JSON.stringify(raw), `${id}:raw`) : null,
       status,
       errorCode,
       score: typeof stored?.score === 'number' ? stored.score : null,

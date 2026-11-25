@@ -10841,6 +10841,7 @@ export namespace Prisma {
     mobileHash: string | null
     mobileEnc: string | null
     panHash: string | null
+    rawEnc: string | null
     status: string | null
     errorCode: string | null
     score: number | null
@@ -10866,6 +10867,7 @@ export namespace Prisma {
     mobileHash: string | null
     mobileEnc: string | null
     panHash: string | null
+    rawEnc: string | null
     status: string | null
     errorCode: string | null
     score: number | null
@@ -10891,6 +10893,7 @@ export namespace Prisma {
     mobileHash: number
     mobileEnc: number
     panHash: number
+    rawEnc: number
     status: number
     errorCode: number
     score: number
@@ -10926,6 +10929,7 @@ export namespace Prisma {
     mobileHash?: true
     mobileEnc?: true
     panHash?: true
+    rawEnc?: true
     status?: true
     errorCode?: true
     score?: true
@@ -10951,6 +10955,7 @@ export namespace Prisma {
     mobileHash?: true
     mobileEnc?: true
     panHash?: true
+    rawEnc?: true
     status?: true
     errorCode?: true
     score?: true
@@ -10976,6 +10981,7 @@ export namespace Prisma {
     mobileHash?: true
     mobileEnc?: true
     panHash?: true
+    rawEnc?: true
     status?: true
     errorCode?: true
     score?: true
@@ -11088,6 +11094,7 @@ export namespace Prisma {
     mobileHash: string
     mobileEnc: string | null
     panHash: string | null
+    rawEnc: string | null
     status: string
     errorCode: string | null
     score: number | null
@@ -11132,6 +11139,7 @@ export namespace Prisma {
     mobileHash?: boolean
     mobileEnc?: boolean
     panHash?: boolean
+    rawEnc?: boolean
     status?: boolean
     errorCode?: boolean
     score?: boolean
@@ -11158,6 +11166,7 @@ export namespace Prisma {
     mobileHash?: boolean
     mobileEnc?: boolean
     panHash?: boolean
+    rawEnc?: boolean
     status?: boolean
     errorCode?: boolean
     score?: boolean
@@ -11187,6 +11196,7 @@ export namespace Prisma {
       mobileHash: string
       mobileEnc: string | null
       panHash: string | null
+      rawEnc: string | null
       status: string
       errorCode: string | null
       score: number | null
@@ -11578,6 +11588,7 @@ export namespace Prisma {
     readonly mobileHash: FieldRef<"CreditReport", 'String'>
     readonly mobileEnc: FieldRef<"CreditReport", 'String'>
     readonly panHash: FieldRef<"CreditReport", 'String'>
+    readonly rawEnc: FieldRef<"CreditReport", 'String'>
     readonly status: FieldRef<"CreditReport", 'String'>
     readonly errorCode: FieldRef<"CreditReport", 'String'>
     readonly score: FieldRef<"CreditReport", 'Int'>
@@ -12060,6 +12071,7 @@ export namespace Prisma {
     mobileHash: 'mobileHash',
     mobileEnc: 'mobileEnc',
     panHash: 'panHash',
+    rawEnc: 'rawEnc',
     status: 'status',
     errorCode: 'errorCode',
     score: 'score',
@@ -13054,6 +13066,7 @@ export namespace Prisma {
     mobileHash?: StringFilter<"CreditReport"> | string
     mobileEnc?: StringNullableFilter<"CreditReport"> | string | null
     panHash?: StringNullableFilter<"CreditReport"> | string | null
+    rawEnc?: StringNullableFilter<"CreditReport"> | string | null
     status?: StringFilter<"CreditReport"> | string
     errorCode?: StringNullableFilter<"CreditReport"> | string | null
     score?: IntNullableFilter<"CreditReport"> | number | null
@@ -13079,6 +13092,7 @@ export namespace Prisma {
     mobileHash?: SortOrder
     mobileEnc?: SortOrderInput | SortOrder
     panHash?: SortOrderInput | SortOrder
+    rawEnc?: SortOrderInput | SortOrder
     status?: SortOrder
     errorCode?: SortOrderInput | SortOrder
     score?: SortOrderInput | SortOrder
@@ -13107,6 +13121,7 @@ export namespace Prisma {
     mobileHash?: StringFilter<"CreditReport"> | string
     mobileEnc?: StringNullableFilter<"CreditReport"> | string | null
     panHash?: StringNullableFilter<"CreditReport"> | string | null
+    rawEnc?: StringNullableFilter<"CreditReport"> | string | null
     status?: StringFilter<"CreditReport"> | string
     errorCode?: StringNullableFilter<"CreditReport"> | string | null
     score?: IntNullableFilter<"CreditReport"> | number | null
@@ -13132,6 +13147,7 @@ export namespace Prisma {
     mobileHash?: SortOrder
     mobileEnc?: SortOrderInput | SortOrder
     panHash?: SortOrderInput | SortOrder
+    rawEnc?: SortOrderInput | SortOrder
     status?: SortOrder
     errorCode?: SortOrderInput | SortOrder
     score?: SortOrderInput | SortOrder
@@ -13165,6 +13181,7 @@ export namespace Prisma {
     mobileHash?: StringWithAggregatesFilter<"CreditReport"> | string
     mobileEnc?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
     panHash?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
+    rawEnc?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
     status?: StringWithAggregatesFilter<"CreditReport"> | string
     errorCode?: StringNullableWithAggregatesFilter<"CreditReport"> | string | null
     score?: IntNullableWithAggregatesFilter<"CreditReport"> | number | null
@@ -14226,6 +14243,7 @@ export namespace Prisma {
     mobileHash: string
     mobileEnc?: string | null
     panHash?: string | null
+    rawEnc?: string | null
     status: string
     errorCode?: string | null
     score?: number | null
@@ -14251,6 +14269,7 @@ export namespace Prisma {
     mobileHash: string
     mobileEnc?: string | null
     panHash?: string | null
+    rawEnc?: string | null
     status: string
     errorCode?: string | null
     score?: number | null
@@ -14276,6 +14295,7 @@ export namespace Prisma {
     mobileHash?: StringFieldUpdateOperationsInput | string
     mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     panHash?: NullableStringFieldUpdateOperationsInput | string | null
+    rawEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -14301,6 +14321,7 @@ export namespace Prisma {
     mobileHash?: StringFieldUpdateOperationsInput | string
     mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     panHash?: NullableStringFieldUpdateOperationsInput | string | null
+    rawEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -14326,6 +14347,7 @@ export namespace Prisma {
     mobileHash: string
     mobileEnc?: string | null
     panHash?: string | null
+    rawEnc?: string | null
     status: string
     errorCode?: string | null
     score?: number | null
@@ -14351,6 +14373,7 @@ export namespace Prisma {
     mobileHash?: StringFieldUpdateOperationsInput | string
     mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     panHash?: NullableStringFieldUpdateOperationsInput | string | null
+    rawEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -14376,6 +14399,7 @@ export namespace Prisma {
     mobileHash?: StringFieldUpdateOperationsInput | string
     mobileEnc?: NullableStringFieldUpdateOperationsInput | string | null
     panHash?: NullableStringFieldUpdateOperationsInput | string | null
+    rawEnc?: NullableStringFieldUpdateOperationsInput | string | null
     status?: StringFieldUpdateOperationsInput | string
     errorCode?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
@@ -15214,6 +15238,7 @@ export namespace Prisma {
     mobileHash?: SortOrder
     mobileEnc?: SortOrder
     panHash?: SortOrder
+    rawEnc?: SortOrder
     status?: SortOrder
     errorCode?: SortOrder
     score?: SortOrder
@@ -15243,6 +15268,7 @@ export namespace Prisma {
     mobileHash?: SortOrder
     mobileEnc?: SortOrder
     panHash?: SortOrder
+    rawEnc?: SortOrder
     status?: SortOrder
     errorCode?: SortOrder
     score?: SortOrder
@@ -15268,6 +15294,7 @@ export namespace Prisma {
     mobileHash?: SortOrder
     mobileEnc?: SortOrder
     panHash?: SortOrder
+    rawEnc?: SortOrder
     status?: SortOrder
     errorCode?: SortOrder
     score?: SortOrder

@@ -274,6 +274,7 @@ exports.Prisma.CreditReportScalarFieldEnum = {
   mobileHash: 'mobileHash',
   mobileEnc: 'mobileEnc',
   panHash: 'panHash',
+  rawEnc: 'rawEnc',
   status: 'status',
   errorCode: 'errorCode',
   score: 'score',
