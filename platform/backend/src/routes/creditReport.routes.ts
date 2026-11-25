@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireRoles } from '../middleware/role.middleware';
 import { ok, fail } from '../utils/response';
 import {
-  CONSENT_TEXT, MOBILE_PATTERN, PUBLIC_REQUESTER, exportCreditReportsCsv, findRecentPublicMatch, findRecentReport,
+  CONSENT_TEXT, MOBILE_PATTERN, PAN_PATTERN, PUBLIC_REQUESTER, exportCreditReportsCsv, findRecentPublicMatch, findRecentReport,
   listCreditReports, publicDailyCapReached, publicPullsEnabled, pullCreditReport, renderCreditReportPdf,
   signDownloadToken, verifyDownloadToken, type CreditReportFilters,
 } from '../creditReport/creditReport.service';
@@ -22,7 +22,10 @@ function parseIdentity(body: any) {
   if (body?.consent !== true) return { error: 'Consent is required before pulling a credit report' };
   if (name.length < 2 || name.length > 100) return { error: 'Enter the full name as on PAN' };
   if (!MOBILE_PATTERN.test(mobile)) return { error: 'Enter a valid 10-digit Indian mobile number' };
-  return { name, mobile };
+  // PAN is optional; when given it must be a valid PAN (sent to CIBIL as panNumber)
+  const pan = typeof body?.pan === 'string' ? body.pan.replace(/\s+/g, '').toUpperCase() : '';
+  if (pan && !PAN_PATTERN.test(pan)) return { error: 'Enter a valid PAN (e.g. ABCDE1234F)' };
+  return { name, mobile, pan: pan || null };
 }
 
 const resultMessage = (status: string) => status === 'SUCCESS' ? 'Credit report fetched'
@@ -99,7 +102,7 @@ router.post('/', pullLimiter, async (req: Request, res: Response) => {
   }
 
   const report = await pullCreditReport(
-    { name: id.name, mobile: id.mobile, leadId },
+    { name: id.name, mobile: id.mobile, pan: id.pan, leadId },
     { id: req.user!.id, email: req.user!.email, role: req.user!.roles[0] ?? 'UNKNOWN', ip: req.ip },
   );
   const message = report.status === 'UNAVAILABLE'
@@ -166,7 +169,7 @@ publicCreditReportRouter.post('/', publicPullLimiter, async (req: Request, res: 
       res.status(503).json(fail('Credit report requests are busy right now. Please try again later or contact us on WhatsApp.'));
       return;
     }
-    report = await pullCreditReport({ name: id.name, mobile: id.mobile }, { ...PUBLIC_REQUESTER, ip: req.ip });
+    report = await pullCreditReport({ name: id.name, mobile: id.mobile, pan: id.pan }, { ...PUBLIC_REQUESTER, ip: req.ip });
   }
 
   const message = resultMessage(report.status);

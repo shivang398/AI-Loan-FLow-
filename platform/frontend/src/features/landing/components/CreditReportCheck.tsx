@@ -5,14 +5,14 @@ import axios from 'axios';
 import { C, DISPLAY, SANS } from '../theme';
 import { GoldCorners } from './Royal';
 
-interface CheckForm { name: string; mobile: string; consent: boolean }
+interface CheckForm { name: string; mobile: string; pan?: string; consent: boolean }
 interface Result { id: string; status: 'SUCCESS' | 'NOT_FOUND'; score: number | null; downloadToken: string | null }
 
 const scoreBand = (s: number) =>
   s >= 750 ? { label: 'Excellent', color: '#1a7f4b' } : s >= 700 ? { label: 'Good', color: '#1656b8' }
   : s >= 650 ? { label: 'Average', color: '#8f6300' } : { label: 'Needs work', color: '#c0392b' };
 
-/** Landing-page hero card: a visitor fetches their own CRIF report (soft pull — does not affect the score). */
+/** Landing-page hero card: a visitor fetches their own CIBIL report (soft pull — does not affect the score). */
 const CreditReportCheck: React.FC = () => {
   const { message } = App.useApp();
   const [form] = Form.useForm<CheckForm>();
@@ -50,7 +50,7 @@ const CreditReportCheck: React.FC = () => {
     setResult(null);
     try {
       // The bureau can take up to 30 s
-      const { data } = await axios.post('/api/public/credit-report', { name: v.name, mobile: v.mobile, consent: v.consent === true }, { timeout: 60_000 });
+      const { data } = await axios.post('/api/public/credit-report', { name: v.name, mobile: v.mobile, pan: v.pan || undefined, consent: v.consent === true }, { timeout: 60_000 });
       setResult(data.data);
       setName(v.name);
       if (data.data.status === 'SUCCESS') download(data.data);
@@ -65,7 +65,7 @@ const CreditReportCheck: React.FC = () => {
     <div id="credit-report" style={{ position: 'relative', background: C.ivory, padding: 'clamp(26px, 3vw, 36px)', borderTop: `3px solid ${C.gold}`, boxShadow: '0 30px 70px rgba(0,0,0,0.35)', scrollMarginTop: 90 }}>
       <GoldCorners inset={8} size={14} />
       <h2 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 30, color: C.navy, margin: 0, lineHeight: 1.15 }}>Check your credit score</h2>
-      <p style={{ fontFamily: SANS, fontSize: 14, color: C.muted, margin: '6px 0 20px' }}>Free CRIF report · soft check, does not affect your score</p>
+      <p style={{ fontFamily: SANS, fontSize: 14, color: C.muted, margin: '6px 0 20px' }}>Free CIBIL report · soft check, does not affect your score</p>
 
       <Form<CheckForm> form={form} layout="vertical" onFinish={submit} requiredMark={false} style={{ fontFamily: SANS }}>
         <Form.Item name="name" label="Full name (as on PAN)" rules={[{ required: true, min: 2, message: 'Enter your full name' }]} style={{ marginBottom: 14 }}>
@@ -77,6 +77,9 @@ const CreditReportCheck: React.FC = () => {
           rules={[{ required: true, pattern: /^[6-9]\d{9}$/, message: 'Enter a valid 10-digit mobile number' }]}
         >
           <Input size="large" placeholder="10-digit mobile" inputMode="numeric" prefix={<span style={{ color: C.muted }}>+91</span>} autoComplete="tel-national" />
+        </Form.Item>
+        <Form.Item name="pan" label="PAN number (optional)" style={{ marginBottom: 14 }} normalize={(v: string) => (v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)} rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}>
+          <Input size="large" placeholder="ABCDE1234F" maxLength={10} autoComplete="off" style={{ textTransform: 'uppercase' }} />
         </Form.Item>
         <Form.Item
           name="consent" valuePropName="checked" style={{ marginBottom: 18 }}

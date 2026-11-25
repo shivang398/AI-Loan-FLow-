@@ -4,6 +4,9 @@ import { createCrifAdapter, hasCrifDetails, loadCrifConfigFromEnv, normalizeCrif
 import { buildPaidReportFromCrif, decodeIndividualFullReportFromCrif } from './individualFullReportFromCrif';
 import { renderIndividualReportPdf, type IndividualReportInput } from './pdf/individualReportPdf';
 import { mockCrifResponse } from './mockCrifResponse';
+import { pullCibil } from './cibilAdapter';
+import { buildPaidReportFromCibil } from './individualFullReportFromCibil';
+import { mockCibilResponse } from './mockCibilResponse';
 import { seal, sealToString, sha256, unseal, unsealFromString } from './seal';
 
 /** RBI: credit information obtained from a bureau may be kept for at most 180 days. */
@@ -19,6 +22,11 @@ export interface Requester { id: string; email: string; role: string; ip?: strin
 
 const LIVE = () => process.env.CRIF_LIVE_MODE === 'true';
 
+/** Which bureau a pull goes to: TransUnion CIBIL by default; CREDIT_BUREAU=CRIF switches back to CRIF High Mark. */
+export const BUREAU = () => (process.env.CREDIT_BUREAU?.trim().toUpperCase() === 'CRIF' ? 'CRIF' : 'CIBIL');
+
+export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
 const listFields = {
   id: true, name: true, mobileLast4: true, status: true, errorCode: true, score: true, source: true,
   leadId: true, requestedBy: true, requestedByName: true, requestedByRole: true, createdAt: true, expiresAt: true,
@@ -30,7 +38,7 @@ function hasNoCreditHistory(report: Record<string, unknown>) {
   return score === null && count(report.accounts) === 0 && count(report.fullAccounts) === 0;
 }
 
-export async function pullCreditReport(input: { name: string; mobile: string; leadId?: string | null }, by: Requester) {
+export async function pullCreditReport(input: { name: string; mobile: string; pan?: string | null; leadId?: string | null }, by: Requester) {
   const identity: CrifIdentity = { fullName: input.name, mobileNumber: input.mobile, consent: true };
   const id = randomUUID();
   const now = new Date();
@@ -39,7 +47,19 @@ export async function pullCreditReport(input: { name: string; mobile: string; le
   let errorCode: string | null = null;
   let stored: Record<string, unknown> | null = null;
 
-  if (LIVE()) {
+  if (BUREAU() === 'CIBIL') {
+    const result = LIVE()
+      ? await pullCibil({ name: input.name, mobile: input.mobile, pan: input.pan })
+      : { status: 'SUCCESS' as const, raw: mockCibilResponse(input.name, input.mobile, input.pan) };
+    if (result.status === 'SUCCESS') {
+      stored = buildPaidReportFromCibil(result.raw, input.name, LIVE() ? 'LIVE' : 'MOCK');
+      status = 'SUCCESS';
+    } else if (result.status === 'NOT_FOUND') {
+      status = 'NOT_FOUND';
+    } else {
+      errorCode = result.errorCode;
+    }
+  } else if (LIVE()) {
     const adapter = createCrifAdapter(loadCrifConfigFromEnv());
     if (!hasCrifDetails(adapter)) throw Object.assign(new Error('Credit bureau is not available'), { status: 502 });
     const result = await adapter.lookupDetails(identity);
@@ -95,7 +115,7 @@ export async function pullCreditReport(input: { name: string; mobile: string; le
     select: listFields,
   });
   // Status and reason only — never the customer's name, mobile or report
-  console.log(`[CreditReport] pull ${id} by ${by.role}: ${status}${errorCode ? ` (${errorCode})` : ''}`);
+  console.log(`[CreditReport] pull ${id} by ${by.role} via ${BUREAU()}: ${status}${errorCode ? ` (${errorCode})` : ''}`);
   return row;
 }
 

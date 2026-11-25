@@ -321,6 +321,8 @@ const PROVIDER_DISPLAY: Readonly<Record<string, string>> = {
   CRIFHIGHMARK: 'CRIF High Mark',
   EQUIFAX: 'Equifax',
   RECORDENT: 'Recordent',
+  CIBIL: 'TransUnion CIBIL',
+  TRANSUNIONCIBIL: 'TransUnion CIBIL',
   EXPERIAN: 'Experian'
 };
 export function providerDisplayName(raw: string | null | undefined): string {

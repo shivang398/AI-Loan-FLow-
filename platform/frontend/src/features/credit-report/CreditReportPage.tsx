@@ -33,7 +33,7 @@ const STATUS: Record<CreditReportRow['status'], { label: string; color: string }
   UNAVAILABLE: { label: 'Bureau unavailable', color: '#DC2626' },
 };
 
-// Short reason under a failed pull (codes from the backend's CRIF adapter)
+// Short reason under a failed pull (codes from the backend's bureau adapter)
 const FAILURE_REASON: Record<string, string> = {
   AUTH_OR_CONFIGURATION_FAILED: 'Access details rejected (API key / client ID / workflow ID)',
   INVALID_PROVIDER_REQUEST: 'Request rejected by the bureau',
@@ -42,7 +42,7 @@ const FAILURE_REASON: Record<string, string> = {
   PROVIDER_UNAVAILABLE: 'Bureau returned an error',
 };
 
-// Score bands shown in the PDF (CRIF range 300-900)
+// Score bands shown in the PDF (bureau range 300-900)
 const scoreColour = (s: number) => (s >= 750 ? '#1a7f4b' : s >= 700 ? '#1656b8' : s >= 650 ? '#8f6300' : '#c0392b');
 
 const PORTALS: Record<string, string> = {
@@ -61,7 +61,7 @@ const filterParams = (f: Filters) => ({
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-interface PullForm { name: string; mobile: string; consent: boolean }
+interface PullForm { name: string; mobile: string; pan?: string; consent: boolean }
 
 const CreditReportPage: React.FC = () => {
   const { message, modal } = App.useApp();
@@ -137,7 +137,7 @@ const CreditReportPage: React.FC = () => {
     setPulling(true);
     try {
       // The bureau can take up to 30 s; allow longer than the default 30 s client timeout
-      const { data } = await api.post('/credit-reports', { name: values.name, mobile: values.mobile, consent: values.consent === true, force }, { timeout: 60_000 });
+      const { data } = await api.post('/credit-reports', { name: values.name, mobile: values.mobile, pan: values.pan || undefined, consent: values.consent === true, force }, { timeout: 60_000 });
       const row: CreditReportRow = data.data;
       if (row.status === 'SUCCESS') message.success(`Report fetched${row.score !== null ? ` — score ${row.score}` : ''}`);
       else if (row.status === 'NOT_FOUND') {
@@ -220,7 +220,7 @@ const CreditReportPage: React.FC = () => {
         Credit Report
       </div>
       <div style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>
-        Soft pull from CRIF High Mark — does not affect the customer's score. Reports are deleted automatically after 180 days (6 months).
+        Soft pull from TransUnion CIBIL — does not affect the customer's score. Reports are deleted automatically after 180 days (6 months).
       </div>
 
       <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderTop: `3px solid ${GOLD}`, padding: 20, marginBottom: 20 }}>
@@ -235,6 +235,9 @@ const CreditReportPage: React.FC = () => {
               rules={[{ required: true, pattern: /^[6-9]\d{9}$/, message: 'Enter a valid 10-digit mobile number' }]}
             >
               <Input placeholder="10-digit mobile" inputMode="numeric" prefix={<span style={{ color: MUTED }}>+91</span>} autoComplete="off" />
+            </Form.Item>
+            <Form.Item name="pan" label="PAN number (optional)" normalize={(v: string) => (v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)} rules={[{ pattern: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Enter a valid PAN (e.g. ABCDE1234F)' }]}>
+              <Input placeholder="ABCDE1234F" maxLength={10} autoComplete="off" style={{ textTransform: 'uppercase' }} />
             </Form.Item>
           </div>
           <Form.Item

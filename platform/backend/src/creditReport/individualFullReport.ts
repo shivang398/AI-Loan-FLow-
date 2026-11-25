@@ -191,23 +191,23 @@ function decodeAccount(a: Bag): FullReportAccount {
   })).filter((h) => h.key !== '');
   return {
     // `Institution` is the documented member name; the others are the engine's own fallbacks.
-    lenderName: str(a, ['Institution', 'lenderName', 'memberName', 'subscriberName']),
+    lenderName: str(a, ['Institution', 'lenderName', 'memberName', 'subscriberName', 'MemberName']),
     accountNumber: str(a, ['AccountNumber']), // CONFIRMED field name
     ownership: str(a, ['OwnershipType']),
     accountType: str(a, ['AccountType']), // CONFIRMED field name
     creditLimit: num(a, ['CreditLimit']),
     highCredit: num(a, ['HighCredit']),
-    sanctionAmount: num(a, ['SanctionAmount']),
-    currentBalance: num(a, ['Balance']),
-    pastDueAmount: num(a, ['PastDueAmount']),
+    sanctionAmount: num(a, ['SanctionAmount', 'HighCreditOrSanctionedAmount']),
+    currentBalance: num(a, ['Balance', 'CurrentBalance']),
+    pastDueAmount: num(a, ['PastDueAmount', 'AmountOverdue']),
     lastPaidAmount: num(a, ['LastPayment']),
     writeOffAmount: num(a, ['WriteOffAmount']),
     installmentAmount: num(a, ['InstallmentAmount']),
     numberOfInstallments: num(a, ['RepaymentTenure']),
     interestRate: num(a, ['InterestRate']),
     termFrequency: str(a, ['TermFrequency']),
-    dateOpened: str(a, ['DateOpened']), // CONFIRMED field name
-    dateClosed: str(a, ['DateClosed']),
+    dateOpened: str(a, ['DateOpened', 'OpenDate']), // CONFIRMED field name
+    dateClosed: str(a, ['DateClosed', 'CloseDate']),
     lastPaidDate: str(a, ['LastPaymentDate']),
     dateReported: str(a, ['DateReported']),
     writeOffStatus: str(a, ['WriteOffStatus', 'WrittenOffStatus']),

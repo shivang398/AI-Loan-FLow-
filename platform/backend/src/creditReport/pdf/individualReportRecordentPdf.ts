@@ -140,8 +140,13 @@ function accountsOf(report: IndividualReportInput): Account[] {
 }
 
 const isCreditCardType = (type: string) => /credit\s*card/i.test(type);
-const isActive = (status: string | null | undefined) => (status ?? '').trim().toLowerCase() === 'active';
-const isClosed = (status: string | null | undefined) => (status ?? '').trim().toLowerCase() === 'closed';
+// CRIF says "Active"/"Closed"; CIBIL/Equifax say "Current Account", "1-29 days past due", "Closed Account".
+// Any reported status that is not a closed one counts as active.
+const isClosed = (status: string | null | undefined) => /\bclosed\b|^in-?active$/i.test((status ?? '').trim());
+const isActive = (status: string | null | undefined) => {
+  const s = (status ?? '').trim();
+  return s !== '' && !/^(unknown|not reported)$/i.test(s) && !isClosed(s);
+};
 
 /** The bureau's own summary, in the order a reader looks for it. Amounts print as money. */
 const SUMMARY_FIELDS: ReadonlyArray<[key: string, label: string, kind: 'count' | 'money' | 'text']> = [
