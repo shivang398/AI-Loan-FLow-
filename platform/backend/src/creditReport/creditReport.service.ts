@@ -7,7 +7,7 @@ import { mockCrifResponse } from './mockCrifResponse';
 import { pullCibil } from './cibilAdapter';
 import { buildPaidReportFromCibil } from './individualFullReportFromCibil';
 import { mockCibilResponse } from './mockCibilResponse';
-import { seal, sealToString, sha256, unseal, unsealFromString } from './seal';
+import { keyedHash, seal, sealToString, sha256, unseal, unsealFromString } from './seal';
 
 /** RBI: credit information obtained from a bureau may be kept for at most 180 days. */
 export const RETENTION_DAYS = 180;
@@ -95,6 +95,7 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
       mobileLast4: input.mobile.slice(-4),
       mobileHash: sha256(input.mobile),
       mobileEnc: sealToString(input.mobile, `${id}:mobile`),
+      panHash: input.pan ? keyedHash(input.pan, 'pan') : null,
       status,
       errorCode,
       score: typeof stored?.score === 'number' ? stored.score : null,
@@ -223,8 +224,23 @@ export async function publicDailyCapReached() {
 }
 
 /** Same mobile and same name pulled in the last 30 days → serve that report instead of paying for another. */
-export async function findRecentPublicMatch(name: string, mobile: string) {
-  const recent = await findRecentReport(mobile, 30);
+/**
+ * A landing-page visitor gets an earlier report again (no second bureau charge) only when it was pulled
+ * from the landing page with the same name, mobile AND PAN. Reports pulled by staff are never handed out
+ * here, and a matching name and mobile alone is not enough.
+ */
+export async function findRecentPublicMatch(name: string, mobile: string, pan: string | null) {
+  const recent = await customerDb.creditReport.findFirst({
+    where: {
+      mobileHash: sha256(mobile),
+      panHash: pan ? keyedHash(pan, 'pan') : null,
+      requestedByRole: PUBLIC_REQUESTER.role,
+      status: 'SUCCESS',
+      createdAt: { gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) },
+    },
+    select: listFields,
+    orderBy: { createdAt: 'desc' },
+  });
   return recent && recent.name.toLowerCase() === name.toLowerCase() ? recent : null;
 }
 

@@ -204,6 +204,7 @@ model CreditReport {
   mobileLast4     String   @map("mobile_last4") @db.VarChar(4)
   mobileHash      String   @map("mobile_hash") @db.Char(64)
   mobileEnc       String?  @map("mobile_enc") @db.VarChar(255)   // full mobile, AES-256-GCM (seal.ts)
+  panHash         String?  @map("pan_hash") @db.Char(64)         // keyed hash of the PAN sent (seal.ts keyedHash); the PAN itself is not stored
   status          String   @db.VarChar(20)
   errorCode       String?  @map("error_code") @db.VarChar(50)
   score           Int?

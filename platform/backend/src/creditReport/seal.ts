@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto';
 
 // AES-256-GCM for stored credit reports. Key: CREDIT_REPORT_ENCRYPTION_KEY (64 hex chars) when set,
 // otherwise derived from JWT_SECRET — changing whichever is used makes older reports unreadable.
@@ -39,3 +39,9 @@ export function unsealFromString(sealed: string, aad: string): string | null {
 }
 
 export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+
+/**
+ * Keyed fingerprint for matching a value without storing it (e.g. PAN). Keyed, unlike sha256 above:
+ * PANs follow a fixed pattern, so a plain hash could be reversed by trying every PAN.
+ */
+export const keyedHash = (value: string, purpose: string) => createHmac('sha256', key()).update(`${purpose}:${value}`).digest('hex');

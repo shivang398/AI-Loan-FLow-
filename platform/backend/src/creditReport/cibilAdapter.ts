@@ -1,4 +1,4 @@
-import type { CrifFailureCode } from './crifAdapter';
+import { NO_HISTORY_MESSAGE, type CrifFailureCode } from './crifAdapter';
 
 /**
  * TransUnion CIBIL soft pull through Tenacio (`cibil-soft-pull`).
@@ -32,9 +32,6 @@ export function loadCibilConfigFromEnv(env: NodeJS.ProcessEnv = process.env) {
     debug: env.CRIF_DEBUG_LOGGING === 'true' || env.CIBIL_DEBUG_LOGGING === 'true',
   };
 }
-
-/** Tenacio's wording for "this person has no bureau record". */
-export const NO_HISTORY_MESSAGE = /no (credit )?(data|history|record)|not found|no hit/i;
 
 const isBag = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 

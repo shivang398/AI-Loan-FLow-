@@ -164,7 +164,7 @@ publicCreditReportRouter.post('/', publicPullLimiter, async (req: Request, res: 
   if ('error' in id) { res.status(400).json(fail(id.error!)); return; }
 
   // Same name + mobile within 30 days → reuse that report (no second bureau charge)
-  let report = await findRecentPublicMatch(id.name, id.mobile);
+  let report = await findRecentPublicMatch(id.name, id.mobile, id.pan);
   if (!report) {
     if (await publicDailyCapReached()) {
       res.status(503).json(fail('Credit report requests are busy right now. Please try again later or contact us on WhatsApp.'));

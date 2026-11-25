@@ -233,11 +233,18 @@ function classifyHttpFailure(status: number): CrifFailureCode {
 }
 
 /** Tenacio's "no credit data found" reply: `status: "error"` with a "no data" message (serviceError or error). */
+/**
+ * Tenacio's wording for "this person has no bureau record" ("No credit history found for the provided
+ * details.", "No data found", "no hit"). Deliberately NOT a bare "not found": setup errors such as
+ * "Workflow not found" or "Client not found" must stay failures, never read as "no credit history".
+ */
+export const NO_HISTORY_MESSAGE = /\bno (credit )?(data|history|records?)\b|\bno hit\b/i;
+
 function isTenacioNoData(value: unknown): boolean {
   const root = asRecord(value);
   if (!root || root.status !== 'error') return false;
   const message = stringValue(asRecord(root.serviceError)?.message) ?? stringValue(asRecord(root.error)?.message) ?? '';
-  return /no (credit )?(data|history|record)|not found|no hit/i.test(message);
+  return NO_HISTORY_MESSAGE.test(message);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
