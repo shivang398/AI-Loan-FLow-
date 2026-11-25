@@ -187,7 +187,7 @@ publicCreditReportRouter.post('/', publicPullLimiter, async (req: Request, res: 
   res.status(201).json(ok(message, {
     id: report.id,
     status: report.status,
-    score: report.score,
+    // No score here: the page does not show it (confidential); it is only in the PDF
     downloadToken: report.status === 'SUCCESS' ? signDownloadToken(report.id) : null,
   }));
 });

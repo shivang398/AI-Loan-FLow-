@@ -6,11 +6,7 @@ import { C, DISPLAY, SANS } from '../theme';
 import { GoldCorners } from './Royal';
 
 interface CheckForm { name: string; mobile: string; pan?: string; consent: boolean }
-interface Result { id: string; status: 'SUCCESS' | 'NOT_FOUND'; score: number | null; downloadToken: string | null }
-
-const scoreBand = (s: number) =>
-  s >= 750 ? { label: 'Excellent', color: '#1a7f4b' } : s >= 700 ? { label: 'Good', color: '#1656b8' }
-  : s >= 650 ? { label: 'Average', color: '#8f6300' } : { label: 'Needs work', color: '#c0392b' };
+interface Result { id: string; status: 'SUCCESS' | 'NOT_FOUND'; downloadToken: string | null }
 
 /** Landing-page hero card: a visitor fetches their own CIBIL report (soft pull — does not affect the score). */
 const CreditReportCheck: React.FC = () => {
@@ -20,7 +16,6 @@ const CreditReportCheck: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
-  const [name, setName] = useState('');
 
   useEffect(() => {
     axios.get('/api/public/credit-report/consent').then(r => setConsentText(r.data.data.text)).catch(() => {});
@@ -52,7 +47,6 @@ const CreditReportCheck: React.FC = () => {
       // The bureau can take up to 30 s
       const { data } = await axios.post('/api/public/credit-report', { name: v.name, mobile: v.mobile, pan: v.pan || undefined, consent: v.consent === true }, { timeout: 60_000 });
       setResult(data.data);
-      setName(v.name);
       if (data.data.status === 'SUCCESS') download(data.data);
     } catch (err: any) {
       message.error(err?.response?.data?.message ?? 'Could not fetch your credit report. Please try again.');
@@ -105,15 +99,8 @@ const CreditReportCheck: React.FC = () => {
         <div style={{ marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.line}`, fontFamily: SANS }}>
           {result.status === 'SUCCESS' ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 13, color: C.muted }}>{name}'s credit score</div>
-                {result.score !== null ? (
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <span style={{ fontSize: 40, fontWeight: 700, color: C.navy, lineHeight: 1.1 }}>{result.score}</span>
-                    <span style={{ fontWeight: 600, color: scoreBand(result.score).color }}>{scoreBand(result.score).label}</span>
-                  </div>
-                ) : <div style={{ fontWeight: 600, color: C.navy }}>Report ready</div>}
-              </div>
+              {/* Name and score are not shown on the page (confidential); they are only in the downloaded PDF */}
+              <div style={{ fontWeight: 600, color: C.navy, fontSize: 15 }}>Your credit report is ready.</div>
               <button type="button" onClick={() => download(result)} disabled={downloading} className="lp-btn lp-btn-gold" style={{ height: 44, padding: '0 20px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <Download size={15} /> {downloading ? 'Downloading…' : 'Download PDF'}
               </button>
