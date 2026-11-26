@@ -149,13 +149,16 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
 
   // TransUnion CIBIL first; when CIBIL holds no record on the person, CRIF High Mark (CREDIT_BUREAU_FALLBACK)
   let result = await pullFrom(BUREAU(), input, identity);
+  // Which bureaus answered: "CIBIL+CRIF" = both were asked and neither holds a record
+  let bureau: string = result.bureau;
   if (result.status === 'NOT_FOUND' && FALLBACK_TO_CRIF() && result.bureau === 'CIBIL') {
     const crif = await pullFrom('CRIF', input, identity);
     console.log(`[CreditReport] ${id}: no CIBIL record, CRIF fallback → ${crif.status}${crif.errorCode ? ` (${crif.errorCode})` : ''}`);
     // Only a CRIF report replaces CIBIL's answer; a CRIF failure keeps "no credit history"
-    if (crif.status === 'SUCCESS') result = crif;
+    if (crif.status === 'SUCCESS') { result = crif; bureau = 'CRIF'; }
+    else if (crif.status === 'NOT_FOUND') bureau = 'CIBIL+CRIF';
   }
-  const { status, errorCode, stored, raw, bureau } = result;
+  const { status, errorCode, stored, raw } = result;
 
   const sealed = stored ? seal(JSON.stringify(stored), id) : null;
   const row = await customerDb.creditReport.create({
@@ -312,7 +315,12 @@ export async function findRecentPublicMatch(name: string, mobile: string, pan: s
       requestedByRole: PUBLIC_REQUESTER.role,
       OR: [
         { status: 'SUCCESS', createdAt: { gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) } },
-        { status: 'NOT_FOUND', createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } },
+        // A "no history" answer is reused only if it asked every bureau a new pull would ask now. Older rows
+        // (bureau not recorded) are never reused: before 2026-11-25 a CIBIL report was misread as no history.
+        {
+          status: 'NOT_FOUND', createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
+          bureau: { in: FALLBACK_TO_CRIF() ? ['CIBIL+CRIF', 'CRIF'] : ['CIBIL', 'CIBIL+CRIF', 'CRIF'] },
+        },
       ],
     },
     select: listFields,
