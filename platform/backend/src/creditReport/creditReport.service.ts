@@ -76,8 +76,11 @@ export async function rebuildFromSavedReply(id: string) {
   return { id, status, rebuilt: true };
 }
 
-/** When CIBIL holds no record on the person, try CRIF High Mark. On unless CREDIT_BUREAU_FALLBACK=false. */
-const FALLBACK_TO_CRIF = () => process.env.CREDIT_BUREAU_FALLBACK?.trim().toLowerCase() !== 'false';
+/**
+ * When CIBIL holds no record on the person, also try CRIF High Mark. OFF unless CREDIT_BUREAU_FALLBACK=true:
+ * it is a second pull, so only turn it on once Tenacio confirms a CIBIL "no record" result is not charged.
+ */
+const FALLBACK_TO_CRIF = () => process.env.CREDIT_BUREAU_FALLBACK?.trim().toLowerCase() === 'true';
 
 interface BureauResult {
   bureau: 'CIBIL' | 'CRIF';
@@ -294,6 +297,9 @@ export async function publicDailyCapReached() {
 
 /** Same mobile and same name pulled in the last 30 days → serve that report instead of paying for another. */
 /**
+ * Each pull is charged, so a repeat request is answered from an earlier one: a report for 30 days, a
+ * "no credit history" answer for 7 days.
+ *
  * A landing-page visitor gets an earlier report again (no second bureau charge) only when it was pulled
  * from the landing page with the same name, mobile AND PAN. Reports pulled by staff are never handed out
  * here, and a matching name and mobile alone is not enough.
@@ -304,8 +310,10 @@ export async function findRecentPublicMatch(name: string, mobile: string, pan: s
       mobileHash: sha256(mobile),
       panHash: pan ? keyedHash(pan, 'pan') : null,
       requestedByRole: PUBLIC_REQUESTER.role,
-      status: 'SUCCESS',
-      createdAt: { gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) },
+      OR: [
+        { status: 'SUCCESS', createdAt: { gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) } },
+        { status: 'NOT_FOUND', createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } },
+      ],
     },
     select: listFields,
     orderBy: { createdAt: 'desc' },
