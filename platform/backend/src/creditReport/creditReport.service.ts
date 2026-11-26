@@ -29,7 +29,7 @@ export const BUREAU = () => (process.env.CREDIT_BUREAU?.trim().toUpperCase() ===
 export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
 const listFields = {
-  id: true, name: true, mobileLast4: true, status: true, errorCode: true, score: true, source: true,
+  id: true, name: true, mobileLast4: true, status: true, errorCode: true, score: true, source: true, bureau: true,
   leadId: true, requestedBy: true, requestedByName: true, requestedByRole: true, createdAt: true, expiresAt: true,
 } as const;
 
@@ -57,7 +57,8 @@ export async function rebuildFromSavedReply(id: string) {
   const plain = unsealFromString(row.rawEnc, `${id}:raw`);
   if (plain === null) throw Object.assign(new Error('Saved reply could not be decrypted'), { status: 409 });
   const raw = JSON.parse(plain);
-  if (!readableCibil(raw)) return { id, status: row.status, errorCode: row.errorCode, rebuilt: false };
+  // Only CIBIL replies are ever saved as unreadable; a CRIF reply is not rebuilt here
+  if (row.bureau === 'CRIF' || !readableCibil(raw)) return { id, status: row.status, errorCode: row.errorCode, rebuilt: false };
 
   let stored: Record<string, unknown> | null = buildCibilReport(raw, row.name, row.source === 'LIVE' ? 'LIVE' : 'MOCK');
   let status: 'SUCCESS' | 'NOT_FOUND' = 'SUCCESS';
@@ -75,61 +76,83 @@ export async function rebuildFromSavedReply(id: string) {
   return { id, status, rebuilt: true };
 }
 
-export async function pullCreditReport(input: { name: string; mobile: string; pan?: string | null; leadId?: string | null }, by: Requester) {
-  const identity: CrifIdentity = { fullName: input.name, mobileNumber: input.mobile, consent: true };
-  const id = randomUUID();
-  const now = new Date();
+/** When CIBIL holds no record on the person, try CRIF High Mark. On unless CREDIT_BUREAU_FALLBACK=false. */
+const FALLBACK_TO_CRIF = () => process.env.CREDIT_BUREAU_FALLBACK?.trim().toLowerCase() !== 'false';
 
-  let status: 'SUCCESS' | 'NOT_FOUND' | 'UNAVAILABLE' = 'UNAVAILABLE';
-  let errorCode: string | null = null;
-  let stored: Record<string, unknown> | null = null;
-  let raw: unknown = null;   // the bureau's reply, kept encrypted so it can be re-read later
+interface BureauResult {
+  bureau: 'CIBIL' | 'CRIF';
+  status: 'SUCCESS' | 'NOT_FOUND' | 'UNAVAILABLE';
+  errorCode: string | null;
+  stored: Record<string, unknown> | null;
+  raw: unknown;   // the bureau's reply, kept encrypted so it can be re-read later
+}
 
-  if (BUREAU() === 'CIBIL') {
+/** One bureau pull, decoded. A reply with no score and no accounts counts as no credit history. */
+async function pullFrom(bureau: 'CIBIL' | 'CRIF', input: { name: string; mobile: string; pan?: string | null }, identity: CrifIdentity): Promise<BureauResult> {
+  const out: BureauResult = { bureau, status: 'UNAVAILABLE', errorCode: null, stored: null, raw: null };
+  if (bureau === 'CIBIL') {
     const result = LIVE()
       ? await pullCibil({ name: input.name, mobile: input.mobile, pan: input.pan })
       : { status: 'SUCCESS' as const, raw: mockTrueLinkResponse(input.name, input.mobile, input.pan) };
     if (result.status === 'SUCCESS' && !readableCibil(result.raw)) {
       // A reply that is not in the layout we read must never be shown as "no credit history"
-      raw = result.raw;
-      errorCode = 'UNREADABLE_REPORT';
+      out.raw = result.raw;
+      out.errorCode = 'UNREADABLE_REPORT';
       console.warn(`[CIBIL] reply not in the expected layout; keys: ${describeShape(result.raw).join(',').slice(0, 4000)}`);
     } else if (result.status === 'SUCCESS') {
-      raw = result.raw;
-      stored = buildCibilReport(result.raw, input.name, LIVE() ? 'LIVE' : 'MOCK');
-      status = 'SUCCESS';
+      out.raw = result.raw;
+      out.stored = buildCibilReport(result.raw, input.name, LIVE() ? 'LIVE' : 'MOCK');
+      out.status = 'SUCCESS';
     } else if (result.status === 'NOT_FOUND') {
-      status = 'NOT_FOUND';
+      out.status = 'NOT_FOUND';
     } else {
-      errorCode = result.errorCode;
+      out.errorCode = result.errorCode;
     }
   } else if (LIVE()) {
     const adapter = createCrifAdapter(loadCrifConfigFromEnv());
     if (!hasCrifDetails(adapter)) throw Object.assign(new Error('Credit bureau is not available'), { status: 502 });
     const result = await adapter.lookupDetails(identity);
     if (result.status === 'SUCCESS') {
-      stored = buildPaidReportFromCrif(result.report, input.name, decodeIndividualFullReportFromCrif(result.raw, result.report, 'LIVE'));
-      status = 'SUCCESS';
+      out.raw = result.raw;
+      out.stored = buildPaidReportFromCrif(result.report, input.name, decodeIndividualFullReportFromCrif(result.raw, result.report, 'LIVE'));
+      out.status = 'SUCCESS';
     } else if (result.status === 'NOT_FOUND') {
-      status = 'NOT_FOUND';
+      out.status = 'NOT_FOUND';
     } else {
-      errorCode = result.errorCode;
+      out.errorCode = result.errorCode;
     }
   } else {
     const raw = mockCrifResponse(input.name, input.mobile);
     const report = normalizeCrifResponse(raw, identity);
     if (report) {
-      stored = buildPaidReportFromCrif(report, input.name, decodeIndividualFullReportFromCrif(raw, report, 'MOCK'));
-      status = 'SUCCESS';
+      out.raw = raw;
+      out.stored = buildPaidReportFromCrif(report, input.name, decodeIndividualFullReportFromCrif(raw, report, 'MOCK'));
+      out.status = 'SUCCESS';
     }
   }
-
   // The bureau answered but holds nothing on this person (no score, no accounts): no credit history.
   // Nothing is stored — an empty report would only produce a blank PDF.
-  if (status === 'SUCCESS' && stored && hasNoCreditHistory(stored)) {
-    status = 'NOT_FOUND';
-    stored = null;
+  if (out.status === 'SUCCESS' && out.stored && hasNoCreditHistory(out.stored)) {
+    out.status = 'NOT_FOUND';
+    out.stored = null;
   }
+  return out;
+}
+
+export async function pullCreditReport(input: { name: string; mobile: string; pan?: string | null; leadId?: string | null }, by: Requester) {
+  const identity: CrifIdentity = { fullName: input.name, mobileNumber: input.mobile, consent: true };
+  const id = randomUUID();
+  const now = new Date();
+
+  // TransUnion CIBIL first; when CIBIL holds no record on the person, CRIF High Mark (CREDIT_BUREAU_FALLBACK)
+  let result = await pullFrom(BUREAU(), input, identity);
+  if (result.status === 'NOT_FOUND' && FALLBACK_TO_CRIF() && result.bureau === 'CIBIL') {
+    const crif = await pullFrom('CRIF', input, identity);
+    console.log(`[CreditReport] ${id}: no CIBIL record, CRIF fallback → ${crif.status}${crif.errorCode ? ` (${crif.errorCode})` : ''}`);
+    // Only a CRIF report replaces CIBIL's answer; a CRIF failure keeps "no credit history"
+    if (crif.status === 'SUCCESS') result = crif;
+  }
+  const { status, errorCode, stored, raw, bureau } = result;
 
   const sealed = stored ? seal(JSON.stringify(stored), id) : null;
   const row = await customerDb.creditReport.create({
@@ -141,6 +164,7 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
       mobileEnc: sealToString(input.mobile, `${id}:mobile`),
       panHash: input.pan ? keyedHash(input.pan, 'pan') : null,
       rawEnc: raw !== null ? sealToString(JSON.stringify(raw), `${id}:raw`) : null,
+      bureau,
       status,
       errorCode,
       score: typeof stored?.score === 'number' ? stored.score : null,
@@ -161,7 +185,7 @@ export async function pullCreditReport(input: { name: string; mobile: string; pa
     select: listFields,
   });
   // Status and reason only — never the customer's name, mobile or report
-  console.log(`[CreditReport] pull ${id} by ${by.role} via ${BUREAU()}: ${status}${errorCode ? ` (${errorCode})` : ''}`);
+  console.log(`[CreditReport] pull ${id} by ${by.role} via ${bureau}: ${status}${errorCode ? ` (${errorCode})` : ''}`);
   return row;
 }
 
@@ -220,9 +244,9 @@ export async function exportCreditReportsCsv(filters: CreditReportFilters) {
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return `"${s.replace(/"/g, '""')}"`;
   };
-  const header = ['Report ID', 'Customer name', 'Mobile', 'Score', 'Status', 'Error code', 'Data source', 'Portal',
+  const header = ['Report ID', 'Customer name', 'Mobile', 'Score', 'Bureau', 'Status', 'Error code', 'Data source', 'Portal',
     'Pulled by', 'Lead ID', 'Consent at', 'Request IP', 'Pulled on', 'Auto-delete on'];
-  const lines = rows.map(withMobile).map(r => [r.id, r.name, r.mobile ?? `XXXXXX${r.mobileLast4}`, r.score, r.status, r.errorCode, r.source, r.requestedByRole,
+  const lines = rows.map(withMobile).map(r => [r.id, r.name, r.mobile ?? `XXXXXX${r.mobileLast4}`, r.score, r.bureau, r.status, r.errorCode, r.source, r.requestedByRole,
     r.requestedByName, r.leadId, r.consentAt, r.requestIp, r.createdAt, r.expiresAt].map(cell).join(','));
   // BOM so Excel opens it as UTF-8
   return '﻿' + [header.map(cell).join(','), ...lines].join('\r\n');

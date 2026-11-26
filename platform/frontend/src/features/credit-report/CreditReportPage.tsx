@@ -21,6 +21,7 @@ interface CreditReportRow {
   errorCode: string | null;
   score: number | null;
   source: 'LIVE' | 'MOCK';
+  bureau?: 'CIBIL' | 'CRIF' | null;   // null on pulls before it was recorded
   requestedByName: string | null;
   requestedByRole: string;
   createdAt: string;
@@ -191,6 +192,9 @@ const CreditReportPage: React.FC = () => {
       render: (s: CreditReportRow['status'], r) => (
         <span style={{ color: STATUS[s].color, fontWeight: 600, fontSize: 13 }}>
           {STATUS[s].label}{r.source === 'MOCK' && <span style={{ color: MUTED, fontWeight: 400 }}> (test data)</span>}
+          {s === 'SUCCESS' && r.bureau && (
+            <div style={{ color: MUTED, fontWeight: 400, fontSize: 12 }}>{r.bureau === 'CRIF' ? 'CRIF High Mark' : 'TransUnion CIBIL'}</div>
+          )}
           {s === 'UNAVAILABLE' && r.errorCode && (
             <div style={{ color: MUTED, fontWeight: 400, fontSize: 12 }}>{FAILURE_REASON[r.errorCode] ?? r.errorCode}</div>
           )}

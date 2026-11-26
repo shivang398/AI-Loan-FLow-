@@ -157,7 +157,7 @@ API table and deploy runbook: `../reference/CLAUDE.md`.
 
 Public endpoints (no JWT): `POST /auth/login`, `POST /auth/refresh`, `POST /auth/register/partner`, `POST /auth/forgot-password`, `POST /auth/reset-password`, `GET/POST /messaging/whatsapp/webhook`, `GET /health`, `GET /public/credit-report/consent`, `POST /public/credit-report` (landing-page credit report — no OTP; bounded by `PUBLIC_CREDIT_REPORT_PER_IP` / `PUBLIC_CREDIT_REPORT_DAILY_CAP`, off with `PUBLIC_CREDIT_REPORT_ENABLED=false`), `GET /public/credit-report/:id/pdf?token=` (30-minute signed link).
 
-Credit reports (`/credit-reports`): ADMIN sees every pull from all portals and the landing page and can export CSV (`/credit-reports/export`); RM, OPERATIONS and CONNECTOR see only their own. Reports auto-delete 180 days after the pull. Bureau: TransUnion CIBIL via Tenacio `cibil-soft-pull` (name, mobile and PAN — PAN required) by default; `CREDIT_BUREAU=CRIF` switches back to CRIF High Mark.
+Credit reports (`/credit-reports`): ADMIN sees every pull from all portals and the landing page and can export CSV (`/credit-reports/export`); RM, OPERATIONS and CONNECTOR see only their own. Reports auto-delete 180 days after the pull. Bureau: TransUnion CIBIL via Tenacio `cibil-soft-pull` (name, mobile and PAN — PAN required) by default; `CREDIT_BUREAU=CRIF` switches back to CRIF High Mark. When CIBIL has no record on the person, the pull falls back to CRIF High Mark (`CREDIT_BUREAU_FALLBACK=false` turns this off); `credit_reports.bureau` records which bureau each report came from.
 
 ### JWT revocation
 
