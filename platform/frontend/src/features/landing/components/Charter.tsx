@@ -11,7 +11,7 @@ const ARTICLES = [
   { title: 'Every charge in writing, upfront',    text: 'The interest rate, processing fee and all other charges are disclosed before you proceed. No hidden charges.' },
   { title: 'Your data, only with your consent',   text: 'Shared only with the lender you choose to apply with, and deleted whenever you ask.' },
   { title: 'Clear advice, never pressure',        text: 'Plain language, honest comparisons and no coercive practices — the choice of lender is always yours.' },
-  { title: 'Complaints answered in 7 days',       text: 'Write to grievance@realmoneygroups.in. Anything unresolved can be escalated to the Banking Ombudsman.' },
+  { title: 'Complaints answered in 7 days',       text: 'Write to contact@realmoneygroups.in. Anything unresolved can be escalated to the Banking Ombudsman.' },
 ];
 
 /** Gold wax seal */
@@ -80,7 +80,7 @@ const Charter: React.FC = () => (
                 <strong style={{ color: C.goldLight }}>Beware of loan fraud.</strong>{' '}
                 No one from Real Money will ever ask you to pay money, transfer a “processing fee” or share an OTP to get a loan approved.
                 If someone does, stop and report it at <span style={{ color: C.onDark }}>cybercrime.gov.in</span> or call <span style={{ color: C.onDark }}>1930</span>,
-                and tell us at <span style={{ color: C.onDark }}>grievance@realmoneygroups.in</span>.
+                and tell us at <span style={{ color: C.onDark }}>contact@realmoneygroups.in</span>.
               </p>
             </div>
 

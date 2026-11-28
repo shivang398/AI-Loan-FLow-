@@ -27,6 +27,7 @@ import notificationsRoutes from './routes/notifications.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import reportsRoutes from './routes/reports.routes';
 import careersRoutes from './routes/careers.routes';
+import blogRoutes, { publicBlogRouter } from './routes/blog.routes';
 import callRoutes from './routes/call.routes';
 import creditReportRoutes, { publicCreditReportRouter } from './routes/creditReport.routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
@@ -141,6 +142,8 @@ app.use('/reports', apiLimiter, reportsRoutes);
 
 // ── Careers ───────────────────────────────────────────────────────────────────
 app.use('/careers', careersRoutes);
+app.use('/public/blog', apiLimiter, publicBlogRouter);   // website blog, no login
+app.use('/blog', apiLimiter, blogRoutes);                 // ADMIN writes posts
 
 // ── Telecalling ───────────────────────────────────────────────────────────────
 app.use('/calls', apiLimiter, callRoutes);

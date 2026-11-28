@@ -6,6 +6,7 @@ import {
   Wallet, Files, FileText, ChevronDown, UsersRound, Network,
   BookOpen, Calculator, Menu as MenuIcon, X, CheckCheck, UserCheck, Phone,
   MessageCircle, FileSearch,
+  Newspaper,
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -111,6 +112,7 @@ const DashboardLayout: React.FC = () => {
     { key: '/reports',             icon: <FileText size={16} />,        label: 'Reports',           roles: ['ADMIN'] },
     { key: '/admin/documents',     icon: <Files size={16} />,           label: 'Document Library',  roles: ['ADMIN'] },
     { key: '/admin/careers',       icon: <UserCheck size={16} />,       label: 'Career Applications', roles: ['ADMIN'] },
+    { key: '/admin/blog',          icon: <Newspaper size={16} />,       label: 'Blog',              roles: ['ADMIN'] },
     { key: '/policies',            icon: <BookOpen size={16} />,        label: 'Policies' },
     { key: '/team-meeting',        icon: <UsersRound size={16} />,      label: 'Team Meeting' },
   ];

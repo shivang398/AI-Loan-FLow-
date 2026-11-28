@@ -244,3 +244,21 @@ model WhatsappCampaignRecipient {
   @@index([phone])
   @@map("whatsapp_campaign_recipients")
 }
+
+/// Website blog posts, written by ADMIN in the portal. Public pages show PUBLISHED posts only.
+model BlogPost {
+  id          String    @id @db.Char(36)
+  slug        String    @unique @db.VarChar(160)
+  title       String    @db.VarChar(200)
+  excerpt     String?   @db.VarChar(400)
+  content     String    @db.MediumText
+  status      String    @default("DRAFT") @db.VarChar(20)
+  authorName  String?   @map("author_name") @db.VarChar(120)
+  publishedAt DateTime? @map("published_at")
+  createdBy   String?   @map("created_by") @db.VarChar(255)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}

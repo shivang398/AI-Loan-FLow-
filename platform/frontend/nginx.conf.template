@@ -124,6 +124,15 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
+        # Blog sitemap for search engines (built by the backend from published posts)
+        location = /sitemap-blog.xml {
+            set $backend "${AUTH_SERVICE_URL}";
+            rewrite ^ /public/blog/sitemap.xml break;
+            proxy_pass http://$backend;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+        }
+
         location / {
             try_files $uri $uri/ /index.html;
         }

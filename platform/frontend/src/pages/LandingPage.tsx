@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ConfigProvider, App as AntdApp } from 'antd';
 import Navbar              from '../features/landing/components/Navbar';
 import Hero                from '../features/landing/components/Hero';
@@ -13,11 +14,11 @@ import FAQ                 from '../features/landing/components/FAQ';
 import Footer              from '../features/landing/components/Footer';
 import WhatsAppFloat       from '../features/landing/components/WhatsAppFloat';
 import MobileStickyBar     from '../features/landing/components/MobileStickyBar';
-import { C } from '../features/landing/theme';
+import { C, scrollToId } from '../features/landing/theme';
 import '../features/landing/styles/landing.css';
 import { usePageMeta } from '../shared/hooks/usePageMeta';
 
-const landingTheme = {
+export const landingTheme = {
   token: {
     colorPrimary:    '#0B1E3D',
     colorLink:       C.gold,
@@ -46,6 +47,13 @@ const LandingPage: React.FC = () => {
     description: 'Apply once and compare personal-loan offers from leading banks and NBFCs. Check your credit score free — it does not affect your score. No fee for borrowers.',
     path: '/',
   });
+  // Arriving from another page at /#section (e.g. the blog menu): scroll there once the page has rendered
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    const t = setTimeout(() => scrollToId(decodeURIComponent(hash.slice(1))), 150);
+    return () => clearTimeout(t);
+  }, [hash]);
   return (
   <ConfigProvider theme={landingTheme}>
     <AntdApp>

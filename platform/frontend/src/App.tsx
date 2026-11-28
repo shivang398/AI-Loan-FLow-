@@ -35,6 +35,9 @@ const ReportingDashboard = lazy(() => import('./features/reporting/components/Re
 const ConnectorHub = lazy(() => import('./features/admin/components/ConnectorHub'));
 const PayoutTracker = lazy(() => import('./features/admin/components/PayoutTracker'));
 const CareerApplications = lazy(() => import('./features/admin/components/CareerApplications'));
+const BlogAdmin = lazy(() => import('./features/admin/components/BlogAdmin'));
+const BlogListPage = lazy(() => import('./pages/BlogPages').then(m => ({ default: m.BlogListPage })));
+const BlogPostPage = lazy(() => import('./pages/BlogPages').then(m => ({ default: m.BlogPostPage })));
 const PoliciesPage = lazy(() => import('./features/policies/components/PoliciesPage'));
 const TelecallerDashboard = lazy(() => import('./features/telecaller/components/TelecallerDashboard'));
 const WhatsAppPage = lazy(() => import('./features/operations/components/WhatsAppPage'));
@@ -169,6 +172,7 @@ const App: React.FC = () => {
                 <Route path="/reports"         element={<ReportsHub />} />
                 <Route path="/partners"        element={<PartnersHub />} />
                 <Route path="/admin/careers"   element={<FeatureErrorBoundary feature="Career Applications"><CareerApplications /></FeatureErrorBoundary>} />
+                <Route path="/admin/blog"      element={<FeatureErrorBoundary feature="Blog"><BlogAdmin /></FeatureErrorBoundary>} />
               </Route>
 
               {/* ── RM ── */}
@@ -201,6 +205,8 @@ const App: React.FC = () => {
           {/* Public landing routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/careers" element={<CareersPage />} />
+          <Route path="/blog" element={<BlogListPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/partners/register" element={<Navigate to="/careers" replace />} />
 
           {/* Fallback to dashboard for authenticated users */}

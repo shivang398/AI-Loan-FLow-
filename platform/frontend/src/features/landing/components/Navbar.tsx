@@ -3,7 +3,8 @@ import { Drawer } from 'antd';
 import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { RealMoneyLogoWhite } from '../../../shared/components/RealMoneyLogo';
-import { C, SANS, scrollToId } from '../theme';
+import { C, SANS } from '../theme';
+import { useGoToSection } from '../useGoToSection';
 import '../styles/landing.css';
 
 const NAV_LINKS = [
@@ -30,7 +31,8 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const go = (id: string) => { setOpen(false); scrollToId(id); };
+  const goToSection = useGoToSection();
+  const go = (id: string) => { setOpen(false); goToSection(id); };
 
   return (
     <>
@@ -55,6 +57,11 @@ const Navbar: React.FC = () => {
                 {l.label}
               </button>
             ))}
+            <button onClick={() => navigate('/blog')} className="lp-navlink" style={linkStyle}
+              onMouseEnter={e => (e.currentTarget.style.color = C.goldLight)}
+              onMouseLeave={e => (e.currentTarget.style.color = C.onDarkDim)}>
+              Blog
+            </button>
             <span style={{ width: 1, height: 18, background: 'rgba(201,160,74,0.35)' }} />
             <button onClick={() => navigate('/login')} className="lp-navlink" style={{ ...linkStyle, color: C.onDark }}>Log in</button>
             <button onClick={() => go('apply')} className="lp-btn lp-btn-gold" style={{ height: 42, padding: '0 22px', fontSize: 12 }}>
@@ -81,6 +88,9 @@ const Navbar: React.FC = () => {
             {l.label}
           </button>
         ))}
+        <button onClick={() => { setOpen(false); navigate('/blog'); }} style={{ ...linkStyle, display: 'block', width: '100%', textAlign: 'left', padding: '16px 24px', color: C.onDark, borderBottom: '1px solid rgba(201,160,74,0.14)' }}>
+          Blog
+        </button>
         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <button onClick={() => go('apply')} className="lp-btn lp-btn-gold" style={{ height: 48 }}>Apply now</button>
           <button onClick={() => navigate('/login')} className="lp-btn lp-btn-on-dark" style={{ height: 48 }}>Log in</button>

@@ -59,18 +59,25 @@
   <body>
     <!-- Readable before JavaScript runs (crawlers, link previews, slow phones); React replaces it on load. -->
     <div id="root">
-      <main style="max-width:720px;margin:0 auto;padding:48px 20px;font-family:Inter,Arial,sans-serif;color:#0B1E3D;line-height:1.6">
-        <h1>Real Money — the right lender, found for you</h1>
-        <p>Apply once. We compare personal-loan offers from leading banks and NBFCs, help you choose the best one and handle the paperwork until the money reaches you.</p>
-        <h2>Check your credit score free</h2>
-        <p>Get your credit score and full credit report from CRIF High Mark in about two minutes. It is a soft check, so it does not affect your score.</p>
-        <h2>Why borrowers use Real Money</h2>
-        <ul>
-          <li>One application, offers from many lenders</li>
-          <li>Free for borrowers — lenders pay our fee</li>
-          <li>A personal advisor from application to disbursal</li>
-        </ul>
-        <p>Based in Jaipur, Rajasthan. Email <a href="mailto:contact@realmoneygroups.in">contact@realmoneygroups.in</a>. <a href="/careers">Careers</a>.</p>
+      <!-- Shown for a moment while the app loads (and to crawlers / link previews); styled like the hero so a
+           refresh does not flash a plain white page. React replaces it on load. -->
+      <main style="min-height:100vh;margin:0;padding:72px 20px 48px;box-sizing:border-box;background:radial-gradient(ellipse 60% 70% at 85% 50%,#13284D 0%,#060D1F 65%);font-family:Inter,Arial,sans-serif;color:rgba(255,248,232,0.62);line-height:1.7">
+        <div style="max-width:720px;margin:0 auto">
+          <p style="font-size:11.5px;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;color:#C9A04A;margin:0">Authorised Corporate DSA · Personal loans</p>
+          <h1 style="font-family:Georgia,serif;font-weight:600;font-size:clamp(36px,5vw,56px);line-height:1.08;color:rgba(255,248,232,0.92);margin:18px 0 0">Real Money — the right lender, found for you</h1>
+          <p>Apply once. We compare personal-loan offers from leading banks and NBFCs, help you choose the best one and handle the paperwork until the money reaches you.</p>
+          <h2 style="color:#EBD49A;font-size:20px;margin:28px 0 0">Check your credit score free</h2>
+          <p>Get your TransUnion CIBIL credit report in about two minutes. It is a soft check, so it does not affect your score.</p>
+          <h2 style="color:#EBD49A;font-size:20px;margin:28px 0 0">Why borrowers use Real Money</h2>
+          <ul>
+            <li>One application, offers from many lenders</li>
+            <li>Free for borrowers — lenders pay our fee</li>
+            <li>A personal advisor from application to disbursal</li>
+          </ul>
+          <!--email_off-->
+          <p>Based in Jaipur, Rajasthan. Email <a href="mailto:contact@realmoneygroups.in" style="color:#EBD49A">contact@realmoneygroups.in</a>. <a href="/blog" style="color:#EBD49A">Blog</a> · <a href="/careers" style="color:#EBD49A">Careers</a>.</p>
+          <!--/email_off-->
+        </div>
       </main>
     </div>
     <script type="module" src="/src/main.tsx"></script>

@@ -20,3 +20,4 @@ Disallow: /policies
 Disallow: /team-meeting
 
 Sitemap: https://realmoneygroups.in/sitemap.xml
+Sitemap: https://realmoneygroups.in/sitemap-blog.xml

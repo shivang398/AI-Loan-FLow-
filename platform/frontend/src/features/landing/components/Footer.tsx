@@ -3,14 +3,15 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from 'antd';
 import { RealMoneyLogoWhite } from '../../../shared/components/RealMoneyLogo';
-import { C, SANS, scrollToId } from '../theme';
+import { C, SANS } from '../theme';
+import { useGoToSection } from '../useGoToSection';
 import { Crest, Ornament } from './Royal';
 
 const LEGAL_CONTENT: Record<string, string> = {
   'Privacy Policy': 'Real Money respects your privacy. We collect only necessary information to process your loan application. Data is shared only with the specific lender partner you explicitly consent to apply with. You may request deletion of your data at any time by writing to contact@realmoneygroups.in.',
   'Terms & Conditions': 'By using our services, you agree that Real Money acts solely as a Corporate DSA. We do not guarantee loan approvals. All final decisions rest with the respective lender. Misrepresentation of information is grounds for rejection.',
   'RBI Disclosure': 'Real Money is registered as a Corporate Direct Selling Agent (DSA). We are not a bank or NBFC and do not accept deposits or lend money directly. All lending is done by our exclusive partner lenders — banks and NBFCs regulated by the Reserve Bank of India.',
-  'Grievance Redressal': 'For any grievances, please write to grievance@realmoneygroups.in or call +91 98765 43210. We aim to resolve all complaints within 7 working days. Unresolved complaints may be escalated to the Banking Ombudsman.',
+  'Grievance Redressal': 'For any grievances, please write to contact@realmoneygroups.in or call +91 98765 43210. We aim to resolve all complaints within 7 working days. Unresolved complaints may be escalated to the Banking Ombudsman.',
   'Fair Practice Code': 'We follow a transparent, customer-first approach. No hidden charges. Interest rates are disclosed upfront. We do not engage in coercive recovery practices. All communications are in clear, simple language.',
   'Cookie Policy': 'Our website uses cookies to improve your experience. Essential cookies are required for the site to function. Analytics cookies help us understand usage patterns. You may disable non-essential cookies through your browser settings.',
 };
@@ -38,6 +39,7 @@ const FootLink: React.FC<{ onClick?: () => void; href?: string; children: React.
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
+  const scrollToId = useGoToSection();
   const showLegal = (title: string) => Modal.info({
     title, okText: 'Close', centered: true, width: 540,
     content: <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.8, color: C.ink, marginTop: 10 }}>{LEGAL_CONTENT[title]}</p>,
@@ -78,6 +80,7 @@ const Footer: React.FC = () => {
             <FootLink onClick={() => scrollToId('faq')}>FAQ</FootLink>
             <FootLink href="https://saralvidya.in">Saral Vidya — education loans</FootLink>
             <FootLink onClick={() => scrollToId('partners')}>Become a partner</FootLink>
+            <FootLink onClick={() => navigate('/blog')}>Blog</FootLink>
             <FootLink onClick={() => navigate('/careers')}>Careers</FootLink>
           </div>
 
