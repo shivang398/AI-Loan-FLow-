@@ -135,6 +135,9 @@ http {
 
         location / {
             try_files $uri $uri/ /index.html;
+            # index.html must never be cached: after a deploy it points at the new code files. ("expires"
+            # sets Cache-Control without an add_header here, which would drop the server-level security headers.)
+            expires -1;
         }
 
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
