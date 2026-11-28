@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { ExternalLink, FileText, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import api from '../../../shared/services/apiClient';
 import { BlogContent } from '../../../shared/components/BlogContent';
+import { htmlToMarkdown } from '../../../shared/utils/htmlToMarkdown';
 
 const NAVY = '#0B1E3D';
 const GOLD = '#C4993A';
@@ -20,13 +21,15 @@ interface PostForm { title: string; slug?: string; excerpt?: string; authorName?
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 const slugify = (t: string) => t.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 150);
 
-const FORMAT_HELP = `## Heading            → section heading
-- point / * point     → bullet list
-1. step               → numbered list
-**bold text**         → bold
-[link text](https://…) or [text](/blog/…) → link
-> quote               → highlighted quote
-(blank line)          → new paragraph`;
+const FORMAT_HELP = `## Heading            → section heading      ### Sub-heading → smaller heading
+- point / * point     → bullet list          1. step         → numbered list
+**bold text**         → bold                 *italic text*   → italic
+[link text](https://…) or [text](/blog/…) → link       > quote → highlighted quote
+(blank line)          → new paragraph        (single line break is kept)
+Pasting formatted text (Google Docs, Word, ChatGPT, a web page) keeps its headings, lists, bold and links.`;
+
+// Text that is already Markdown is pasted as-is
+const LOOKS_LIKE_MARKDOWN = /(^|\n)\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s)|\*\*[^*\n]+\*\*|\[[^\]]+\]\([^)]+\)/;
 
 const STARTER = `Your credit score is a three-digit number between 300 and 900 that lenders check before approving a loan.
 
@@ -86,6 +89,20 @@ const BlogAdmin: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  /** Formatted text pasted into the editor keeps its structure as Markdown (a plain paste would drop it). */
+  const onPasteContent = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const html = e.clipboardData.getData('text/html');
+    const plain = e.clipboardData.getData('text/plain');
+    if (!html || LOOKS_LIKE_MARKDOWN.test(plain)) return;
+    const md = htmlToMarkdown(html);
+    if (!md) return;
+    e.preventDefault();
+    const ta = e.currentTarget;
+    const current: string = form.getFieldValue('content') ?? '';
+    form.setFieldValue('content', current.slice(0, ta.selectionStart) + md + current.slice(ta.selectionEnd));
+    message.info('Formatting kept — headings, lists, bold and links were converted to Markdown. Check the Preview tab.');
   };
 
   const remove = async (post: BlogPost) => {
@@ -184,7 +201,7 @@ const BlogAdmin: React.FC = () => {
               children: (
                 <>
                   <Form.Item name="content" rules={[{ required: true, min: 20, message: 'Write at least a few sentences' }]} style={{ marginBottom: 8 }}>
-                    <Input.TextArea autoSize={{ minRows: 16, maxRows: 40 }} style={{ fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13.5 }} />
+                    <Input.TextArea autoSize={{ minRows: 16, maxRows: 40 }} onPaste={onPasteContent} style={{ fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13.5 }} />
                   </Form.Item>
                   <pre style={{ fontSize: 12, color: MUTED, background: '#F6F8FB', padding: '10px 12px', margin: 0, whiteSpace: 'pre-wrap' }}>{FORMAT_HELP}</pre>
                 </>

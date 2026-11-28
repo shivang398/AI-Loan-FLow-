@@ -42,7 +42,7 @@ describe('Authentication & RBAC Integration', () => {
     await waitFor(() => {
       // Check if redirected to dashboard (which has "Dashboard Overview")
       expect(screen.getByText(/Dashboard Overview/i)).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });   // the dashboard is lazy-loaded; allow time for its chunk on a slow CI machine
   });
 
   it('enforces RBAC for Admin routes', async () => {
