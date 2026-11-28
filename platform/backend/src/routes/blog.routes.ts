@@ -59,7 +59,7 @@ publicBlogRouter.get('/', async (req: Request, res: Response) => {
     commsDb.blogPost.findMany({ where, orderBy: { publishedAt: 'desc' }, skip: page * size, take: size }),
     commsDb.blogPost.count({ where }),
   ]);
-  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.setHeader('Cache-Control', 'no-cache');   // always fresh: a post must show the moment it is published
   res.json(ok('Blog posts', { items: rows.map(summary), total, page, size }));
 });
 
@@ -71,7 +71,7 @@ publicBlogRouter.get('/sitemap.xml', async (_req: Request, res: Response) => {
     ...posts.map(p => `  <url><loc>${SITE}/blog/${xmlEscape(p.slug)}</loc><lastmod>${p.updatedAt.toISOString().slice(0, 10)}</lastmod></url>`),
   ];
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.setHeader('Cache-Control', 'public, max-age=600');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
 });
 
@@ -79,7 +79,7 @@ publicBlogRouter.get('/sitemap.xml', async (_req: Request, res: Response) => {
 publicBlogRouter.get('/:slug', async (req: Request, res: Response) => {
   const post = await commsDb.blogPost.findUnique({ where: { slug: req.params.slug } });
   if (!post || post.status !== 'PUBLISHED') { res.status(404).json(fail('Post not found')); return; }
-  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.setHeader('Cache-Control', 'no-cache');   // always fresh: a post must show the moment it is published
   res.json(ok('Blog post', { ...summary(post), content: post.content, updatedAt: post.updatedAt }));
 });
 
