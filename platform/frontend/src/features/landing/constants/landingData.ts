@@ -39,75 +39,11 @@ export const LOAN_PRODUCTS = [
   },
 ];
 
-
-export const TESTIMONIALS = [
-  {
-    name: 'Amit Verma',
-    city: 'Delhi',
-    product: 'Personal Loan',
-    amount: '₹15 L',
-    lender: 'Best Offer Matched',
-    days: '2 days',
-    review: 'Got my personal loan at 10.9% — much better than what my bank offered directly. The advisor handled everything end-to-end. Couldn\'t have been easier.',
-    rating: 5,
-  },
-  {
-    name: 'Priya Sharma',
-    city: 'Mumbai',
-    product: 'Personal Loan',
-    amount: '₹8 L',
-    lender: 'Best Rate Secured',
-    days: '36 hours',
-    review: 'Needed urgent funds for a family emergency. Real Money disbursed my personal loan in just 36 hours — absolutely incredible speed and service.',
-    rating: 5,
-  },
-  {
-    name: 'Rahul Gupta',
-    city: 'Jaipur',
-    product: 'Personal Loan',
-    amount: '₹20 L',
-    lender: 'Top Offer Selected',
-    days: '3 days',
-    review: 'I was confused by different lender offers. The advisor from Real Money simplified everything and helped me pick the best deal. Highly professional.',
-    rating: 5,
-  },
-  {
-    name: 'Anita Iyer',
-    city: 'Bengaluru',
-    product: 'Education Loan',
-    amount: '₹40 L',
-    lender: 'Poonawala Fincorp',
-    days: '7 days',
-    review: 'Saral Vidya secured my education loan from Poonawala Fincorp for my MBA abroad. The team handled all documentation professionally. Dream come true!',
-    rating: 5,
-  },
-  {
-    name: 'Karan Mehta',
-    city: 'Pune',
-    product: 'Business Loan',
-    amount: '₹35 L',
-    lender: 'Real Finserv',
-    days: '4 days',
-    review: 'Real Finserv approved my business loan in 4 days. The working capital helped me expand my retail chain. Zero hidden charges, complete transparency.',
-    rating: 5,
-  },
-  {
-    name: 'Sunita Patel',
-    city: 'Ahmedabad',
-    product: 'Personal Loan',
-    amount: '₹12 L',
-    lender: 'Best Rate Matched',
-    days: '48 hours',
-    review: 'Took a personal loan for home renovation. Real Money matched me with the best rate available. Process was 100% digital and stress-free.',
-    rating: 5,
-  },
-];
-
 export const FAQ_ITEMS = [
   {
     key: '1',
     label: 'What is Real Money?',
-    children: 'Real Money is a Corporate Direct Selling Agent (DSA) headquartered in Jaipur, Rajasthan, with over 22 years of experience in the lending industry. We are empanelled with 50+ leading banks and NBFCs across India. We specialize in Personal Loans and help borrowers get access to the best rates and fastest approvals by leveraging our deep relationships with these lending institutions.',
+    children: 'Real Money is a Corporate Direct Selling Agent (DSA) headquartered in Jaipur, Rajasthan, empanelled with leading banks and NBFCs across India. We specialize in Personal Loans and help borrowers get access to the best rates and fastest approvals by leveraging our deep relationships with these lending institutions.',
   },
   {
     key: '2',

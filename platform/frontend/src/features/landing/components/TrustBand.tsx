@@ -9,7 +9,7 @@ const TrustBand: React.FC = () => (
       </p>
 
       <h2 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 'clamp(24px, 2.6vw, 32px)', color: C.navy, textAlign: 'center', margin: '12px 0 0' }}>
-        50+ banks &amp; NBFCs, one application
+        Leading banks &amp; NBFCs, one application
       </h2>
 
       <p style={{ fontFamily: SANS, fontSize: 12, color: C.muted, textAlign: 'center', margin: '18px 0 0' }}>

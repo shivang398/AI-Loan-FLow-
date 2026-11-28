@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from 'antd';
 import { RealMoneyLogoWhite } from '../../../shared/components/RealMoneyLogo';
@@ -11,7 +11,7 @@ const LEGAL_CONTENT: Record<string, string> = {
   'Privacy Policy': 'Real Money respects your privacy. We collect only necessary information to process your loan application. Data is shared only with the specific lender partner you explicitly consent to apply with. You may request deletion of your data at any time by writing to contact@realmoneygroups.in.',
   'Terms & Conditions': 'By using our services, you agree that Real Money acts solely as a Corporate DSA. We do not guarantee loan approvals. All final decisions rest with the respective lender. Misrepresentation of information is grounds for rejection.',
   'RBI Disclosure': 'Real Money is registered as a Corporate Direct Selling Agent (DSA). We are not a bank or NBFC and do not accept deposits or lend money directly. All lending is done by our exclusive partner lenders — banks and NBFCs regulated by the Reserve Bank of India.',
-  'Grievance Redressal': 'For any grievances, please write to contact@realmoneygroups.in or call +91 98765 43210. We aim to resolve all complaints within 7 working days. Unresolved complaints may be escalated to the Banking Ombudsman.',
+  'Grievance Redressal': 'For any grievances, please write to contact@realmoneygroups.in We aim to resolve all complaints within 7 working days. Unresolved complaints may be escalated to the Banking Ombudsman.',
   'Fair Practice Code': 'We follow a transparent, customer-first approach. No hidden charges. Interest rates are disclosed upfront. We do not engage in coercive recovery practices. All communications are in clear, simple language.',
   'Cookie Policy': 'Our website uses cookies to improve your experience. Essential cookies are required for the site to function. Analytics cookies help us understand usage patterns. You may disable non-essential cookies through your browser settings.',
 };
@@ -56,12 +56,11 @@ const Footer: React.FC = () => {
           <div>
             <RealMoneyLogoWhite markSize={36} fontSize={16} subtitle="Personal Loan Advisory" id="footer-logo" />
             <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.7, color: C.onDarkDim, margin: '18px 0 20px', maxWidth: 320 }}>
-              Corporate DSA specialising in personal loans, empanelled with 50+ banks &amp; NBFCs across India.
+              Corporate DSA specialising in personal loans, empanelled with leading banks &amp; NBFCs across India.
             </p>
             {[
               { Icon: MapPin, text: 'Jaipur, Rajasthan, India' },
               { Icon: Mail,   text: 'contact@realmoneygroups.in', href: 'mailto:contact@realmoneygroups.in' },
-              { Icon: Phone,  text: '+91 98765 43210',            href: 'tel:+919876543210' },
             ].map(({ Icon, text, href }) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
                 <Icon size={14} color={C.gold} />

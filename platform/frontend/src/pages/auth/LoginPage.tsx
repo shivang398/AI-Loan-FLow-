@@ -17,9 +17,7 @@ const GOLD = '#C4993A';
 const GOLD_L = '#E8C870';
 
 const TRUST_STATS = [
-  { value: '22+',   label: 'Years of Trust' },
   { value: '₹10Cr+', label: 'Monthly Business' },
-  { value: '50+',   label: 'Lender Partners' },
 ];
 
 const LoginPage: React.FC = () => {
@@ -177,7 +175,7 @@ const LoginPage: React.FC = () => {
           {[
             'RBI-Compliant Corporate DSA',
             'Zero advisory fees — always',
-            'Authorised partner of 50+ banks & NBFCs',
+            'Authorised partner of leading banks & NBFCs',
           ].map(item => (
             <div key={item} style={{
               display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,

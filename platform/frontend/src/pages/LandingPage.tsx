@@ -8,11 +8,9 @@ import HowItWorks          from '../features/landing/components/HowItWorks';
 import Charter             from '../features/landing/components/Charter';
 import CustomerRegistrationSection from '../features/landing/components/CustomerRegistrationSection';
 import Loans               from '../features/landing/components/Loans';
-import Testimonials        from '../features/landing/components/Testimonials';
 import PartnerProgram      from '../features/landing/components/PartnerProgram';
 import FAQ                 from '../features/landing/components/FAQ';
 import Footer              from '../features/landing/components/Footer';
-import WhatsAppFloat       from '../features/landing/components/WhatsAppFloat';
 import MobileStickyBar     from '../features/landing/components/MobileStickyBar';
 import { C, scrollToId } from '../features/landing/theme';
 import '../features/landing/styles/landing.css';
@@ -66,11 +64,9 @@ const LandingPage: React.FC = () => {
         <Charter />
         <CustomerRegistrationSection />
         <Loans />
-        <Testimonials />
         <PartnerProgram />
         <FAQ />
         <Footer />
-        <WhatsAppFloat />
         <MobileStickyBar />
       </div>
     </AntdApp>

@@ -12,7 +12,7 @@ const actionFor = (p: typeof LOAN_PRODUCTS[number]) =>
     ? { label: 'Apply now', onClick: () => scrollToId('apply') }
     : p.partnerUrl
       ? { label: `Visit ${p.partner}`, href: p.partnerUrl }
-      : { label: 'Ask an advisor', href: 'https://wa.me/919876543210' };
+      : { label: 'Ask an advisor', onClick: () => scrollToId('apply') };
 
 const Loans: React.FC = () => (
   <section id="loans" style={{ background: C.ivory, padding: 'clamp(72px, 9vw, 112px) 0' }}>

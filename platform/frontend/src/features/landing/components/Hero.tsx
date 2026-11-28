@@ -1,18 +1,16 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Check, Phone, MessageCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { C, DISPLAY, SANS } from '../theme';
 import CreditReportCheck from './CreditReportCheck';
 
 // Facts about Real Money itself — rates and disbursal times belong to the lenders, not the DSA
 const FACTS = [
-  { value: '50+', label: 'Lending partners' },
-  { value: '22+', label: 'Years in lending' },
   { value: '₹0',  label: 'Advisory fee' },
 ];
 
 const POINTS = [
-  'Offers from 50+ banks & NBFCs with one application',
+  'Offers from leading banks & NBFCs with one application',
   'Free for borrowers — lenders pay our fee',
   'A personal advisor from application to disbursal',
 ];
@@ -81,14 +79,6 @@ const Hero: React.FC = () => {
             ))}
           </motion.div>
 
-          <motion.div {...enter(0.4)} style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginTop: 28, fontFamily: SANS, fontSize: 14 }}>
-            <a href="tel:+919876543210" style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.onDark, textDecoration: 'none' }}>
-              <Phone size={15} color={C.gold} /> +91 98765 43210
-            </a>
-            <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.onDark, textDecoration: 'none' }}>
-              <MessageCircle size={15} color={C.gold} /> Chat with an advisor
-            </a>
-          </motion.div>
         </div>
 
         {/* Credit report check */}

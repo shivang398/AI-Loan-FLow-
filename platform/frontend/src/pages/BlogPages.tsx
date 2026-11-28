@@ -5,7 +5,6 @@ import axios from 'axios';
 import { ArrowLeft, ArrowRight, Clock } from 'lucide-react';
 import Navbar from '../features/landing/components/Navbar';
 import Footer from '../features/landing/components/Footer';
-import WhatsAppFloat from '../features/landing/components/WhatsAppFloat';
 import { C, DISPLAY, SANS } from '../features/landing/theme';
 import { landingTheme } from './LandingPage';
 import { usePageMeta } from '../shared/hooks/usePageMeta';
@@ -24,7 +23,6 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         <Navbar />
         <main style={{ flex: 1 }}>{children}</main>
         <Footer />
-        <WhatsAppFloat />
       </div>
     </AntdApp>
   </ConfigProvider>
@@ -133,7 +131,7 @@ export const BlogPostPage: React.FC = () => {
             <BlogContent content={post.content} />
             <div style={{ marginTop: 40, padding: '24px 26px', background: C.parchment, borderLeft: `3px solid ${C.gold}` }}>
               <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 600, color: C.navy }}>Looking for a personal loan?</div>
-              <p style={{ fontSize: 15, color: C.ink, margin: '6px 0 16px' }}>Check your credit score free, then compare offers from 50+ banks and NBFCs with one application.</p>
+              <p style={{ fontSize: 15, color: C.ink, margin: '6px 0 16px' }}>Check your credit score free, then compare offers from leading banks and NBFCs with one application.</p>
               <Link to="/#credit-report" className="lp-btn lp-btn-gold" style={{ height: 44, padding: '0 22px', display: 'inline-flex', alignItems: 'center' }}>Check my credit score</Link>
             </div>
             <div style={{ marginTop: 32 }}>
